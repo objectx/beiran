@@ -1,0 +1,14 @@
+version: '2'
+services:
+
+  beiran:
+    image: rain.lab/beiran
+    build: .
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+     - test
+    command: python -u beiran.py
+networks:
+  test:

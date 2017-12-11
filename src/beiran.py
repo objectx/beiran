@@ -66,10 +66,11 @@ def on_reconnect():
     print('reconnect')
 
 def connecNodeWs(info):
-    socketIO = SocketIO(socket.inet_ntoa(info.address), 5000)
-    socketIO.on('connect', on_connect)
-    socketIO.on('disconnect', on_disconnect)
-    socketIO.on('reconnect', on_reconnect)
+    pass
+    # socketIO = SocketIO(socket.inet_ntoa(info.address), 5000)
+    # socketIO.on('connect', on_connect)
+    # socketIO.on('disconnect', on_disconnect)
+    # socketIO.on('reconnect', on_reconnect)
 
 
 def on_service_state_change(zeroconf, service_type, name, state_change):

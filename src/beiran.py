@@ -3,6 +3,8 @@ import logging
 import signal
 import socket
 import sys
+import time
+
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceStateChange, Zeroconf
 
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
@@ -35,17 +37,21 @@ def on_reconnect():
     print('reconnect')
 
 
-def connecNodeWs(info):
+def connect_node_ws(info):
     pass
 
 
 def on_service_state_change(zeroconf, service_type, name, state_change):
+    """
+
+    :type zeroconf: object
+    """
     print("Service %s of type %s state changed: %s" % (name, service_type, state_change))
 
     if state_change is ServiceStateChange.Added:
         info = zeroconf.get_service_info(service_type, name)
         # if name != hostname + "." + domain:
-        connecNodeWs(info)
+        connect_node_ws(info)
 
         if info:
             print("  Address: %s:%d" % (socket.inet_ntoa(info.address), info.port))
@@ -61,8 +67,8 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
             print("  No info")
         print('\n')
 
-
-async def discover():
+@asyncio.coroutine
+def discover():
     global info, zeroconf
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(('google.com', 0))
@@ -85,7 +91,7 @@ async def discover():
     browser = ServiceBrowser(zeroconf, domain, handlers=[on_service_state_change])
     try:
         while True:
-            await asyncio.sleep(1)
+            time.sleep(1)
     except KeyboardInterrupt:
         pass
     finally:
@@ -100,7 +106,8 @@ if __name__ == '__main__':
         assert sys.argv[1:] == ['--debug']
         logging.getLogger('zeroconf').setLevel(logging.DEBUG)
 
+    discovery = asyncio.async(discover())
+    # loop.run_until_complete(discover())
     loop = asyncio.get_event_loop()
-    # Blocking call which returns when the display_date() coroutine is done
-    loop.run_until_complete(discover())
-    loop.close()
+    loop.run_forever()
+    # loop.close()

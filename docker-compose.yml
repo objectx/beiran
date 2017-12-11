@@ -8,6 +8,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
      - test
-    command: python -u beiran.py
+    command: python3.6 -u beiran.py
 networks:
   test:

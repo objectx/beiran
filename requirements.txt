@@ -19,3 +19,4 @@ urllib3==1.22
 websocket-client==0.44.0
 Werkzeug==0.12.2
 zeroconf==0.19.1
+socketIO_client==0.7.2

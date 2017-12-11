@@ -12,11 +12,14 @@ RUN yum-config-manager \
 
 RUN yum install -y docker-ce
 
+RUN mkdir /src
+WORKDIR /src
+
 ADD [ "requirements.txt", "/src"]
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 ADD [ "src", "/src" ]
-WORKDIR /src
 
 VOLUME /var/lib/docker
 CMD ["bash"]

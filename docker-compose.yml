@@ -1,8 +1,7 @@
 version: '2'
 services:
-
-  beiran:
-    image: rain.lab/beiran
+  beirand:
+    image: rlab.io/beiran
     build: .
     privileged: true
     volumes:

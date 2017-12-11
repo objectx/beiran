@@ -1,6 +1,6 @@
 FROM centos:7
 
-MAINTAINER Rain.lab
+LABEL maintainer="alkim@rlab.io"
 
 RUN yum install -y epel-release; \
     yum install -y python-pip python-devel gcc; \

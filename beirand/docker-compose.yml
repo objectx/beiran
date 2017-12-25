@@ -1,0 +1,10 @@
+version: '2'
+services:
+  beirand:
+    image: dkr.rlab.io/poc/beiran
+    build: .
+    privileged: true
+    volumes:
+      - /var/run/:/var/run/
+    command: python3.6 -u beiran.py
+    network_mode: host

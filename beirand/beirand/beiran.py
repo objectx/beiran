@@ -5,17 +5,17 @@ import socket
 import sys
 import time
 
-from zeroconf import ServiceBrowser, ServiceInfo, ServiceStateChange, Zeroconf
+from zeroconf import ServiceInfo, ServiceStateChange, Zeroconf
 
-logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
 
 info = None
+zeroconf = None
 hostname = socket.gethostname()
 domain = "_beiran._tcp.local."
 
 
-def signal_term_handler(signal, frame):
+def signal_term_handler():
     print('got SIGTERM')
     if info:
         zeroconf.unregister_service(info)
@@ -37,29 +37,32 @@ def on_reconnect():
     print('reconnect')
 
 
-def connect_node_ws(info):
+def connect_node_ws():
     pass
 
 
-def on_service_state_change(zeroconf, service_type, name, state_change):
+def on_service_state_change(zconf, service_type, name, state_change):
     """
 
-    :type zeroconf: object
+    :param state_change: state change of service
+    :param name:
+    :param service_type:
+    :type zconf: Zeroconf
     """
     print("Service %s of type %s state changed: %s" % (name, service_type, state_change))
 
     if state_change is ServiceStateChange.Added:
-        info = zeroconf.get_service_info(service_type, name)
+        service_info = zconf.get_service_info(service_type, name)
         # if name != hostname + "." + domain:
-        connect_node_ws(info)
+        connect_node_ws()
 
-        if info:
-            print("  Address: %s:%d" % (socket.inet_ntoa(info.address), info.port))
-            print("  Weight: %d, priority: %d" % (info.weight, info.priority))
-            print("  Server: %s" % info.server)
-            if info.properties:
+        if service_info:
+            print("  Address: %s:%d" % (socket.inet_ntoa(service_info.address), service_info.port))
+            print("  Weight: %d, priority: %d" % (service_info.weight, service_info.priority))
+            print("  Server: %s" % service_info.server)
+            if service_info.properties:
                 print("  Properties are:")
-                for key, value in info.properties.items():
+                for key, value in service_info.properties.items():
                     print("    %s: %s" % (key, value))
             else:
                 print("  No properties")
@@ -73,13 +76,13 @@ def discover():
     global info, zeroconf
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(('google.com', 0))
-    hostip = s.getsockname()[0]
+    host_ip = s.getsockname()[0]
     print("hostname = " + hostname)
-    print("ip = " + hostip)
+    print("ip = " + host_ip)
     desc = {'name': hostname}
     info = ServiceInfo(domain,
                        hostname + "." + domain,
-                       socket.inet_aton(hostip), 3000, 0, 0,
+                       socket.inet_aton(host_ip), 3000, 0, 0,
                        desc, hostname + ".local.")
     zeroconf = Zeroconf()
     print("Registration of a service, press Ctrl-C to exit...")
@@ -89,7 +92,6 @@ def discover():
     except KeyboardInterrupt:
         pass
     print("\nBrowsing services, press Ctrl-C to exit...\n")
-    browser = ServiceBrowser(zeroconf, domain, handlers=[on_service_state_change])
     try:
         while True:
             time.sleep(1)

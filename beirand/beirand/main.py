@@ -14,36 +14,44 @@ define('listen_address', group='webserver', default='0.0.0.0', help='Listen addr
 define('listen_port', group='webserver', default=8888, help='Listen port')
 define('unix_socket', group='webserver', default="/var/run/beirand.sock", help='Path to unix socket to bind')
 
+
 class EchoWebSocket(websocket.WebSocketHandler):
-	def open(self):
-		print("WebSocket opened")
+    def data_received(self, chunk):
+        pass
 
-	def on_message(self, message):
-		self.write_message(u"You said: " + message)
+    def open(self):
+        print("WebSocket opened")
 
-	def on_close(self):
-		print("WebSocket closed")
+    def on_message(self, message):
+        self.write_message(u"You said: " + message)
+
+    def on_close(self):
+        print("WebSocket closed")
+
 
 class ApiRootHandler(web.RequestHandler):
-	def get(self):
-		self.write("Hello!")
-		self.finish()
+    def data_received(self, chunk):
+        pass
+
+    def get(self):
+        self.write("Hello!")
+        self.finish()
+
 
 app = web.Application([
-	(r'/', ApiRootHandler),
-	# (r'/layers', LayersHandler),
-	# (r'/images', ImagesHandler),
-	(r'/ws', EchoWebSocket),
+    (r'/', ApiRootHandler),
+    # (r'/layers', LayersHandler),
+    # (r'/images', ImagesHandler),
+    (r'/ws', EchoWebSocket),
 ])
 
 if __name__ == '__main__':
+    # Listen on Unix Socket
+    server = httpserver.HTTPServer(app)
+    socket = bind_unix_socket(options.unix_socket)
+    server.add_socket(socket)
 
-	# Listen on Unix Socket
-	server = httpserver.HTTPServer(app)
-	socket = bind_unix_socket(options.unix_socket)
-	server.add_socket(socket)
+    # Also Listen on TCP
+    app.listen(options.listen_port, address=options.listen_address)
 
-	# Also Listen on TCP
-	app.listen(options.listen_port, address=options.listen_address)
-
-	asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_forever()

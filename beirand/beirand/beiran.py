@@ -36,8 +36,10 @@ def on_disconnect():
 def on_reconnect():
     print('reconnect')
 
+
 def connect_node_ws(info):
     pass
+
 
 def on_service_state_change(zeroconf, service_type, name, state_change):
     """
@@ -64,6 +66,7 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
         else:
             print("  No info")
         print('\n')
+
 
 @asyncio.coroutine
 def discover():

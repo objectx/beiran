@@ -6,7 +6,9 @@ from tornado.options import options, define
 from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 
-VERSION = "0.0.1"
+from version import get_version
+
+VERSION = get_version('short')
 
 AsyncIOMainLoop().install()
 
@@ -19,6 +21,7 @@ define('unix_socket', group='webserver', default="/var/run/beirand.sock", help='
 
 if 'BEIRAN_SOCK' in os.environ:
     options.unix_socket = os.environ['BEIRAN_SOCK']
+
 
 class EchoWebSocket(websocket.WebSocketHandler):
     def data_received(self, chunk):

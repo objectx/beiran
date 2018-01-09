@@ -77,20 +77,22 @@ class LayerDownload(web.RequestHandler):
         self._set_headers(layer_id)
 
         layer_path = docker_find_layer_dir_by_sha(layer_id)
-        if layer_path:
-            tar_path = "{cache_dir}/{cache_tar_name}".format(cache_dir=DOCKER_TAR_CACHE_DIR,
-                                                         cache_tar_name=docker_sha_summary(layer_id))
-            if not os.path.isfile(tar_path):
-                create_tar_archive(layer_path, tar_path)
 
-            with open(tar_path, 'rb') as f:
-                while True:
-                    data = f.read(51200)
-                    if not data:
-                        break
-                    self.write(data)
-        else:
+        if not layer_path:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
+
+        tar_path = "{cache_dir}/{cache_tar_name}".format(cache_dir=DOCKER_TAR_CACHE_DIR,
+                                                     cache_tar_name=docker_sha_summary(layer_id))
+        if not os.path.isfile(tar_path):
+            create_tar_archive(layer_path, tar_path)
+
+        with open(tar_path, 'rb') as f:
+            while True:
+                data = f.read(51200)
+                if not data:
+                    break
+                self.write(data)
+
         self.finish()
 
 

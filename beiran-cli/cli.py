@@ -2,6 +2,10 @@
 import os
 import click
 import beiran
+import sys
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 unix_socket = "/var/run/beirand.sock"
 
@@ -31,7 +35,8 @@ def version():
     try:
         print("Server Version: " + beiran_client.GetServerVersion())
     except ConnectionRefusedError as e:
-        print("Cannot connect to server")
+        eprint("Cannot connect to server")
+        sys.exit(1)
 
 cli.add_command(version)
 

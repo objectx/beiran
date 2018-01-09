@@ -19,7 +19,7 @@ def docker_sha_summary(sha):
     return sha.split(":")[1][0:12]
 
 
-def docker_find_docker_layer_dir_by_sha(sha):
+def docker_find_layer_dir_by_sha(sha):
     """
     try to find local layer directory containing tar archive contents pulled from remote repository
 

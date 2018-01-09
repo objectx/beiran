@@ -6,7 +6,7 @@ from tornado.options import options, define
 from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
-from beirand.lib import docker_find_docker_layer_dir_by_sha
+from beirand.lib import docker_find_layer_dir_by_sha
 from beirand.lib import create_tar_archive
 from beirand.lib import docker_sha_summary
 
@@ -76,7 +76,7 @@ class LayerDownload(web.RequestHandler):
         """
         self._set_headers(layer_id)
 
-        layer_path = docker_find_docker_layer_dir_by_sha(layer_id)
+        layer_path = docker_find_layer_dir_by_sha(layer_id)
         if layer_path:
             tar_path = "{cache_dir}/{cache_tar_name}".format(cache_dir=DOCKER_TAR_CACHE_DIR,
                                                          cache_tar_name=docker_sha_summary(layer_id))

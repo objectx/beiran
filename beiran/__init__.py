@@ -5,7 +5,7 @@ from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
 
-from beiran.version import get_version
+from .version import get_version
 
 VERSION = get_version(component='library')
 

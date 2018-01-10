@@ -8,7 +8,7 @@ from tornado import websocket, web, httpserver
 
 from beiran.version import get_version
 
-VERSION = get_version('short', 'server')
+VERSION = get_version('short', 'daemon')
 
 AsyncIOMainLoop().install()
 

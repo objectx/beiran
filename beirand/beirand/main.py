@@ -10,7 +10,9 @@ from beirand.lib import docker_find_layer_dir_by_sha
 from beirand.lib import create_tar_archive
 from beirand.lib import docker_sha_summary
 
-VERSION = "0.0.1"
+from beiran.version import get_version
+
+VERSION = get_version('short', 'daemon')
 
 AsyncIOMainLoop().install()
 
@@ -28,6 +30,7 @@ define('unix_socket', group='webserver', default="/var/run/beirand.sock", help='
 
 if 'BEIRAN_SOCK' in os.environ:
     options.unix_socket = os.environ['BEIRAN_SOCK']
+
 
 class EchoWebSocket(websocket.WebSocketHandler):
     def data_received(self, chunk):

@@ -4,8 +4,11 @@ Current beiran version constant plus version pretty-print method.
 from subprocess import Popen, PIPE
 from os.path import abspath, dirname
 
-VERSION = (0, 0, 1, 'final', 0)
-
+components = {
+    'daemon': (0, 0, 1, 'final', 0),
+    'cli': (0, 0, 1, 'final', 0),
+    'library': (0, 0, 1, 'final', 0)
+}
 
 def git_sha():
     loc = abspath(dirname(__file__))
@@ -23,9 +26,9 @@ def git_sha():
         return None
 
 
-def get_version(form='short'):
+def get_version(form='short', component='daemon'):
     """
-    Return a version string for this package, based on `VERSION`.
+    Return a version string for this package, based on `version`.
 
     Takes a single argument, ``form``, which should be one of the following
     strings:
@@ -41,12 +44,14 @@ def get_version(form='short'):
     * ``all``: Returns all of the above, as a dict.
     """
     # Setup
+
     versions = {}
-    branch = "%s.%s" % (VERSION[0], VERSION[1])
-    tertiary = VERSION[2]
-    type_ = VERSION[3]
+    version = components[component]
+    branch = "%s.%s" % (version[0], version[1])
+    tertiary = version[2]
+    type_ = version[3]
     final = (type_ == "final")
-    type_num = VERSION[4]
+    type_num = version[4]
     firsts = "".join([x[0] for x in type_.split()])
 
     # Branch
@@ -97,4 +102,7 @@ def get_version(form='short'):
 __version__ = get_version('short')
 
 if __name__ == "__main__":
-    print(get_version('all'))
+    print({
+        "Server": get_version('all'),
+        "Client": get_version('all', 'cli')
+    })

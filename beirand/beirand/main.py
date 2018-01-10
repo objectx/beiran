@@ -6,9 +6,9 @@ from tornado.options import options, define
 from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 
-from version import get_version
+from beiran.version import get_version
 
-VERSION = get_version('short')
+VERSION = get_version('short', 'server')
 
 AsyncIOMainLoop().install()
 

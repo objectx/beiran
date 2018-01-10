@@ -5,7 +5,9 @@ from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
 
-VERSION = "0.0.1"
+from beiran.version import get_version
+
+VERSION = get_version(component='library')
 
 class UnixResolver(Resolver):
     def initialize(self, socket_path):

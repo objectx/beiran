@@ -1,6 +1,17 @@
 
 stages:
+ - lint
  - test
+
+lint:
+ stage: lint
+ image: dkr.rlab.io/poc/beiran/test:latest
+ tags:
+  - docker
+ script:
+  - pytest beiran
+  - pytest beirand/beirand
+  - pytest beiran-cli
 
 test:
  stage: test

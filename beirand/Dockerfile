@@ -23,7 +23,7 @@ ADD [ "requirements.txt", "/src"]
 #RUN pip3.6 install --upgrade pip
 RUN pip install -r requirements.txt
 
-ADD [ "src", "/src" ]
+ADD [ "beirand", "/src" ]
 
 VOLUME /var/lib/docker
 CMD ["bash"]

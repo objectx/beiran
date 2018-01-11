@@ -3,59 +3,65 @@ import logging
 import signal
 import socket
 import sys
-import time
 
-from zeroconf import ServiceInfo, ServiceStateChange, Zeroconf
+import netifaces
+from aiozeroconf import ServiceInfo, Zeroconf, ServiceBrowser, ZeroconfServiceTypes
 
-logging.basicConfig()
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
-info = None
-zeroconf = None
+if log.level == logging.NOTSET:
+    log.setLevel(logging.WARN)
+
+info: ServiceInfo = None
+zc: Zeroconf = None
 hostname = socket.gethostname()
 domain = "_beiran._tcp.local."
+
+
+async def do_close(zeroconf: Zeroconf) -> None:
+    """ Unregister service and close zeroconf
+    Args:
+        zeroconf (Zeroconf): 
+
+    Returns:
+        None:
+    """
+    print("Unregistering...")
+    await zeroconf.unregister_service(info)
+    await zeroconf.close()
 
 
 def signal_term_handler():
     print('got SIGTERM')
     if info:
-        zeroconf.unregister_service(info)
+        zc.unregister_service(info)
     sys.exit(0)
 
 
 signal.signal(signal.SIGTERM, signal_term_handler)
 
 
-def on_connect():
-    print('connect')
+class ZeroconfListener(object):
 
+    def on_connect(self):
+        print('connect')
 
-def on_disconnect():
-    print('disconnect')
+    def on_disconnect(self):
+        print('disconnect')
 
+    def on_reconnect(self):
+        print('reconnect')
 
-def on_reconnect():
-    print('reconnect')
+    def remove_service(self, zeroconf, type, name):
+        print("Service %s removed" % (name,))
 
+    def add_service(self, zeroconf, type, name):
+        asyncio.ensure_future(self.found_service(zeroconf, type, name))
 
-def connect_node_ws():
-    pass
-
-
-def on_service_state_change(zconf, service_type, name, state_change):
-    """
-
-    :param state_change: state change of service
-    :param name:
-    :param service_type:
-    :type zconf: Zeroconf
-    """
-    print("Service %s of type %s state changed: %s" % (name, service_type, state_change))
-
-    if state_change is ServiceStateChange.Added:
-        service_info = zconf.get_service_info(service_type, name)
-        # if name != hostname + "." + domain:
-        connect_node_ws()
-
+    async def found_service(self, zeroconf, type, name):
+        service_info = await zeroconf.get_service_info(type, name)
+        # print("Adding {}".format(service_info))
         if service_info:
             print("  Address: %s:%d" % (socket.inet_ntoa(service_info.address), service_info.port))
             print("  Weight: %d, priority: %d" % (service_info.weight, service_info.priority))
@@ -71,46 +77,48 @@ def on_service_state_change(zconf, service_type, name, state_change):
         print('\n')
 
 
-@asyncio.coroutine
-def discover():
-    global info, zeroconf
+async def register_self():
+    print("Registering " + hostname + "...")
+    await zc.register_service(info)
+
+
+async def init(async_loop):
+    global info, zc
+    logging.getLogger('zeroconf').setLevel(logging.DEBUG)
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(('google.com', 0))
     host_ip = s.getsockname()[0]
     print("hostname = " + hostname)
     print("ip = " + host_ip)
-    desc = {'name': hostname}
+    # FIXME: with real daemon version
+    desc = {'name': hostname, 'version': '0.1.0'}
     info = ServiceInfo(domain,
                        hostname + "." + domain,
                        socket.inet_aton(host_ip), 3000, 0, 0,
                        desc, hostname + ".local.")
-    zeroconf = Zeroconf()
-    print("Registration of a service, press Ctrl-C to exit...")
-    try:
-        print("Registering " + hostname + "...")
-        zeroconf.register_service(info)
-    except KeyboardInterrupt:
-        pass
+    zc = Zeroconf(async_loop, address_family=[netifaces.AF_INET], iface="eth0")
     print("\nBrowsing services, press Ctrl-C to exit...\n")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        zeroconf.close()
+    listener = ZeroconfListener()
+    ServiceBrowser(zc, domain, listener=listener)
+
+
+async def list_service(zeroconf):
+    los = await ZeroconfServiceTypes.find(zeroconf, timeout=0.5)
+    print("Found {}".format(los))
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
     print('Number of arguments:', len(sys.argv), 'arguments.')
     print('Argument List:', str(sys.argv))
     if len(sys.argv) > 1:
         assert sys.argv[1:] == ['--debug']
-        logging.getLogger('zeroconf').setLevel(logging.DEBUG)
-
-    discovery = asyncio.async(discover())
-    # loop.run_until_complete(discover())
     loop = asyncio.get_event_loop()
-    loop.run_forever()
-    # loop.close()
+    try:
+        loop.run_until_complete(init(loop))
+        # loop.run_until_complete(list_service(zc))
+        asyncio.ensure_future(register_self(), loop=loop)
+        loop.run_forever()
+    except KeyboardInterrupt:
+        loop.run_until_complete(do_close(zc))
+    finally:
+        loop.close()

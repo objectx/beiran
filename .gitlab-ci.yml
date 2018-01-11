@@ -3,14 +3,28 @@ stages:
  - lint
  - test
 
-lint:
+lint:lib:
  stage: lint
  image: dkr.rlab.io/poc/beiran/test:latest
  tags:
   - docker
  script:
   - pytest beiran
+
+lint:daemon:
+ stage: lint
+ image: dkr.rlab.io/poc/beiran/test:latest
+ tags:
+  - docker
+ script:
   - pytest beirand/beirand
+
+lint:cli:
+ stage: lint
+ image: dkr.rlab.io/poc/beiran/test:latest
+ tags:
+  - docker
+ script:
   - pytest beiran-cli
 
 test:

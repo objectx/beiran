@@ -9,7 +9,7 @@ lint:lib:
  tags:
   - docker
  script:
-  - pytest beiran
+  - pylint beiran
 
 lint:daemon:
  stage: lint
@@ -17,7 +17,7 @@ lint:daemon:
  tags:
   - docker
  script:
-  - pytest beirand/beirand
+  - pylint beirand/beirand
 
 lint:cli:
  stage: lint
@@ -25,7 +25,7 @@ lint:cli:
  tags:
   - docker
  script:
-  - pytest beiran-cli
+  - pylint beiran-cli
 
 test:
  stage: test

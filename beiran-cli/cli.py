@@ -1,4 +1,5 @@
 #!/bin/env python
+"""command line client for managing beiran daemon"""
 
 import os
 import sys
@@ -14,9 +15,12 @@ sys.stdout = beiran.util.Unbuffered(sys.stdout)
 @click.group()
 @click.pass_context
 def main(ctx):
+    """main method for click(lib) entry, injects the singleton
+    instance of Cli class into click context"""
     ctx.obj = Cli.singleton
 
 class Cli():
+    """beiran cli methods for click(lib)"""
     ctx = None
     singleton = None
 
@@ -39,6 +43,7 @@ class Cli():
     @click.command('version')
     @click.pass_obj
     def version(self):
+        """prints the versions of each component"""
         print("CLI Version: " + VERSION)
         print("Library Version: " + get_version('short', 'library'))
         print("Server Socket: " + self.unix_socket)
@@ -52,6 +57,7 @@ class Cli():
     @click.group()
     @click.pass_obj
     def image(self):
+        """group command for image management"""
         pass
     main.add_command(image)
 

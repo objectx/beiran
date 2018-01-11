@@ -38,6 +38,7 @@ suggestion-mode=yes
 # active Python interpreter and may run arbitrary code.
 unsafe-load-any-extension=no
 
+disable=no-self-use
 
 [MESSAGES CONTROL]
 
@@ -324,10 +325,10 @@ missing-member-max-choices=1
 [MISCELLANEOUS]
 
 # List of note tags to take in consideration, separated by a comma.
-notes=FIXME,
-      XXX,
-      TODO
-
+#notes=FIXME,
+#      XXX,
+#      TODO
+notes=XXX
 
 [SIMILARITIES]
 

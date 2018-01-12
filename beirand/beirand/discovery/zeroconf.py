@@ -5,14 +5,17 @@ import logging
 import socket
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 
+from discovery import Discovery
+
 _DOMAIN = "_beiran._tcp.local."
 
 
-class ZeroconfDiscovery(object):
+class ZeroconfDiscovery(Discovery):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
 
     def __init__(self, aioloop):
+        super().__init__(aioloop)
         """ Creates an instance of Zeroconf Discovery Service
 
         Args:
@@ -25,20 +28,11 @@ class ZeroconfDiscovery(object):
             * Network Interface name for zeroconf discovery should be a parameter to class
         """
         self.info = None
-        self.loop = aioloop
         self.zc = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface="eth0")
 
-        self.log = logging.getLogger(__name__)
-        self.log.addHandler(logging.NullHandler())
-
-        if self.log.level == logging.NOTSET:
-            self.log.setLevel(logging.WARN)
         logging.getLogger('zeroconf').setLevel(self.log.level)
 
         self.hostname = socket.gethostname()
-
-    def set_log_level(self, level: int):
-        self.log.level = level
 
     def start(self):
         """ Starts discovery service

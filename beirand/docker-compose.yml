@@ -6,7 +6,7 @@ services:
     privileged: true
 #    volumes:
 #      - /var/run/:/var/run/
-    command: python3.6 -u discovery/zeroconf.py
+    command: python3.6 -u main.py
     networks:
       - test
 networks:

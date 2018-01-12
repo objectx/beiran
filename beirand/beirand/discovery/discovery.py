@@ -1,3 +1,8 @@
+"""
+Discovery abstract class for different discovery
+service implementations.
+"""
+
 import logging
 from abc import abstractmethod, ABCMeta
 
@@ -6,6 +11,11 @@ class Discovery(metaclass=ABCMeta):
     """Metaclass for Discovery modules
     """
     def __init__(self, aioloop):
+        """
+        Initialization of discovery class with async loop
+        Args:
+            aioloop: asyncio loop
+        """
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
         if self.log.level == logging.NOTSET:
@@ -13,6 +23,11 @@ class Discovery(metaclass=ABCMeta):
         self.loop = aioloop
 
     def set_log_level(self, level: int):
+        """
+        Setting log level for discovery classes
+        Args:
+            level: logging.level
+        """
         self.log.level = level
 
     @abstractmethod

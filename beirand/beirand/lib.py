@@ -1,3 +1,7 @@
+"""
+Support library for beiran daemon
+"""
+
 import os
 import json
 import tarfile
@@ -36,21 +40,20 @@ def docker_find_layer_dir_by_sha(sha):
     local_layer_dir = '/var/lib/docker/overlay2/{layer_dir_name}/diff/'
 
     for file_name in os.listdir(local_diff_dir):
-        # f_path = f'{local_diff_dir}/{file_name}'  # python 3.5 does not support f strings.
+        # f_path = file'{local_diff_dir}/{file_name}'  # python 3.5 does not support file strings.
         f_path = '{}/{}'.format(local_diff_dir, file_name)
-        f = open(f_path)
+        file = open(f_path)
         try:
-            ff = json.load(f)
-            if not ff[0].get('Digest', None) == sha:
+            content = json.load(file)
+            if not content[0].get('Digest', None) == sha:
                 continue  # next file
 
-            f.close()
+            file.close()
 
-            with open(local_cache_id.format(diff_file_name=file_name)) as f:
-                return local_layer_dir.format(layer_dir_name=f.read())
+            with open(local_cache_id.format(diff_file_name=file_name)) as file:
+                return local_layer_dir.format(layer_dir_name=file.read())
 
-        except:
-            """Pass json load error"""
+        except ValueError:
             pass
 
 
@@ -59,6 +62,7 @@ def create_tar_archive(dir_path, output_file_path):
     create a tar archive from given path
 
     Args:
+        output_file_path: directory path to be saved!
         dir_path (string): directory path to be tarred!
 
     Returns:

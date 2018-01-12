@@ -1,11 +1,16 @@
-import netifaces
+"""
+Zeroconf multicast discovery service implementation
+"""
+
 import asyncio
 import logging
-
 import socket
+
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 
-from discovery import Discovery
+import netifaces
+
+from discovery.discovery import Discovery
 
 _DOMAIN = "_beiran._tcp.local."
 
@@ -15,14 +20,14 @@ class ZeroconfDiscovery(Discovery):
     """
 
     def __init__(self, aioloop):
-        super().__init__(aioloop)
         """ Creates an instance of Zeroconf Discovery Service
 
         Args:
             aioloop: AsyncIO Loop
         """
+        super().__init__(aioloop)
         self.info = None
-        self.zc = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface="eth0")
+        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface="eth0")
 
         logging.getLogger('zeroconf').setLevel(self.log.level)
 
@@ -52,16 +57,16 @@ class ZeroconfDiscovery(Discovery):
         Returns:
             tuple: List of services
         """
-        list_of_services = await ZeroconfServiceTypes.find(self.zc, timeout=0.5)
+        list_of_services = await ZeroconfServiceTypes.find(self.zero_conf, timeout=0.5)
         print("Found {}".format(list_of_services))
         return list_of_services
 
     def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('google.com', 0))
-        host_ip = s.getsockname()[0]
+        socket_for_host = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        socket_for_host.connect(('google.com', 0))
+        host_ip = socket_for_host.getsockname()[0]
         print("hostname = " + self.hostname)
         print("ip = " + host_ip)
         desc = {'name': self.hostname, 'version': '0.1.0'}
@@ -76,38 +81,39 @@ class ZeroconfDiscovery(Discovery):
         print("\nBrowsing services, press Ctrl-C to exit...\n")
 
         listener = ZeroconfListener()
-        ServiceBrowser(self.zc, _DOMAIN, listener=listener)
+        ServiceBrowser(self.zero_conf, _DOMAIN, listener=listener)
 
     async def register(self):
         """ Registering own service to zeroconf
         """
         print("Registering " + self.hostname + "...")
-        await self.zc.register_service(self.info)
+        await self.zero_conf.register_service(self.info)
 
 
 class ZeroconfListener(object):
     """Listener instance for zeroconf discovery to monitor changes
     """
 
-    def remove_service(self, zeroconf, type, name):
+    def remove_service(self, zeroconf, typeos, name):
         """Service removed change receives
         """
+        asyncio.ensure_future(self.removed_service(zeroconf, typeos, name))
         print("Service %s removed" % (name,))
 
-    def add_service(self, zeroconf, type, name):
+    def add_service(self, zeroconf, typeos, name):
         """Service added change receives
         """
-        asyncio.ensure_future(self.found_service(zeroconf, type, name))
+        asyncio.ensure_future(self.found_service(zeroconf, typeos, name))
 
-    async def found_service(self, zeroconf, type, name):
+    async def found_service(self, zeroconf, typeos, name):
         """
         Service Info for newly added node
         Args:
             zeroconf: Zeroconf instance
-            type: Type of the service
+            typeos: Type of the service
             name: Name of the service
         """
-        service_info = await zeroconf.get_service_info(type, name)
+        service_info = await zeroconf.get_service_info(typeos, name)
         # print("Adding {}".format(service_info))
         if service_info:
             print("  Address: %s:%d" % (socket.inet_ntoa(service_info.address), service_info.port))
@@ -123,9 +129,13 @@ class ZeroconfListener(object):
             print("  No info")
         print('\n')
 
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    discovery = ZeroconfDiscovery(loop)
-    discovery.start()
-    loop.run_forever()
+    async def removed_service(self, zeroconf, typeos, name):
+        """
+        Service Info for removed node
+        Args:
+            zeroconf: Zeroconf instance
+            typeos: Type of the service
+            name: Name of the service
+        """
+        service_info = await zeroconf.get_service_info(typeos, name)
+        print("Service is removed. Name: ", service_info.server)

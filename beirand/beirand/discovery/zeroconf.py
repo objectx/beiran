@@ -71,6 +71,8 @@ class ZeroconfDiscovery(Discovery):
                                 desc, self.hostname + ".local.")
 
     def start_browse(self):
+        """ Start browsing changes on discovery
+        """
         print("\nBrowsing services, press Ctrl-C to exit...\n")
 
         listener = ZeroconfListener()
@@ -84,14 +86,27 @@ class ZeroconfDiscovery(Discovery):
 
 
 class ZeroconfListener(object):
+    """Listener instance for zeroconf discovery to monitor changes
+    """
 
     def remove_service(self, zeroconf, type, name):
+        """Service removed change receives
+        """
         print("Service %s removed" % (name,))
 
     def add_service(self, zeroconf, type, name):
+        """Service added change receives
+        """
         asyncio.ensure_future(self.found_service(zeroconf, type, name))
 
     async def found_service(self, zeroconf, type, name):
+        """
+        Service Info for newly added node
+        Args:
+            zeroconf: Zeroconf instance
+            type: Type of the service
+            name: Name of the service
+        """
         service_info = await zeroconf.get_service_info(type, name)
         # print("Adding {}".format(service_info))
         if service_info:

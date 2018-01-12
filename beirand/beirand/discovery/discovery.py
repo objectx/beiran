@@ -3,6 +3,8 @@ from abc import abstractmethod, ABCMeta
 
 
 class Discovery(metaclass=ABCMeta):
+    """Metaclass for Discovery modules
+    """
     def __init__(self, aioloop):
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())

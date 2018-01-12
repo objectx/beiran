@@ -4,7 +4,10 @@ services:
     image: dkr.rlab.io/poc/beiran
     build: .
     privileged: true
-    volumes:
-      - /var/run/:/var/run/
-    command: python3.6 -u beiran.py
-    network_mode: host
+#    volumes:
+#      - /var/run/:/var/run/
+    command: python3.6 -u discovery/zeroconf.py
+    networks:
+      - test
+networks:
+  test:

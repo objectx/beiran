@@ -19,7 +19,6 @@ class ZeroconfDiscovery(object):
             aioloop: AsyncIO Loop
 
         Todo:
-            * Set log levels for class
             * All prints should convert to log
             * Version code that is added to service info should come from daemon version
             * Getting host_ip should be more proper way than opening a socket to google.com
@@ -37,6 +36,9 @@ class ZeroconfDiscovery(object):
         logging.getLogger('zeroconf').setLevel(self.log.level)
 
         self.hostname = socket.gethostname()
+
+    def set_log_level(self, level: int):
+        self.log.level = level
 
     def start(self):
         """ Starts discovery service

@@ -1,5 +1,5 @@
 """
-Command line tool client for beiran project
+Common client for beiran project
 """
 
 import socket

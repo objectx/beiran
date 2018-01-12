@@ -4,22 +4,27 @@ Current beiran version constant plus version pretty-print method.
 from subprocess import Popen, PIPE
 from os.path import abspath, dirname
 
-components = {
+COMPONENTS = {
     'daemon': (0, 0, 1, 'final', 0),
     'cli': (0, 0, 1, 'final', 0),
     'library': (0, 0, 1, 'final', 0)
 }
 
+
 def git_sha():
+    """ Git current head sha id
+    Returns: git sha number
+
+    """
     loc = abspath(dirname(__file__))
     try:
-        p = Popen(
+        process = Popen(
             "cd \"%s\" && git log -1 --format=format:%%h" % loc,
             shell=True,
             stdout=PIPE,
             stderr=PIPE
         )
-        return p.communicate()[0]
+        return process.communicate()[0]
     # OSError occurs on Unix-derived platforms lacking Popen's configured shell
     # default, /bin/sh. E.g. Android.
     except OSError:
@@ -46,7 +51,7 @@ def get_version(form='short', component='daemon'):
     # Setup
 
     versions = {}
-    version = components[component]
+    version = COMPONENTS[component]
     branch = "%s.%s" % (version[0], version[1])
     tertiary = version[2]
     type_ = version[3]
@@ -58,38 +63,38 @@ def get_version(form='short', component='daemon'):
     versions['branch'] = branch
 
     # Short
-    v = branch
+    current_version = branch
     if tertiary or final:
-        v += "." + str(tertiary)
+        current_version += "." + str(tertiary)
     if not final:
-        v += firsts
+        current_version += firsts
         if type_num:
-            v += str(type_num)
-    versions['short'] = v
+            current_version += str(type_num)
+    versions['short'] = current_version
 
     # Normal
-    v = branch
+    current_version = branch
     if tertiary:
-        v += "." + str(tertiary)
-    if not final:
-        if type_num:
-            v += " " + type_ + " " + str(type_num)
-        else:
-            v += " pre-" + type_
-    versions['normal'] = v
+        current_version += "." + str(tertiary)
+    if not final and type_num:
+        current_version += " " + type_ + " " + str(type_num)
+    else:
+        current_version += " pre-" + type_
+    versions['normal'] = current_version
 
     # Verbose
-    v = branch
+    current_version = branch
     if tertiary:
-        v += "." + str(tertiary)
-    if not final:
-        if type_num:
-            v += " " + type_ + " " + str(type_num)
-        else:
-            v += " pre-" + type_
+        current_version += "." + str(tertiary)
+
+    if not final and type_num:
+        current_version += " " + type_ + " " + str(type_num)
+    elif final:
+        current_version += " final"
     else:
-        v += " final"
-    versions['verbose'] = v
+        current_version += " pre-" + type_
+
+    versions['verbose'] = current_version
 
     try:
         return versions[form]
@@ -103,6 +108,6 @@ __version__ = get_version('short')
 
 if __name__ == "__main__":
     print({
-        "Server": get_version('all'),
+        "Daemon": get_version('all'),
         "Client": get_version('all', 'cli')
     })

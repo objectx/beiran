@@ -12,12 +12,14 @@ VERSION = get_version('short', 'cli')
 
 sys.stdout = beiran.util.Unbuffered(sys.stdout)
 
+
 @click.group()
 @click.pass_context
 def main(ctx):
     """main method for click(lib) entry, injects the singleton
     instance of Cli class into click context"""
     ctx.obj = Cli.singleton
+
 
 class Cli():
     """beiran cli methods for click(lib)"""
@@ -48,7 +50,7 @@ class Cli():
         print("Library Version: " + get_version('short', 'library'))
         print("Server Socket: " + self.unix_socket)
         try:
-            print("Daemon Version: " + self.beiran_client.GetServerVersion())
+            print("Daemon Version: " + self.beiran_client.get_server_version())
         except (ConnectionRefusedError, FileNotFoundError):
             exit_print(1, "Cannot connect to server")
 
@@ -59,6 +61,7 @@ class Cli():
     def image(self):
         """group command for image management"""
         pass
+
     main.add_command(image)
 
     @click.command('pull')
@@ -67,6 +70,7 @@ class Cli():
     def image_pull(self, imagename):
         """Pull a container image from cluster or repository"""
         click.echo('Pulling image %s!' % imagename)
+
     image.add_command(image_pull)
 
     @click.command('list')
@@ -74,7 +78,9 @@ class Cli():
     def image_list(self):
         """List container images across the cluster"""
         click.echo('Listing images!')
+
     image.add_command(image_list)
+
 
 if __name__ == '__main__':
     Cli()

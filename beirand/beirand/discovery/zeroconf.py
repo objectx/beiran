@@ -20,12 +20,6 @@ class ZeroconfDiscovery(Discovery):
 
         Args:
             aioloop: AsyncIO Loop
-
-        Todo:
-            * All prints should convert to log
-            * Version code that is added to service info should come from daemon version
-            * Getting host_ip should be more proper way than opening a socket to google.com
-            * Network Interface name for zeroconf discovery should be a parameter to class
         """
         self.info = None
         self.zc = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface="eth0")

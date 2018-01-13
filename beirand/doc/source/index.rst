@@ -11,7 +11,7 @@ Welcome to Beiran's documentation!
    :caption: Contents:
 
    beirand
-
+   zeroconf_discovery
 
 
 Indices and tables

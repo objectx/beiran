@@ -10,7 +10,7 @@ from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrow
 
 import netifaces
 
-from discovery.discovery import Discovery
+from beirand.discovery.discovery import Discovery
 
 _DOMAIN = "_beiran._tcp.local."
 

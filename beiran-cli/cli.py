@@ -4,14 +4,14 @@
 import os
 import sys
 import click
-import beiran
 from beiran.util import exit_print
+from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.client import Client
 
 VERSION = get_version('short', 'cli')
 
-sys.stdout = beiran.util.Unbuffered(sys.stdout)
+sys.stdout = Unbuffered(sys.stdout)
 
 
 @click.group()

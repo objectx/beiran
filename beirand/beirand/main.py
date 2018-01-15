@@ -11,8 +11,8 @@ from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
 
-from discovery.zeroconf import ZeroconfDiscovery
-from lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
+from beirand.discovery.zeroconf import ZeroconfDiscovery
+from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 
 from beiran.version import get_version
 

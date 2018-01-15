@@ -1,7 +1,16 @@
 
 stages:
+ - test_image
  - lint
  - test
+
+test_image:
+ stage: test_image
+ tags:
+  - docker
+ script:
+  - docker pull dkr.rlab.io/poc/beiran/test:latest || true
+  - ./make.sh push_test_image
 
 lint:lib:
  stage: lint
@@ -33,5 +42,4 @@ test:
  tags:
   - docker
  script:
-  - pip3 install pytest
-  - pytest
+  - ./make test_using_docker

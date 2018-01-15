@@ -143,6 +143,14 @@ APP = web.Application([
     (r'/ws', EchoWebSocket),
 ])
 
+
+async def newNode(node):
+    print('new node has reached', format(node))
+
+async def removedNode(node):
+    print('node has been removed', format(node))
+
+
 if __name__ == '__main__':
     # Listen on Unix Socket
     SERVER = httpserver.HTTPServer(APP)
@@ -156,5 +164,8 @@ if __name__ == '__main__':
 
     LOOP = asyncio.get_event_loop()
     DISCOVERY = ZeroconfDiscovery(LOOP)
+    DISCOVERY.on('discovered', newNode)
+    DISCOVERY.on('undiscovered', newNode)
     DISCOVERY.start()
+    LOOP.set_debug(True)
     LOOP.run_forever()

@@ -9,6 +9,19 @@ from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
 
 
+class Node(object):
+    """Beiran node information class"""
+    def __init__(self, hostname=None, ip_address=None):
+        self.hostname = hostname
+        self.ip_address = ip_address
+
+    def __str__(self):
+        return format(self)
+
+    def __repr__(self):
+        return self.__str__()
+
+
 class AbstractDiscovery(metaclass=ABCMeta):
     """Metaclass for Discovery modules
     """

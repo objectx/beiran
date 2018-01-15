@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+pip-log.txt
+pip-delete-this-directory.txt
+.cache
+run
+.git
+

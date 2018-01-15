@@ -144,10 +144,20 @@ APP = web.Application([
 ])
 
 
-async def newNode(node):
+async def new_node(node):
+    """
+    Discovered new node on beiran network
+    Args:
+        node: Node object
+    """
     print('new node has reached', format(node))
 
-async def removedNode(node):
+async def removed_node(node):
+    """
+    Node on beiran network is down
+    Args:
+        node: Node object
+    """
     print('node has been removed', format(node))
 
 
@@ -164,8 +174,8 @@ if __name__ == '__main__':
 
     LOOP = asyncio.get_event_loop()
     DISCOVERY = ZeroconfDiscovery(LOOP)
-    DISCOVERY.on('discovered', newNode)
-    DISCOVERY.on('undiscovered', newNode)
+    DISCOVERY.on('discovered', new_node)
+    DISCOVERY.on('undiscovered', removed_node)
     DISCOVERY.start()
     LOOP.set_debug(True)
     LOOP.run_forever()

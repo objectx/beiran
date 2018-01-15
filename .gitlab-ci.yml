@@ -4,6 +4,9 @@ stages:
  - lint
  - test
 
+before_script:
+  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+
 test_image:
  stage: test_image
  tags:

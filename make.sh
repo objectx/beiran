@@ -5,6 +5,7 @@ IMAGE=${IMAGE:-dkr.rlab.io/poc/beiran}
 DAEMON_IMAGE=${DAEMON_IMAGE:-${IMAGE}/daemon}
 TEST_IMAGE=${TEST_IMAGE:-${IMAGE}/test}
 TAG=${TAG:-latest}
+DOCKER_ENV_OPTS="-e MAKE_NEST_LEVEL"
 
 if [ "$MAKE_NEST_LEVEL" = "" ]; then
 	export MAKE_NEST_LEVEL=0
@@ -112,11 +113,14 @@ if [ "$ACTION" = "test_using_docker" ]; then
 	task "test_using_docker" "Run tests again codebase using test image"
 	dep-step test_image
 	TTY=$( ( [ -t 1 ] && echo 't' ) || true)
-	docker run -i${TTY} --rm \
-		-v $DIR:/src \
-		-w /src \
+	docker run -i${TTY} \
+		--rm \
+		-v $DIR:/src:ro \
+		-v /src_copy \
+		-w /src_copy \
+		$DOCKER_ENV_OPTS \
 		${TEST_IMAGE}:${TAG} \
-		sh -c "cp -r /src /src_copy; cd /src_copy; $0 test"
+		bash -c "cp -r /src/. /src_copy/; $0 test"
 fi
 
 if [ "$ACTION" = "build_daemon_image" ]; then

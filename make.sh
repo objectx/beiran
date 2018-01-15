@@ -134,6 +134,7 @@ fi
 if [ "$ACTION" = "push_daemon_image" ]; then
 	task "push_daemon_image" "Push daemon docker image"
 	dep-step build_daemon_image
+	docker push ${DAEMON_IMAGE}:${TAG}
 fi
 
 log "=====[ Done: ${TASK[name]} ]====="

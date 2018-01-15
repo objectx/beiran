@@ -3,6 +3,7 @@ stages:
  - test_image
  - lint
  - test
+ - build
 
 test_image:
  stage: test_image
@@ -43,3 +44,12 @@ test:
   - docker
  script:
   - ./make.sh test_using_docker
+
+build:daemon:
+ stage: build
+ tags:
+  - docker
+ script:
+  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+  - ./make.sh build_daemon_image
+  - ./make.sh push_daemon_image

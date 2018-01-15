@@ -117,6 +117,16 @@ if [ "$ACTION" = "test_using_docker" ]; then
 		sh -c "cp -r /src /src_copy; cd /src_copy; $0 test"
 fi
 
+if [ "$ACTION" = "build_daemon_image" ]; then
+	task "build_daemon_image" "Build daemon docker image"
+	docker build -f beirand/Dockerfile -t ${DAEMON_IMAGE}:${TAG} .
+fi
+
+if [ "$ACTION" = "push_daemon_image" ]; then
+	task "push_daemon_image" "Push daemon docker image"
+	dep-step build_daemon_image
+fi
+
 log "=====[ Done: ${TASK[name]} ]====="
 
 cleanup

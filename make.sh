@@ -113,6 +113,9 @@ if [ "$ACTION" = "test_using_docker" ]; then
 	task "test_using_docker" "Run tests again codebase using test image"
 	dep-step test_image
 	TTY=$( ( [ -t 1 ] && echo 't' ) || true)
+
+	errlog "Volume mount is; -v ${DIR}:/src:ro"
+
 	docker run -i${TTY} \
 		--rm \
 		-v $DIR:/src:ro \

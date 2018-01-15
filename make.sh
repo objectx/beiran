@@ -103,14 +103,16 @@ if [ "$ACTION" = "push_test_image" ]; then
 fi
 
 if [ "$ACTION" = "test" ]; then
+	task "test" "Run tests again codebase"
 	for test_script in $(ls -1 test/*.sh | sort); do ${test_script}; done
 	pytest
 fi
 
 if [ "$ACTION" = "test_using_docker" ]; then
-	task "test" "Run tests again codebase using test image"
+	task "test_using_docker" "Run tests again codebase using test image"
 	dep-step test_image
-	docker run -it --rm \
+	TTY=$( ( [ -t 1 ] && echo 't' ) || true)
+	docker run -i${TTY} --rm \
 		-v $DIR:/src \
 		-w /src \
 		${TEST_IMAGE}:${TAG} \

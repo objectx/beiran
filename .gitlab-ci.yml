@@ -42,4 +42,4 @@ test:
  tags:
   - docker
  script:
-  - ./make test_using_docker
+  - ./make.sh test_using_docker

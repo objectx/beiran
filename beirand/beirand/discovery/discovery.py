@@ -5,7 +5,6 @@ service implementations.
 
 import logging
 from abc import abstractmethod, ABCMeta
-
 from pyee import EventEmitter
 
 
@@ -16,7 +15,7 @@ class Node(object):
         self.ip_address = ip_address
 
     def __str__(self):
-        return format(self)
+        return 'Node: ' + self.hostname + ' Address: ' + self.ip_address
 
     def __repr__(self):
         return self.__str__()

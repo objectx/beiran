@@ -150,7 +150,7 @@ async def new_node(node):
     Args:
         node: Node object
     """
-    print('new node has reached', format(node))
+    print('new node has reached', str(node))
 
 async def removed_node(node):
     """
@@ -158,27 +158,29 @@ async def removed_node(node):
     Args:
         node: Node object
     """
-    print('node has been removed', format(node))
+    print('node has been removed', str(node))
 
 
-if __name__ == '__main__':
+def main():
+    """ Main function wrapper """
+    print("Starting Daemon HTTP Server...")
     # Listen on Unix Socket
-    SERVER = httpserver.HTTPServer(APP)
+    server = httpserver.HTTPServer(APP)
     print("Listening on unix socket: " + options.unix_socket)
-    SOCKET = bind_unix_socket(options.unix_socket)
-    SERVER.add_socket(SOCKET)
+    socket = bind_unix_socket(options.unix_socket)
+    server.add_socket(socket)
 
     # Also Listen on TCP
     APP.listen(options.listen_port, address=options.listen_address)
     print("Listening on tcp socket: " + options.listen_address + ":" + str(options.listen_port))
 
-    LOOP = asyncio.get_event_loop()
-    DISCOVERY = ZeroconfDiscovery(LOOP)
-    DISCOVERY.on('discovered', new_node)
-    DISCOVERY.on('undiscovered', removed_node)
-    DISCOVERY.start()
-    LOOP.set_debug(True)
-    LOOP.run_forever()
+    loop = asyncio.get_event_loop()
+    discovery = ZeroconfDiscovery(loop)
+    discovery.on('discovered', new_node)
+    discovery.on('undiscovered', removed_node)
+    discovery.start()
+    loop.set_debug(True)
+    loop.run_forever()
 
 if __name__ == '__main__':
     main()

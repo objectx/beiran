@@ -1,12 +1,11 @@
 version: '2'
 services:
   beirand:
-    image: dkr.rlab.io/poc/beiran
-    build: .
+    image: dkr.rlab.io/poc/beiran/daemon
     privileged: true
 #    volumes:
 #      - /var/run/:/var/run/
-    command: python3.6 -u main.py
+    command: python3.6 -u beirand/main.py
     networks:
       - test
 networks:

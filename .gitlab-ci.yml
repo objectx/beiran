@@ -1,7 +1,18 @@
 
 stages:
+ - test_image
  - lint
  - test
+ - build
+
+test_image:
+ stage: test_image
+ tags:
+  - docker
+ script:
+  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+  - docker pull dkr.rlab.io/poc/beiran/test:latest || true
+  - ./make.sh push_test_image
 
 lint:lib:
  stage: lint
@@ -29,9 +40,16 @@ lint:cli:
 
 test:
  stage: test
- image: python:3
  tags:
   - docker
  script:
-  - pip3 install pytest
-  - pytest
+  - ./make.sh test_using_docker
+
+build:daemon:
+ stage: build
+ tags:
+  - docker
+ script:
+  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+  - ./make.sh build_daemon_image
+  - ./make.sh push_daemon_image

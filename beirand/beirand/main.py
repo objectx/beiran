@@ -179,3 +179,6 @@ if __name__ == '__main__':
     DISCOVERY.start()
     LOOP.set_debug(True)
     LOOP.run_forever()
+
+if __name__ == '__main__':
+    main()

@@ -11,16 +11,14 @@ WORKDIR /src
 ADD beiran/requirements.txt /src/r-lib.txt
 RUN pip3 install -r /src/r-lib.txt
 
-ADD [ "beiran", "/src" ]
-
 ADD beiran-cli/requirements.txt /src/r-cli.txt
 RUN pip3 install -r /src/r-cli.txt
-
-ADD [ "beiran-cli", "/src" ]
 
 ADD beirand/requirements.txt /src/r-daemon.txt
 RUN pip3 install -r /src/r-daemon.txt
 
-ADD [ "beirand", "/src" ]
+ADD [ ".", "/src" ]
 
-CMD [ "python3 /src/beirand/beirand/main.py" ]
+ENV PYTHONPATH=/src/beirand:/src
+WORKDIR /src/beirand
+CMD [ "python3", "beirand/main.py" ]

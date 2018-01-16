@@ -143,7 +143,7 @@ APP = web.Application([
     (r'/ws', EchoWebSocket),
 ])
 
-if __name__ == '__main__':
+def main():
     # Listen on Unix Socket
     SERVER = httpserver.HTTPServer(APP)
     print("Listening on unix socket: " + options.unix_socket)
@@ -158,3 +158,6 @@ if __name__ == '__main__':
     DISCOVERY = ZeroconfDiscovery(LOOP)
     DISCOVERY.start()
     LOOP.run_forever()
+
+if __name__ == '__main__':
+    main()

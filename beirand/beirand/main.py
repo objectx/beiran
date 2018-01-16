@@ -166,7 +166,7 @@ async def new_node(node):
     Args:
         node: Node object
     """
-    LOGGER.info('new node has reached ' + str(node))
+    LOGGER.info('new node has reached %s', str(node))
 
 async def removed_node(node):
     """
@@ -174,7 +174,7 @@ async def removed_node(node):
     Args:
         node: Node object
     """
-    LOGGER.info('node has been removed ' + str(node))
+    LOGGER.info('node has been removed %s', str(node))
 
 
 def main():
@@ -182,13 +182,15 @@ def main():
     LOGGER.info("Starting Daemon HTTP Server...")
     # Listen on Unix Socket
     server = httpserver.HTTPServer(APP)
-    LOGGER.info("Listening on unix socket: " + options.unix_socket)
+    LOGGER.info("Listening on unix socket: %s", options.unix_socket)
     socket = bind_unix_socket(options.unix_socket)
     server.add_socket(socket)
 
     # Also Listen on TCP
     APP.listen(options.listen_port, address=options.listen_address)
-    LOGGER.info("Listening on tcp socket: " + options.listen_address + ":" + str(options.listen_port))
+    LOGGER.info("Listening on tcp socket: " +
+                options.listen_address + ":" +
+                str(options.listen_port))
 
     loop = asyncio.get_event_loop()
     discovery = ZeroconfDiscovery(loop)

@@ -10,7 +10,7 @@ from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrow
 
 import netifaces
 
-from beirand.discovery.discovery import Discovery
+from beirand.discovery.discovery import Discovery, Node
 
 _DOMAIN = "_beiran._tcp.local."
 
@@ -80,7 +80,7 @@ class ZeroconfDiscovery(Discovery):
         """
         print("\nBrowsing services, press Ctrl-C to exit...\n")
 
-        listener = ZeroconfListener()
+        listener = ZeroconfListener(self)
         ServiceBrowser(self.zero_conf, _DOMAIN, listener=listener)
 
     async def register(self):
@@ -93,6 +93,9 @@ class ZeroconfDiscovery(Discovery):
 class ZeroconfListener(object):
     """Listener instance for zeroconf discovery to monitor changes
     """
+
+    def __init__(self, discovery=None):
+        self.discovery = discovery
 
     def remove_service(self, zeroconf, typeos, name):
         """Service removed change receives
@@ -119,6 +122,9 @@ class ZeroconfListener(object):
             print("  Address: %s:%d" % (socket.inet_ntoa(service_info.address), service_info.port))
             print("  Weight: %d, priority: %d" % (service_info.weight, service_info.priority))
             print("  Server: %s" % service_info.server)
+            self.discovery.emit('discovered',
+                                Node(hostname=service_info.name,
+                                     ip_address=socket.inet_ntoa(service_info.address)))
             if service_info.properties:
                 print("  Properties are:")
                 for key, value in service_info.properties.items():
@@ -139,3 +145,6 @@ class ZeroconfListener(object):
         """
         service_info = await zeroconf.get_service_info(typeos, name)
         print("Service is removed. Name: ", service_info.server)
+        self.discovery.emit('undiscovered',
+                            Node(hostname=service_info.name,
+                                 ip_address=socket.inet_ntoa(service_info.address)))

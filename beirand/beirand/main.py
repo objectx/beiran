@@ -3,7 +3,9 @@
     tasks by observing nodes and communication each other.
 """
 import os
+import sys
 import asyncio
+import logging
 import docker
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options, define
@@ -15,6 +17,20 @@ from beirand.discovery.zeroconf import ZeroconfDiscovery
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 
 from beiran.version import get_version
+
+FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
+FILE_HANDLER = logging.FileHandler(filename='tmp.log')
+STDOUT_HANDLER = logging.StreamHandler(sys.stdout)
+HANDLERS = [FILE_HANDLER, STDOUT_HANDLER]
+logging.getLogger('asyncio').level = logging.WARNING
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format='[%(asctime)s] [%(name)s] %(levelname)s - %(message)s',
+    handlers=HANDLERS
+)
+
+LOGGER = logging.getLogger('daemon')
 
 VERSION = get_version('short', 'daemon')
 
@@ -61,7 +77,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def open(self, *args, **kwargs):
         """ Monitor if websocket is opened
         """
-        print("WebSocket opened")
+        LOGGER.info("WebSocket opened")
 
     def on_message(self, message):
         """ Received message from websocket
@@ -71,7 +87,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def on_close(self):
         """ Monitor if websocket is closed
         """
-        print("WebSocket closed")
+        LOGGER.info("WebSocket closed")
 
 
 class ApiRootHandler(web.RequestHandler):
@@ -150,7 +166,7 @@ async def new_node(node):
     Args:
         node: Node object
     """
-    print('new node has reached', str(node))
+    LOGGER.info('new node has reached ' + str(node))
 
 async def removed_node(node):
     """
@@ -158,24 +174,25 @@ async def removed_node(node):
     Args:
         node: Node object
     """
-    print('node has been removed', str(node))
+    LOGGER.info('node has been removed ' + str(node))
 
 
 def main():
     """ Main function wrapper """
-    print("Starting Daemon HTTP Server...")
+    LOGGER.info("Starting Daemon HTTP Server...")
     # Listen on Unix Socket
     server = httpserver.HTTPServer(APP)
-    print("Listening on unix socket: " + options.unix_socket)
+    LOGGER.info("Listening on unix socket: " + options.unix_socket)
     socket = bind_unix_socket(options.unix_socket)
     server.add_socket(socket)
 
     # Also Listen on TCP
     APP.listen(options.listen_port, address=options.listen_address)
-    print("Listening on tcp socket: " + options.listen_address + ":" + str(options.listen_port))
+    LOGGER.info("Listening on tcp socket: " + options.listen_address + ":" + str(options.listen_port))
 
     loop = asyncio.get_event_loop()
     discovery = ZeroconfDiscovery(loop)
+    discovery.set_log_level(LOG_LEVEL)
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()

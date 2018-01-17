@@ -3,24 +3,31 @@
 
 import os
 import sys
+import logging
 import click
 from beiran.util import exit_print
 from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.client import Client
+from beiran.log import build_logger
+
+LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
+# LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
+logger = build_logger(None, LEVEL) # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'cli')
 
 sys.stdout = Unbuffered(sys.stdout)
 
-
 @click.group()
+@click.option('--debug', is_flag=True, default=False, help='Debug log enable')
 @click.pass_context
-def main(ctx=None):
+def main(ctx=None, debug=False):
     """main method for click(lib) entry, injects the singleton
     instance of Cli class into click context"""
+    if debug:
+        logger.setLevel(logging.DEBUG)
     ctx.obj = Cli.singleton
-
 
 class Cli:
     """beiran cli methods for click(lib)"""

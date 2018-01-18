@@ -11,10 +11,11 @@ from tornado.netutil import Resolver
 
 
 class UnixResolver(Resolver):
+
     """
     Resolver for unix socket implementation
     """
-    def initialize(self, socket_path=None): #pylint:disable no-differ-arguments
+    def initialize(self, socket_path=None): #pylint: disable=arguments-differ
         """
         Class initialization method
         Args:

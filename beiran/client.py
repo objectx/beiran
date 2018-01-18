@@ -21,7 +21,7 @@ class UnixResolver(Resolver):
         Args:
             socket_path: Path for unix socket
         """
-        self.socket_path = socket_path
+        self.socket_path = socket_path #pylint: disable=attribute-defined-outside-init
         Resolver.initialize(self)
 
     def close(self):

@@ -8,5 +8,8 @@ services:
     command: python3.6 -u beirand/main.py
     networks:
       - test
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beirand
 networks:
   test:

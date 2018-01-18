@@ -4,6 +4,7 @@ service implementations.
 """
 
 import logging
+import socket
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
 
@@ -74,6 +75,8 @@ class Discovery(AbstractDiscovery, EventEmitter):
         self.log.addHandler(logging.NullHandler())
         if self.log.level == logging.NOTSET:
             self.log.setLevel(logging.WARN)
+        self.host_ip = self.get_host_ip()
+
         self.loop = aioloop
 
     def set_log_level(self, level: int):
@@ -83,3 +86,12 @@ class Discovery(AbstractDiscovery, EventEmitter):
             level: logging.level
         """
         self.log.level = level
+
+    def get_host_ip(self):
+        """ Returns host ip address of current node
+        """
+        socket_for_host = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        socket_for_host.connect(('google.com', 0))
+        host_ip = socket_for_host.getsockname()[0]
+        print("ip = " + host_ip)
+        return host_ip

@@ -11,6 +11,7 @@ from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
 
+from beirand.discovery.dns import DnsDiscovery
 from beirand.discovery.zeroconf import ZeroconfDiscovery
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 
@@ -176,6 +177,9 @@ def main():
 
     loop = asyncio.get_event_loop()
     discovery = ZeroconfDiscovery(loop)
+    discovery_mode = os.getenv('DISCOVERY_METHOD')
+    if discovery_mode == 'dns':
+        discovery = DnsDiscovery(loop)
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()

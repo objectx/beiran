@@ -64,15 +64,11 @@ class ZeroconfDiscovery(Discovery):
     def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        socket_for_host = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socket_for_host.connect(('google.com', 0))
-        host_ip = socket_for_host.getsockname()[0]
         print("hostname = " + self.hostname)
-        print("ip = " + host_ip)
         desc = {'name': self.hostname, 'version': '0.1.0'}
         self.info = ServiceInfo(_DOMAIN,
                                 self.hostname + "." + _DOMAIN,
-                                socket.inet_aton(host_ip), 3000, 0, 0,
+                                socket.inet_aton(self.host_ip), 3000, 0, 0,
                                 desc, self.hostname + ".local.")
 
     def start_browse(self):

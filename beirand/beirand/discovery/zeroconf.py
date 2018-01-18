@@ -113,7 +113,8 @@ class ZeroconfListener(object):
             name: Name of the service
         """
         service_info = await zeroconf.get_service_info(typeos, name)
-        # print("Adding {}".format(service_info))
+        if socket.inet_ntoa(service_info.address) == self.discovery.host_ip:
+            return
         if service_info:
             print("  Address: %s:%d" % (socket.inet_ntoa(service_info.address), service_info.port))
             print("  Weight: %d, priority: %d" % (service_info.weight, service_info.priority))

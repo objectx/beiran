@@ -5,12 +5,10 @@ Zeroconf multicast discovery service implementation
 import asyncio
 import logging
 import socket
-import netifaces
 import os
+import netifaces
 
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
-
-import netifaces
 
 from beirand.discovery.discovery import Discovery, Node
 
@@ -30,7 +28,8 @@ class ZeroconfDiscovery(Discovery):
         super().__init__(aioloop)
         self.info = None
         self.network_interface = self.get_network_interface()
-        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface=self.network_interface)
+        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET],
+                                  iface=self.network_interface)
 
         logging.getLogger('zeroconf').setLevel(self.log.level)
 
@@ -65,6 +64,8 @@ class ZeroconfDiscovery(Discovery):
         return list_of_services
 
     def get_network_interface(self):
+        """ Gets listen interface for daemon
+        """
         if 'LISTEN_INTERFACE' in os.environ:
             return os.environ['LISTEN_INTERFACE']
 
@@ -75,12 +76,16 @@ class ZeroconfDiscovery(Discovery):
         return netifaces.gateways()['default'][2][1]
 
     def get_listen_address(self):
+        """ Gets listen address for daemon
+        """
         if 'LISTEN_ADDR' in os.environ:
             return os.environ['LISTEN_ADDR']
         interface = self.get_network_interface()
         return netifaces.ifaddresses(interface)[2][0]['addr']
 
     def get_hostname(self):
+        """ Gets hostname for discovery
+        """
         if 'HOSTNAME' in os.environ:
             return os.environ['HOSTNAME']
         return socket.gethostname()

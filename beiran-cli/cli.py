@@ -11,9 +11,9 @@ from beiran.version import get_version
 from beiran.client import Client
 from beiran.log import build_logger
 
-LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
 # LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
-logger = build_logger(None, LEVEL) # pylint: disable=invalid-name
+logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'cli')
 

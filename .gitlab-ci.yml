@@ -9,7 +9,7 @@ test_image:
  tags:
   - docker
  script:
-`  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
   - docker pull dkr.rlab.io/poc/beiran/test:latest || true
   - ./make.sh push_test_image
 

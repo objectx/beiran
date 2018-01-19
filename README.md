@@ -14,11 +14,22 @@ beiran poc
  - [docker](https://github.com/docker/docker-py) (for querying docker daemon)
  - [zeroconf](https://pypi.python.org/pypi/zeroconf) (for local node discovery)
 
+## Environment variables
+
+All has default values.
+
+```
+LISTEN_INTERFACE
+LISTEN_ADDR
+HOSTNAME
+BEIRAN_SOCK
+```
+
 ## Using (PoC)
 
 ```
 cd beirand
-docker-compose up -d
+docker-compose up --scale beirand=3
 ```
 
 CURL'ing unix socket

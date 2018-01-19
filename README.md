@@ -15,6 +15,12 @@ beiran poc
  - [zeroconf](https://pypi.python.org/pypi/zeroconf) (for local node discovery)
  - [click](https://pypi.python.org/pypi/click) (for cli options, commands)
 
+## Build
+
+```
+./make.sh build_daemon_image
+```
+
 ## Using (PoC)
 
 ```

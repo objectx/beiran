@@ -5,6 +5,8 @@ Zeroconf multicast discovery service implementation
 import asyncio
 import logging
 import socket
+import netifaces
+import os
 
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 
@@ -27,7 +29,8 @@ class ZeroconfDiscovery(Discovery):
         """
         super().__init__(aioloop)
         self.info = None
-        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface="eth0")
+        self.network_interface = self.get_network_interface()
+        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface=self.network_interface)
 
         logging.getLogger('zeroconf').setLevel(self.log.level)
 
@@ -61,13 +64,33 @@ class ZeroconfDiscovery(Discovery):
         print("Found {}".format(list_of_services))
         return list_of_services
 
+    def get_network_interface(self):
+        if 'LISTEN_INTERFACE' in os.environ:
+            return os.environ['LISTEN_INTERFACE']
+
+        # TODO: Find the interface with the specified listen address
+        # if 'LISTEN_ADDR' in os.environ:
+        #   return netifaces...
+
+        return netifaces.gateways()['default'][2][1]
+
+    def get_listen_address(self):
+        if 'LISTEN_ADDR' in os.environ:
+            return os.environ['LISTEN_ADDR']
+        interface = self.get_network_interface()
+        return netifaces.ifaddresses(interface)[2][0]['addr']
+
+    def get_hostname(self):
+        if 'HOSTNAME' in os.environ:
+            return os.environ['HOSTNAME']
+        return socket.gethostname()
+
     def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        socket_for_host = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socket_for_host.connect(('google.com', 0))
-        host_ip = socket_for_host.getsockname()[0]
+        host_ip = self.get_listen_address()
         print("hostname = " + self.hostname)
+        print("interface = " + self.network_interface)
         print("ip = " + host_ip)
         desc = {'name': self.hostname, 'version': '0.1.0'}
         self.info = ServiceInfo(_DOMAIN,

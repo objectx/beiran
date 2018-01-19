@@ -18,9 +18,9 @@ from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker
 from beiran.version import get_version
 from beiran.log import build_logger
 
-LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
-logger = build_logger(LOG_FILE, LEVEL) # pylint: disable=invalid-name
+logger = build_logger(LOG_FILE, LOG_LEVEL) # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'daemon')
 

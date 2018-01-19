@@ -6,9 +6,9 @@ import asyncio
 import logging
 import socket
 import os
-import netifaces
 
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
+import netifaces
 
 from beirand.discovery.discovery import Discovery, Node
 

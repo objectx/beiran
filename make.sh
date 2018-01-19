@@ -7,6 +7,8 @@ TEST_IMAGE=${TEST_IMAGE:-${IMAGE}/test}
 TAG=${TAG:-latest}
 DOCKER_ENV_OPTS="-e MAKE_NEST_LEVEL"
 
+cd $DIR
+
 if [ "$MAKE_NEST_LEVEL" = "" ]; then
 	export MAKE_NEST_LEVEL=0
 else

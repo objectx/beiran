@@ -4,6 +4,7 @@
 """
 import os
 import asyncio
+import logging
 import docker
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options, define
@@ -15,6 +16,11 @@ from beirand.discovery.zeroconf import ZeroconfDiscovery
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 
 from beiran.version import get_version
+from beiran.log import build_logger
+
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
+LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
+logger = build_logger(LOG_FILE, LOG_LEVEL) # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'daemon')
 
@@ -61,7 +67,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def open(self, *args, **kwargs):
         """ Monitor if websocket is opened
         """
-        print("WebSocket opened")
+        logger.info("WebSocket opened")
 
     def on_message(self, message):
         """ Received message from websocket
@@ -71,7 +77,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def on_close(self):
         """ Monitor if websocket is closed
         """
-        print("WebSocket closed")
+        logger.info("WebSocket closed")
 
 
 class ApiRootHandler(web.RequestHandler):
@@ -97,9 +103,11 @@ class LayerDownload(web.RequestHandler):
         self.set_header("Docker-Content-Digest", layer_id)
         self.set_header("Docker-Distribution-Api-Version", "registry/2.0")
         self.set_header("Etag", layer_id)
-        self.set_header("X-Content-Type-Options", "nosniff")  # only nosniff, what else could it be?
+        # only nosniff, what else could it be?
+        self.set_header("X-Content-Type-Options", "nosniff")
         self.set_header("accept-ranges", "bytes")
-        self.set_header("cache-control", "max-age=31536000")  # how is 31536000 calculated?
+        # how is 31536000 calculated?
+        self.set_header("cache-control", "max-age=31536000")
 
 # pylint: disable=arguments-differ
     def head(self, layer_id):
@@ -150,7 +158,8 @@ async def new_node(node):
     Args:
         node: Node object
     """
-    print('new node has reached', str(node))
+    logger.info('new node has reached %s', str(node))
+
 
 async def removed_node(node):
     """
@@ -158,29 +167,33 @@ async def removed_node(node):
     Args:
         node: Node object
     """
-    print('node has been removed', str(node))
+    logger.info('node has been removed %s', str(node))
 
 
 def main():
     """ Main function wrapper """
-    print("Starting Daemon HTTP Server...")
+    logger.info("Starting Daemon HTTP Server...")
     # Listen on Unix Socket
     server = httpserver.HTTPServer(APP)
-    print("Listening on unix socket: " + options.unix_socket)
+    logger.info("Listening on unix socket: %s", options.unix_socket)
     socket = bind_unix_socket(options.unix_socket)
     server.add_socket(socket)
 
     # Also Listen on TCP
     APP.listen(options.listen_port, address=options.listen_address)
-    print("Listening on tcp socket: " + options.listen_address + ":" + str(options.listen_port))
+    logger.info("Listening on tcp socket: " +
+                options.listen_address + ":" +
+                str(options.listen_port))
 
     loop = asyncio.get_event_loop()
     discovery = ZeroconfDiscovery(loop)
+    discovery.set_log_level(logger.level)
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()
     loop.set_debug(True)
     loop.run_forever()
+
 
 if __name__ == '__main__':
     main()

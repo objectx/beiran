@@ -11,16 +11,18 @@ from tornado.netutil import Resolver
 
 
 class UnixResolver(Resolver):
+
     """
     Resolver for unix socket implementation
     """
-    def __init__(self, socket_path=None):
+    def initialize(self, socket_path=None): #pylint: disable=arguments-differ
         """
         Class initialization method
         Args:
             socket_path: Path for unix socket
         """
-        self.socket_path = socket_path
+        self.socket_path = socket_path #pylint: disable=attribute-defined-outside-init
+        Resolver.initialize(self)
 
     def close(self):
         """Closing resolver"""
@@ -53,7 +55,7 @@ class Client:
         """
         self.socket_path = socket_path
 
-        resolver = UnixResolver(socket_path=self.socket_path)
+        resolver = UnixResolver(self.socket_path)
         AsyncHTTPClient.configure(None, resolver=resolver)
         # self.http_client = httpclient.HTTPClient()
         self.http_client = httpclient.HTTPClient(async_client_class=AsyncHTTPClient)

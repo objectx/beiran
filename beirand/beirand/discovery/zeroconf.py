@@ -65,13 +65,14 @@ class ZeroconfDiscovery(Discovery):
 
     def get_network_interface(self):
         """ Gets listen interface for daemon
+
+        Todo:
+            * is LISTEN_ADDR is set and LISTEN_INTERFACE is not set,
+            find the related interface from the address. Throw exception
+            if it's not found.
         """
         if 'LISTEN_INTERFACE' in os.environ:
             return os.environ['LISTEN_INTERFACE']
-
-        # TODO: Find the interface with the specified listen address
-        # if 'LISTEN_ADDR' in os.environ:
-        #   return netifaces...
 
         return netifaces.gateways()['default'][2][1]
 

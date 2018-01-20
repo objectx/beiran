@@ -149,10 +149,10 @@ class ZeroconfListener(object):
         service_info = await zeroconf.get_service_info(typeos, name)
         # print("Adding {}".format(service_info))
         if service_info:
-            self.log.debug("  Address: %s:%d",
+            self.log.debug("  Address: %s:%d" %
                            (socket.inet_ntoa(service_info.address),
                             service_info.port))
-            self.log.debug("  Weight: %d, priority: %d",
+            self.log.debug("  Weight: %d, priority: %d" %
                            (service_info.weight, service_info.priority))
             self.log.debug("  Server: %s" % service_info.server)
             self.discovery.emit('discovered',

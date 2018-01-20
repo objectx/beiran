@@ -95,9 +95,9 @@ class ZeroconfDiscovery(Discovery):
         """ Initialization of discovery service with all information and starts service browser
         """
         host_ip = self.get_listen_address()
-        self.log.debug("hostname = " + self.hostname)
-        self.log.debug("interface = " + self.network_interface)
-        self.log.debug("ip = " + host_ip)
+        self.log.debug("hostname = %s", self.hostname)
+        self.log.debug("interface = %s", self.network_interface)
+        self.log.debug("ip = %s", host_ip)
         desc = {'name': self.hostname, 'version': '0.1.0'}
         self.info = ServiceInfo(_DOMAIN,
                                 self.hostname + "." + _DOMAIN,

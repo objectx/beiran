@@ -5,9 +5,9 @@ Zeroconf multicast discovery service implementation
 import asyncio
 import logging
 import socket
+import os
 
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
-
 import netifaces
 
 from beirand.discovery.discovery import Discovery, Node
@@ -27,7 +27,9 @@ class ZeroconfDiscovery(Discovery):
         """
         super().__init__(aioloop)
         self.info = None
-        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET], iface="eth0")
+        self.network_interface = self.get_network_interface()
+        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET],
+                                  iface=self.network_interface)
 
         self.log = logging.getLogger('zeroconf')
 
@@ -61,13 +63,40 @@ class ZeroconfDiscovery(Discovery):
         self.log.debug("Found %s", format(list_of_services))
         return list_of_services
 
+    def get_network_interface(self):
+        """ Gets listen interface for daemon
+
+        Todo:
+            * is LISTEN_ADDR is set and LISTEN_INTERFACE is not set,
+            find the related interface from the address. Throw exception
+            if it's not found.
+        """
+        if 'LISTEN_INTERFACE' in os.environ:
+            return os.environ['LISTEN_INTERFACE']
+
+        return netifaces.gateways()['default'][2][1]
+
+    def get_listen_address(self):
+        """ Gets listen address for daemon
+        """
+        if 'LISTEN_ADDR' in os.environ:
+            return os.environ['LISTEN_ADDR']
+        interface = self.get_network_interface()
+        return netifaces.ifaddresses(interface)[2][0]['addr']
+
+    def get_hostname(self):
+        """ Gets hostname for discovery
+        """
+        if 'HOSTNAME' in os.environ:
+            return os.environ['HOSTNAME']
+        return socket.gethostname()
+
     def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        socket_for_host = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socket_for_host.connect(('google.com', 0))
-        host_ip = socket_for_host.getsockname()[0]
+        host_ip = self.get_listen_address()
         self.log.debug("hostname = %s", self.hostname)
+        self.log.debug("interface = %s", self.network_interface)
         self.log.debug("ip = %s", host_ip)
         desc = {'name': self.hostname, 'version': '0.1.0'}
         self.info = ServiceInfo(_DOMAIN,
@@ -120,10 +149,10 @@ class ZeroconfListener(object):
         service_info = await zeroconf.get_service_info(typeos, name)
         # print("Adding {}".format(service_info))
         if service_info:
-            self.log.debug("  Address: %s:%d",
+            self.log.debug("  Address: %s:%d" %
                            (socket.inet_ntoa(service_info.address),
                             service_info.port))
-            self.log.debug("  Weight: %d, priority: %d",
+            self.log.debug("  Weight: %d, priority: %d" %
                            (service_info.weight, service_info.priority))
             self.log.debug("  Server: %s" % service_info.server)
             self.discovery.emit('discovered',

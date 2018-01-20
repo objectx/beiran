@@ -21,11 +21,22 @@ beiran poc
 ./make.sh build_daemon_image
 ```
 
+## Environment variables
+
+All has default values.
+
+```
+LISTEN_INTERFACE
+LISTEN_ADDR
+HOSTNAME
+BEIRAN_SOCK
+```
+
 ## Using (PoC)
 
 ```
 cd beirand
-docker-compose up -d
+docker-compose up --scale beirand=3
 ```
 
 CURL'ing unix socket

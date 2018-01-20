@@ -1,4 +1,3 @@
-
 stages:
  - test_image
  - lint

@@ -1,5 +1,8 @@
-from beirand.models import BaseModel
+"""
+Module for Node Data Model
+"""
 from peewee import IntegerField, CharField, UUIDField
+from beirand.models import BaseModel
 
 
 class Node(BaseModel):

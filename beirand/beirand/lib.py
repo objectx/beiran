@@ -189,15 +189,15 @@ def local_node_uuid():
     """
     uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
     try:
-        f = open(uuid_conf_path)
-        uuid = f.read()
-        f.close()
+        uuid_file = open(uuid_conf_path)
+        uuid = uuid_file.read()
+        uuid_file.close()
         if len(uuid) != 32:
             raise ValueError
     except (FileNotFoundError, ValueError):
         uuid = uuid4().hex
-        f = open(uuid_conf_path, 'w')
-        f.write(uuid)
-        f.close()
+        uuid_file = open(uuid_conf_path, 'w')
+        uuid_file.write(uuid)
+        uuid_file.close()
 
     return uuid

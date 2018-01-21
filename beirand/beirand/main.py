@@ -15,14 +15,14 @@ from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
 
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
-
-from beiran.version import get_version
-from beiran.log import build_logger
 from beirand.lib import local_node_uuid
 from beirand.models import Node
 from beirand.nodes import Nodes
 
-nodes = Nodes()
+from beiran.version import get_version
+from beiran.log import build_logger
+
+NODES = Nodes()
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -193,9 +193,9 @@ def main():
 
     # will use to provide discovery model, issue #31
     # discovery_class = DnsDiscovery if discovery_mode == 'dns' else ZeroconfDiscovery
-    # discovery = discovery_class(loop, nodes)
+    # discovery = discovery_class(loop, NODES)
     beiran_node = Node(uuid=local_node_uuid())
-    nodes.add_new(beiran_node)
+    NODES.add_new(beiran_node)
 
     loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

@@ -1,7 +1,9 @@
-from beirand.models import Node
-from playhouse.shortcuts import model_to_dict
+"""
+Module for in memory node tracking object `Nodes`
+"""
 
-nodes = {}
+from playhouse.shortcuts import model_to_dict
+from beirand.models import Node
 
 
 class Nodes(object):
@@ -12,7 +14,7 @@ class Nodes(object):
 
     def get_from_db(self):
         """
-        Get all nodes from database and dumps them into self.all_nodes dict.
+        Get all nodes from database and dumps them into a dict.
 
         Returns:
             dict: key value list of nodes as in form {'uuid': {'ip': '10.0.0.2', 'hostname':'web1'}}

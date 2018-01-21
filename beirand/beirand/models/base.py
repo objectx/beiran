@@ -2,18 +2,19 @@
 Module of Beirand data models. Beirand data models use Peewee ORM.
 """
 
-from peewee import Model, SqliteDatabase
 import os
+from peewee import Model, SqliteDatabase
 
-sqlite_file_path = os.getenv("SQLITE_FILE_PATH", '/var/lib/beiran/beiran.db')
-db = SqliteDatabase(sqlite_file_path)
+SQLITE_FILE_PATH = os.getenv("SQLITE_FILE_PATH", '/var/lib/beiran/beiran.db')
+DB = SqliteDatabase(SQLITE_FILE_PATH)
 
 
 class BaseModel(Model):
     """Base model object having common attributes, to be extended by data models."""
 
     class Meta:
-        database = db
+        """Set database metaclass attribute to DB object"""
+        database = DB
 
 
 def create_tables():
@@ -25,4 +26,4 @@ def create_tables():
     """
     # import them locally!
     from beirand.models import Node, DockerDaemon
-    db.create_tables([Node, DockerDaemon])
+    DB.create_tables([Node, DockerDaemon])

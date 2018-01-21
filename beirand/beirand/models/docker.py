@@ -1,6 +1,9 @@
+"""
+Module for Docker Daemon Data Model
+"""
+from peewee import CharField, ForeignKeyField
 from beirand.models import BaseModel
 from beirand.models import Node
-from peewee import CharField, ForeignKeyField
 
 
 class DockerDaemon(BaseModel):

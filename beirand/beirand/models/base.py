@@ -12,3 +12,15 @@ class BaseModel(Model):
 
     class Meta:
         database = db
+
+
+def create_tables():
+    """
+    We need to create tables for first time. This method can be called by an
+    init script or manually while development.
+
+
+    """
+    # import them locally!
+    from beirand.models import Node, DockerDaemon
+    db.create_tables([Node, DockerDaemon])

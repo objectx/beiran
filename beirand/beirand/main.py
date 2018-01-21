@@ -18,6 +18,8 @@ from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker
 
 from beiran.version import get_version
 from beiran.log import build_logger
+from beirand.lib import local_node_uuid
+from beirand.models import Node
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -185,6 +187,11 @@ def main():
     logger.info("Listening on tcp socket: " +
                 options.listen_address + ":" +
                 str(options.listen_port))
+
+    # will use to provide discovery model, issue #31
+    # discovery_class = DnsDiscovery if discovery_mode == 'dns' else ZeroconfDiscovery
+    # discovery = discovery_class(loop, node)
+    node = Node(uuid=local_node_uuid())
 
     loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

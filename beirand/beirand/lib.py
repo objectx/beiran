@@ -2,12 +2,13 @@
 Support library for beiran daemon
 """
 
-import os
-import json
-import tarfile
-import netifaces
 import ipaddress
+import json
+import netifaces
+import os
 import socket
+import tarfile
+from uuid import uuid4
 
 
 def docker_sha_summary(sha):
@@ -74,6 +75,8 @@ def create_tar_archive(dir_path, output_file_path):
     """
     with tarfile.open(output_file_path, "w") as tar:
         tar.add(dir_path, arcname='.')
+
+<< << << < HEAD
 
 
 def get_default_gateway_ip_interface():
@@ -174,3 +177,27 @@ def get_hostname(self):
     if 'HOSTNAME' in os.environ:
         return os.environ['HOSTNAME']
     return socket.gethostname()
+
+
+def local_node_uuid():
+    """
+    Get UUID from config file if it exists, else return a new one and write it to config file
+
+    Returns:
+        str: uuid in hex
+
+    """
+    uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
+    try:
+        f = open(uuid_conf_path)
+        uuid = f.read()
+        f.close()
+        if len(uuid) != 32:
+            raise ValueError
+    except (FileNotFoundError, ValueError):
+        uuid = uuid4().hex
+        f = open(uuid_conf_path, 'w')
+        f.write(uuid)
+        f.close()
+
+    return uuid

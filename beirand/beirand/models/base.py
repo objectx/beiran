@@ -3,8 +3,10 @@ Module of Beirand data models. Beirand data models use Peewee ORM.
 """
 
 from peewee import Model, SqliteDatabase
+import os
 
-db = SqliteDatabase('beirand.db')
+sqlite_file_path = os.getenv("SQLITE_FILE_PATH", '/var/lib/beiran/beiran.db')
+db = SqliteDatabase(sqlite_file_path)
 
 
 class BaseModel(Model):

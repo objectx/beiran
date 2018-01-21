@@ -1,8 +1,5 @@
 from beirand.models import BaseModel
-from playhouse.shortcuts import model_to_dict
 from peewee import IntegerField, CharField, UUIDField
-
-nodes = {}
 
 
 class Node(BaseModel):
@@ -19,15 +16,9 @@ class Node(BaseModel):
     beiran_service_port = IntegerField()
 
     def __str__(self):
-        return "Node: {hostname}, Address: {ip}".format(hostname=self.hostname, ip=self.ip_address)
+        return "Node: {hostname}, Address: {ip}, UUID: {uuid}".format(hostname=self.hostname,
+                                                                      ip=self.ip_address,
+                                                                      uuid=self.uuid)
 
     def __repr__(self):
         return self.__str__()
-
-    def remove_node(self):
-        """Remove node from nodes dict"""
-        nodes.pop(self.uuid)
-
-    def append_node(self):
-        """Append node into nodes dict"""
-        nodes.update({self.uuid: model_to_dict(self)})

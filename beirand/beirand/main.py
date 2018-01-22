@@ -193,8 +193,8 @@ def main():
         module = importlib.import_module("beirand.discovery." + discovery_mode)
         discovery_class = getattr(module, discovery_mode.title() + "Discovery")
     except ModuleNotFoundError as error:
-        print(error)
-        print("Unsupported discovery mode: %s" % discovery_mode)
+        logger.error(error)
+        logger.error("Unsupported discovery mode: %s", discovery_mode)
         sys.exit(1)
 
     discovery = discovery_class(loop)

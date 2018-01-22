@@ -11,5 +11,6 @@ services:
     environment:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO
 networks:
   test:

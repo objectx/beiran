@@ -101,7 +101,7 @@ class ZeroconfDiscovery(Discovery):
         desc = {'name': self.hostname, 'version': '0.1.0'}
         self.info = ServiceInfo(_DOMAIN,
                                 self.hostname + "." + _DOMAIN,
-                                socket.inet_aton(host_ip), 3000, 0, 0,
+                                socket.inet_aton(self.host_ip), 3000, 0, 0,
                                 desc, self.hostname + ".local.")
 
     def start_browse(self):
@@ -147,7 +147,8 @@ class ZeroconfListener(object):
             name: Name of the service
         """
         service_info = await zeroconf.get_service_info(typeos, name)
-        # print("Adding {}".format(service_info))
+        if socket.inet_ntoa(service_info.address) == self.discovery.host_ip:
+            return
         if service_info:
             self.log.debug("  Address: %s:%d" %
                            (socket.inet_ntoa(service_info.address),

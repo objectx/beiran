@@ -3,7 +3,9 @@
     tasks by observing nodes and communication each other.
 """
 import os
+import sys
 import asyncio
+import importlib
 import docker
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options, define
@@ -11,8 +13,6 @@ from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
 
-from beirand.discovery.dns import DnsDiscovery
-from beirand.discovery.zeroconf import ZeroconfDiscovery
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 
 from beiran.version import get_version
@@ -176,10 +176,17 @@ def main():
     print("Listening on tcp socket: " + options.listen_address + ":" + str(options.listen_port))
 
     loop = asyncio.get_event_loop()
-    discovery = ZeroconfDiscovery(loop)
-    discovery_mode = os.getenv('DISCOVERY_METHOD')
-    if discovery_mode == 'dns':
-        discovery = DnsDiscovery(loop)
+    discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+
+    try:
+        module = importlib.import_module("beirand.discovery." + discovery_mode)
+        discovery_class = getattr(module, discovery_mode.title() + "Discovery")
+    except ModuleNotFoundError as error:
+        print(error)
+        print("Unsupported discovery mode: %s" % discovery_mode)
+        sys.exit(1)
+
+    discovery = discovery_class(loop)
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()

@@ -25,5 +25,5 @@ def create_tables():
 
     """
     # import them locally!
-    from beirand.models import Node, DockerDaemon
+    from beiran.models import Node, DockerDaemon
     DB.create_tables([Node, DockerDaemon])

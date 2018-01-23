@@ -2,7 +2,7 @@
 Module for Node Data Model
 """
 from peewee import IntegerField, CharField, UUIDField
-from beirand.models import BaseModel
+from beiran.models.base import BaseModel
 
 
 class Node(BaseModel):

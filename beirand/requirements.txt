@@ -13,7 +13,6 @@ lazy-object-proxy==1.3.1
 mccabe==0.6.1
 netifaces==0.10.6
 pyee==5.0.0
-peewee==2.10.2
 pylint==1.8.1
 requests==2.18.4
 six==1.11.0

@@ -3,7 +3,7 @@ Module for in memory node tracking object `Nodes`
 """
 
 from playhouse.shortcuts import model_to_dict
-from beirand.models import Node
+from beiran.models import Node
 
 
 class Nodes(object):

@@ -16,9 +16,9 @@ from tornado.web import HTTPError
 
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import local_node_uuid
-from beirand.models import Node
 from beirand.nodes import Nodes
 
+from beiran.models import Node
 from beiran.version import get_version
 from beiran.log import build_logger
 

@@ -21,4 +21,7 @@ ADD [ ".", "/src" ]
 
 ENV PYTHONPATH=/src/beirand:/src
 WORKDIR /src/beirand
+
+VOLUME /var/lib/beiran
+
 CMD [ "python3", "beirand/main.py" ]

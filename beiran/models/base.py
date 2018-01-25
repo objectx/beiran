@@ -5,8 +5,8 @@ Module of Beirand data models. Beirand data models use Peewee ORM.
 import os
 from peewee import Model, SqliteDatabase
 
-SQLITE_FILE_PATH = os.getenv("SQLITE_FILE_PATH", '/var/lib/beiran/beiran.db')
-DB = SqliteDatabase(SQLITE_FILE_PATH)
+BEIRAN_DB_PATH = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+DB = SqliteDatabase(BEIRAN_DB_PATH)
 
 
 class BaseModel(Model):
@@ -27,3 +27,4 @@ def create_tables():
     # import them locally!
     from beiran.models import Node, DockerDaemon
     DB.create_tables([Node, DockerDaemon])
+

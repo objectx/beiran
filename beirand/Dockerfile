@@ -23,5 +23,6 @@ ENV PYTHONPATH=/src/beirand:/src
 WORKDIR /src/beirand
 
 VOLUME /var/lib/beiran
+VOLUME /etc/beiran
 
 CMD [ "python3", "beirand/main.py" ]

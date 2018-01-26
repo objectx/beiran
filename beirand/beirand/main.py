@@ -21,8 +21,7 @@ from beirand.nodes import Nodes
 from beiran.models import Node
 from beiran.version import get_version
 from beiran.log import build_logger
-
-NODES = Nodes()
+from peewee import OperationalError
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -191,9 +190,17 @@ def main():
                 options.listen_address + ":" +
                 str(options.listen_port))
 
-    # will use to provide discovery model, issue #31
-    # discovery_class = DnsDiscovery if discovery_mode == 'dns' else ZeroconfDiscovery
-    # discovery = discovery_class(loop, NODES)
+    try:
+        # will use to provide discovery model
+        # discovery = discovery_class(loop, NODES)
+        NODES = Nodes()
+    except OperationalError as e:
+        logger.info("db hasn't initialized yet, creating tables!..")
+        from beiran.models import create_tables
+        from beiran.models.base import DB
+        create_tables(DB)
+        NODES = Nodes()
+
     beiran_node = Node(uuid=local_node_uuid())
     NODES.add_new(beiran_node)
 

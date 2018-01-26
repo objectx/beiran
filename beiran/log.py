@@ -4,7 +4,7 @@ import os
 import sys
 import logging
 
-def build_logger(filename, log_level=logging.DEBUG):
+def build_logger(filename=None, log_level=logging.DEBUG):
     """ Build logger class for module """
     stdout_handler = logging.StreamHandler(sys.stdout)
     handlers = [stdout_handler]

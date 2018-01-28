@@ -13,6 +13,7 @@ from tornado.options import options, define
 from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
+from peewee import OperationalError
 
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import local_node_uuid
@@ -21,7 +22,6 @@ from beirand.nodes import Nodes
 from beiran.models import Node
 from beiran.version import get_version
 from beiran.log import build_logger
-from peewee import OperationalError
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -193,16 +193,16 @@ def main():
     try:
         # will use to provide discovery model
         # discovery = discovery_class(loop, NODES)
-        NODES = Nodes()
-    except OperationalError as e:
+        nodes = Nodes()
+    except OperationalError:
         logger.info("db hasn't initialized yet, creating tables!..")
         from beiran.models import create_tables
         from beiran.models.base import DB
         create_tables(DB)
-        NODES = Nodes()
+        nodes = Nodes()
 
     beiran_node = Node(uuid=local_node_uuid())
-    NODES.add_new(beiran_node)
+    nodes.add_new(beiran_node)
 
     loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

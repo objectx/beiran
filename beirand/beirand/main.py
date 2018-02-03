@@ -13,7 +13,8 @@ from tornado.options import options, define
 from tornado.netutil import bind_unix_socket
 from tornado import websocket, web, httpserver
 from tornado.web import HTTPError
-from peewee import OperationalError
+from peewee import SqliteDatabase
+from playhouse.shortcuts import model_to_dict
 
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import local_node_uuid
@@ -22,6 +23,7 @@ from beirand.nodes import Nodes
 from beiran.models import Node
 from beiran.version import get_version
 from beiran.log import build_logger
+from beiran.models.base import DB_PROXY
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -190,19 +192,30 @@ def main():
                 options.listen_address + ":" +
                 str(options.listen_port))
 
-    try:
-        # will use to provide discovery model
-        # discovery = discovery_class(loop, NODES)
-        nodes = Nodes()
-    except OperationalError:
+    # check database file exists
+    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+    db_file_exists = os.path.exists(beiran_db_path)
+
+    if not db_file_exists:
+        logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
+        open(beiran_db_path, 'a').close()
+
+    # init database object
+    database = SqliteDatabase(beiran_db_path)
+    DB_PROXY.initialize(database)
+
+    if not db_file_exists:
         logger.info("db hasn't initialized yet, creating tables!..")
         from beiran.models import create_tables
-        from beiran.models.base import DB
-        create_tables(DB)
-        nodes = Nodes()
+        create_tables(database)
+
+    nodes = Nodes()
 
     beiran_node = Node(uuid=local_node_uuid())
+    logger.info("local node created: %s", model_to_dict(beiran_node))
+
     nodes.add_new(beiran_node)
+    logger.info("local node added, known nodes are: %s", nodes.all_nodes)
 
     loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

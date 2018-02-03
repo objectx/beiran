@@ -9,7 +9,9 @@ import os
 import socket
 import tarfile
 from uuid import uuid4
+from beiran.log import build_logger
 
+LOGGER = build_logger()
 
 def docker_sha_summary(sha):
     """
@@ -188,6 +190,7 @@ def local_node_uuid():
 
     """
     uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
+    LOGGER.info("uuid.conf file does not exist yet, creating one here: %s", uuid_conf_path)
     try:
         uuid_file = open(uuid_conf_path)
         uuid = uuid_file.read()
@@ -200,4 +203,5 @@ def local_node_uuid():
         uuid_file.write(uuid)
         uuid_file.close()
 
+    LOGGER.info("nodes UUID is: %s", uuid)
     return uuid

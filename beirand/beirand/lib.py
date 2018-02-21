@@ -6,11 +6,13 @@ import ipaddress
 import json
 import netifaces
 import os
+import platform
 import socket
 import tarfile
 from uuid import uuid4
 
 from beiran.log import build_logger
+from beiran.version import get_version
 
 LOGGER = build_logger()
 
@@ -107,7 +109,7 @@ def local_node_uuid():
     return uuid
 
 
-def get_default_gateway_ip_interface():
+def get_default_gateway_interface():
     """
     Get default gateway's ip and interface info.
 
@@ -137,8 +139,19 @@ def get_listen_address():
         return netifaces.ifaddresses(listen_interface)[netifaces.AF_INET][0]['addr']
 
     except ValueError:  # if env var is set erroneously
-        raise ValueError("""Please check environment variable LISTEN_ADDR,
-                         it must be a valid IP4 address. `{}` is not a valid one!""".format(env_addr))
+        raise ValueError(
+            """Please check environment variable LISTEN_ADDR,
+            it must be a valid IP4 address. `{}` is not a valid one!""".format(env_addr))
+
+
+def get_listen_port():
+    """
+    Get listen port from env or default 8888
+    Returns:
+        str: listen port
+
+    """
+    return os.environ.get('LISTEN_ADDR', '8888')
 
 
 def get_listen_interface():
@@ -159,13 +172,13 @@ def get_listen_interface():
 
     if 'LISTEN_ADDR' in os.environ:
         for interface in netifaces.interfaces():
-            for ip in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
-                if ip == os.environ.get('LISTEN_ADDR'):
+            for ip_v4 in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+                if ip_v4 == os.environ.get('LISTEN_ADDR'):
                     return interface
 
         raise ValueError("Your LISTEN_ADDR does not match any network interface!")
 
-    _, interface = get_default_gateway_ip_interface()
+    _, interface = get_default_gateway_interface()
 
     return interface
 
@@ -194,14 +207,46 @@ def get_advertise_address():
     if listen_address != '0.0.0.0':
         return listen_address
 
-    ip, _ = get_default_gateway_ip_interface()
+    ip_v4, _ = get_default_gateway_interface()
 
-    return ip
+    return ip_v4
 
 
-def get_hostname(self):
+def get_hostname():
     """ Gets hostname for discovery
     """
     if 'HOSTNAME' in os.environ:
         return os.environ['HOSTNAME']
     return socket.gethostname()
+
+
+def get_plugin_list():
+    """Return plugin list"""
+
+    # docker only for poc
+    return {
+        "active_plugins": [
+            "docker",
+        ]
+    }
+
+
+def collect_node_info():
+    """
+    Collect and return Node info
+
+    Returns:
+        dict: node informations
+
+    """
+    return {
+        "uuid": local_node_uuid(),
+        "hostname": get_hostname(),
+        "ip_address": get_listen_address(),
+        "ip_address_6": None,
+        "os_type": platform.system(),
+        "os_version": platform.version(),
+        "architecture": platform.machine(),
+        "beiran_version": get_version(),
+        "beiran_service_port": get_listen_port()
+    }

@@ -18,6 +18,7 @@ from playhouse.shortcuts import model_to_dict
 
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import local_node_uuid
+from beirand.lib import get_plugin_list, get_listen_address, get_listen_port, collect_node_info
 from beirand.nodes import Nodes
 
 from beiran.models import Node
@@ -34,7 +35,7 @@ VERSION = get_version('short', 'daemon')
 AsyncIOMainLoop().install()
 
 # Initialize docker client
-CLIENT = docker.from_env()
+DOCKER_CLIENT = docker.from_env()
 
 # docker low level api client to get image data
 DOCKER_LC = docker.APIClient()
@@ -42,13 +43,15 @@ DOCKER_LC = docker.APIClient()
 # we may have a settings file later, create this dir while init wherever it would be
 DOCKER_TAR_CACHE_DIR = "tar_cache"
 
+NODES = {}
+
 define('listen_address',
        group='webserver',
-       default='0.0.0.0',
+       default=get_listen_address(),
        help='Listen address')
 define('listen_port',
        group='webserver',
-       default=8888,
+       default=get_listen_port(),
        help='Listen port')
 define('unix_socket',
        group='webserver',
@@ -150,9 +153,35 @@ class LayerDownload(web.RequestHandler):
 # pylint: enable=arguments-differ
 
 
+class NodeInfo(web.RequestHandler):
+    """Endpoint which reports node information"""
+
+    def data_received(self, chunk):
+        pass
+
+    def get(self, uuid=None):
+        """Retrieve info of the node by `uuid` or the local node"""
+        global NODES
+
+        if not uuid:
+            uuid = local_node_uuid()
+        node_info = NODES.all_nodes.get(uuid)
+        node_info.update(get_plugin_list())
+        node_info.update(
+            {
+                "docker": {
+                    "daemon_info": DOCKER_CLIENT.info(),
+                    "version": DOCKER_CLIENT.version()
+                }
+            }
+        )
+        self.write(node_info)
+
+
 APP = web.Application([
     (r'/', ApiRootHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
+    (r'/info/(?:[0-9a-fsh:]+)?', NodeInfo),
     # (r'/layers', LayersHandler),
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),
@@ -207,15 +236,17 @@ def main():
     if not db_file_exists:
         logger.info("db hasn't initialized yet, creating tables!..")
         from beiran.models import create_tables
+
         create_tables(database)
 
-    nodes = Nodes()
+    node_info = collect_node_info()
+    node = Node(**node_info)
+    logger.info("local node created: %s", model_to_dict(node))
 
-    beiran_node = Node(uuid=local_node_uuid())
-    logger.info("local node created: %s", model_to_dict(beiran_node))
-
-    nodes.add_new(beiran_node)
-    logger.info("local node added, known nodes are: %s", nodes.all_nodes)
+    global NODES
+    NODES = Nodes()
+    NODES.add_new(node)
+    logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

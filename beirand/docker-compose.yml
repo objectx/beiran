@@ -12,5 +12,6 @@ services:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO
+      - DOCKER_HOST=http://172.17.0.1:2375
 networks:
   test:

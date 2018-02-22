@@ -15,7 +15,7 @@ else
 	export MAKE_NEST_LEVEL=$(( ${MAKE_NEST_LEVEL} + 1 ))
 fi
 
-trap cleanup ERR 
+trap cleanup ERR
 
 cleanup() {
 	export MAKE_NEST_LEVEL=$(( ${MAKE_NEST_LEVEL} - 1 ))

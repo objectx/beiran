@@ -35,8 +35,15 @@ Tasks:
  - [x] daemon/init
    - [x] generate uuid {config_folder:-/etc/beiran}/node.uuid
    - [x] create database structure on init (if necessary)
- - [x] api: info endpoint
- - [ ] cli: `beiran node list`
+ - [x] api: /info endpoint
+ - [ ] beirand: when a node is discovered, throw a daemon-wide event `new-node`
+ - [ ] beirand: with a listener on `new-node` event, probe that node's `/info` endpoint, and record collected info into local database
+ - [ ] api: /nodes endpoint: list known nodes and their information
+   - /nodes?all=true returns all known nodes, by default only online nodes are returned?
+ - [ ] lib: beiran.Client.get_online_nodes method
+ - [ ] lib: beiran.Client.get_known_nodes method
+ - [ ] cli: `beiran node list --all` (known)
+ - [ ] cli: `beiran node list` (online only)
 
 ## v0.0.5
 

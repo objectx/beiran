@@ -11,7 +11,7 @@ class Node(BaseModel):
     uuid = UUIDField(primary_key=True)
     hostname = CharField(max_length=100)
     ip_address = CharField(max_length=15)  # dotted-decimal
-    ip_address_6 = CharField(max_length=39)  # hexadecimal
+    ip_address_6 = CharField(max_length=39, null=True)  # hexadecimal
     os_type = CharField(max_length=20)  # linux, win,
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64

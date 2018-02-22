@@ -23,7 +23,7 @@ class Nodes(object):
 
 
         """
-        return {n.uuid: model_to_dict(n) for n in Node.select()}
+        return {n.uuid.hex: model_to_dict(n) for n in Node.select()}
 
     @staticmethod
     def get_node_by_uuid_from_db(uuid):
@@ -72,8 +72,12 @@ class Nodes(object):
 
         """
 
-        self.all_nodes.update({node.uuid: model_to_dict(node)})
-        Node.update(node)
+        node_dict = model_to_dict(node)
+
+        self.all_nodes.update({node.uuid: node_dict})
+        node_from_db, new = Node.get_or_create(**node_dict)
+        if not new:
+            node_from_db.update(**node_dict)
 
     def remove_node(self, node):
         """

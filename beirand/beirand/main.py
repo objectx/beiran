@@ -173,14 +173,26 @@ class NodeInfo(web.RequestHandler):
             raise HTTPError(status_code=404, log_message="Node Not Found")
 
         node_info.update(get_plugin_list())
-        node_info.update(
-            {
-                "docker": {
-                    "daemon_info": DOCKER_CLIENT.info(),
-                    "version": DOCKER_CLIENT.version()
+        try:
+            node_info.update(
+                {
+                    "docker": {
+                        "status": True,
+                        "daemon_info": DOCKER_CLIENT.info(),
+                        "version": DOCKER_CLIENT.version()
+                    }
                 }
-            }
-        )
+            )
+            pass
+        except Exception as e:
+            node_info.update(
+                {
+                    "docker": {
+                        "status": False,
+                        "error": str(e)
+                    }
+                }
+            )
         self.write(node_info)
 
 

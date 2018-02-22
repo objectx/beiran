@@ -165,7 +165,13 @@ class NodeInfo(web.RequestHandler):
 
         if not uuid:
             uuid = local_node_uuid()
+        else:
+            uuid = uuid.lstrip('/')
+
         node_info = NODES.all_nodes.get(uuid)
+        if not node_info:
+            raise HTTPError(status_code=404, log_message="Node Not Found")
+
         node_info.update(get_plugin_list())
         node_info.update(
             {
@@ -181,7 +187,7 @@ class NodeInfo(web.RequestHandler):
 APP = web.Application([
     (r'/', ApiRootHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/info/(?:[0-9a-fsh:]+)?', NodeInfo),
+    (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
     # (r'/layers', LayersHandler),
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),

@@ -1,0 +1,15 @@
+pipeline:
+  lint-lib:
+    image: clburlison/pylint
+    commands:
+      - pylint beiran
+  
+  lint-daemon:
+    image: clburlison/pylint
+    commands:
+      - pylint beirand/beirand
+  
+  lint-cli:
+    image: clburlison/pylint
+    commands:
+      - pylint beiran-cli

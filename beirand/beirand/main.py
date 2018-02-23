@@ -18,11 +18,12 @@ from beirand.nodes import Nodes
 from beirand.common import NODES
 
 from beiran.models import Node
-from beiran.log import build_logger
 from beiran.models.base import DB_PROXY
 
 from beirand.common import logger
 from beirand.http_ws import APP
+
+from beirand.lib import collect_node_info
 
 AsyncIOMainLoop().install()
 
@@ -44,22 +45,7 @@ async def removed_node(node):
     """
     logger.info('node has been removed %s', str(node))
 
-
-def main():
-    """ Main function wrapper """
-    logger.info("Starting Daemon HTTP Server...")
-    # Listen on Unix Socket
-    server = httpserver.HTTPServer(APP)
-    logger.info("Listening on unix socket: %s", options.unix_socket)
-    socket = bind_unix_socket(options.unix_socket)
-    server.add_socket(socket)
-
-    # Also Listen on TCP
-    APP.listen(options.listen_port, address=options.listen_address)
-    logger.info("Listening on tcp socket: " +
-                options.listen_address + ":" +
-                str(options.listen_port))
-
+def db_init():
     # check database file exists
     beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
     db_file_exists = os.path.exists(beiran_db_path)
@@ -78,11 +64,32 @@ def main():
 
         create_tables(database)
 
+
+def main():
+    """ Main function wrapper """
+
+    # init db first
+    db_init()
+
+    logger.info("Starting Daemon HTTP Server...")
+    # Listen on Unix Socket
+    server = httpserver.HTTPServer(APP)
+    logger.info("Listening on unix socket: %s", options.unix_socket)
+    socket = bind_unix_socket(options.unix_socket)
+    server.add_socket(socket)
+
+    # Also Listen on TCP
+    APP.listen(options.listen_port, address=options.listen_address)
+    logger.info("Listening on tcp socket: " +
+                options.listen_address + ":" +
+                str(options.listen_port))
+
+    # collect node info and create node object
     node_info = collect_node_info()
     node = Node(**node_info)
     logger.info("local node created: %s", model_to_dict(node))
 
-
+    global NODES
     NODES = Nodes()
     NODES.add_new(node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)

@@ -1,4 +1,15 @@
 pipeline:
+  publish:
+    image: plugins/docker
+    dockerfile: beirand/Dockerfile
+    repo: reg.rsnc.io/beiran/beiran
+    registry: reg.rsnc.io 
+    secrets: [ docker_username, docker_password ] 
+    tags:
+      - latest
+      - 1.0.1
+      - 1.0 
+      
   lint-lib:
     image: clburlison/pylint
     commands:
@@ -21,3 +32,4 @@ pipeline:
     webhook: https://chat.rsnc.io/hooks/jhw1tcrpbpnybez4a3db16i1rw
     when:
       status: [ success, failure ]
+  

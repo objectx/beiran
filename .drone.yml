@@ -13,3 +13,9 @@ pipeline:
     image: clburlison/pylint
     commands:
       - pylint beiran-cli
+  
+  notify:
+    image: plugins/slack
+    channel: beiran
+    username: drone
+    webhook: https://chat.rsnc.io/hooks/jhw1tcrpbpnybez4a3db16i1rw

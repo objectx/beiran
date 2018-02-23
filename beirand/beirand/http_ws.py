@@ -1,12 +1,15 @@
+"""HTTP and WS API implementation of beiran daemon"""
 import os
+import urllib3
+
+from tornado import websocket, web
+from tornado.options import options, define
+from tornado.web import HTTPError
 
 from beirand.common import logger, VERSION, DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 from beirand.lib import local_node_uuid, get_plugin_list
-from tornado import websocket, web
-from tornado.options import options, define
-from tornado.web import HTTPError
 
 define('listen_address',
        group='webserver',
@@ -115,8 +118,7 @@ class LayerDownload(web.RequestHandler):
 
         self.finish()
 
-
-# pylint: enable=arguments-differ
+    # pylint: enable=arguments-differ
 
 
 class NodeInfo(web.RequestHandler):
@@ -125,6 +127,7 @@ class NodeInfo(web.RequestHandler):
     def data_received(self, chunk):
         pass
 
+    # pylint: disable=arguments-differ
     def get(self, uuid=None):
         """Retrieve info of the node by `uuid` or the local node"""
 
@@ -138,15 +141,28 @@ class NodeInfo(web.RequestHandler):
             raise HTTPError(status_code=404, log_message="Node Not Found")
 
         node_info.update(get_plugin_list())
-        node_info.update(
-            {
-                "docker": {
-                    "daemon_info": DOCKER_CLIENT.info(),
-                    "version": DOCKER_CLIENT.version()
+        try:
+            node_info.update(
+                {
+                    "docker": {
+                        "status": True,
+                        "daemon_info": DOCKER_CLIENT.info(),
+                        "version": DOCKER_CLIENT.version()
+                    }
                 }
-            }
-        )
+            )
+        except urllib3.exceptions.HTTPError as error:
+            node_info.update(
+                {
+                    "docker": {
+                        "status": False,
+                        "error": str(error)
+                    }
+                }
+            )
         self.write(node_info)
+
+    # pylint: enable=arguments-differ
 
 
 APP = web.Application([

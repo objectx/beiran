@@ -7,22 +7,16 @@ import sys
 import asyncio
 import importlib
 from tornado.platform.asyncio import AsyncIOMainLoop
-from tornado.options import options, define
+from tornado.options import options
 from tornado.netutil import bind_unix_socket
 from tornado import httpserver
-from peewee import SqliteDatabase
 from playhouse.shortcuts import model_to_dict
 
-from beirand.nodes import Nodes
-
-from beirand.common import NODES
-
 from beiran.models import Node
-from beiran.models.base import DB_PROXY
 
 from beirand.common import logger
+from beirand.common import NODES
 from beirand.http_ws import APP
-
 from beirand.lib import collect_node_info
 
 AsyncIOMainLoop().install()
@@ -45,31 +39,10 @@ async def removed_node(node):
     """
     logger.info('node has been removed %s', str(node))
 
-def db_init():
-    # check database file exists
-    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
-    db_file_exists = os.path.exists(beiran_db_path)
-
-    if not db_file_exists:
-        logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
-        open(beiran_db_path, 'a').close()
-
-    # init database object
-    database = SqliteDatabase(beiran_db_path)
-    DB_PROXY.initialize(database)
-
-    if not db_file_exists:
-        logger.info("db hasn't initialized yet, creating tables!..")
-        from beiran.models import create_tables
-
-        create_tables(database)
 
 
 def main():
     """ Main function wrapper """
-
-    # init db first
-    db_init()
 
     logger.info("Starting Daemon HTTP Server...")
     # Listen on Unix Socket
@@ -80,18 +53,14 @@ def main():
 
     # Also Listen on TCP
     APP.listen(options.listen_port, address=options.listen_address)
-    logger.info("Listening on tcp socket: " +
-                options.listen_address + ":" +
-                str(options.listen_port))
+    logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
 
     # collect node info and create node object
     node_info = collect_node_info()
     node = Node(**node_info)
     logger.info("local node created: %s", model_to_dict(node))
 
-    global NODES
-    NODES = Nodes()
-    NODES.add_new(node)
+    NODES.add_or_update(node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     loop = asyncio.get_event_loop()

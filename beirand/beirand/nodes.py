@@ -132,8 +132,10 @@ class Nodes(object):
 
         """
         try:
+            self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
             http = urllib3.PoolManager()
             r = http.request('GET', 'http://{}:{}/info'.format(node_ip, node_port))  # todo: https?
+            self.logger.debug("node info: %s", r.data)
             return json.loads(r.data)
         except urllib3.exceptions.HTTPError as error:
             self.logger.error("An error occured while trying to reach remote node {} at port {}: {}",

@@ -18,17 +18,22 @@ from beirand.common import logger
 from beirand.common import NODES
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info
+from beirand.lib import get_listen_port
 
 AsyncIOMainLoop().install()
 
 
-async def new_node(node):
+async def new_node(ip_address, service_port=None):
     """
     Discovered new node on beiran network
     Args:
-        node: Node object
+        ip_address (str): ip_address of new node
+        service_port (str): service port of new node
     """
-    logger.info('new node has reached %s', str(node))
+    service_port = service_port or get_listen_port()
+
+    logger.info('new node has reached ip: %s / port: %s', ip_address, service_port)
+    NODES.add_or_update_new_remote_node(ip_address, service_port)
 
 
 async def removed_node(node):
@@ -65,6 +70,7 @@ def main():
 
     loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+    logger.debug("Discovery method is %s", discovery_mode)
 
     try:
         module = importlib.import_module("beirand.discovery." + discovery_mode)

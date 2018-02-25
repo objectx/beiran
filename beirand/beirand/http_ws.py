@@ -165,10 +165,22 @@ class NodeInfo(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
+class NodeList(web.RequestHandler):
+    """List nodes by arguments specified in uri all, online, offline, etc."""
+
+    def get(self):
+        all_nodes = self.get_argument('all')
+
+        if all_nodes:
+            self.write(NODES.all_nodes)
+            self.finish()
+
+
 APP = web.Application([
     (r'/', ApiRootHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
+    (r'/nodes', NodeList),
     # (r'/layers', LayersHandler),
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),

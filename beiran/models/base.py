@@ -2,7 +2,9 @@
 Module of Beirand data models. Beirand data models use Peewee ORM.
 """
 
-from peewee import Model, Proxy
+import json
+
+from peewee import Model, Proxy, TextField
 
 DB_PROXY = Proxy()
 
@@ -13,3 +15,15 @@ class BaseModel(Model):
     class Meta:
         """Set database metaclass attribute to DB object"""
         database = DB_PROXY
+
+
+class JSONStringField(TextField):
+    """A basic JSON Field based on text field"""
+    def db_value(self, val):
+        """dict to string"""
+        return json.dumps(val)
+
+    def python_value(self, val):
+        """string to python dict"""
+        if val is not None:
+            return json.loads(val)

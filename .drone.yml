@@ -1,4 +1,21 @@
 pipeline:
+
+  lint-daemon:
+    image: clburlison/pylint
+    commands:
+      - pip install -r beirand/requirements.txt
+      - pylint beirand/beirand
+
+  lint-lib:
+    image: clburlison/pylint
+    commands:
+      - pylint beiran
+  
+  lint-cli:
+    image: clburlison/pylint
+    commands:
+      - pylint beiran-cli
+  
   publish:
     image: plugins/docker
     dockerfile: beirand/Dockerfile
@@ -9,22 +26,7 @@ pipeline:
       - latest
       - 1.0.1
       - 1.0 
-      
-  lint-lib:
-    image: clburlison/pylint
-    commands:
-      - pylint beiran
-  
-  lint-daemon:
-    image: clburlison/pylint
-    commands:
-      - pylint beirand/beirand
-  
-  lint-cli:
-    image: clburlison/pylint
-    commands:
-      - pylint beiran-cli
-  
+
   notify:
     image: plugins/slack
     channel: beiran

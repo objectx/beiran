@@ -2,7 +2,7 @@ FROM python:3-jessie
 LABEL maintainer="beiran@rlab.io"
 RUN apt-get update && apt-get -y install \
 	--no-install-recommends \
-	python3-pip git curl make
+	python3-pip git curl make libsqlite3-dev
 
 RUN mkdir /src
 WORKDIR /src

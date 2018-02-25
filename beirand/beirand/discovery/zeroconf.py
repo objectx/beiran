@@ -10,7 +10,7 @@ import os
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 import netifaces
 
-from beirand.discovery.discovery import Discovery, Node
+from beirand.discovery.discovery import Discovery
 
 _DOMAIN = "_beiran._tcp.local."
 
@@ -156,9 +156,8 @@ class ZeroconfListener(object):
             self.log.debug("  Weight: %d, priority: %d" %
                            (service_info.weight, service_info.priority))
             self.log.debug("  Server: %s" % service_info.server)
-            self.discovery.emit('discovered',
-                                Node(hostname=service_info.name,
-                                     ip_address=socket.inet_ntoa(service_info.address)))
+            self.discovery.emit('discovered', ip_address=socket.inet_ntoa(service_info.address),
+                                port=service_info.port)
             if service_info.properties:
                 self.log.debug("  Properties are:")
                 for key, value in service_info.properties.items():
@@ -180,5 +179,6 @@ class ZeroconfListener(object):
         service_info = await zeroconf.get_service_info(typeos, name)
         self.log.debug("Service is removed. Name: ", service_info.server)
         self.discovery.emit('undiscovered',
-                            Node(hostname=service_info.name,
-                                 ip_address=socket.inet_ntoa(service_info.address)))
+                            ip_address=socket.inet_ntoa(service_info.address),
+                            port=service_info.port
+                            )

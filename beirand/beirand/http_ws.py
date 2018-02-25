@@ -172,7 +172,7 @@ class NodeList(web.RequestHandler):
         all_nodes = self.get_argument('all')
 
         if all_nodes:
-            self.write(NODES.all_nodes)
+            self.write(NODES.list_of_nodes())
             self.finish()
 
 

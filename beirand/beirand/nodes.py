@@ -1,6 +1,8 @@
 """
 Module for in memory node tracking object `Nodes`
 """
+import json
+import urllib3
 
 from playhouse.shortcuts import model_to_dict
 
@@ -11,7 +13,9 @@ class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
+        from beirand.common import logger
         self.all_nodes = self.get_from_db() or {}
+        self.logger = logger
 
     @staticmethod
     def get_from_db():
@@ -114,3 +118,40 @@ class Nodes(object):
         """List nodes by IP v4 Address"""
         # todo: will be implemented
         pass
+
+    def get_remote_node_info(self, node_ip, node_port):
+        """
+        Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
+
+        Args:
+            node_ip (str): node ipv4 address
+            node_port (str): node port
+
+        Returns:
+            (dict): detailed information of the node.
+
+        """
+        try:
+            http = urllib3.PoolManager()
+            r = http.request('GET', 'http://{}:{}/info'.format(node_ip, node_port))  # todo: https?
+            return json.loads(r.data)
+        except urllib3.exceptions.HTTPError as error:
+            self.logger.error("An error occured while trying to reach remote node {} at port {}: {}",
+                         node_ip, node_port, error)
+            return None  # which means node is not accessible, mark it offline.
+
+    def add_or_update_new_remote_node(self, node_ip, node_port):
+        """
+        Add or update local db record of the new remote node with information
+        gathered from the remote node over http info endpoint
+
+        Args:
+            node_ip (str): node ipv4 address
+            node_port (str): node port
+
+        Returns:
+
+        """
+        node_info = self.get_remote_node_info(node_ip, node_port)  # todo: remove unnecessary details
+        if node_info:
+            self.add_or_update(Node(**node_info))

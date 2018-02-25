@@ -1,15 +1,15 @@
 """
 Support library for beiran daemon
 """
-
+import os
 import ipaddress
 import json
-import netifaces
-import os
 import platform
 import socket
 import tarfile
 from uuid import uuid4
+
+import netifaces
 
 from beiran.log import build_logger
 from beiran.version import get_version
@@ -250,3 +250,27 @@ def collect_node_info():
         "beiran_version": get_version(),
         "beiran_service_port": get_listen_port()
     }
+
+
+def db_init():
+    """Initialize database"""
+    from peewee import SqliteDatabase
+    from beiran.models.base import DB_PROXY
+
+    # check database file exists
+    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+    db_file_exists = os.path.exists(beiran_db_path)
+
+    if not db_file_exists:
+        LOGGER.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
+        open(beiran_db_path, 'a').close()
+
+    # init database object
+    database = SqliteDatabase(beiran_db_path)
+    DB_PROXY.initialize(database)
+
+    if not db_file_exists:
+        LOGGER.info("db hasn't initialized yet, creating tables!..")
+        from beiran.models import create_tables
+
+        create_tables(database)

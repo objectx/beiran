@@ -63,7 +63,7 @@ class Nodes(object):
 
         return node
 
-    def add_new(self, node):
+    def add_or_update(self, node):
         """
         Appends the new node into nodes dict or updates if exists
 
@@ -75,9 +75,13 @@ class Nodes(object):
         node_dict = model_to_dict(node)
 
         self.all_nodes.update({node.uuid: node_dict})
-        node_from_db, new = Node.get_or_create(**node_dict)
-        if not new:
+
+        try:
+            node_from_db = Node.get(Node.uuid == node.uuid)
             node_from_db.update(**node_dict)
+
+        except Node.DoesNotExist:
+            Node.create(**node_dict)
 
     def remove_node(self, node):
         """

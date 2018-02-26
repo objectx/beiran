@@ -2,9 +2,9 @@
 Module for in memory node tracking object `Nodes`
 """
 import json
-import urllib3
 
 from playhouse.shortcuts import model_to_dict
+from tornado.httpclient import AsyncHTTPClient
 
 from beiran.models import Node
 
@@ -131,21 +131,10 @@ class Nodes(object):
             (dict): detailed information of the node.
 
         """
-        try:
-            self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-            http = urllib3.PoolManager()
-            r = http.request('GET', 'http://{}:{}/info'.format(node_ip, node_port))  # todo: https?
-            self.logger.debug("node info: %s", r.data)
-            return json.loads(r.data)
-        except urllib3.exceptions.HTTPError as error:
-            self.logger.error("An error occured while trying to reach remote node {} at port {}: {}",
-                         node_ip, node_port, error)
-            return None  # which means node is not accessible, mark it offline.
 
     def add_or_update_new_remote_node(self, node_ip, node_port):
         """
-        Add or update local db record of the new remote node with information
-        gathered from the remote node over http info endpoint
+        Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
 
         Args:
             node_ip (str): node ipv4 address
@@ -154,6 +143,27 @@ class Nodes(object):
         Returns:
 
         """
-        node_info = self.get_remote_node_info(node_ip, node_port)  # todo: remove unnecessary details
-        if node_info:
+        self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
+        http_client = AsyncHTTPClient()
+        http_client.fetch('http://{}:{}/info'.format(node_ip, node_port),
+                          self.on_new_remote_node)  # todo: https?
+
+    def on_new_remote_node(self, response):
+        """
+        Add or update local db record of the new remote node with information
+        gathered from the remote node over http info endpoint
+
+        Args:
+            response: tornado async http client response object
+
+        """
+
+        if response.error:
+            # which means node is not accessible, mark it offline.
+            self.logger.error(
+                "An error occured while trying to reach remote node at port %s",
+                response.error)
+        else:
+            node_info = json.loads(response.body)  # todo: remove unnecessary details
             self.add_or_update(Node(**node_info))
+            self.logger.debug("Nodes: {}".format(self.all_nodes))

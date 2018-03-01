@@ -1,15 +1,14 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
+
 import urllib3
-
-from tornado import websocket, web
-from tornado.options import options, define
-from tornado.web import HTTPError
-
 from beirand.common import logger, VERSION, DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 from beirand.lib import local_node_uuid, get_plugin_list
+from tornado import websocket, web
+from tornado.options import options, define
+from tornado.web import HTTPError
 
 define('listen_address',
        group='webserver',
@@ -161,6 +160,7 @@ class NodeInfo(web.RequestHandler):
                 }
             )
         self.write(node_info)
+        self.finish()
 
     # pylint: enable=arguments-differ
 
@@ -168,12 +168,45 @@ class NodeInfo(web.RequestHandler):
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
-    def get(self):
-        all_nodes = self.get_argument('all')
+    def data_received(self, chunk):
+        pass
 
-        if all_nodes:
-            self.write(NODES.list_of_nodes())
-            self.finish()
+    def get(self):
+        """
+        Return list of nodes, if specified `all`from database or discovered ones from memory.
+
+        Returns:
+            (dict) list of nodes, it is a dict, since tornado does not write list for security
+                   reasons; see:
+                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+
+        """
+        all_nodes = self.get_argument('all', False)
+
+        if all_nodes and all_nodes not in ['True', 'true', '1', 1]:
+            raise HTTPError(status_code=400,
+                            log_message="Bad argument please use `True` or `1` for argument `all`")
+
+        self.write(
+            {
+                "nodes": NODES.list_of_nodes(
+                    from_db=all_nodes
+                )
+            }
+        )
+        self.finish()
+
+
+class Ping(web.RequestHandler):
+    """Ping / Pong endpoint"""
+
+    def data_received(self, chunk):
+        pass
+
+    def get(self):
+        """Just write PONG string"""
+        self.write("PONG")
+        self.finish()
 
 
 APP = web.Application([
@@ -181,6 +214,7 @@ APP = web.Application([
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
     (r'/nodes', NodeList),
+    (r'/ping', Ping),
     # (r'/layers', LayersHandler),
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),

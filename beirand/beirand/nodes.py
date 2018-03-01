@@ -103,16 +103,16 @@ class Nodes(object):
         List all nodes from database or nodes dict
 
         Args:
-            from_db: db lookup for nodes or not
+            from_db (bool): db lookup for nodes or not
 
         Returns:
             list: list of uuid of nodes
 
         """
         if from_db:
-            return [n for n in Node.select()]
+            return [n.uuid.hex for n in Node.select()]
 
-        return self.all_nodes.keys()
+        return [*self.all_nodes.keys()]
 
     def list_all_by_ip4(self):
         """List nodes by IP v4 Address"""

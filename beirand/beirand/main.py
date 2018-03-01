@@ -57,7 +57,7 @@ def main():
     server.add_socket(socket)
 
     # Also Listen on TCP
-    APP.listen(options.listen_port, address=options.listen_address)
+    server.listen(options.listen_port, address=options.listen_address)
     logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
 
     # collect node info and create node object

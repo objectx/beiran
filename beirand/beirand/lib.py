@@ -92,7 +92,6 @@ def local_node_uuid():
 
     """
     uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
-    LOGGER.info("uuid.conf file does not exist yet, creating one here: %s", uuid_conf_path)
     try:
         uuid_file = open(uuid_conf_path)
         uuid = uuid_file.read()
@@ -100,6 +99,8 @@ def local_node_uuid():
         if len(uuid) != 32:
             raise ValueError
     except (FileNotFoundError, ValueError):
+        LOGGER.info("uuid.conf file does not exist yet or is invalid, creating a new one here: %s",
+                    uuid_conf_path)
         uuid = uuid4().hex
         uuid_file = open(uuid_conf_path, 'w')
         uuid_file.write(uuid)

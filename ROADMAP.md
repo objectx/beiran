@@ -22,7 +22,7 @@ Main Objectives:
 Main Objectives:
  - ...
 
-## v0.0.4
+## [v0.0.4](https://git.rsnc.io/rlab/beiran/issues?state=open&milestone=1)
 
 Main Objectives:
  - Nodes detect each other
@@ -36,19 +36,71 @@ Tasks:
    - [x] generate uuid {config_folder:-/etc/beiran}/node.uuid
    - [x] create database structure on init (if necessary)
  - [x] api: /info endpoint
- - [ ] beirand: when a node is discovered, throw a daemon-wide event `new-node`
- - [ ] beirand: with a listener on `new-node` event, probe that node's `/info` endpoint, and record collected info into local database
- - [ ] api: /nodes endpoint: list known nodes and their information
+ - [ ] #5 & #9 beirand: when a node is discovered, throw a daemon-wide event `new-node`
+ - [ ] #5 beirand: with a listener on `new-node` event, probe that node's `/info` endpoint, and record collected info into local database
+ - [ ] #5 api: /nodes endpoint: list known nodes and their information
    - /nodes?all=true returns all known nodes, by default only online nodes are returned?
- - [ ] lib: beiran.Client.get_online_nodes method
- - [ ] lib: beiran.Client.get_known_nodes method
- - [ ] cli: `beiran node list --all` (known)
- - [ ] cli: `beiran node list` (online only)
+ - [ ] #10 lib: beiran.Client.get_online_nodes method
+ - [ ] #10 lib: beiran.Client.get_known_nodes method
+ - [ ] #8 cli: `beiran node list --all` (known)
+ - [ ] #8 cli: `beiran node list` (online only)
 
-## v0.0.5
+## [v0.0.5](https://git.rsnc.io/rlab/beiran/issues?state=open&milestone=2)
 
 Main Objectives:
- - Nodes populate their local database with other nodes layer & image lists
+ - Sharing image and layer list between nodes and updating image/layer database
+
+ - [ ] #14 lib: finalize layer and image models (enough for this milestone)
+   - for now we don't need anything other than docker's format
+   - we need to be able to store which nodes have which images and layers
+   - some of images and layers might already exist in the local database, add information that this node also has those images/layers.
+   - Possession model?
+     - just keep in the original model in some json array property.
+       like; `image.available_at = '[ "beiran+tcp://17.18.0.1:8888", "beiran+uuid://3c8b816d-b723-41e1-a0c8-59ef254bef51" ]'` ??
+       - we should only use uuid scheme here for now, to be able to provide the following;
+         - `beiran image list --node=3c8b816d-b723-41e1-a0c8-59ef254bef51`
+ - [ ] #15 daemon: on `node.added` fetch image and layers from new discovered node, and save the list into local database
+ - [ ] #16 api: /images listing endpoint
+   - [ ] api: /images?all=true listing endpoint (for cli or local client access)
+ - [ ] #17 api: /layers listing endpoint  (can actually deliver payload at this moment)
+   - [ ] api: /layers?all=true listing endpoint (for cli or local client access)
+ - [ ] #16 & #17 api: /images|layers?node=3c8b816d-b723-41e1-a0c8-59ef254bef51 listing endpoint
+ - [ ] #18 lib: methods for fetching image list
+ - [ ] #19 lib: methods for fetching layer list
+ - [ ] #20 cli: `beiran image list` (probing local beiran daemon for local docker's only)
+   - [ ] cli: `beiran image list --all` (asking local beiran daemon to give all images between connected peers)
+ - [ ] #21 cli: `beiran layer list` (probing local beiran daemon for local docker's only)
+   - [ ] cli: `beiran layer list --all` (asking local beiran daemon to give all images between connected peers)
+   - [ ] cli: `beiran image list --node=3c8b816d-b723-41e1-a0c8-59ef254bef51` to query images hold by a specific node
+
+## [v0.0.5-tests](https://git.rsnc.io/rlab/beiran/issues?state=open&milestone=8)
+ - [ ] end to end behavior tests for expected flows
+   - mock the initial state
+     - have a docker daemon
+     - have specific images and layers in docker daemon
+     - check the expected result in final cli command invoke, which would check the functionality all layers in between
+ - [ ] behavior tests for http/api interface?
+   - pyresttest?
+ - [ ] behavior tests for library interface?
+   - pytest?
+ - [ ] unit tests for internal daemon behavior? (events, etc?)
+   - (draft) daemon-wide events are emitted correctly?
+   - (draft) ..
+
+ - [ ] #11 TASK: "Document our test scenarios" (@s-yamada ?)
+   - Go through the code and components
+   - Expected results:
+     - List necessary types of testing
+     - List necessary components and behaviors to be tested
+   - [ ] #12 create issues in `v0.0.5-tests`
+   - [ ] #13 after: create sample working (real) tests for each test category/system
+     - behave
+     - pyresttest
+     - e2e/shell?
+
+ - INSPECT: https://github.com/behave/behave ?
+
+ - [ ] TASK: "Document usage"
 
 ## v0.0.6
 

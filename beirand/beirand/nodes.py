@@ -2,6 +2,7 @@
 Module for in memory node tracking object `Nodes`
 """
 import json
+import logging
 
 from playhouse.shortcuts import model_to_dict
 from tornado.httpclient import AsyncHTTPClient
@@ -13,9 +14,8 @@ class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
-        from beirand.common import logger
         self.all_nodes = self.get_from_db() or {}
-        self.logger = logger
+        self.logger = logging.getLogger(__package__)
 
     @staticmethod
     def get_from_db():
@@ -125,7 +125,6 @@ class Nodes(object):
         # todo: will be implemented
         pass
 
-
     def add_or_update_new_remote_node(self, node_ip, node_port):
         """
         Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
@@ -157,7 +156,8 @@ class Nodes(object):
             self.logger.error(
                 "An error occured while trying to reach remote node at port %s",
                 response.error)
-        else:
-            node_info = json.loads(response.body)  # todo: remove unnecessary details
-            node = self.add_or_update(Node(**node_info))
-            return node
+            return None
+
+        node_info = json.loads(response.body)  # todo: remove unnecessary details
+        node = self.add_or_update(Node(**node_info))
+        return node

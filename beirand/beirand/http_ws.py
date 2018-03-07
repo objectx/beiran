@@ -5,13 +5,13 @@ import json
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
+from tornado.httpclient import AsyncHTTPClient
 
 from beirand.common import logger, VERSION, DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 from beirand.lib import local_node_uuid, get_plugin_list
 
-from tornado.httpclient import AsyncHTTPClient
 
 define('listen_address',
        group='webserver',
@@ -126,6 +126,10 @@ class LayerDownload(web.RequestHandler):
 class NodeInfo(web.RequestHandler):
     """Endpoint which reports node information"""
 
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.node_info = {}
+
     def data_received(self, chunk):
         pass
 
@@ -150,12 +154,10 @@ class NodeInfo(web.RequestHandler):
                     {
                         "docker": {
                             "status": True,
-                            "daemon_info": json.loads(response.body) ,
-                            # "version": self.get_docker_version()
+                            "daemon_info": json.loads(response.body),
                         }
                     }
                 )
-
 
             self.write(self.node_info)
             self.finish()
@@ -174,7 +176,6 @@ class NodeInfo(web.RequestHandler):
         http_client.fetch('{}/info'.format(DOCKER_CLIENT.api.base_url),
                           _on_docker_info)
 
-
     # pylint: enable=arguments-differ
 
 
@@ -183,7 +184,6 @@ class NodeList(web.RequestHandler):
 
     def data_received(self, chunk):
         pass
-
 
     # pylint: disable=arguments-differ
     def get(self):
@@ -211,8 +211,8 @@ class NodeList(web.RequestHandler):
         )
         self.finish()
 
-
     # pylint: enable=arguments-differ
+
 
 class Ping(web.RequestHandler):
     """Ping / Pong endpoint"""

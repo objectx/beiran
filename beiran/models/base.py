@@ -19,11 +19,13 @@ class BaseModel(Model):
 
 class JSONStringField(TextField):
     """A basic JSON Field based on text field"""
+
+    # pylint: disable=arguments-differ
     def db_value(self, val):
         """dict to string"""
         return json.dumps(val)
 
     def python_value(self, val):
         """string to python dict"""
-        if val is not None:
-            return json.loads(val)
+        return val if val is None else json.loads(val)
+    # pylint: enable=arguments-differ

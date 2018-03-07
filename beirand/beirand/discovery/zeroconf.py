@@ -180,5 +180,4 @@ class ZeroconfListener(object):
         self.log.debug("Service is removed. Name: ", service_info.server)
         self.discovery.emit('undiscovered',
                             ip_address=socket.inet_ntoa(service_info.address),
-                            port=service_info.port
-                            )
+                            port=service_info.port)

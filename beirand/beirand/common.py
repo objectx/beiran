@@ -3,12 +3,14 @@ import logging
 import os
 
 import docker
+from pyee import EventEmitter
 
 from beiran.log import build_logger
 from beiran.version import get_version
 from beirand.nodes import Nodes
 from beirand.lib import db_init
 
+EVENTS = EventEmitter()
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')

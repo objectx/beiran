@@ -87,6 +87,8 @@ class Nodes(object):
         except Node.DoesNotExist:
             Node.create(**node_dict)
 
+        return node
+
     def remove_node(self, node):
         """
         Remove node from nodes dict
@@ -94,9 +96,13 @@ class Nodes(object):
         Args:
             node (Node): node model object
 
+        Returns:
+            (bool): true if node removed, else false
+
         """
 
-        self.all_nodes.pop(node.uuid)
+        removed = self.all_nodes.pop(node.uuid, None)
+        return bool(removed)
 
     def list_of_nodes(self, from_db=True):
         """
@@ -119,18 +125,6 @@ class Nodes(object):
         # todo: will be implemented
         pass
 
-    def get_remote_node_info(self, node_ip, node_port):
-        """
-        Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
-
-        Args:
-            node_ip (str): node ipv4 address
-            node_port (str): node port
-
-        Returns:
-            (dict): detailed information of the node.
-
-        """
 
     def add_or_update_new_remote_node(self, node_ip, node_port):
         """
@@ -165,5 +159,5 @@ class Nodes(object):
                 response.error)
         else:
             node_info = json.loads(response.body)  # todo: remove unnecessary details
-            self.add_or_update(Node(**node_info))
-            self.logger.debug("Nodes: {}".format(self.all_nodes))
+            node = self.add_or_update(Node(**node_info))
+            return node

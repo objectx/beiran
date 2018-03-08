@@ -2,18 +2,28 @@ pipeline:
 
   lint-daemon:
     image: clburlison/pylint
+    group: lint
     commands:
+      - apk add --update --no-cache python-dev
+      - pip install -r beiran/requirements.txt
       - pip install -r beirand/requirements.txt
       - pylint beirand/beirand
 
   lint-lib:
     image: clburlison/pylint
+    group: lint
     commands:
+      - apk add --update --no-cache python-dev
+      - pip install -r beiran/requirements.txt
       - pylint beiran
   
   lint-cli:
     image: clburlison/pylint
+    group: lint
     commands:
+      - apk add --update --no-cache python-dev
+      - pip install -r beiran/requirements.txt
+      - pip install -r beiran-cli/requirements.txt
       - pylint beiran-cli
   
   publish:

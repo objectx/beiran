@@ -10,7 +10,7 @@ class DockerDaemon(BaseModel):
     """
     Docker Daemon specific data of Nodes
     """
-    node = ForeignKeyField(Node)
+    node = ForeignKeyField(Node, primary_key=True)
     docker_version = CharField(max_length=20)
     storage_driver = CharField(max_length=50)  # overlay2, aufs
     docker_root_dir = CharField(default='/var/lib/docker')

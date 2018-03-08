@@ -7,7 +7,7 @@ import logging
 from playhouse.shortcuts import model_to_dict
 from tornado.httpclient import AsyncHTTPClient
 
-from beiran.models import Node
+from beiran.models import Node, DockerDaemon
 
 
 class Nodes(object):
@@ -27,7 +27,8 @@ class Nodes(object):
 
 
         """
-        return {n.uuid.hex: model_to_dict(n) for n in Node.select()}
+        return {n.uuid.hex: model_to_dict(n) for n in Node.select().join(
+                                                    DockerDaemon, on=DockerDaemon.node == Node.uuid)}
 
     @staticmethod
     def get_node_by_uuid_from_db(uuid):
@@ -78,14 +79,33 @@ class Nodes(object):
 
         node_dict = model_to_dict(node)
 
-        self.all_nodes.update({node.uuid: node_dict})
-
         try:
-            node_from_db = Node.get(Node.uuid == node.uuid)
-            node_from_db.update(**node_dict)
+            node_ = Node.get(Node.uuid == node.uuid)
+            node_.update(**node_dict)
 
         except Node.DoesNotExist:
-            Node.create(**node_dict)
+            node_ = Node.create(**node_dict)
+
+        if hasattr(node, 'docker'):
+            docker_dict = {
+                'docker_version': node.docker['daemon_info']['ServerVersion'],
+                'storage_driver': node.docker['daemon_info']['Driver'],
+                'docker_root_dir': node.docker['daemon_info']['DockerRootDir'],
+                'details': node.docker['daemon_info']
+            }
+            try:
+                docker_ = DockerDaemon.get(DockerDaemon.node == node)
+                docker_.update(**docker_dict)
+            except DockerDaemon.DoesNotExist:
+                DockerDaemon.create(
+                    node=node_,
+                    **docker_dict
+                )
+            node_dict.update({
+                'docker': docker_dict
+            })
+
+        self.all_nodes.update({node.uuid: node_dict})
 
         return node
 
@@ -116,9 +136,10 @@ class Nodes(object):
 
         """
         if from_db:
-            return [n.uuid.hex for n in Node.select()]
+            return [model_to_dict(n) for n in Node.select().join(
+                                                    DockerDaemon, on=DockerDaemon.node == Node)]
 
-        return [*self.all_nodes.keys()]
+        return [*self.all_nodes.values()]
 
     def list_all_by_ip4(self):
         """List nodes by IP v4 Address"""

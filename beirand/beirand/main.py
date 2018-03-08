@@ -17,6 +17,7 @@ from beiran.models import Node
 from beirand.common import logger
 from beirand.common import NODES
 from beirand.common import EVENTS
+from beirand.common import DOCKER_CLIENT
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port
@@ -50,6 +51,15 @@ async def removed_node(node):
         EVENTS.emit('node.removed', node)
 
 
+async def on_node_removed(node):
+    """Placeholder for event on node removed"""
+    logger.info("new event: an existing node removed")
+
+
+async def on_new_node_added(node):
+    """Placeholder for event on node removed"""
+    logger.info("new event: new node added")
+
 
 def main():
     """ Main function wrapper """
@@ -67,6 +77,14 @@ def main():
 
     # collect node info and create node object
     node_info = collect_node_info()
+    node_info.update(
+        {
+            'docker': {
+                "status": True,
+                "daemon_info": DOCKER_CLIENT.info()
+            }
+        }
+    )
     node = Node(**node_info)
     logger.info("local node created: %s", model_to_dict(node))
 
@@ -89,6 +107,10 @@ def main():
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()
+
+    EVENTS.on('node.added', on_new_node_added)
+    EVENTS.on('node.removed', on_node_removed)
+
     loop.set_debug(True)
     loop.run_forever()
 

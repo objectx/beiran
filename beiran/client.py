@@ -103,3 +103,15 @@ class Client:
             str: semantic version
         """
         return self.get_server_info()['version']
+
+    def get_nodes(self, all_nodes=False):
+        """
+        Daemon get nodes
+        Returns:
+            list: list of nodes
+        """
+        path = '/nodes{}'.format('?all=true' if all_nodes else '')
+
+        resp = self.request(path=path)
+
+        return resp.get('nodes', [])

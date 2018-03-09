@@ -4,6 +4,7 @@ Common client for beiran project
 
 import socket
 import json
+import re
 # from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
@@ -47,18 +48,33 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, socket_path):
+    def __init__(self, url):
         """
         Initialization method for client
         Args:
-            socket_path: unix socket path
+            url: beirand url
         """
-        self.socket_path = socket_path
+        p = re.compile('^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
+        m = p.match(url)
+        if m is None:
+            print("URL is broken: %s" % url)
+            raise ValueError('url')
 
-        resolver = UnixResolver(self.socket_path)
-        AsyncHTTPClient.configure(None, resolver=resolver)
-        # self.http_client = httpclient.HTTPClient()
-        self.http_client = httpclient.HTTPClient(async_client_class=AsyncHTTPClient)
+        proto = m.groups()[0]
+        isUnixSocket = m.groups()[1] is not None
+        location = m.groups()[2]
+
+        if isUnixSocket:
+            self.socket_path = location
+
+            resolver = UnixResolver(self.socket_path)
+            AsyncHTTPClient.configure(None, resolver=resolver)
+            # self.http_client = httpclient.HTTPClient()
+            self.http_client = httpclient.HTTPClient(async_client_class=AsyncHTTPClient)
+            self.url = proto + "://unixsocket"
+        else:
+            self.http_client = httpclient.HTTPClient()
+            self.url = url
 
     def request(self, path="/", parse_json=True):
         """
@@ -72,14 +88,15 @@ class Client:
 
         """
         try:
-            response = self.http_client.fetch("http://unixsocket" + path)
+            response = self.http_client.fetch(self.url + path)
             # TODO: Parse JSON
         except httpclient.HTTPError as error:
             print("Error: " + str(error))
             raise error
         except Exception as error:
-            # Other errors are possible, such as IOError.
+            print("Cannot connect to beiran daemon at %s" % self.url)
             print("Error: " + str(error))
+            # Other errors are possible, such as IOError.
             raise error
 
         if parse_json:

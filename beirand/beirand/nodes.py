@@ -86,7 +86,7 @@ class Nodes(object):
         except Node.DoesNotExist:
             node_ = Node.create(**node_dict)
 
-        if hasattr(node, 'docker'):
+        if hasattr(node, 'docker') and hasattr(node.docker, 'daemon_info'):
             docker_dict = {
                 'docker_version': node.docker['daemon_info']['ServerVersion'],
                 'storage_driver': node.docker['daemon_info']['Driver'],

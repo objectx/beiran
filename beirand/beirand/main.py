@@ -61,6 +61,18 @@ async def on_new_node_added(node):
     logger.info("new event: new node added")
 
 
+def fetch_docker_status():
+    try:
+        return {
+            "status": True,
+            "daemon_info": DOCKER_CLIENT.info()
+        }
+    except Exception as e:
+        return {
+            "status": False,
+            "error": str(e)
+        }
+
 def main():
     """ Main function wrapper """
 
@@ -79,10 +91,7 @@ def main():
     node_info = collect_node_info()
     node_info.update(
         {
-            'docker': {
-                "status": True,
-                "daemon_info": DOCKER_CLIENT.info()
-            }
+            'docker': fetch_docker_status()
         }
     )
     node = Node(**node_info)

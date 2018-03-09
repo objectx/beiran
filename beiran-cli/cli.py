@@ -66,6 +66,31 @@ class Cli:
 
     main.add_command(version)
 
+
+    """Node management commands"""
+
+    @click.group()
+    @click.pass_obj
+    def node(self):
+        """group command for node management"""
+        pass
+
+    main.add_command(node)
+
+    @click.command('list')
+    @click.option('--all', default=False, is_flag=True, help='List all known nodes (including offline ones)')
+    @click.pass_obj
+    def node_list(self, all):
+        """List known beiran nodes"""
+        nodes = self.beiran_client.get_nodes(all_nodes=all)
+        print(nodes)
+
+    node.add_command(node_list)
+
+
+
+    """Image management commands"""
+
     @click.group()
     @click.pass_obj
     def image(self):

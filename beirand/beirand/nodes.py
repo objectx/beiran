@@ -4,7 +4,7 @@ Module for in memory node tracking object `Nodes`
 import json
 import logging
 
-from playhouse.shortcuts import model_to_dict
+from playhouse.shortcuts import model_to_dict, JOIN
 from tornado.httpclient import AsyncHTTPClient
 
 from beiran.models import Node, DockerDaemon
@@ -20,15 +20,24 @@ class Nodes(object):
     @staticmethod
     def get_from_db():
         """
-        Get all nodes from database and dumps them into a dict.
+        Get all nodes with docker information from database and dumps them into a dict.
 
         Returns:
             dict: key value list of nodes as in form {'uuid': {'ip': '10.0.0.2', 'hostname':'web1'}}
 
 
         """
-        return {n.uuid.hex: model_to_dict(n) for n in Node.select().join(
-                                                    DockerDaemon, on=DockerDaemon.node == Node.uuid)}
+        nodes_with_docker =  Node.select(DockerDaemon, Node).join(
+            DockerDaemon, JOIN.LEFT_OUTER, on=(DockerDaemon.node == Node.uuid).alias('docker')
+        )
+
+        result = {}
+        for n in nodes_with_docker:
+            node_info = model_to_dict(n)
+            node_info.update({'docker': model_to_dict(n.docker)})
+            result[n.uuid.hex] = node_info
+
+        return result
 
     @staticmethod
     def get_node_by_uuid_from_db(uuid):
@@ -136,8 +145,7 @@ class Nodes(object):
 
         """
         if from_db:
-            return [model_to_dict(n) for n in Node.select().join(
-                                                    DockerDaemon, on=DockerDaemon.node == Node)]
+            self.get_from_db()
 
         return [*self.all_nodes.values()]
 

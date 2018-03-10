@@ -10,16 +10,12 @@ from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options
 from tornado.netutil import bind_unix_socket
 from tornado import httpserver
-from playhouse.shortcuts import model_to_dict
-
-from beiran.models import Node
 
 from beirand.common import logger
 from beirand.common import NODES
 from beirand.common import EVENTS
-from beirand.common import DOCKER_CLIENT
 from beirand.http_ws import APP
-from beirand.lib import collect_node_info
+from beirand.lib import collect_node_info, fetch_docker_info
 from beirand.lib import get_listen_port
 
 AsyncIOMainLoop().install()
@@ -35,8 +31,10 @@ async def new_node(ip_address, service_port=None):
     service_port = service_port or get_listen_port()
 
     logger.info('new node has reached ip: %s / port: %s', ip_address, service_port)
-    node = NODES.add_or_update_new_remote_node(ip_address, service_port)
-    EVENTS.emit('node.added', node)
+    NODES.add_or_update_new_remote_node(ip_address, service_port)
+    logger.info(
+        'new node will be published has reached ip: %s / port: %s', ip_address, service_port)
+    EVENTS.emit('node.added', ip_address, service_port)
 
 
 async def removed_node(node):
@@ -53,25 +51,13 @@ async def removed_node(node):
 
 async def on_node_removed(node):
     """Placeholder for event on node removed"""
-    logger.info("new event: an existing node removed")
+    logger.info("new event: an existing node removed %s", node.uuid)
 
 
-async def on_new_node_added(node):
+async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
-    logger.info("new event: new node added")
+    logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
-
-def fetch_docker_status():
-    try:
-        return {
-            "status": True,
-            "daemon_info": DOCKER_CLIENT.info()
-        }
-    except Exception as e:
-        return {
-            "status": False,
-            "error": str(e)
-        }
 
 def main():
     """ Main function wrapper """
@@ -91,13 +77,11 @@ def main():
     node_info = collect_node_info()
     node_info.update(
         {
-            'docker': fetch_docker_status()
+            'docker': fetch_docker_info()
         }
     )
-    node = Node(**node_info)
-    logger.info("local node created: %s", model_to_dict(node))
 
-    NODES.add_or_update(node)
+    NODES.add_or_update(node_info)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     loop = asyncio.get_event_loop()

@@ -8,11 +8,14 @@ import platform
 import socket
 import tarfile
 from uuid import uuid4
+from docker.errors import DockerException
 
 import netifaces
 
+
 from beiran.log import build_logger
 from beiran.version import get_version
+from beirand.common import DOCKER_CLIENT
 
 LOGGER = build_logger()
 
@@ -253,25 +256,21 @@ def collect_node_info():
     }
 
 
-def db_init():
-    """Initialize database"""
-    from peewee import SqliteDatabase
-    from beiran.models.base import DB_PROXY
+def fetch_docker_info():
+    """
+    Fetch docker daemon information
 
-    # check database file exists
-    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
-    db_file_exists = os.path.exists(beiran_db_path)
+    Returns:
+        (dict): docker status and information
 
-    if not db_file_exists:
-        LOGGER.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
-        open(beiran_db_path, 'a').close()
-
-    # init database object
-    database = SqliteDatabase(beiran_db_path)
-    DB_PROXY.initialize(database)
-
-    if not db_file_exists:
-        LOGGER.info("db hasn't initialized yet, creating tables!..")
-        from beiran.models import create_tables
-
-        create_tables(database)
+    """
+    try:
+        return {
+            "status": True,
+            "daemon_info": DOCKER_CLIENT.info()
+        }
+    except DockerException as error:
+        return {
+            "status": False,
+            "error": str(error)
+        }

@@ -27,15 +27,15 @@ class Nodes(object):
 
 
         """
-        nodes_with_docker =  Node.select(DockerDaemon, Node).join(
+        nodes_with_docker = Node.select(DockerDaemon, Node).join(
             DockerDaemon, JOIN.LEFT_OUTER, on=(DockerDaemon.node == Node.uuid).alias('docker')
         )
 
         result = {}
-        for n in nodes_with_docker:
-            node_info = model_to_dict(n)
-            node_info.update({'docker': model_to_dict(n.docker)})
-            result[n.uuid.hex] = node_info
+        for node in nodes_with_docker:
+            node_info = model_to_dict(node)
+            node_info.update({'docker': model_to_dict(node.docker)})
+            result[node.uuid.hex] = node_info
 
         return result
 
@@ -77,46 +77,44 @@ class Nodes(object):
 
         return node
 
-    def add_or_update(self, node):
+    def add_or_update(self, node_info):
         """
         Appends the new node into nodes dict or updates if exists
 
         Args:
-            node (Node): node model object
+            node_info (dict): node information
 
         """
 
-        node_dict = model_to_dict(node)
+        # node_dict = model_to_dict(node)
 
         try:
-            node_ = Node.get(Node.uuid == node.uuid)
-            node_.update(**node_dict)
+            node_ = Node.get(Node.uuid == node_info['uuid'])
+            node_.update(**node_info)
 
         except Node.DoesNotExist:
-            node_ = Node.create(**node_dict)
+            node_ = Node.create(**node_info)
 
-        if hasattr(node, 'docker') and hasattr(node.docker, 'daemon_info'):
+        if 'docker' in node_info and node_info['docker']['status']:
+            daemon = node_info['docker']['daemon_info']
             docker_dict = {
-                'docker_version': node.docker['daemon_info']['ServerVersion'],
-                'storage_driver': node.docker['daemon_info']['Driver'],
-                'docker_root_dir': node.docker['daemon_info']['DockerRootDir'],
-                'details': node.docker['daemon_info']
+                'docker_version': daemon['ServerVersion'],
+                'storage_driver': daemon['Driver'],
+                'docker_root_dir': daemon['DockerRootDir'],
+                'details': daemon
             }
             try:
-                docker_ = DockerDaemon.get(DockerDaemon.node == node)
+                docker_ = DockerDaemon.get(DockerDaemon.node == node_info['uuid'])
                 docker_.update(**docker_dict)
             except DockerDaemon.DoesNotExist:
                 DockerDaemon.create(
                     node=node_,
                     **docker_dict
                 )
-            node_dict.update({
-                'docker': docker_dict
-            })
 
-        self.all_nodes.update({node.uuid: node_dict})
+        self.all_nodes.update({node_info['uuid']: node_info})
 
-        return node
+        return node_
 
     def remove_node(self, node):
         """
@@ -188,5 +186,5 @@ class Nodes(object):
             return None
 
         node_info = json.loads(response.body)  # todo: remove unnecessary details
-        node = self.add_or_update(Node(**node_info))
+        node = self.add_or_update(node_info)
         return node

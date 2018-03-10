@@ -8,7 +8,7 @@ from pyee import EventEmitter
 from beiran.log import build_logger
 from beiran.version import get_version
 from beirand.nodes import Nodes
-from beirand.lib import db_init
+
 
 EVENTS = EventEmitter()
 
@@ -31,5 +31,29 @@ DOCKER_TAR_CACHE_DIR = "tar_cache"
 try:
     NODES = Nodes()
 except AttributeError:
+
+    def db_init():
+        """Initialize database"""
+        from peewee import SqliteDatabase
+        from beiran.models.base import DB_PROXY
+
+        # check database file exists
+        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+        db_file_exists = os.path.exists(beiran_db_path)
+
+        if not db_file_exists:
+            logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
+            open(beiran_db_path, 'a').close()
+
+        # init database object
+        database = SqliteDatabase(beiran_db_path)
+        DB_PROXY.initialize(database)
+
+        if not db_file_exists:
+            logger.info("db hasn't initialized yet, creating tables!..")
+            from beiran.models import create_tables
+
+            create_tables(database)
+
     db_init()
     NODES = Nodes()

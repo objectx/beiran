@@ -5,6 +5,7 @@ import os
 import sys
 import logging
 import click
+from tabulate import tabulate
 from beiran.util import exit_print
 from beiran.util import Unbuffered
 from beiran.version import get_version
@@ -83,7 +84,8 @@ class Cli:
     def node_list(self, all):
         """List known beiran nodes"""
         nodes = self.beiran_client.get_nodes(all_nodes=all)
-        print(nodes)
+        table = [[n['uuid'], n['ip_address'] + ':8888', 'N/A', 'OK' ] for n in nodes]
+        print(tabulate(table, headers=["UUID", "IP:Port", "Docker Ver.", "Status?"]))
 
     node.add_command(node_list)
 

@@ -1,0 +1,11 @@
+# Beiran Daemon tests
+---
+- config:
+  - testset: "Beiran"
+- test:
+  - name: "Version from root handler"
+  - headers: {accept: 'application/json'}
+  - url: "/"
+  - validators: # operator is applied as: <actual> <operator> <expected>
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+     - compare: {jsonpath_mini: "version",   comparator: "eq",     expected: "0.0.1"}

@@ -7,7 +7,8 @@ RUN apt-get update && apt-get -y install \
 RUN cd /root; git clone --depth=1 https://github.com/sstephenson/bats.git; cd bats; ./install.sh /usr
 
 RUN pip3 install pyresttest
-
+RUN mkdir /tests
+ADD beirand.yaml /tests/beirand.yaml
 WORKDIR /tests
 ENTRYPOINT ["pyresttest"]
 

@@ -1,4 +1,5 @@
 aiodns==1.1.1
+aiodocker==0.10.0
 aiozeroconf==0.1.3
 astroid==1.6.0
 certifi==2017.11.5

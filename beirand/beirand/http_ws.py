@@ -1,13 +1,13 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import json
 
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
-from tornado.httpclient import AsyncHTTPClient
 
-from beirand.common import logger, VERSION, DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
+from aiodocker.exceptions import DockerError
+
+from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 from beirand.lib import local_node_uuid, get_plugin_list
@@ -134,47 +134,43 @@ class NodeInfo(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    @web.asynchronous
-    def get(self, uuid=None):
+
+    async def get(self, uuid=None):
         """Retrieve info of the node by `uuid` or the local node"""
-
-        def _on_docker_info(response):
-            if response.error:
-                # which means node is not accessible, mark it offline.
-                self.node_info.update(
-                    {
-                        "docker": {
-                            "status": False,
-                            "error": str(response.error)
-                        }
-                    }
-                )
-            else:
-                self.node_info.update(
-                    {
-                        "docker": {
-                            "status": True,
-                            "daemon_info": json.loads(response.body),
-                        }
-                    }
-                )
-
-            self.write(self.node_info)
-            self.finish()
 
         if not uuid:
             uuid = local_node_uuid()
         else:
             uuid = uuid.lstrip('/')
 
-        self.node_info = NODES.all_nodes.get(uuid)
-        if not self.node_info:
+        node_info = NODES.all_nodes.get(uuid)
+        if not node_info:
             raise HTTPError(status_code=404, log_message="Node Not Found")
 
-        self.node_info.update(get_plugin_list())
-        http_client = AsyncHTTPClient()
-        http_client.fetch('{}/info'.format(DOCKER_CLIENT.api.base_url),
-                          _on_docker_info)
+        node_info.update(get_plugin_list())
+
+        error = info = version = ""
+
+        try:
+            info = await self.application.docker.system.info()
+            version = await self.application.docker.version()
+            status = True
+        except DockerError as error:
+            status = False
+            logger.error('Docker Client error %s', error)
+
+        node_info.update(
+            {
+                "docker": {
+                    "status": status,
+                    "daemon_info": info,
+                    "version": version,
+                    "error": error
+                }
+            }
+        )
+
+        self.write(node_info)
 
     # pylint: enable=arguments-differ
 
@@ -239,3 +235,5 @@ APP = web.Application([
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),
 ])
+
+APP.docker = AIO_DOCKER_CLIENT

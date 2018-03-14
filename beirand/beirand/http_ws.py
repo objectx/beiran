@@ -216,9 +216,37 @@ class Ping(web.RequestHandler):
         """Just write PONG string"""
         self.write("PONG")
         self.finish()
+    # pylint: enable=arguments-differ
 
 
-# pylint: enable=arguments-differ
+class ImagesHandler(web.RequestHandler):
+    """Endpoint to list docker images"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: enable=arguments-differ
+    def get(self):
+        """Retrieve image list of the node
+
+        Available arguments are:
+            - all
+            - dangling
+            - label
+
+        """
+
+        image_list = []
+        all_images = self.get_argument('all', False)
+        dangling = self.get_argument('dangling', False)
+        label = self.get_argument("label", None)
+
+
+        self.write({
+            "images": image_list
+        })
+    # pylint: enable=arguments-differ
+
 
 APP = web.Application([
     (r'/', ApiRootHandler),
@@ -227,7 +255,7 @@ APP = web.Application([
     (r'/nodes', NodeList),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
-    # (r'/images', ImagesHandler),
+    (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),
 ])
 

@@ -135,46 +135,15 @@ class NodeInfo(web.RequestHandler):
 
     # pylint: disable=arguments-differ
     @web.asynchronous
-    def get(self, uuid=None):
+    async def get(self, uuid=None):
         """Retrieve info of the node by `uuid` or the local node"""
 
-        def _on_docker_info(response):
-            if response.error:
-                # which means node is not accessible, mark it offline.
-                self.node_info.update(
-                    {
-                        "docker": {
-                            "status": False,
-                            "error": str(response.error)
-                        }
-                    }
-                )
-            else:
-                self.node_info.update(
-                    {
-                        "docker": {
-                            "status": True,
-                            "daemon_info": json.loads(response.body),
-                        }
-                    }
-                )
-
-            self.write(self.node_info)
-            self.finish()
-
         if not uuid:
-            uuid = local_node_uuid()
+            node = await NODES.get_local_node()
         else:
-            uuid = uuid.lstrip('/')
-
-        self.node_info = NODES.all_nodes.get(uuid)
-        if not self.node_info:
-            raise HTTPError(status_code=404, log_message="Node Not Found")
-
-        self.node_info.update(get_plugin_list())
-        http_client = AsyncHTTPClient()
-        http_client.fetch('{}/info'.format(DOCKER_CLIENT.api.base_url),
-                          _on_docker_info)
+            node = await NODES.get_node_by_uuid(uuid)
+        self.write(node.to_dict())
+        self.finish()
 
     # pylint: enable=arguments-differ
 
@@ -202,11 +171,13 @@ class NodeList(web.RequestHandler):
             raise HTTPError(status_code=400,
                             log_message="Bad argument please use `True` or `1` for argument `all`")
 
+        node_list = NODES.list_of_nodes(
+            from_db=all_nodes
+        )
+
         self.write(
             {
-                "nodes": NODES.list_of_nodes(
-                    from_db=all_nodes
-                )
+                "nodes": [n.to_dict() for n in node_list]
             }
         )
         self.finish()

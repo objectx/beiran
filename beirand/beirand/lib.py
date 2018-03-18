@@ -2,6 +2,7 @@
 Support library for beiran daemon
 """
 import os
+import asyncio
 import ipaddress
 import json
 import platform
@@ -9,6 +10,7 @@ import socket
 import tarfile
 from uuid import uuid4, UUID
 from docker.errors import DockerException
+from tornado.httpclient import AsyncHTTPClient
 
 import netifaces
 
@@ -262,7 +264,7 @@ def collect_node_info():
     }
 
 
-def fetch_docker_info():
+async def fetch_docker_info(client):
     """
     Fetch docker daemon information
 
@@ -270,16 +272,40 @@ def fetch_docker_info():
         (dict): docker status and information
 
     """
+
     try:
+        http_client = AsyncHTTPClient()
+        # FIXME! http+docker://localunixsocket/info is bullshit.
+        # but we're switching to aiodocker anyway, leaving this broken like this
+        # for now
+        response = await http_client.fetch('{}/info'.format(client.api.base_url))
+
         return {
             "status": True,
-            "daemon_info": DOCKER_CLIENT.info()
+            "daemon_info": json.loads(response.body)
         }
-    except DockerException as error:
+    except Exception as error:
+        print(error)
         return {
             "status": False,
             "error": str(error)
         }
+
+
+async def update_docker_info(local_node, client):
+    print("Updating local docker info")
+    retry_after = 5
+    while True:
+        docker_info = await fetch_docker_info(client)
+        if docker_info["status"] == False:
+            print("Cannot fetch docker info, retrying after %d seconds" % retry_after)
+            await asyncio.sleep(retry_after)
+            if retry_after < 30:
+                retry_after += 5
+            continue
+
+    print(" *** Found local docker daemon *** ")
+    local_node.docker = docker_info['daemon_info']
 
 
 def db_init():

@@ -14,15 +14,17 @@ from tornado import httpserver
 from beirand.common import logger
 from beirand.common import NODES
 from beirand.common import EVENTS
+from beirand.common import DOCKER_CLIENT
 from beirand.http_ws import APP
-from beirand.lib import collect_node_info, fetch_docker_info
 from beirand.lib import db_init
+from beirand.lib import collect_node_info, update_docker_info
 from beirand.lib import get_listen_port
+
+from beiran.models import Node
 
 AsyncIOMainLoop().install()
 
-
-async def new_node(ip_address, service_port=None):
+async def new_node(ip_address, service_port=None, **kwargs):
     """
     Discovered new node on beiran network
     Args:
@@ -77,14 +79,13 @@ async def main(loop):
     logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
 
     # collect node info and create node object
-    node_info = collect_node_info()
-    node_info.update(
-        {
-            'docker': fetch_docker_info()
-        }
-    )
+    NODES.local_node = Node.from_dict(collect_node_info())
 
-    NODES.add_or_update(node_info)
+    # this is async but we will let it run in background, we have no rush
+    # TODO: Check if this needs to be here
+    loop.create_task(update_docker_info(NODES.local_node, DOCKER_CLIENT))
+
+    NODES.add_or_update(NODES.local_node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

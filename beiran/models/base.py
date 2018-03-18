@@ -5,6 +5,7 @@ Module of Beirand data models. Beirand data models use Peewee ORM.
 import json
 
 from peewee import Model, Proxy, TextField
+from playhouse.shortcuts import model_to_dict, dict_to_model
 
 DB_PROXY = Proxy()
 
@@ -16,6 +17,17 @@ class BaseModel(Model):
         """Set database metaclass attribute to DB object"""
         database = DB_PROXY
 
+    def to_dict(self, **kwargs):
+        return model_to_dict(self, **kwargs)
+
+    @classmethod
+    def from_dict(_class, _dict):
+        return dict_to_model(_class, _dict)
+
+    def update_using_obj(self, obj):
+        fields = self._meta.fields
+        for f in fields:
+            setattr(self, f, getattr(obj, f))
 
 class JSONStringField(TextField):
     """A basic JSON Field based on text field"""

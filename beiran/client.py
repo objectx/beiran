@@ -4,6 +4,7 @@ Common client for beiran project
 
 import socket
 import json
+import sys
 import re
 # from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado import httpclient, gen
@@ -96,6 +97,8 @@ class Client:
         except Exception as error:
             print("Cannot connect to beiran daemon at %s" % self.url)
             print("Error: " + str(error))
+            sys.exit(1)
+
             # Other errors are possible, such as IOError.
             raise error
 

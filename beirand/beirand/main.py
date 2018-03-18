@@ -59,8 +59,7 @@ async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
-
-def main():
+async def main(loop):
     """ Main function wrapper """
 
     logger.info("Initializing database...")
@@ -88,7 +87,6 @@ def main():
     NODES.add_or_update(node_info)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
-    loop = asyncio.get_event_loop()
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
     logger.debug("Discovery method is %s", discovery_mode)
 
@@ -108,9 +106,8 @@ def main():
     EVENTS.on('node.added', on_new_node_added)
     EVENTS.on('node.removed', on_node_removed)
 
-    loop.set_debug(True)
-    loop.run_forever()
-
-
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.set_debug(True)
+    loop.create_task(main(loop))
+    loop.run_forever()

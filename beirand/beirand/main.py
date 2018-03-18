@@ -16,6 +16,7 @@ from beirand.common import NODES
 from beirand.common import EVENTS
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, fetch_docker_info
+from beirand.lib import db_init
 from beirand.lib import get_listen_port
 
 AsyncIOMainLoop().install()
@@ -61,6 +62,9 @@ async def on_new_node_added(ip_address, service_port):
 
 def main():
     """ Main function wrapper """
+
+    logger.info("Initializing database...")
+    db_init()
 
     logger.info("Starting Daemon HTTP Server...")
     # Listen on Unix Socket

@@ -25,4 +25,6 @@ WORKDIR /src/beirand
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran
 
-CMD [ "python3", "beirand/main.py" ]
+HEALTHCHECK --interval=3s CMD "curl --connect-timeout=1 http://localhost:8888/info"
+
+CMD [ "sh", "-c", "sleep 30 && python3.6 -u beirand/main.py" ]

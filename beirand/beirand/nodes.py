@@ -14,7 +14,7 @@ class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
-        self.all_nodes = self.get_from_db() or {}
+        self.all_nodes = {}
         self.logger = logging.getLogger(__package__)
 
     @staticmethod

@@ -2,8 +2,8 @@
 Module for Node Data Model
 """
 from peewee import IntegerField, CharField, UUIDField
-from beiran.models.base import BaseModel
-
+from beiran.models.base import BaseModel, JSONStringField
+import uuid
 
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""
@@ -18,10 +18,44 @@ class Node(BaseModel):
     beiran_version = CharField(max_length=10)  # beiran daemon version of node
     beiran_service_port = IntegerField()
 
+    # docker plugin keys
+    # docker_version = CharField(max_length=20)
+    # docker_storage_driver = CharField(max_length=50)  # overlay2, aufs
+    # docker_root_dir = CharField(default='/var/lib/docker')
+    docker = JSONStringField(null=True)  # dump all data from docker_client.info()
+
     def __str__(self):
         return "Node: {hostname}, Address: {ip}, UUID: {uuid}".format(hostname=self.hostname,
                                                                       ip=self.ip_address,
                                                                       uuid=self.uuid)
 
+    @classmethod
+    def from_dict(_class, _dict):
+        _dict['uuid'] = uuid.UUID(_dict['uuid'])
+        return BaseModel.from_dict(_class, _dict)
+
     def __repr__(self):
         return self.__str__()
+
+    def to_dict(self, **kwargs):
+        _dict = BaseModel.to_dict(self, **kwargs)
+        _dict['uuid'] = self.uuid.hex
+        return _dict
+
+    @property
+    def docker_version(self):
+        if self.docker is None:
+            return None
+        return self.docker['ServerVersion']
+
+    @property
+    def docker_storage_driver(self):
+        if self.docker is None:
+            return None
+        return self.docker['Driver']
+
+    @property
+    def docker_root_dir(self):
+        if self.docker is None:
+            return None
+        return self.docker['DockerRootDir']

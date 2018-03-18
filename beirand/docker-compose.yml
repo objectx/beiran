@@ -5,12 +5,12 @@ services:
     privileged: true
 #    volumes:
 #      - /var/run/:/var/run/
-    command: python3.6 -u beirand/main.py
     networks:
       - test
     environment:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LISTEN_ADDR=0.0.0.0
       - LOG_LEVEL=INFO
       - DOCKER_HOST=http://172.17.0.1:2375
 networks:

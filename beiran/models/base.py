@@ -21,8 +21,8 @@ class BaseModel(Model):
         return model_to_dict(self, **kwargs)
 
     @classmethod
-    def from_dict(_class, _dict):
-        return dict_to_model(_class, _dict)
+    def from_dict(cls, _dict):
+        return dict_to_model(cls, _dict)
 
     def update_using_obj(self, obj):
         fields = self._meta.fields

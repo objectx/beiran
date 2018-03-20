@@ -30,15 +30,15 @@ class Node(BaseModel):
                                                                       uuid=self.uuid)
 
     @classmethod
-    def from_dict(_class, _dict):
+    def from_dict(cls, _dict):
         _dict['uuid'] = uuid.UUID(_dict['uuid'])
-        return BaseModel.from_dict(_class, _dict)
+        return super().from_dict(_dict)
 
     def __repr__(self):
         return self.__str__()
 
     def to_dict(self, **kwargs):
-        _dict = BaseModel.to_dict(self, **kwargs)
+        _dict = super().to_dict(**kwargs)
         _dict['uuid'] = self.uuid.hex
         return _dict
 

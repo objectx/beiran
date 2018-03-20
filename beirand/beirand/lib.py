@@ -163,7 +163,10 @@ def get_listen_port():
         str: listen port
 
     """
-    return os.environ.get('LISTEN_ADDR', '8888')
+    try:
+        return int(os.environ.get('LISTEN_PORT', '8888'))
+    except ValueError:
+        raise ValueError('LISTEN_PORT must be a valid port number!')
 
 
 def get_listen_interface():

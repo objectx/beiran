@@ -89,7 +89,7 @@ class Cli:
 
     image.add_command(image_list)
 
+Cli()
 
 if __name__ == '__main__':
-    Cli()
     main()

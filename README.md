@@ -29,6 +29,7 @@ pip install -r beiran-cli/requirements.txt
 pip install ipython
 ln -s $(pwd)/beirand/beirand env/lib/python3.6/site-packages/
 ln -s $(pwd)/beiran env/lib/python3.6/site-packages/
+ln -s $(pwd)/beiran-cli env/lib/python3.6/site-packages/beiran_cli
 ```
 
 #### - Settings (Environment Variables)
@@ -52,7 +53,7 @@ python -m beirand
 #### - Use cli
 
 ```
-python -m beiran-cli image list
+python -m beiran_cli image list
 ```
 
 ## Build

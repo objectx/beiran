@@ -6,8 +6,8 @@ services:
 pipeline:
   publish:
     image: plugins/docker
-    dry-run: true
-    cache-from: dkr.rsnc.io/poc/beiran/beiran
+    dry_run: true
+    cache_from: dkr.rsnc.io/poc/beiran/beiran
     repo: dkr.rsnc.io/poc/beiran/beiran
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}
@@ -49,6 +49,7 @@ pipeline:
       - LISTEN_ADDR=0.0.0.0
     commands:
       - date
+      - ip addr show
       - python3 /src/beirand/main.py
   
   rest_test:
@@ -58,10 +59,10 @@ pipeline:
       - LOG_LEVEL=DEBUG
       - PRINT_BODIES=True
     commands: 
+      - date
+      - ip addr show
+      - ss -aut || netstat -anp || cat /proc/net/tcp || echo "nothing supported for listing ports :/"
       - pip install pycurl pyresttest
-      - date
-      - sleep 60
-      - date
       - pyresttest --url http://127.0.0.1:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
 
   notify:

@@ -1,6 +1,4 @@
 services:
-  registry:
-    image: registry
   docker:
     image: docker
 
@@ -9,8 +7,7 @@ pipeline:
   pre-build:
     image: plugins/docker
     cache_from: dkr.rsnc.io/poc/beiran/beiran:latest
-    repo: registry:5000/beiran
-    insecure: registry:5000
+    repo: dkr.rsnc.io/poc/beiran/beiran
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}
 
@@ -41,7 +38,7 @@ pipeline:
       - pylint beiran_cli
   
   beirand:
-    image: registry:5000/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
     detach: true
     environment:
       - DISCOVERY_METHOD=dns
@@ -69,11 +66,9 @@ pipeline:
 
   publish:
     image: plugins/docker
-    dry_run: true
     cache_from: dkr.rsnc.io/poc/beiran/beiran
     repo: dkr.rsnc.io/poc/beiran/beiran
     tags:
-      - drone-build-${DRONE_BUILD_NUMBER}
       - edge
 
   notify:

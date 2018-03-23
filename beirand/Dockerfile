@@ -8,13 +8,13 @@ RUN mkdir /src
 WORKDIR /src
 
 # Install bats
-ADD beiran/requirements.txt /src/r-lib.txt
-RUN pip3 install -r /src/r-lib.txt
+# ADD beiran/requirements.txt /src/r-lib.txt
+# RUN pip3 install -r /src/r-lib.txt
 
-ADD beiran-cli/requirements.txt /src/r-cli.txt
-RUN pip3 install -r /src/r-cli.txt
+# ADD beiran-cli/requirements.txt /src/r-cli.txt
+# RUN pip3 install -r /src/r-cli.txt
 
-ADD beirand/requirements.txt /src/r-daemon.txt
+ADD requirements.txt /src/r-daemon.txt
 RUN pip3 install -r /src/r-daemon.txt
 
 ADD [ ".", "/src" ]

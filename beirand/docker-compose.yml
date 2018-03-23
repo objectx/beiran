@@ -1,7 +1,7 @@
 version: '2'
 services:
   beirand:
-    image: dkr.rlab.io/poc/beiran/daemon
+    image: dkr.rsnc.io/poc/beiran/daemon
     privileged: true
 #    volumes:
 #      - /var/run/:/var/run/

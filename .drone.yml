@@ -3,7 +3,6 @@ services:
     image: docker
   beirand: 
     image: dkr.rsnc.io/poc/beiran/daemon
-    command: python3.6 -u main.py
     environment:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand

@@ -51,9 +51,7 @@ pipeline:
   publish:
     image: plugins/docker
     dockerfile: beirand/Dockerfile
-    repo: reg.rsnc.io/beiran/beiran
-    registry: reg.rsnc.io 
-    secrets: [ docker_username, docker_password ] 
+    repo: dkr.rlab.io/beiran/beiran
     tags:
       - latest
       - 1.0.1

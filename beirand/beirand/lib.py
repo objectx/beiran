@@ -151,7 +151,7 @@ def get_listen_port():
         str: listen port
 
     """
-    return os.environ.get('LISTEN_ADDR', '8888')
+    return os.environ.get('LISTEN_PORT', '8888')
 
 
 def get_listen_interface():

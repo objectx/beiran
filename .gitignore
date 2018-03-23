@@ -4,3 +4,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 .cache
 run
+*.log
+*.db
+uuid.conf
+env

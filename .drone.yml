@@ -1,4 +1,4 @@
-service:
+services:
   docker:
     image: docker
   beirand: 

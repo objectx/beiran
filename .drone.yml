@@ -35,8 +35,8 @@ pipeline:
     commands:
       - apk add --update --no-cache python-dev
       - pip install -r beiran/requirements.txt
-      - pip install -r beiran-cli/requirements.txt
-      - pylint beiran-cli
+      - pip install -r beiran_cli/requirements.txt
+      - pylint beiran_cli
   
   beirand: 
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}

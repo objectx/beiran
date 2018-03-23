@@ -38,7 +38,7 @@ pipeline:
       - pip install -r beiran_cli/requirements.txt
       - pylint beiran_cli
   
-  beirand: 
+  beirand:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
     detach: true
     environment:
@@ -47,6 +47,9 @@ pipeline:
       - LOG_LEVEL=INFO
       - DOCKER_HOST=http://127.0.0.1:2375
       - LISTEN_ADDR=0.0.0.0
+    commands:
+      - date
+      - python3 /src/beirand/main.py
   
   rest_test:
     image: python:3-jessie
@@ -56,6 +59,9 @@ pipeline:
       - PRINT_BODIES=True
     commands: 
       - pip install pycurl pyresttest
+      - date
+      - sleep 60
+      - date
       - pyresttest --url http://127.0.0.1:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
 
   notify:

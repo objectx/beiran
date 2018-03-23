@@ -1,15 +1,15 @@
 services:
   docker:
     image: docker
-  beirand: 
-    image: dkr.rsnc.io/poc/beiran/daemon
-    environment:
-      - DISCOVERY_METHOD=dns
-      - DISCOVERY_SERVICE_ADDRESS=beirand
-      - LOG_LEVEL=INFO
-      - DOCKER_HOST=http://127.0.0.1:2375
+
 
 pipeline:
+  publish:
+    image: plugins/docker
+    repo: dkr.rsnc.io/beiran/beiran
+    tags:
+      - drone-build-${DRONE_BUILD_NUMBER}
+
   lint-daemon:
     image: clburlison/pylint
     group: lint
@@ -36,6 +36,15 @@ pipeline:
       - pip install -r beiran-cli/requirements.txt
       - pylint beiran-cli
   
+  beirand: 
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    detach: true
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO
+      - DOCKER_HOST=http://127.0.0.1:2375
+  
   rest_test:
     image: python:3-jessie
     environment:
@@ -45,16 +54,6 @@ pipeline:
     commands: 
       - pip install pycurl pyresttest
       - pyresttest --url http://127.0.0.1:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
-
-
-  publish:
-    image: plugins/docker
-    dockerfile: beirand/Dockerfile
-    repo: dkr.rlab.io/beiran/beiran
-    tags:
-      - latest
-      - 1.0.1
-      - 1.0 
 
   notify:
     image: plugins/slack

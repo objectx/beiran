@@ -3,7 +3,6 @@ services:
     image: docker
   beirand: 
     image: dkr.rlab.io/poc/beiran/daemon
-    privileged: true
     command: python3.6 -u beirand/main.py
     environment:
       - DISCOVERY_METHOD=dns

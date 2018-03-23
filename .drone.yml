@@ -6,7 +6,7 @@ services:
 pipeline:
   publish:
     image: plugins/docker
-    repo: dkr.rsnc.io/beiran/beiran
+    repo: dkr.rsnc.io/poc/beiran/beiran
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}
 

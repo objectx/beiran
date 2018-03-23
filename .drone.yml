@@ -1,5 +1,17 @@
-pipeline:
+service:
+  docker:
+    image: docker
+  beirand: 
+    image: dkr.rlab.io/poc/beiran/daemon
+    privileged: true
+    command: python3.6 -u beirand/main.py
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO
+      - DOCKER_HOST=http://127.0.0.1:2375
 
+pipeline:
   lint-daemon:
     image: clburlison/pylint
     group: lint
@@ -26,6 +38,17 @@ pipeline:
       - pip install -r beiran-cli/requirements.txt
       - pylint beiran-cli
   
+  rest_test:
+    image: python:3-jessie
+    environment:
+      - LOG=True
+      - LOG_LEVEL=DEBUG
+      - PRINT_BODIES=True
+    commands: 
+      - pip install pycurl pyresttest
+      - pyresttest --url http://127.0.0.1:8888 --test /tests/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+
+
   publish:
     image: plugins/docker
     dockerfile: beirand/Dockerfile

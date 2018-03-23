@@ -46,7 +46,7 @@ pipeline:
       - PRINT_BODIES=True
     commands: 
       - pip install pycurl pyresttest
-      - pyresttest --url http://127.0.0.1:8888 --test ./tests/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+      - pyresttest --url http://127.0.0.1:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
 
 
   publish:

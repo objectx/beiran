@@ -10,7 +10,7 @@ pipeline:
     image: plugins/docker
     cache_from: dkr.rsnc.io/poc/beiran/beiran:latest
     repo: registry:5000/beiran
-    insecure: true
+    insecure: registry:5000
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}
 

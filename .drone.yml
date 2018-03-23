@@ -1,14 +1,16 @@
 services:
+  registry:
+    image: registry
   docker:
     image: docker
 
 
 pipeline:
-  publish:
+  pre-build:
     image: plugins/docker
-    dry_run: true
-    cache_from: dkr.rsnc.io/poc/beiran/beiran
-    repo: dkr.rsnc.io/poc/beiran/beiran
+    cache_from: dkr.rsnc.io/poc/beiran/beiran:latest
+    repo: registry:5000/beiran
+    insecure: true
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}
 
@@ -39,7 +41,7 @@ pipeline:
       - pylint beiran_cli
   
   beirand:
-    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    image: registry:5000/beiran:drone-build-${DRONE_BUILD_NUMBER}
     detach: true
     environment:
       - DISCOVERY_METHOD=dns
@@ -63,7 +65,16 @@ pipeline:
       - ip addr show
       - ss -aut || netstat -anp || cat /proc/net/tcp || echo "nothing supported for listing ports :/"
       - pip install pycurl pyresttest
-      - pyresttest --url http://127.0.0.1:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+
+  publish:
+    image: plugins/docker
+    dry_run: true
+    cache_from: dkr.rsnc.io/poc/beiran/beiran
+    repo: dkr.rsnc.io/poc/beiran/beiran
+    tags:
+      - drone-build-${DRONE_BUILD_NUMBER}
+      - edge
 
   notify:
     image: plugins/slack
@@ -72,4 +83,3 @@ pipeline:
     webhook: https://chat.rsnc.io/hooks/jhw1tcrpbpnybez4a3db16i1rw
     when:
       status: [ success, failure ]
-  

@@ -6,6 +6,8 @@ services:
 pipeline:
   publish:
     image: plugins/docker
+    dry-run: true
+    cache-from: dkr.rsnc.io/poc/beiran/beiran
     repo: dkr.rsnc.io/poc/beiran/beiran
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}

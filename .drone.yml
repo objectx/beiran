@@ -44,6 +44,7 @@ pipeline:
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO
       - DOCKER_HOST=http://127.0.0.1:2375
+      - LISTEN_ADDR=0.0.0.0
   
   rest_test:
     image: python:3-jessie

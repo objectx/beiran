@@ -55,17 +55,16 @@ class Client:
         Args:
             url: beirand url
         """
-        p = re.compile('^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
-        m = p.match(url)
-        if m is None:
-            print("URL is broken: %s" % url)
-            raise ValueError('url')
+        url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
+        matched = url_pattern.match(url)
+        if not matched:
+            raise ValueError("URL is broken: %s" % url)
 
-        proto = m.groups()[0]
-        isUnixSocket = m.groups()[1] is not None
-        location = m.groups()[2]
+        proto = matched.groups()[0]
+        is_unix_socket = matched.groups()[1]
+        location = matched.groups()[2]
 
-        if isUnixSocket:
+        if is_unix_socket:
             self.socket_path = location
 
             resolver = UnixResolver(self.socket_path)

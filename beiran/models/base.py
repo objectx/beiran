@@ -18,16 +18,46 @@ class BaseModel(Model):
         database = DB_PROXY
 
     def to_dict(self, **kwargs):
+        """
+        Serialize model to python dict
+
+        Args:
+            **kwargs
+
+        Returns:
+            (dict): serialized model object
+
+        """
+
         return model_to_dict(self, **kwargs)
 
     @classmethod
     def from_dict(cls, _dict):
+        """
+        Deserialize model from python dict
+        Args:
+            _dict (dict): python dict represents obj
+
+        Returns:
+            (BaseModel): model object
+
+        """
         return dict_to_model(cls, _dict)
 
     def update_using_obj(self, obj):
+        """
+        Update model object with given obj
+
+        Args:
+            obj (BaseModel): new object
+
+        Returns:
+            (BaseModel): updated base object
+
+        """
         fields = self._meta.fields
-        for f in fields:
-            setattr(self, f, getattr(obj, f))
+        for field in fields:
+            setattr(self, field, getattr(obj, field))
 
 class JSONStringField(TextField):
     """A basic JSON Field based on text field"""

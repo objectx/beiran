@@ -1,9 +1,10 @@
 """
 Module for Node Data Model
 """
+import uuid
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
-import uuid
+
 
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""
@@ -17,11 +18,6 @@ class Node(BaseModel):
     architecture = CharField(max_length=20)  # x86_64
     beiran_version = CharField(max_length=10)  # beiran daemon version of node
     beiran_service_port = IntegerField()
-
-    # docker plugin keys
-    # docker_version = CharField(max_length=20)
-    # docker_storage_driver = CharField(max_length=50)  # overlay2, aufs
-    # docker_root_dir = CharField(default='/var/lib/docker')
     docker = JSONStringField(null=True)  # dump all data from docker_client.info()
 
     def __str__(self):
@@ -44,18 +40,15 @@ class Node(BaseModel):
 
     @property
     def docker_version(self):
-        if self.docker is None:
-            return None
-        return self.docker['ServerVersion']
+        """Docker version"""
+        return self.docker['ServerVersion'] if self.docker else None
 
     @property
     def docker_storage_driver(self):
-        if self.docker is None:
-            return None
-        return self.docker['Driver']
+        """Docker storage driver"""
+        return self.docker['Driver'] if self.docker else None
 
     @property
     def docker_root_dir(self):
-        if self.docker is None:
-            return None
-        return self.docker['DockerRootDir']
+        """Docker root directory"""
+        return self.docker['DockerRootDir'] if self.docker else None

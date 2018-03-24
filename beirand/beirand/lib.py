@@ -1,8 +1,8 @@
 """
 Support library for beiran daemon
 """
-import os
 import asyncio
+import os
 import ipaddress
 import json
 import platform
@@ -19,7 +19,7 @@ from beiran.log import build_logger
 from beiran.version import get_version
 
 LOGGER = build_logger()
-
+LOCAL_NODE_UUID_CACHED = None
 
 def docker_sha_summary(sha):
     """
@@ -86,19 +86,18 @@ def create_tar_archive(dir_path, output_file_path):
     with tarfile.open(output_file_path, "w") as tar:
         tar.add(dir_path, arcname='.')
 
-_local_node_uuid_cached = None
 def local_node_uuid():
     """
     Get UUID from config file if it exists, else return a new one and write it to config file
 
     Returns:
-        str: uuid in hex
+        (UUID): uuid in hex
 
     """
-    global _local_node_uuid_cached
+    global LOCAL_NODE_UUID_CACHED
 
-    if _local_node_uuid_cached:
-        return _local_node_uuid_cached
+    if LOCAL_NODE_UUID_CACHED:
+        return LOCAL_NODE_UUID_CACHED
 
     uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
     try:
@@ -117,7 +116,7 @@ def local_node_uuid():
         uuid_file.close()
 
     LOGGER.info("local nodes UUID is: %s", uuid.hex)
-    _local_node_uuid_cached = uuid
+    LOCAL_NODE_UUID_CACHED = uuid
     return uuid
 
 def get_default_gateway_interface():

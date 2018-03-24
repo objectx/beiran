@@ -1,6 +1,5 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import json
 
 from tornado import websocket, web
 from tornado.options import options, define
@@ -9,7 +8,6 @@ from tornado.web import HTTPError
 from beirand.common import logger, VERSION, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
-from beirand.lib import local_node_uuid, get_plugin_list
 
 
 define('listen_address',

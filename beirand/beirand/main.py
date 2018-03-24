@@ -6,6 +6,7 @@ import os
 import sys
 import asyncio
 import importlib
+
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options
 from tornado.netutil import bind_unix_socket
@@ -25,7 +26,8 @@ from beiran.models import Node
 
 AsyncIOMainLoop().install()
 
-async def new_node(ip_address, service_port=None, **kwargs):
+
+async def new_node(ip_address, service_port=None):
     """
     Discovered new node on beiran network
     Args:

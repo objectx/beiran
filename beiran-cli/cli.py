@@ -67,8 +67,7 @@ class Cli:
 
     main.add_command(version)
 
-
-    """Node management commands"""
+    # ##########  Node management commands
 
     @click.group()
     @click.pass_obj
@@ -79,19 +78,18 @@ class Cli:
     main.add_command(node)
 
     @click.command('list')
-    @click.option('--all', default=False, is_flag=True, help='List all known nodes (including offline ones)')
+    @click.option('--all', default=False, is_flag=True,
+                  help='List all known nodes (including offline ones)')
     @click.pass_obj
-    def node_list(self, all):
+    def node_list(self, all_nodes):
         """List known beiran nodes"""
-        nodes = self.beiran_client.get_nodes(all_nodes=all)
-        table = [[n['uuid'], n['ip_address'] + ':8888', 'N/A', 'OK' ] for n in nodes]
+        nodes = self.beiran_client.get_nodes(all_nodes=all_nodes)
+        table = [[n['uuid'], n['ip_address'] + ':8888', 'N/A', 'OK'] for n in nodes]
         print(tabulate(table, headers=["UUID", "IP:Port", "Docker Ver.", "Status?"]))
 
     node.add_command(node_list)
 
-
-
-    """Image management commands"""
+    # ##########  Image management commands
 
     @click.group()
     @click.pass_obj

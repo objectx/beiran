@@ -9,15 +9,14 @@ import platform
 import socket
 import tarfile
 from uuid import uuid4, UUID
-from docker.errors import DockerException
-from tornado.httpclient import AsyncHTTPClient
 
+import aiohttp
+import async_timeout
 import netifaces
 
 
 from beiran.log import build_logger
 from beiran.version import get_version
-from beirand.common import DOCKER_CLIENT
 
 LOGGER = build_logger()
 
@@ -267,9 +266,27 @@ def collect_node_info():
     }
 
 
-async def fetch_docker_info(client):
+async def async_fetch(url, timeout=3):
     """
-    Fetch docker daemon information
+    Async http get with aiohttp
+    Args:
+        url (str): get url
+        timeout (int): timeout
+
+    Returns:
+        (int, dict): resonse status code, response json
+
+    """
+    async with aiohttp.ClientSession() as session:
+        async with async_timeout.timeout(timeout):
+            async with session.get(url) as resp:
+                status, response = resp.status, await resp.json()
+                return status, response
+
+
+async def fetch_docker_info(aiodocker):
+    """
+    Fetch async docker daemon information
 
     Returns:
         (dict): docker status and information
@@ -277,38 +294,45 @@ async def fetch_docker_info(client):
     """
 
     try:
-        http_client = AsyncHTTPClient()
-        # FIXME! http+docker://localunixsocket/info is bullshit.
-        # but we're switching to aiodocker anyway, leaving this broken like this
-        # for now
-        response = await http_client.fetch('{}/info'.format(client.api.base_url))
-
+        info = await aiodocker.system.info()
         return {
             "status": True,
-            "daemon_info": json.loads(response.body)
+            "daemon_info": info
         }
     except Exception as error:
-        print(error)
+        LOGGER.error("Error while connecting local docker daemon %s", error)
         return {
             "status": False,
             "error": str(error)
         }
 
 
-async def update_docker_info(local_node, client):
-    print("Updating local docker info")
-    retry_after = 5
-    while True:
-        docker_info = await fetch_docker_info(client)
-        if docker_info["status"] == False:
-            print("Cannot fetch docker info, retrying after %d seconds" % retry_after)
-            await asyncio.sleep(retry_after)
-            if retry_after < 30:
-                retry_after += 5
-            continue
+async def update_docker_info(local_node, aiodocker):
+    """
+    Makes an async call to docker `client` and get info for `local_node`
 
-    print(" *** Found local docker daemon *** ")
-    local_node.docker = docker_info['daemon_info']
+    Args:
+        local_node (Node):
+        client (docker):
+
+    Returns:
+        (None): updates `local_node` object
+
+
+    """
+    LOGGER.debug("Updating local docker info")
+    retry_after = 0
+
+    while retry_after < 30:
+        docker_info = await fetch_docker_info(aiodocker)
+        if docker_info["status"]:
+            LOGGER.debug(" *** Found local docker daemon *** ")
+            local_node.docker = docker_info['daemon_info']
+            break
+        else:
+            LOGGER.debug("Cannot fetch docker info, retrying after %d seconds", retry_after)
+            await asyncio.sleep(5)
+        retry_after += 5
 
 
 def db_init():

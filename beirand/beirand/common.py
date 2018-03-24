@@ -2,6 +2,7 @@
 import logging
 import os
 
+from aiodocker import Docker
 import docker
 from pyee import EventEmitter
 
@@ -29,3 +30,5 @@ DOCKER_LC = docker.APIClient()
 DOCKER_TAR_CACHE_DIR = "tar_cache"
 
 NODES = Nodes()
+
+AIO_DOCKER_CLIENT = Docker()

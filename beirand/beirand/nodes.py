@@ -1,14 +1,10 @@
 """
 Module for in memory node tracking object `Nodes`
 """
-import json
 import logging
-
-from tornado.httpclient import AsyncHTTPClient
-from uuid import UUID
-
 from beiran.models import Node
 
+from beirand.lib import async_fetch
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
@@ -60,7 +56,7 @@ class Nodes(object):
 
         """
         if not from_db:
-            return self.all_nodes.get(uuid)
+            return self.all_nodes.get(uuid, None)
 
         elif uuid is not None:
             return self.get_node_by_uuid_from_db(uuid=uuid)
@@ -129,7 +125,7 @@ class Nodes(object):
         # todo: will be implemented
         pass
 
-    def add_or_update_new_remote_node(self, node_ip, node_port):
+    async def add_or_update_new_remote_node(self, node_ip, node_port):
         """
         Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
 
@@ -141,30 +137,21 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        http_client = AsyncHTTPClient()
-        http_client.fetch('http://{}:{}/info'.format(node_ip, node_port),
-                          self.on_new_remote_node)  # todo: https?
+        status, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
+        if status == 200:
+            return self.add_or_update(Node.from_dict(response))
 
-    def on_new_remote_node(self, response):
+    def get_node_by_ip(self, ip_address):
         """
-        Add or update local db record of the new remote node with information
-        gathered from the remote node over http info endpoint
+        Returns the node specified by `ip` address.
 
         Args:
-            response: tornado async http client response object
+            ip_address (str): ip address
+
+        Returns:
+            (Node) found node object
 
         """
-
-        if response.error:
-            # which means node is not accessible, mark it offline.
-            self.logger.error(
-                "An error occured while trying to reach remote node at port %s",
-                response.error)
-            return None
-
-        node_info = json.loads(response.body)  # todo: remove unnecessary details
-        node = self.add_or_update(Node.from_dict(node_info))
-        return node
-
-    async def get_local_node(self):
-        return self.local_node
+        for _, node in self.all_nodes.items():
+            if node.ip_address == ip_address:
+                return node

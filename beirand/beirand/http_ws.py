@@ -5,9 +5,8 @@ import json
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
-from tornado.httpclient import AsyncHTTPClient
 
-from beirand.common import logger, VERSION, DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
+from beirand.common import logger, VERSION, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 from beirand.lib import local_node_uuid, get_plugin_list
@@ -139,7 +138,7 @@ class NodeInfo(web.RequestHandler):
         """Retrieve info of the node by `uuid` or the local node"""
 
         if not uuid:
-            node = await NODES.get_local_node()
+            node = NODES.local_node
         else:
             node = await NODES.get_node_by_uuid(uuid)
         self.write(node.to_dict())

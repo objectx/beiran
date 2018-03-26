@@ -101,7 +101,7 @@ class Nodes(object):
 
         """
 
-        removed = self.all_nodes.pop(node.uuid, None)
+        removed = self.all_nodes.pop(node.uuid.hex, None)
         return bool(removed)
 
     def list_of_nodes(self, from_db=True):

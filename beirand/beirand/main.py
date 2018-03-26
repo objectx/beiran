@@ -61,8 +61,13 @@ async def removed_node(node):
     Args:
         node: Node object
     """
-    logger.info('node has been removed %s', str(node))
+    logger.info('Node is about to be removed %s', str(node))
+    if isinstance(node, str):
+        node = NODES.get_node_by_ip(node)
+        logger.debug('Pointed the node by ip address: %s', node.uuid)
     removed = NODES.remove_node(node)
+    logger.debug('Removed? %s', removed)
+
     if removed:
         EVENTS.emit('node.removed', node)
 

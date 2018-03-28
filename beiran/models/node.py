@@ -35,7 +35,7 @@ class Node(BaseModel):
 
     def to_dict(self, **kwargs):
         _dict = super().to_dict(**kwargs)
-        _dict['uuid'] = self.uuid.hex
+        _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
         return _dict
 
     @property

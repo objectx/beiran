@@ -4,7 +4,7 @@ pipeline:
     image: clburlison/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev gcc linux-headers musl-dev
+      - apk add --update --no-cache python-dev gcc g++ linux-headers musl-dev
       - pip install -r beiran/requirements.txt
       - pip install -r beirand/requirements.txt
       - pylint beirand/beirand

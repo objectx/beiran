@@ -1,8 +1,3 @@
-services:
-  docker:
-    image: docker
-
-
 pipeline:
   pre-build:
     group: build
@@ -42,7 +37,11 @@ pipeline:
     group: lint
     commands:
       - pylint beiran_cli
-  
+
+  docker:
+    image: docker
+    detach: true
+
   beirand:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
     detach: true
@@ -50,7 +49,7 @@ pipeline:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO
-      - DOCKER_HOST=http://127.0.0.1:2375
+      - DOCKER_HOST=http://docker:2375
       - LISTEN_ADDR=0.0.0.0
     commands:
       - date

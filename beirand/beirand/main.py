@@ -18,7 +18,6 @@ from beirand.common import EVENTS
 from beirand.common import AIO_DOCKER_CLIENT
 
 from beirand.http_ws import APP
-from beirand.lib import db_init
 from beirand.lib import collect_node_info, update_docker_info
 from beirand.lib import get_listen_port
 
@@ -54,7 +53,6 @@ async def new_node(ip_address, service_port=None):
             node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
             timeout -= 1
 
-
 async def removed_node(node):
     """
     Node on beiran network is down
@@ -71,16 +69,36 @@ async def removed_node(node):
     if removed:
         EVENTS.emit('node.removed', node)
 
-
 async def on_node_removed(node):
     """Placeholder for event on node removed"""
     logger.info("new event: an existing node removed %s", node.uuid)
-
 
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
+def db_init():
+    """Initialize database"""
+    from peewee import SqliteDatabase
+    from beiran.models.base import DB_PROXY
+
+    # check database file exists
+    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+    db_file_exists = os.path.exists(beiran_db_path)
+
+    if not db_file_exists:
+        logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
+        open(beiran_db_path, 'a').close()
+
+    # init database object
+    database = SqliteDatabase(beiran_db_path)
+    DB_PROXY.initialize(database)
+
+    if not db_file_exists:
+        logger.info("db hasn't initialized yet, creating tables!..")
+        from beiran.models import create_tables
+
+        create_tables(database)
 
 def main():
     """ Main function wrapper """

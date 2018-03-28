@@ -155,3 +155,5 @@ class Nodes(object):
         for _, node in self.all_nodes.items():
             if node.ip_address == ip_address:
                 return node
+
+        return None

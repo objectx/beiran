@@ -93,8 +93,12 @@ def local_node_uuid():
     Returns:
         (UUID): uuid in hex
 
+    TODO:
+     - Group this function and similar functionality in a class
+       that will allow eliminate the global usage
+
     """
-    global LOCAL_NODE_UUID_CACHED
+    global LOCAL_NODE_UUID_CACHED # pylint: disable=global-statement
 
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
@@ -298,7 +302,7 @@ async def fetch_docker_info(aiodocker):
             "status": True,
             "daemon_info": info
         }
-    except Exception as error:
+    except Exception as error: # pylint: disable=broad-except
         LOGGER.error("Error while connecting local docker daemon %s", error)
         return {
             "status": False,
@@ -332,28 +336,3 @@ async def update_docker_info(local_node, aiodocker):
             LOGGER.debug("Cannot fetch docker info, retrying after %d seconds", retry_after)
             await asyncio.sleep(5)
         retry_after += 5
-
-
-def db_init():
-    """Initialize database"""
-    from peewee import SqliteDatabase
-    from beiran.models.base import DB_PROXY
-    from beirand.common import logger
-
-    # check database file exists
-    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
-    db_file_exists = os.path.exists(beiran_db_path)
-
-    if not db_file_exists:
-        logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
-        open(beiran_db_path, 'a').close()
-
-    # init database object
-    database = SqliteDatabase(beiran_db_path)
-    DB_PROXY.initialize(database)
-
-    if not db_file_exists:
-        logger.info("db hasn't initialized yet, creating tables!..")
-        from beiran.models import create_tables
-
-        create_tables(database)

@@ -1,8 +1,3 @@
-services:
-  docker:
-    image: docker
-
-
 pipeline:
   pre-build:
     group: build
@@ -20,29 +15,33 @@ pipeline:
     environment:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - docker build -t dkr.rsnc.io/poc/beiran/pylint -f docker-pylint/Dockerfile .
-      - docker push dkr.rsnc.io/poc/beiran/pylint
+      - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f docker-pylint/Dockerfile .
+      - docker push dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
   lint-daemon:
-    image: dkr.rsnc.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beirand/beirand
 
   lint-lib:
-    image: dkr.rsnc.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beiran
   
   lint-cli:
-    image: dkr.rsnc.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beiran_cli
-  
+
+  docker:
+    image: docker
+    detach: true
+
   beirand:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
     detach: true
@@ -50,7 +49,7 @@ pipeline:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO
-      - DOCKER_HOST=http://127.0.0.1:2375
+      - DOCKER_HOST=http://docker:2375
       - LISTEN_ADDR=0.0.0.0
     commands:
       - date
@@ -76,11 +75,10 @@ pipeline:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
       - "export DOCKER_HOST=unix:///var/run/host.sock"
-      - docker tag dkr.rsnc.io/poc/beiran/beiran:done-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:egde
+      - docker tag dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:egde
       - docker push dkr.rsnc.io/poc/beiran/beiran:egde
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
-
 
   notify-rsnc:
     group: notify

@@ -2,7 +2,6 @@
 import logging
 import os
 
-from aiodocker import Docker
 import docker
 from pyee import EventEmitter
 from aiodocker import Docker

@@ -100,23 +100,18 @@ def db_init():
 
         create_tables(database)
 
-def main():
-    """ Main function wrapper """
+async def main(loop):
+    """ Main function """
 
     # set database
     logger.info("Initializing database...")
     db_init()
 
-    loop = asyncio.get_event_loop()
-
     # collect node info and create node object
     NODES.local_node = Node.from_dict(collect_node_info())
 
     # this is async but we will let it run in background, we have no rush
-    # TODO: Check if this needs to be here
-    loop.run_until_complete(update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT))
-    # NODES.local_node.docker = .info()
-
+    loop.create_task(update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT))
 
     NODES.add_or_update(NODES.local_node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
@@ -154,8 +149,12 @@ def main():
     discovery.start()
     # peer discovery
 
+def run():
+    """ Main function wrapper, creates the main loop and schedules the main function in there """
+    loop = asyncio.get_event_loop()
+    loop.create_task(main(loop))
     loop.set_debug(True)
     loop.run_forever()
 
 if __name__ == '__main__':
-    main()
+    run()

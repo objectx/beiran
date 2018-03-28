@@ -1,5 +1,6 @@
 beiran poc
 ==========
+![Build Status](https://drone.rsnc.io/api/badges/rlab/beiran/status.svg)
 
 ## What is beiran
 
@@ -25,11 +26,11 @@ virtualenv3 env
 source env/bin/activate
 pip install -r beirand/requirements.txt 
 pip install -r beiran/requirements.txt 
-pip install -r beiran-cli/requirements.txt 
+pip install -r beiran_cli/requirements.txt 
 pip install ipython
 ln -s $(pwd)/beirand/beirand env/lib/python3.6/site-packages/
 ln -s $(pwd)/beiran env/lib/python3.6/site-packages/
-ln -s $(pwd)/beiran-cli env/lib/python3.6/site-packages/beiran_cli
+ln -s $(pwd)/beiran_cli env/lib/python3.6/site-packages/beiran_cli
 ```
 
 #### - Settings (Environment Variables)

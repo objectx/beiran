@@ -11,28 +11,34 @@ pipeline:
     tags:
       - drone-build-${DRONE_BUILD_NUMBER}
 
+  pylint-build:
+    group: build
+    image: plugins/docker
+    dockerfile: docker-pylint/Dockerfile
+    cache_from: dkr.rsnc.io/poc/beiran/pylint
+    repo: dkr.rsnc.io/poc/beiran/pylint
+    volumes:
+      - /var/run/docker.sock:/var/run/host.sock:ro
+
   lint-daemon:
-    image: clburlison/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev gcc linux-headers musl-dev
       - pip install -r beiran/requirements.txt
       - pip install -r beirand/requirements.txt
       - pylint beirand/beirand
 
   lint-lib:
-    image: clburlison/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev
       - pip install -r beiran/requirements.txt
       - pylint beiran
   
   lint-cli:
-    image: clburlison/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev
       - pip install -r beiran/requirements.txt
       - pip install -r beiran_cli/requirements.txt
       - pylint beiran_cli
@@ -68,13 +74,28 @@ pipeline:
     image: plugins/docker
     cache_from: dkr.rsnc.io/poc/beiran/beiran
     repo: dkr.rsnc.io/poc/beiran/beiran
+    dockerfile: beirand/Dockerfile
+    registry: dkr.rsnc.io 
+    secrets: [ docker_username, docker_password ] 
     tags:
       - edge
 
-  notify:
+  notify-rsnc:
+    group: notify
     image: plugins/slack
     channel: beiran
     username: drone
     webhook: https://chat.rsnc.io/hooks/jhw1tcrpbpnybez4a3db16i1rw
+    icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
+    when:
+      status: [ success, failure ]
+
+  notify-cl-slack:
+    group: notify
+    image: plugins/slack
+    channel: beiran_pj
+    username: Drone
+    webhook: https://hooks.slack.com/services/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
+    icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
     when:
       status: [ success, failure ]

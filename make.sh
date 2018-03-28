@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-IMAGE=${IMAGE:-dkr.rlab.io/poc/beiran}
+IMAGE=${IMAGE:-$CI_REGISTRY_IMAGE}
 DAEMON_IMAGE=${DAEMON_IMAGE:-${IMAGE}/daemon}
 TEST_IMAGE=${TEST_IMAGE:-${IMAGE}/test}
 TAG=${TAG:-latest}

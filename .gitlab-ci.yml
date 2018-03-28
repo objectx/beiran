@@ -10,12 +10,12 @@ test_image:
   - docker
  script:
   - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
-  - docker pull dkr.rlab.io/poc/beiran/test:latest || true
+  - docker pull $CI_REGISTRY_IMAGE:latest || true
   - ./make.sh push_test_image
 
 lint:lib:
  stage: lint
- image: dkr.rlab.io/poc/beiran/test:latest
+ image: $CI_REGISTRY_IMAGE:latest
  tags:
   - docker
  script:
@@ -23,7 +23,7 @@ lint:lib:
 
 lint:daemon:
  stage: lint
- image: dkr.rlab.io/poc/beiran/test:latest
+ image: $CI_REGISTRY_IMAGE:latest
  tags:
   - docker
  script:
@@ -31,7 +31,7 @@ lint:daemon:
 
 lint:cli:
  stage: lint
- image: dkr.rlab.io/poc/beiran/test:latest
+ image: $CI_REGISTRY_IMAGE:latest
  tags:
   - docker
  script:

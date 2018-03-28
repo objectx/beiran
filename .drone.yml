@@ -37,7 +37,8 @@ pipeline:
       - 1.0.1
       - 1.0 
 
-  notify:
+  notify-rsnc:
+    group: notify
     image: plugins/slack
     channel: beiran
     username: drone
@@ -45,3 +46,11 @@ pipeline:
     when:
       status: [ success, failure ]
   
+  notify-cl-slack:
+    group: notify
+    image: plugins/slack
+    channel: beiran_pj
+    username: drone
+    webhook: https://hooks.slack.com/services/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
+    when:
+      status: [ success, failure ]

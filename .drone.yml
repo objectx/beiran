@@ -1,7 +1,7 @@
 pipeline:
 
   lint-daemon:
-    image: dkr.rlab.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
       - pip install -r beiran/requirements.txt
@@ -9,14 +9,14 @@ pipeline:
       - pylint beirand/beirand
 
   lint-lib:
-    image: dkr.rlab.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
       - pip install -r beiran/requirements.txt
       - pylint beiran
   
   lint-cli:
-    image: dkr.rlab.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
       - pip install -r beiran/requirements.txt

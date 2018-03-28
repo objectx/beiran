@@ -4,7 +4,7 @@ RUN apt-get update && apt-get -y install \
 	--no-install-recommends \
 	python3-pip git curl make libsqlite3-dev
 
-RUN mkdir /src
+RUN mkdir -p /src
 WORKDIR /src
 
 # Install bats
@@ -17,7 +17,8 @@ RUN pip3 install -r /src/r-cli.txt
 ADD beirand/requirements.txt /src/r-daemon.txt
 RUN pip3 install -r /src/r-daemon.txt
 
-ADD [ ".", "/src" ]
+ADD [ "beirand/beirand", "/src/beirand" ]
+ADD [ "beiran", "/src/beiran"]
 
 ENV PYTHONPATH=/src/beirand:/src
 WORKDIR /src/beirand
@@ -25,4 +26,4 @@ WORKDIR /src/beirand
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran
 
-CMD [ "python3", "beirand/main.py" ]
+CMD [ "python3", "/src/beirand/main.py" ]

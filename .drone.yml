@@ -1,4 +1,15 @@
+services:
+  docker:
+    image: docker
+
+
 pipeline:
+  pre-build:
+    image: plugins/docker
+    cache_from: dkr.rsnc.io/poc/beiran/beiran:latest
+    repo: dkr.rsnc.io/poc/beiran/beiran
+    tags:
+      - drone-build-${DRONE_BUILD_NUMBER}
 
   pylint-build:
 
@@ -29,16 +40,42 @@ pipeline:
     commands:
       - pylint beiran_cli
   
+  beirand:
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    detach: true
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO
+      - DOCKER_HOST=http://127.0.0.1:2375
+      - LISTEN_ADDR=0.0.0.0
+    commands:
+      - date
+      - ip addr show
+      - python3 /src/beirand/main.py
+  
+  rest_test:
+    image: python:3-jessie
+    environment:
+      - LOG=True
+      - LOG_LEVEL=DEBUG
+      - PRINT_BODIES=True
+    commands: 
+      - date
+      - ip addr show
+      - ss -aut || netstat -anp || cat /proc/net/tcp || echo "nothing supported for listing ports :/"
+      - pip install pycurl pyresttest
+      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+
   publish:
     image: plugins/docker
+    cache_from: dkr.rsnc.io/poc/beiran/beiran
+    repo: dkr.rsnc.io/poc/beiran/beiran
     dockerfile: beirand/Dockerfile
-    repo: dkr.rsnc.io/beiran/beiran
     registry: dkr.rsnc.io 
     secrets: [ docker_username, docker_password ] 
     tags:
-      - latest
-      - 1.0.1
-      - 1.0 
+      - edge
 
   notify-rsnc:
     group: notify
@@ -49,7 +86,7 @@ pipeline:
     icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
     when:
       status: [ success, failure ]
-  
+
   notify-cl-slack:
     group: notify
     image: plugins/slack

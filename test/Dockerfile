@@ -1,4 +1,4 @@
-FROM python:3-jessie
+FROM python:3-alpine
 RUN apt-get update && apt-get -y install \
 	--no-install-recommends \
 	python3-pip git curl make

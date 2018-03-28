@@ -1,0 +1,23 @@
+# Beiran Daemon tests
+# please see to get help: https://github.com/svanoort/pyresttest/blob/master/advanced_guide.md
+---
+- config:
+  - testset: "Beiran"
+- test:
+  - name: "Version from root handler"
+  - headers: {accept: 'application/json'}
+  - url: "/"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+     - compare: {jsonpath_mini: "version",   comparator: "eq",     expected: "0.0.1"}
+
+- test:
+  - name: "Info endpoint"
+  - headers: {accept: 'application/json'}
+  - url: "/info"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+     - compare: {jsonpath_mini: "beiran_version",   comparator: "eq",     expected: "0.0.1"}
+

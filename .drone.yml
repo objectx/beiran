@@ -4,9 +4,8 @@ pipeline:
     group: build
     image: plugins/docker
     dockerfile: docker-pylint/Dockerfile
+    cache_from: dkr.rsnc.io/poc/beiran/pylint
     repo: dkr.rsnc.io/poc/beiran/pylint
-    commands:
-      - "export DOCKER_HOST=unix:///var/run/host.sock"
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 

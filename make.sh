@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-IMAGE=${IMAGE:-dkr.rlab.io/poc/beiran}
+IMAGE=${IMAGE:-$CI_REGISTRY_IMAGE}
 DAEMON_IMAGE=${DAEMON_IMAGE:-${IMAGE}/daemon}
 TEST_IMAGE=${TEST_IMAGE:-${IMAGE}/test}
 TAG=${TAG:-latest}
@@ -88,7 +88,7 @@ if [ "$ACTION" = "test_image" ]; then
 	dep-file test/Dockerfile
 	dep-file beiran/requirements.txt
 	dep-file beirand/requirements.txt
-	dep-file beiran-cli/requirements.txt
+	dep-file beiran_cli/requirements.txt
 	cache_valid_from=$(find_last_modification_of ${DEP_FILES[@]})
 	image_created_at=$(docker_get_image_stamp $TEST_IMAGE:$TAG)
 	if [ $image_created_at -lt $cache_valid_from ]; then

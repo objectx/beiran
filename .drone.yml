@@ -20,25 +20,25 @@ pipeline:
     environment:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - docker build -t dkr.rsnc.io/poc/beiran/pylint -f docker-pylint/Dockerfile .
-      - docker push dkr.rsnc.io/poc/beiran/pylint
+      - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f docker-pylint/Dockerfile .
+      - docker push dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
   lint-daemon:
-    image: dkr.rsnc.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beirand/beirand
 
   lint-lib:
-    image: dkr.rsnc.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beiran
   
   lint-cli:
-    image: dkr.rsnc.io/poc/beiran/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beiran_cli
@@ -80,7 +80,6 @@ pipeline:
       - docker push dkr.rsnc.io/poc/beiran/beiran:egde
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
-
 
   notify-rsnc:
     group: notify

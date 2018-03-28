@@ -1,6 +1,6 @@
 beiran poc
 ==========
-![Build Status](!https://drone.rsnc.io/api/badges/rlab/beiran/status.svg)
+![Build Status](https://drone.rsnc.io/api/badges/rlab/beiran/status.svg)
 
 ## What is beiran
 

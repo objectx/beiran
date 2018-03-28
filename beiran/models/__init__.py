@@ -3,7 +3,6 @@ Import all data models to make import statements clear.
 """
 from beiran.log import build_logger
 from .base import BaseModel
-from .docker import DockerDaemon
 from .node import Node
 
 LOGGER = build_logger()
@@ -18,4 +17,4 @@ def create_tables(database):
     """
     # import them locally!
     LOGGER.info("creating database tables!...")
-    database.create_tables([Node, DockerDaemon])
+    database.create_tables([Node])

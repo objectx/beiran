@@ -2,13 +2,16 @@
 import logging
 import os
 
+from aiodocker import Docker
 import docker
+from pyee import EventEmitter
 
 from beiran.log import build_logger
 from beiran.version import get_version
 from beirand.nodes import Nodes
-from beirand.lib import db_init
 
+
+EVENTS = EventEmitter()
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -26,8 +29,6 @@ DOCKER_LC = docker.APIClient()
 # we may have a settings file later, create this dir while init wherever it would be
 DOCKER_TAR_CACHE_DIR = "tar_cache"
 
-try:
-    NODES = Nodes()
-except AttributeError:
-    db_init()
-    NODES = Nodes()
+NODES = Nodes()
+
+AIO_DOCKER_CLIENT = Docker()

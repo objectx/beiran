@@ -1,21 +1,25 @@
 """
 Support library for beiran daemon
 """
+import asyncio
 import os
 import ipaddress
 import json
 import platform
 import socket
 import tarfile
-from uuid import uuid4
+from uuid import uuid4, UUID
 
+import aiohttp
+import async_timeout
 import netifaces
+
 
 from beiran.log import build_logger
 from beiran.version import get_version
 
 LOGGER = build_logger()
-
+LOCAL_NODE_UUID_CACHED = None
 
 def docker_sha_summary(sha):
     """
@@ -82,32 +86,42 @@ def create_tar_archive(dir_path, output_file_path):
     with tarfile.open(output_file_path, "w") as tar:
         tar.add(dir_path, arcname='.')
 
-
 def local_node_uuid():
     """
     Get UUID from config file if it exists, else return a new one and write it to config file
 
     Returns:
-        str: uuid in hex
+        (UUID): uuid in hex
+
+    TODO:
+     - Group this function and similar functionality in a class
+       that will allow eliminate the global usage
 
     """
+    global LOCAL_NODE_UUID_CACHED # pylint: disable=global-statement
+
+    if LOCAL_NODE_UUID_CACHED:
+        return LOCAL_NODE_UUID_CACHED
+
     uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
-    LOGGER.info("uuid.conf file does not exist yet, creating one here: %s", uuid_conf_path)
     try:
         uuid_file = open(uuid_conf_path)
-        uuid = uuid_file.read()
+        uuid_hex = uuid_file.read()
+        uuid = UUID(uuid_hex)
         uuid_file.close()
-        if len(uuid) != 32:
+        if len(uuid_hex) != 32:
             raise ValueError
     except (FileNotFoundError, ValueError):
-        uuid = uuid4().hex
+        LOGGER.info("uuid.conf file does not exist yet or is invalid, creating a new one here: %s",
+                    uuid_conf_path)
+        uuid = uuid4()
         uuid_file = open(uuid_conf_path, 'w')
-        uuid_file.write(uuid)
+        uuid_file.write(uuid.hex)
         uuid_file.close()
 
-    LOGGER.info("nodes UUID is: %s", uuid)
+    LOGGER.info("local nodes UUID is: %s", uuid.hex)
+    LOCAL_NODE_UUID_CACHED = uuid
     return uuid
-
 
 def get_default_gateway_interface():
     """
@@ -151,7 +165,10 @@ def get_listen_port():
         str: listen port
 
     """
-    return os.environ.get('LISTEN_PORT', '8888')
+    try:
+        return int(os.environ.get('LISTEN_PORT', '8888'))
+    except ValueError:
+        raise ValueError('LISTEN_PORT must be a valid port number!')
 
 
 def get_listen_interface():
@@ -240,7 +257,7 @@ def collect_node_info():
 
     """
     return {
-        "uuid": local_node_uuid(),
+        "uuid": local_node_uuid().hex,
         "hostname": get_hostname(),
         "ip_address": get_listen_address(),
         "ip_address_6": None,
@@ -252,25 +269,70 @@ def collect_node_info():
     }
 
 
-def db_init():
-    """Initialize database"""
-    from peewee import SqliteDatabase
-    from beiran.models.base import DB_PROXY
+async def async_fetch(url, timeout=3):
+    """
+    Async http get with aiohttp
+    Args:
+        url (str): get url
+        timeout (int): timeout
 
-    # check database file exists
-    beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
-    db_file_exists = os.path.exists(beiran_db_path)
+    Returns:
+        (int, dict): resonse status code, response json
 
-    if not db_file_exists:
-        LOGGER.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
-        open(beiran_db_path, 'a').close()
+    """
+    async with aiohttp.ClientSession() as session:
+        async with async_timeout.timeout(timeout):
+            async with session.get(url) as resp:
+                status, response = resp.status, await resp.json()
+                return status, response
 
-    # init database object
-    database = SqliteDatabase(beiran_db_path)
-    DB_PROXY.initialize(database)
 
-    if not db_file_exists:
-        LOGGER.info("db hasn't initialized yet, creating tables!..")
-        from beiran.models import create_tables
+async def fetch_docker_info(aiodocker):
+    """
+    Fetch async docker daemon information
 
-        create_tables(database)
+    Returns:
+        (dict): docker status and information
+
+    """
+
+    try:
+        info = await aiodocker.system.info()
+        return {
+            "status": True,
+            "daemon_info": info
+        }
+    except Exception as error: # pylint: disable=broad-except
+        LOGGER.error("Error while connecting local docker daemon %s", error)
+        return {
+            "status": False,
+            "error": str(error)
+        }
+
+
+async def update_docker_info(local_node, aiodocker):
+    """
+    Makes an async call to docker `client` and get info for `local_node`
+
+    Args:
+        local_node (Node):
+        client (docker):
+
+    Returns:
+        (None): updates `local_node` object
+
+
+    """
+    LOGGER.debug("Updating local docker info")
+    retry_after = 0
+
+    while retry_after < 30:
+        docker_info = await fetch_docker_info(aiodocker)
+        if docker_info["status"]:
+            LOGGER.debug(" *** Found local docker daemon *** ")
+            local_node.docker = docker_info['daemon_info']
+            break
+        else:
+            LOGGER.debug("Cannot fetch docker info, retrying after %d seconds", retry_after)
+            await asyncio.sleep(5)
+        retry_after += 5

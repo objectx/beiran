@@ -1,15 +1,14 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import urllib3
 
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from beirand.common import logger, VERSION, DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
+from beirand.common import logger, VERSION, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
-from beirand.lib import local_node_uuid, get_plugin_list
+
 
 define('listen_address',
        group='webserver',
@@ -124,51 +123,86 @@ class LayerDownload(web.RequestHandler):
 class NodeInfo(web.RequestHandler):
     """Endpoint which reports node information"""
 
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.node_info = {}
+
     def data_received(self, chunk):
         pass
 
     # pylint: disable=arguments-differ
-    def get(self, uuid=None):
+    @web.asynchronous
+    async def get(self, uuid=None):
         """Retrieve info of the node by `uuid` or the local node"""
 
         if not uuid:
-            uuid = local_node_uuid()
+            node = NODES.local_node
         else:
-            uuid = uuid.lstrip('/')
-
-        node_info = NODES.all_nodes.get(uuid)
-        if not node_info:
-            raise HTTPError(status_code=404, log_message="Node Not Found")
-
-        node_info.update(get_plugin_list())
-        try:
-            node_info.update(
-                {
-                    "docker": {
-                        "status": True,
-                        "daemon_info": DOCKER_CLIENT.info(),
-                        "version": DOCKER_CLIENT.version()
-                    }
-                }
-            )
-        except urllib3.exceptions.HTTPError as error:
-            node_info.update(
-                {
-                    "docker": {
-                        "status": False,
-                        "error": str(error)
-                    }
-                }
-            )
-        self.write(node_info)
+            node = await NODES.get_node_by_uuid(uuid)
+        self.write(node.to_dict())
+        self.finish()
 
     # pylint: enable=arguments-differ
 
+
+class NodeList(web.RequestHandler):
+    """List nodes by arguments specified in uri all, online, offline, etc."""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        """
+        Return list of nodes, if specified `all`from database or discovered ones from memory.
+
+        Returns:
+            (dict) list of nodes, it is a dict, since tornado does not write list for security
+                   reasons; see:
+                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+
+        """
+        all_nodes = self.get_argument('all', False)
+
+        if all_nodes and all_nodes not in ['True', 'true', '1', 1]:
+            raise HTTPError(status_code=400,
+                            log_message="Bad argument please use `True` or `1` for argument `all`")
+
+        node_list = NODES.list_of_nodes(
+            from_db=all_nodes
+        )
+
+        self.write(
+            {
+                "nodes": [n.to_dict() for n in node_list]
+            }
+        )
+        self.finish()
+
+    # pylint: enable=arguments-differ
+
+
+class Ping(web.RequestHandler):
+    """Ping / Pong endpoint"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        """Just write PONG string"""
+        self.write("PONG")
+        self.finish()
+
+
+# pylint: enable=arguments-differ
 
 APP = web.Application([
     (r'/', ApiRootHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
+    (r'/nodes', NodeList),
+    (r'/ping', Ping),
     # (r'/layers', LayersHandler),
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),

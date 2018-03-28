@@ -3,7 +3,7 @@
 import os
 import asyncio
 import aiodns
-from beirand.discovery.discovery import Discovery, Node
+from beirand.discovery.discovery import Discovery
 
 
 class DnsDiscovery(Discovery):
@@ -19,7 +19,7 @@ class DnsDiscovery(Discovery):
         super().__init__(aioloop)
         self.loop = aioloop
         self.resolver = aiodns.DNSResolver(loop=self.loop)
-        self.nodes = {}
+        self.nodes = set()
 
     async def query(self, name, query_type):
         """ Dns query coroutine
@@ -53,11 +53,12 @@ class DnsDiscovery(Discovery):
             result = list(filter(lambda x: x != self.host_ip, result))
             new_comers = list(filter(lambda x: x not in self.nodes, result))
             sadly_goodbyers = list(filter(lambda x: x not in result, self.nodes))
-            for result_node in new_comers:
-                node = Node(hostname=result_node, ip_address=result_node)
-                self.nodes[result_node] = node
-                self.emit('discovered', node)
+            for node in new_comers:
+                self.log.info("New node %s", node)
+                self.nodes.add(node)
+                self.emit('discovered', ip_address=node)
             for node in sadly_goodbyers:
-                self.emit('undiscovered', self.nodes.get(node))
-                self.nodes.pop(node, None)
+                self.log.info("Leaving node %s", node)
+                self.nodes.discard(node)
+                self.emit('undiscovered', node)
             await asyncio.sleep(1.0)

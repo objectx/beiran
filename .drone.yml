@@ -20,14 +20,14 @@ pipeline:
     group: lint
     commands:
       - pip install -r beiran/requirements.txt
-      - pip install -r beiran-cli/requirements.txt
-      - pylint beiran-cli
+      - pip install -r beiran_cli/requirements.txt
+      - pylint beiran_cli
   
   publish:
     image: plugins/docker
     dockerfile: beirand/Dockerfile
-    repo: reg.rsnc.io/beiran/beiran
-    registry: reg.rsnc.io 
+    repo: dkr.rsnc.io/beiran/beiran
+    registry: dkr.rsnc.io 
     secrets: [ docker_username, docker_password ] 
     tags:
       - latest

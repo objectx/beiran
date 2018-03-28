@@ -129,12 +129,8 @@ def main():
     server.add_socket(socket)
 
     # Also Listen on TCP
-<<<<<<< HEAD
-    server.listen(options.listen_port, address=options.listen_address)
-=======
->>>>>>> dev-201803
     logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
-    APP.listen(options.listen_port, address=options.listen_address)
+    server.listen(options.listen_port, address=options.listen_address)
 
     # Register daemon events
     EVENTS.on('node.added', on_new_node_added)

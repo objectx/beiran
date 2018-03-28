@@ -12,11 +12,13 @@ pipeline:
       - drone-build-${DRONE_BUILD_NUMBER}
 
   pylint-build:
+
     group: build
-    image: plugins/docker
-    dockerfile: docker-pylint/Dockerfile
-    cache_from: dkr.rsnc.io/poc/beiran/pylint
-    repo: dkr.rsnc.io/poc/beiran/pylint
+    image: docker
+    commands:
+      - "export DOCKER_HOST=unix:///var/run/host.sock"
+      - docker build -t dkr.rsnc.io/poc/beiran/pylint -f docker-pylint/Dockerfile .
+      - docker push dkr.rsnc.io/poc/beiran/pylint
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
@@ -24,23 +26,18 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - pip install -r beiran/requirements.txt
-      - pip install -r beirand/requirements.txt
       - pylint beirand/beirand
 
   lint-lib:
     image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - pip install -r beiran/requirements.txt
       - pylint beiran
   
   lint-cli:
     image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - pip install -r beiran/requirements.txt
-      - pip install -r beiran_cli/requirements.txt
       - pylint beiran_cli
   
   beirand:

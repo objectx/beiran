@@ -1,6 +1,7 @@
 pipeline:
 
   pylint-build:
+    group: build
     image: plugins/docker
     dockerfile: docker-pylint/Dockerfile
     cache_from: dkr.rsnc.io/poc/beiran/pylint

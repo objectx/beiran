@@ -7,7 +7,6 @@ pipeline:
   pre-build:
     group: build
     image: docker
-    repo: dkr.rsnc.io/poc/beiran/beiran
     environment:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:

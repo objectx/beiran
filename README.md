@@ -15,6 +15,47 @@ beiran poc
  - [zeroconf](https://pypi.python.org/pypi/zeroconf) (for local node discovery)
  - [click](https://pypi.python.org/pypi/click) (for cli options, commands)
 
+## Virtualenv
+
+#### - Setup
+
+```
+mkdir env
+virtualenv3 env
+source env/bin/activate
+pip install -r beirand/requirements.txt 
+pip install -r beiran/requirements.txt 
+pip install -r beiran-cli/requirements.txt 
+pip install ipython
+ln -s $(pwd)/beirand/beirand env/lib/python3.6/site-packages/
+ln -s $(pwd)/beiran env/lib/python3.6/site-packages/
+ln -s $(pwd)/beiran-cli env/lib/python3.6/site-packages/beiran_cli
+```
+
+#### - Settings (Environment Variables)
+
+```
+export LOG_LEVEL=DEBUG
+export LOG_FILE=$(pwd)/beirand.log
+export BEIRAN_SOCK=$(pwd)/beirand.sock
+export BEIRAN_DB_PATH=$(pwd)/beiran.db
+export CONFIG_FOLDER_PATH=$(pwd)
+```
+
+#### - Start Daemon
+
+
+```
+source env/bin/activate
+python -m beirand
+```
+
+#### - Use cli
+
+```
+python -m beiran_cli image list
+```
+
 ## Build
 
 ```

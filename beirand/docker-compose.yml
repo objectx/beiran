@@ -1,7 +1,7 @@
 version: '2'
 services:
   beirand:
-    image: dkr.rlab.io/poc/beiran/daemon
+    image: dkr.rsnc.io/poc/beiran/daemon
     privileged: true
 #    volumes:
 #      - /var/run/:/var/run/
@@ -13,5 +13,7 @@ services:
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO
       - DOCKER_HOST=http://172.17.0.1:2375
+    ports:
+      - '8888:8888'
 networks:
   test:

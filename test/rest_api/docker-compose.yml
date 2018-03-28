@@ -1,0 +1,38 @@
+# usage:
+# docker build -t dkr.rlab.io/poc/beiran/resttest .
+# docker-compose up --abort-on-container-exit
+
+version: '2'
+services:
+  beirand:
+    image: dkr.rlab.io/poc/beiran/daemon
+    privileged: true
+#    volumes:
+#      - /var/run/:/var/run/
+    command: python3.6 -u beirand/main.py
+    networks:
+      - test
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO
+      - DOCKER_HOST=http://172.17.0.1:2375
+
+  resttest:
+    image: dkr.rlab.io/poc/beiran/resttest
+    privileged: true
+#    volumes:
+#      - /var/run/:/var/run/
+    command: pyresttest --url http://beirand:8888 --test /tests/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+    entrypoint: ""
+    networks:
+      - test
+    environment:
+      - LOG=True
+      - LOG_LEVEL=DEBUG
+      - PRINT_BODIES=True
+    depends_on:
+      - beirand
+
+networks:
+  test:

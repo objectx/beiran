@@ -1,5 +1,6 @@
 beiran poc
 ==========
+![Build Status](https://drone.rsnc.io/api/badges/rlab/beiran/status.svg)
 
 ## What is beiran
 
@@ -14,6 +15,47 @@ beiran poc
  - [docker](https://github.com/docker/docker-py) (for querying docker daemon)
  - [zeroconf](https://pypi.python.org/pypi/zeroconf) (for local node discovery)
  - [click](https://pypi.python.org/pypi/click) (for cli options, commands)
+
+## Virtualenv
+
+#### - Setup
+
+```
+mkdir env
+virtualenv3 env
+source env/bin/activate
+pip install -r beirand/requirements.txt 
+pip install -r beiran/requirements.txt 
+pip install -r beiran_cli/requirements.txt 
+pip install ipython
+ln -s $(pwd)/beirand/beirand env/lib/python3.6/site-packages/
+ln -s $(pwd)/beiran env/lib/python3.6/site-packages/
+ln -s $(pwd)/beiran_cli env/lib/python3.6/site-packages/beiran_cli
+```
+
+#### - Settings (Environment Variables)
+
+```
+export LOG_LEVEL=DEBUG
+export LOG_FILE=$(pwd)/beirand.log
+export BEIRAN_SOCK=$(pwd)/beirand.sock
+export BEIRAN_DB_PATH=$(pwd)/beiran.db
+export CONFIG_FOLDER_PATH=$(pwd)
+```
+
+#### - Start Daemon
+
+
+```
+source env/bin/activate
+python -m beirand
+```
+
+#### - Use cli
+
+```
+python -m beiran_cli image list
+```
 
 ## Build
 

@@ -1,21 +1,18 @@
 """
 Module for in memory node tracking object `Nodes`
 """
-import json
 import logging
+from beiran.models import Node
 
-from playhouse.shortcuts import model_to_dict, JOIN
-from tornado.httpclient import AsyncHTTPClient
-
-from beiran.models import Node, DockerDaemon
-
+from beirand.lib import async_fetch
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
-        self.all_nodes = self.get_from_db() or {}
+        self.all_nodes = {}
         self.logger = logging.getLogger(__package__)
+        self.local_node = None
 
     @staticmethod
     def get_from_db():
@@ -27,17 +24,8 @@ class Nodes(object):
 
 
         """
-        nodes_with_docker = Node.select(DockerDaemon, Node).join(
-            DockerDaemon, JOIN.LEFT_OUTER, on=(DockerDaemon.node == Node.uuid).alias('docker')
-        )
-
-        result = {}
-        for node in nodes_with_docker:
-            node_info = model_to_dict(node)
-            node_info.update({'docker': model_to_dict(node.docker)})
-            result[node.uuid.hex] = node_info
-
-        return result
+        nodes_query = Node.select()
+        return {n.uuid.hex: n for n in nodes_query}
 
     @staticmethod
     def get_node_by_uuid_from_db(uuid):
@@ -50,7 +38,7 @@ class Nodes(object):
             (dict): serialized node object
 
         """
-        return model_to_dict(Node.get(uuid == uuid))
+        return Node.get(uuid == uuid)
 
     def get_node_by_uuid(self, uuid=None, from_db=False):
         """
@@ -67,52 +55,37 @@ class Nodes(object):
             (dict): serialized node object
 
         """
-        node = None
-
         if not from_db:
-            node = self.all_nodes.get(uuid)
+            return self.all_nodes.get(uuid, None)
 
-        if not node:
+        elif uuid is not None:
+            return self.get_node_by_uuid_from_db(uuid=uuid)
+
+        else:
             node = self.get_node_by_uuid_from_db(uuid=uuid)
 
         return node
 
-    def add_or_update(self, node_info):
+    def add_or_update(self, node):
         """
         Appends the new node into nodes dict or updates if exists
 
         Args:
-            node_info (dict): node information
+            node (Node): node object
 
         """
 
-        # node_dict = model_to_dict(node)
-
         try:
-            node_ = Node.get(Node.uuid == node_info['uuid'])
-            node_.update(**node_info)
+            node_ = Node.get(Node.uuid == node.uuid)
+            node_.update_using_obj(node)
+            node_.save()
 
         except Node.DoesNotExist:
-            node_ = Node.create(**node_info)
+            node_ = node
+            # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
+            node_.save(force_insert=True)
 
-        if 'docker' in node_info and node_info['docker']['status']:
-            daemon = node_info['docker']['daemon_info']
-            docker_dict = {
-                'docker_version': daemon['ServerVersion'],
-                'storage_driver': daemon['Driver'],
-                'docker_root_dir': daemon['DockerRootDir'],
-                'details': daemon
-            }
-            try:
-                docker_ = DockerDaemon.get(DockerDaemon.node == node_info['uuid'])
-                docker_.update(**docker_dict)
-            except DockerDaemon.DoesNotExist:
-                DockerDaemon.create(
-                    node=node_,
-                    **docker_dict
-                )
-
-        self.all_nodes.update({node_info['uuid']: node_info})
+        self.all_nodes.update({node.uuid.hex: node_})
 
         return node_
 
@@ -128,7 +101,7 @@ class Nodes(object):
 
         """
 
-        removed = self.all_nodes.pop(node.uuid, None)
+        removed = self.all_nodes.pop(node.uuid.hex, None)
         return bool(removed)
 
     def list_of_nodes(self, from_db=True):
@@ -139,11 +112,11 @@ class Nodes(object):
             from_db (bool): db lookup for nodes or not
 
         Returns:
-            list: list of uuid of nodes
+            list: list of node objects
 
         """
         if from_db:
-            self.get_from_db()
+            return [*self.get_from_db().values()]
 
         return [*self.all_nodes.values()]
 
@@ -152,7 +125,7 @@ class Nodes(object):
         # todo: will be implemented
         pass
 
-    def add_or_update_new_remote_node(self, node_ip, node_port):
+    async def add_or_update_new_remote_node(self, node_ip, node_port):
         """
         Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
 
@@ -164,27 +137,23 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        http_client = AsyncHTTPClient()
-        http_client.fetch('http://{}:{}/info'.format(node_ip, node_port),
-                          self.on_new_remote_node)  # todo: https?
+        status, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
+        if status == 200:
+            return self.add_or_update(Node.from_dict(response))
 
-    def on_new_remote_node(self, response):
+    def get_node_by_ip(self, ip_address):
         """
-        Add or update local db record of the new remote node with information
-        gathered from the remote node over http info endpoint
+        Returns the node specified by `ip` address.
 
         Args:
-            response: tornado async http client response object
+            ip_address (str): ip address
+
+        Returns:
+            (Node) found node object
 
         """
+        for _, node in self.all_nodes.items():
+            if node.ip_address == ip_address:
+                return node
 
-        if response.error:
-            # which means node is not accessible, mark it offline.
-            self.logger.error(
-                "An error occured while trying to reach remote node at port %s",
-                response.error)
-            return None
-
-        node_info = json.loads(response.body)  # todo: remove unnecessary details
-        node = self.add_or_update(node_info)
-        return node
+        return None

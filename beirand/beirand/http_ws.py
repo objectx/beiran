@@ -10,7 +10,6 @@ from aiodocker.exceptions import DockerError
 from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
-from beirand.lib import local_node_uuid, get_plugin_list
 
 
 define('listen_address',
@@ -65,6 +64,7 @@ class ApiRootHandler(web.RequestHandler):
         pass
 
     def get(self, *args, **kwargs):
+        self.set_header("Content-Type", "application/json")
         self.write('{"version":"' + VERSION + '"}')
         self.finish()
 
@@ -134,43 +134,38 @@ class NodeInfo(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-
+    @web.asynchronous
     async def get(self, uuid=None):
         """Retrieve info of the node by `uuid` or the local node"""
 
         if not uuid:
-            uuid = local_node_uuid()
+            node = NODES.local_node
         else:
-            uuid = uuid.lstrip('/')
+            node = await NODES.get_node_by_uuid(uuid)
 
-        node_info = NODES.all_nodes.get(uuid)
-        if not node_info:
-            raise HTTPError(status_code=404, log_message="Node Not Found")
+        # error = info = version = ""
 
-        node_info.update(get_plugin_list())
+        # try:
+        #     info = await self.application.docker.system.info()
+        #     version = await self.application.docker.version()
+        #     status = True
+        # except DockerError as error:
+        #     status = False
+        #     logger.error('Docker Client error %s', error)
 
-        error = info = version = ""
+        # node_info.update(
+        #     {
+        #         "docker": {
+        #             "status": status,
+        #             "daemon_info": info,
+        #             "version": version,
+        #             "error": error
+        #         }
+        #     }
+        # )
 
-        try:
-            info = await self.application.docker.system.info()
-            version = await self.application.docker.version()
-            status = True
-        except DockerError as error:
-            status = False
-            logger.error('Docker Client error %s', error)
-
-        node_info.update(
-            {
-                "docker": {
-                    "status": status,
-                    "daemon_info": info,
-                    "version": version,
-                    "error": error
-                }
-            }
-        )
-
-        self.write(node_info)
+        self.write(node.to_dict())
+        self.finish()
 
     # pylint: enable=arguments-differ
 
@@ -198,11 +193,13 @@ class NodeList(web.RequestHandler):
             raise HTTPError(status_code=400,
                             log_message="Bad argument please use `True` or `1` for argument `all`")
 
+        node_list = NODES.list_of_nodes(
+            from_db=all_nodes
+        )
+
         self.write(
             {
-                "nodes": NODES.list_of_nodes(
-                    from_db=all_nodes
-                )
+                "nodes": [n.to_dict() for n in node_list]
             }
         )
         self.finish()

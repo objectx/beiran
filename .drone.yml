@@ -1,47 +1,98 @@
+services:
+  docker:
+    image: docker
+
+
 pipeline:
+  pre-build:
+    image: plugins/docker
+    cache_from: dkr.rsnc.io/poc/beiran/beiran:latest
+    repo: dkr.rsnc.io/poc/beiran/beiran
+    tags:
+      - drone-build-${DRONE_BUILD_NUMBER}
+
+  pylint-build:
+
+    group: build
+    image: docker
+    commands:
+      - "export DOCKER_HOST=unix:///var/run/host.sock"
+      - docker build -t dkr.rsnc.io/poc/beiran/pylint -f docker-pylint/Dockerfile .
+      - docker push dkr.rsnc.io/poc/beiran/pylint
+    volumes:
+      - /var/run/docker.sock:/var/run/host.sock:ro
 
   lint-daemon:
-    image: clburlison/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev gcc linux-headers musl-dev
-      - pip install -r beiran/requirements.txt
-      - pip install -r beirand/requirements.txt
       - pylint beirand/beirand
 
   lint-lib:
-    image: clburlison/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev
-      - pip install -r beiran/requirements.txt
       - pylint beiran
   
   lint-cli:
-    image: clburlison/pylint
+    image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - apk add --update --no-cache python-dev
-      - pip install -r beiran/requirements.txt
-      - pip install -r beiran-cli/requirements.txt
-      - pylint beiran-cli
+      - pylint beiran_cli
   
+  beirand:
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    detach: true
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO
+      - DOCKER_HOST=http://127.0.0.1:2375
+      - LISTEN_ADDR=0.0.0.0
+    commands:
+      - date
+      - ip addr show
+      - python3 /src/beirand/main.py
+  
+  rest_test:
+    image: python:3-jessie
+    environment:
+      - LOG=True
+      - LOG_LEVEL=DEBUG
+      - PRINT_BODIES=True
+    commands: 
+      - date
+      - ip addr show
+      - ss -aut || netstat -anp || cat /proc/net/tcp || echo "nothing supported for listing ports :/"
+      - pip install pycurl pyresttest
+      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+
   publish:
     image: plugins/docker
+    cache_from: dkr.rsnc.io/poc/beiran/beiran
+    repo: dkr.rsnc.io/poc/beiran/beiran
     dockerfile: beirand/Dockerfile
-    repo: reg.rsnc.io/beiran/beiran
-    registry: reg.rsnc.io 
+    registry: dkr.rsnc.io 
     secrets: [ docker_username, docker_password ] 
     tags:
-      - latest
-      - 1.0.1
-      - 1.0 
+      - edge
 
-  notify:
+  notify-rsnc:
+    group: notify
     image: plugins/slack
     channel: beiran
     username: drone
     webhook: https://chat.rsnc.io/hooks/jhw1tcrpbpnybez4a3db16i1rw
+    icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
     when:
       status: [ success, failure ]
-  
+
+  notify-cl-slack:
+    group: notify
+    image: plugins/slack
+    channel: beiran_pj
+    username: Drone
+    webhook: https://hooks.slack.com/services/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
+    icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
+    when:
+      status: [ success, failure ]

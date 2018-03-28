@@ -101,7 +101,7 @@ def db_init():
         create_tables(database)
 
 async def main(loop):
-    """ Main function wrapper """
+    """ Main function """
 
     # set database
     logger.info("Initializing database...")
@@ -150,6 +150,7 @@ async def main(loop):
     # peer discovery
 
 def run():
+    """ Main function wrapper, creates the main loop and schedules the main function in there """
     loop = asyncio.get_event_loop()
     loop.create_task(main(loop))
     loop.set_debug(True)

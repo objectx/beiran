@@ -8,17 +8,19 @@ pipeline:
     group: build
     image: docker
     repo: dkr.rsnc.io/poc/beiran/beiran
+    environment:
+      - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - "export DOCKER_HOST=unix:///var/run/host.sock"
       - docker build --cache-from dkr.rsnc.io/poc/beiran/beiran:edge -t dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} .
     volumes:
-      - /var/run/docker.sock:/var/run/host.sock:ro    tags:
+      - /var/run/docker.sock:/var/run/host.sock:ro
 
   pylint-build:
     group: build
     image: docker
+    environment:
+      - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - "export DOCKER_HOST=unix:///var/run/host.sock"
       - docker build -t dkr.rsnc.io/poc/beiran/pylint -f docker-pylint/Dockerfile .
       - docker push dkr.rsnc.io/poc/beiran/pylint
     volumes:
@@ -71,7 +73,8 @@ pipeline:
 
   publish:
     image: docker
-    repo: dkr.rsnc.io/poc/beiran/beiran
+    environment:
+      - DOCKER_HOST=unix:///var/run/host.sock
     commands:
       - "export DOCKER_HOST=unix:///var/run/host.sock"
       - docker tag dkr.rsnc.io/poc/beiran/beiran:done-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:egde

@@ -5,7 +5,9 @@ from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from beirand.common import logger, VERSION, DOCKER_TAR_CACHE_DIR, NODES
+from aiodocker.exceptions import DockerError
+
+from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 
@@ -140,6 +142,28 @@ class NodeInfo(web.RequestHandler):
             node = NODES.local_node
         else:
             node = await NODES.get_node_by_uuid(uuid)
+
+        # error = info = version = ""
+
+        # try:
+        #     info = await self.application.docker.system.info()
+        #     version = await self.application.docker.version()
+        #     status = True
+        # except DockerError as error:
+        #     status = False
+        #     logger.error('Docker Client error %s', error)
+
+        # node_info.update(
+        #     {
+        #         "docker": {
+        #             "status": status,
+        #             "daemon_info": info,
+        #             "version": version,
+        #             "error": error
+        #         }
+        #     }
+        # )
+
         self.write(node.to_dict())
         self.finish()
 
@@ -208,3 +232,5 @@ APP = web.Application([
     # (r'/images', ImagesHandler),
     (r'/ws', EchoWebSocket),
 ])
+
+APP.docker = AIO_DOCKER_CLIENT

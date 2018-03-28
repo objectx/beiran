@@ -13,23 +13,18 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - pip install -r beiran/requirements.txt
-      - pip install -r beirand/requirements.txt
       - pylint beirand/beirand
 
   lint-lib:
     image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - pip install -r beiran/requirements.txt
       - pylint beiran
   
   lint-cli:
     image: dkr.rsnc.io/poc/beiran/pylint
     group: lint
     commands:
-      - pip install -r beiran/requirements.txt
-      - pip install -r beiran_cli/requirements.txt
       - pylint beiran_cli
   
   publish:

@@ -5,14 +5,16 @@ services:
 
 pipeline:
   pre-build:
-    image: plugins/docker
-    cache_from: dkr.rsnc.io/poc/beiran/beiran:latest
+    group: build
+    image: docker
     repo: dkr.rsnc.io/poc/beiran/beiran
-    tags:
-      - drone-build-${DRONE_BUILD_NUMBER}
+    commands:
+      - "export DOCKER_HOST=unix:///var/run/host.sock"
+      - docker build --cache-from dkr.rsnc.io/poc/beiran/beiran:edge -t dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} .
+    volumes:
+      - /var/run/docker.sock:/var/run/host.sock:ro    tags:
 
   pylint-build:
-
     group: build
     image: docker
     commands:
@@ -68,14 +70,15 @@ pipeline:
       - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
 
   publish:
-    image: plugins/docker
-    cache_from: dkr.rsnc.io/poc/beiran/beiran
+    image: docker
     repo: dkr.rsnc.io/poc/beiran/beiran
-    dockerfile: beirand/Dockerfile
-    registry: dkr.rsnc.io 
-    secrets: [ docker_username, docker_password ] 
-    tags:
-      - edge
+    commands:
+      - "export DOCKER_HOST=unix:///var/run/host.sock"
+      - docker tag dkr.rsnc.io/poc/beiran/beiran:done-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:egde
+      - docker push dkr.rsnc.io/poc/beiran/beiran:egde
+    volumes:
+      - /var/run/docker.sock:/var/run/host.sock:ro
+
 
   notify-rsnc:
     group: notify

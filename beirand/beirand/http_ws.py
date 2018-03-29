@@ -168,6 +168,57 @@ class NodeInfo(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
+class ImagesHandler(web.RequestHandler):
+    """Endpoint to list docker images"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    async def get(self):
+        """Retrieve image list of the node
+
+        Available arguments are:
+            - all
+            - dangling
+            - label
+
+        """
+
+        all_images = self.get_argument('all', False)
+        logger.info("All %s: ", all_images)
+        if not all_images:
+            label = self.get_argument('label', None)
+            logger.info("label %s: ", label)
+            if label:
+                lbl = label.split("=")
+                label = {lbl[0]: lbl[1]}
+            filters={
+                "dangling": self.get_argument('dangling', False),
+                "label": label,
+            }
+
+        image_list = await AIO_DOCKER_CLIENT.images.list(all=all_images, filters=filters)
+
+        self.write({
+            "images": image_list
+        })
+    # pylint: enable=arguments-differ
+
+
+class ImagePullHandler(web.RedirectHandler):
+    """Docker image pull"""
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    async def get(self, image):
+        logger.info("pulling image %s", image)
+        # AIO_DOCKER_CLIENT.images.pull()
+
+    # pylint: enable=arguments-differ
+
+
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
@@ -256,6 +307,7 @@ APP = web.Application([
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
     (r'/images', ImagesHandler),
+    (r'/image/pull/([0-9a-zA-Z:\\]+)', ImagePullHandler),
     (r'/ws', EchoWebSocket),
 ])
 

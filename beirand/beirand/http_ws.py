@@ -193,7 +193,7 @@ class ImagesHandler(web.RequestHandler):
             if label:
                 lbl = label.split("=")
                 label = {lbl[0]: lbl[1]}
-            filters={
+            filters = {
                 "dangling": self.get_argument('dangling', False),
                 "label": label,
             }

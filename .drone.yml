@@ -15,7 +15,7 @@ pipeline:
     environment:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f docker-pylint/Dockerfile .
+      - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f docker/pylint/Dockerfile .
       - docker push dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
@@ -57,7 +57,7 @@ pipeline:
       - python3 /src/beirand/main.py
   
   rest_test:
-    image: python:3-jessie
+    image: dkr.rsnc.io/poc/beiran/pyresttest
     environment:
       - LOG=True
       - LOG_LEVEL=DEBUG
@@ -66,7 +66,6 @@ pipeline:
       - date
       - ip addr show
       - ss -aut || netstat -anp || cat /proc/net/tcp || echo "nothing supported for listing ports :/"
-      - pip install pycurl pyresttest
       - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
 
   publish:

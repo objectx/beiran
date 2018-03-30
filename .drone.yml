@@ -84,7 +84,7 @@ pipeline:
     image: plugins/slack
     channel: beiran
     username: drone
-    webhook: ${RSNC_WEBHOOK_URL}
+    webhook: ${rsnc_webhook_url}
     icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
     when:
       status: [ success, failure ]
@@ -94,7 +94,7 @@ pipeline:
     image: plugins/slack
     channel: beiran_pj
     username: Drone
-    webhook: ${CL_WEBHOOK_URL}
+    webhook: ${cl_webhook_url}
     icon_url: https://cdn.worldvectorlogo.com/logos/drone.svg
     when:
       status: [ success, failure ]

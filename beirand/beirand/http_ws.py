@@ -186,7 +186,8 @@ class ImagesHandler(web.RequestHandler):
         """
 
         all_images = self.get_argument('all', False)
-        logger.info("All %s: ", all_images)
+        filters = None
+
         if not all_images:
             label = self.get_argument('label', None)
             logger.info("label %s: ", label)
@@ -206,15 +207,36 @@ class ImagesHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class ImagePullHandler(web.RedirectHandler):
+class ImagePullHandler(web.RequestHandler):
     """Docker image pull"""
     def data_received(self, chunk):
         pass
 
     # pylint: disable=arguments-differ
+
+    @web.asynchronous
     async def get(self, image):
-        logger.info("pulling image %s", image)
-        # AIO_DOCKER_CLIENT.images.pull()
+        """
+
+        Pull images
+
+        Args:
+            image (str): image name
+
+        Returns:
+            streams image pulling progress
+
+        """
+        tag = self.get_argument('tag', 'latest')
+
+        logger.info("pulling image %s:%s", image, tag)
+
+        result = await AIO_DOCKER_CLIENT.images.pull(from_image=image, tag=tag, stream=True)
+
+        async for data in result:
+            self.write(data)
+
+        self.finish()
 
     # pylint: enable=arguments-differ
 
@@ -270,35 +292,6 @@ class Ping(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class ImagesHandler(web.RequestHandler):
-    """Endpoint to list docker images"""
-
-    def data_received(self, chunk):
-        pass
-
-    # pylint: enable=arguments-differ
-    def get(self):
-        """Retrieve image list of the node
-
-        Available arguments are:
-            - all
-            - dangling
-            - label
-
-        """
-
-        image_list = []
-        all_images = self.get_argument('all', False)
-        dangling = self.get_argument('dangling', False)
-        label = self.get_argument("label", None)
-
-
-        self.write({
-            "images": image_list
-        })
-    # pylint: enable=arguments-differ
-
-
 APP = web.Application([
     (r'/', ApiRootHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
@@ -307,7 +300,7 @@ APP = web.Application([
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
     (r'/images', ImagesHandler),
-    (r'/image/pull/([0-9a-zA-Z:\\]+)', ImagePullHandler),
+    (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
     (r'/ws', EchoWebSocket),
 ])
 

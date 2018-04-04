@@ -68,11 +68,11 @@ pipeline:
       - |
         echo "waiting until beirand is accessible"
         times=0
-        until $(curl --output /dev/null --silent --head --fail http://beirand:8888); do
+        until $(curl --output /dev/null --silent --fail http://beirand:8888); do
             printf '.'
             sleep 3
             times=$(( $times + 1 ))
-            if [ $times -gte 10 ]; then
+            if [[ $times -gte 10 ]]; then
               2>&1 echo "timed out waiting for beirand"
               exit 1
             fi

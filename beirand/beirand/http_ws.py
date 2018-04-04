@@ -1,5 +1,7 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
+import ast
+import json
 
 from tornado import websocket, web
 from tornado.options import options, define
@@ -179,27 +181,26 @@ class ImagesHandler(web.RequestHandler):
         """Retrieve image list of the node
 
         Available arguments are:
-            - all
-            - dangling
-            - label
+            - all          // all images
+            - filter       // filter by name ?filter=beiran
+            - dangling     // list dangling images ?dangling=true
+            - label        // filter by label  ?label=
 
         """
 
-        all_images = self.get_argument('all', False)
-        filters = None
-
-        if not all_images:
-            label = self.get_argument('label', None)
-            logger.info("label %s: ", label)
-            if label:
-                lbl = label.split("=")
-                label = {lbl[0]: lbl[1]}
-            filters = {
+        params = dict()
+        params.update(
+            {
+                "all": self.get_argument('all', False),
+                "filter": self.get_argument('filter', None),
                 "dangling": self.get_argument('dangling', False),
-                "label": label,
+                "label": self.get_argument('label', None),
             }
+        )
 
-        image_list = await AIO_DOCKER_CLIENT.images.list(all=all_images, filters=filters)
+        logger.debug("listing images with params: %s", params)
+
+        image_list = await AIO_DOCKER_CLIENT.images.list(**params)
 
         self.write({
             "images": image_list
@@ -227,16 +228,23 @@ class ImagePullHandler(web.RequestHandler):
             streams image pulling progress
 
         """
+        self.set_header("Content-Type", "application/json")
+
         tag = self.get_argument('tag', 'latest')
 
         logger.info("pulling image %s:%s", image, tag)
 
         result = await AIO_DOCKER_CLIENT.images.pull(from_image=image, tag=tag, stream=True)
+        self.write('{"statuses": [')
 
+        comma = ""
         async for data in result:
-            self.write(data)
+            data = json.dumps(data)
+            self.write("{comma}{status_data}".format(comma=comma, status_data=data))
+            comma = ", "
             self.flush()
 
+        self.write(']}')
         self.finish()
 
     # pylint: enable=arguments-differ

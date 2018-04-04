@@ -72,7 +72,7 @@ pipeline:
             printf '.'
             sleep 3
             times=$(( $times + 1 ))
-            if [[ $times -gte 10 ]]; then
+            if [ $times -eq 10 ]; then
               2>&1 echo "timed out waiting for beirand"
               exit 1
             fi

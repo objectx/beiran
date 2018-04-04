@@ -1,6 +1,5 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import ast
 import json
 
 from tornado import websocket, web

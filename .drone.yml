@@ -95,11 +95,10 @@ pipeline:
     environment:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - docker tag dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:egde
-      - docker push dkr.rsnc.io/poc/beiran/beiran:egde
+      - docker tag dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:${DRONE_TAG}
+      - docker push dkr.rsnc.io/poc/beiran/beiran:${DRONE_TAG}
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
-    auto_tag: true
     when:
       event: tag
 

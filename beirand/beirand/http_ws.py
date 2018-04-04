@@ -235,6 +235,7 @@ class ImagePullHandler(web.RequestHandler):
 
         async for data in result:
             self.write(data)
+            self.flush()
 
         self.finish()
 

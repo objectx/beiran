@@ -90,18 +90,6 @@ pipeline:
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
-  publish_tag:
-    image: docker
-    environment:
-      - DOCKER_HOST=unix:///var/run/host.sock
-    commands:
-      - docker tag dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:${DRONE_TAG}
-      - docker push dkr.rsnc.io/poc/beiran/beiran:${DRONE_TAG}
-    volumes:
-      - /var/run/docker.sock:/var/run/host.sock:ro
-    when:
-      event: tag
-
   notify-rsnc:
     group: notify
     image: plugins/slack

@@ -21,7 +21,7 @@ from beirand.http_ws import APP
 from beirand.lib import collect_node_info, update_docker_info
 from beirand.lib import get_listen_port
 
-from beiran.models import Node
+from beiran.models import Node, DockerImage
 
 AsyncIOMainLoop().install()
 
@@ -108,7 +108,40 @@ async def probe_docker_daemon():
         await update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT)
         # connected to docker daemon
         EVENTS.emit('node.docker.up')
-        break
+
+        # Delete all (local) layers and images from database
+        for image in list(DockerImage.select()):
+            image.available_at = [n for n in image.available_at if n != NODES.local_node.uuid.hex]
+
+            if len(image.available_at) == 0:
+                logger.info("debug: deleting image from db: %s", image.hash_id)
+                image.delete().execute()
+
+        # Get Images
+        image_list = await AIO_DOCKER_CLIENT.images.list()
+        for imageData in image_list:
+            image = DockerImage.from_dict(imageData, format="docker")
+            try:
+                image_ = DockerImage.get(DockerImage.hash_id == imageData['Id'])
+                old_available_at = image_.available_at
+                image_.update_using_obj(image)
+                image = image_
+                image.available_at = old_available_at
+
+            except DockerImage.DoesNotExist:
+                pass
+
+            image.available_at.append(NODES.local_node.uuid.hex)
+            image.save(force_insert=True)
+
+        # TODO: Get Layers
+
+        EVENTS.emit('node.docker.ready')
+
+
+        # TODO: await until docker is unavailable
+        EVENTS.emit('node.docker.down')
+        await asyncio.sleep(600)
 
 async def main(loop):
     """ Main function """

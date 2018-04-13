@@ -28,6 +28,10 @@ class BaseModel(Model):
             (dict): serialized model object
 
         """
+        if 'dialect' in kwargs:
+            _kwargs = dict(kwargs)
+            del(_kwargs['dialect'])
+            kwargs = _kwargs
 
         return model_to_dict(self, **kwargs)
 
@@ -42,6 +46,11 @@ class BaseModel(Model):
             (BaseModel): model object
 
         """
+        if 'dialect' in kwargs:
+            _kwargs = dict(kwargs)
+            del(_kwargs['dialect'])
+            kwargs = _kwargs
+
         return dict_to_model(cls, _dict, **kwargs)
 
     def update_using_obj(self, obj):

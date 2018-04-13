@@ -1,7 +1,7 @@
 """
 Module for DockerImage Model
 """
-from peewee import IntegerField, CharField
+from peewee import IntegerField, CharField, BooleanField
 from beiran.models.base import BaseModel, JSONStringField
 
 class DockerImage(BaseModel):
@@ -11,9 +11,13 @@ class DockerImage(BaseModel):
     hash_id = CharField(max_length=128)
     parent_hash_id = CharField(max_length=128, null=True)
     size = IntegerField()
-    tags = JSONStringField(default=list) # ["tag1", "tag2"]
+    tags = JSONStringField(default=list)
     data = JSONStringField(null=True)
-    available_at = JSONStringField(default=list) # [ "node1", "node2" ]
+    available_at = JSONStringField(default=list)
+    layers = JSONStringField(default=list)
+
+    has_not_found_layers = BooleanField(default=False)
+    has_unknown_layers = BooleanField(default=False)
 
     @classmethod
     def from_dict(cls, _dict, **kwargs):
@@ -27,4 +31,5 @@ class DockerImage(BaseModel):
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
 
-        return super().from_dict(new_dict, **kwargs)
+            _dict = new_dict
+        return super().from_dict(_dict, **kwargs)

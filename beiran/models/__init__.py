@@ -5,6 +5,7 @@ from beiran.log import build_logger
 from .base import BaseModel
 from .node import Node
 from .docker_image import DockerImage
+from .docker_layer import DockerLayer
 
 LOGGER = build_logger()
 
@@ -18,4 +19,4 @@ def create_tables(database):
     """
     # import them locally!
     LOGGER.info("creating database tables!...")
-    database.create_tables([Node, DockerImage])
+    database.create_tables([Node, DockerImage, DockerLayer])

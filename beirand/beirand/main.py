@@ -77,6 +77,9 @@ async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
+async def on_node_docker_connected():
+    logger.info("connected to docker daemon")
+
 def db_init():
     """Initialize database"""
     from peewee import SqliteDatabase
@@ -100,6 +103,13 @@ def db_init():
 
         create_tables(database)
 
+async def probe_docker_daemon():
+    while True:
+        await update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT)
+        # connected to docker daemon
+        EVENTS.emit('node.docker.up')
+        break
+
 async def main(loop):
     """ Main function """
 
@@ -111,7 +121,7 @@ async def main(loop):
     NODES.local_node = Node.from_dict(collect_node_info())
 
     # this is async but we will let it run in background, we have no rush
-    loop.create_task(update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT))
+    loop.create_task(probe_docker_daemon())
 
     NODES.add_or_update(NODES.local_node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
@@ -130,6 +140,7 @@ async def main(loop):
     # Register daemon events
     EVENTS.on('node.added', on_new_node_added)
     EVENTS.on('node.removed', on_node_removed)
+    EVENTS.on('node.docker.up', on_node_docker_connected)
 
     # peer discovery starts
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

@@ -30,13 +30,13 @@ class Node(BaseModel):
         _dict['uuid'] = uuid.UUID(_dict['uuid'])
         return super().from_dict(_dict)
 
-    def __repr__(self):
-        return self.__str__()
-
     def to_dict(self, **kwargs):
         _dict = super().to_dict(**kwargs)
         _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
         return _dict
+
+    def __repr__(self):
+        return self.__str__()
 
     @property
     def docker_version(self):

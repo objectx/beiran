@@ -334,6 +334,6 @@ async def update_docker_info(local_node, aiodocker):
             break
         else:
             LOGGER.debug("Cannot fetch docker info, retrying after %d seconds", retry_after)
-            await asyncio.sleep(5)
+            await asyncio.sleep(retry_after)
         if retry_after < 30:
             retry_after += 5

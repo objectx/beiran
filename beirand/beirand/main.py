@@ -18,10 +18,10 @@ from beirand.common import EVENTS
 from beirand.common import AIO_DOCKER_CLIENT
 
 from beirand.http_ws import APP
-from beirand.lib import collect_node_info, update_docker_info
+from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port
 
-from beiran.models import Node, DockerImage
+from beiran.models import Node, DockerImage, DockerLayer
 
 AsyncIOMainLoop().install()
 
@@ -104,26 +104,41 @@ def db_init():
 
         create_tables(database)
 
+DOCKER_UTIL = DockerUtil("/var/lib/docker", AIO_DOCKER_CLIENT)
+
 async def probe_docker_daemon():
     """Deal with local docker daemon states"""
 
     while True:
-        await update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT)
+        # Delete all data regarding our node
+        await DOCKER_UTIL.reset_docker_info_of_node(NODES.local_node.uuid.hex)
+
+        # wait until we can update our docker info
+        await DOCKER_UTIL.update_docker_info(NODES.local_node)
+
         # connected to docker daemon
         EVENTS.emit('node.docker.up')
 
-        # Delete all (local) layers and images from database
-        for image in list(DockerImage.select()):
-            image.available_at = [n for n in image.available_at if n != NODES.local_node.uuid.hex]
+        # Get mapping of diff-id and digest mappings of docker daemon
+        diffid_mapping = await DOCKER_UTIL.get_diffid_mappings()
 
-            if not image.available_at:
-                logger.info("debug: deleting image from db: %s", image.hash_id)
-                image.delete().execute()
+        # Get layerdb mapping
+        layerdb_mapping = await DOCKER_UTIL.get_layerdb_mappings()
 
         # Get Images
+        logger.debug("Getting docker image list..")
         image_list = await AIO_DOCKER_CLIENT.images.list()
         for image_data in image_list:
-            image = DockerImage.from_dict(image_data, format="docker")
+            if not image_data['RepoTags']:
+                continue
+
+            # remove the non-tag tag from tag list
+            image_data['RepoTags'] = [t for t in image_data['RepoTags'] if t != '<none>:<none>']
+
+            if not image_data['RepoTags']:
+                continue
+
+            image = DockerImage.from_dict(image_data, dialect="docker")
             try:
                 image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
                 old_available_at = image_.available_at
@@ -134,17 +149,39 @@ async def probe_docker_daemon():
             except DockerImage.DoesNotExist:
                 pass
 
-            image.available_at.append(NODES.local_node.uuid.hex)
-            image.save(force_insert=True)
+            try:
+                image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
 
-        # TODO: Get Layers
+                layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
+            except Exception as e:
+                continue
 
+            image.layers = [layer.digest for layer in layers]
+
+            for layer in layers:
+                layer.set_available_at(NODES.local_node.uuid.hex)
+                layer.save()
+
+            image.set_available_at(NODES.local_node.uuid.hex)
+            image.save()
+
+        # TODO: Set daemon.plugins['docker'].setReady(true)
         EVENTS.emit('node.docker.ready')
 
-
         # TODO: await until docker is unavailable
+        logger.debug("subscribing to docker events for further changes")
+        subscriber = AIO_DOCKER_CLIENT.events.subscribe()
+        while True:
+            event = await subscriber.get()
+            if event is None:
+                break
+
+            logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+
+        # TODO: Set daemon.plugins['docker'].setReady(false)
         EVENTS.emit('node.docker.down')
-        await asyncio.sleep(600)
+        logger.warning("docker connection lost")
+        await asyncio.sleep(100)
 
 async def main(loop):
     """ Main function """

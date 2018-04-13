@@ -33,3 +33,13 @@ class DockerImage(BaseModel):
 
             _dict = new_dict
         return super().from_dict(_dict, **kwargs)
+
+    def set_available_at(self, uuid_hex):
+        if uuid_hex in self.available_at:
+            return
+        self.available_at.append(uuid_hex)
+
+    def unset_available_at(self, uuid_hex):
+        if uuid_hex not in self.available_at:
+            return
+        self.available_at = [n for n in self.available_at if n != uuid_hex]

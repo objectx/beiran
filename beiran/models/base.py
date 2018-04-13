@@ -30,7 +30,7 @@ class BaseModel(Model):
         """
         if 'dialect' in kwargs:
             _kwargs = dict(kwargs)
-            del(_kwargs['dialect'])
+            del _kwargs['dialect']
             kwargs = _kwargs
 
         return model_to_dict(self, **kwargs)
@@ -48,7 +48,7 @@ class BaseModel(Model):
         """
         if 'dialect' in kwargs:
             _kwargs = dict(kwargs)
-            del(_kwargs['dialect'])
+            del _kwargs['dialect']
             kwargs = _kwargs
 
         return dict_to_model(cls, _dict, **kwargs)

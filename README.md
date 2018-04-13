@@ -50,6 +50,13 @@ source env/bin/activate
 python -m beirand
 ```
 
+or as root (potentially UNSAFE) to allow beiran to peek into /var/lib/docker
+
+```sh
+source env/bin/activate
+sudo -E python -m beirand
+```
+
 #### - Use cli
 
 ```sh

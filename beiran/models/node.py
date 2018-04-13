@@ -26,9 +26,9 @@ class Node(BaseModel):
                                                                       uuid=self.uuid)
 
     @classmethod
-    def from_dict(cls, _dict):
+    def from_dict(cls, _dict, **kwargs):
         _dict['uuid'] = uuid.UUID(_dict['uuid'])
-        return super().from_dict(_dict)
+        return super().from_dict(_dict, **kwargs)
 
     def to_dict(self, **kwargs):
         _dict = super().to_dict(**kwargs)

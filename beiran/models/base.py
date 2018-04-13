@@ -17,7 +17,7 @@ class BaseModel(Model):
         """Set database metaclass attribute to DB object"""
         database = DB_PROXY
 
-    def to_dict(self, format="api", **kwargs):
+    def to_dict(self, **kwargs):
         """
         Serialize model to python dict
 
@@ -32,7 +32,7 @@ class BaseModel(Model):
         return model_to_dict(self, **kwargs)
 
     @classmethod
-    def from_dict(cls, _dict, format="api"):
+    def from_dict(cls, _dict, **kwargs):
         """
         Deserialize model from python dict
         Args:
@@ -42,7 +42,7 @@ class BaseModel(Model):
             (BaseModel): model object
 
         """
-        return dict_to_model(cls, _dict)
+        return dict_to_model(cls, _dict, **kwargs)
 
     def update_using_obj(self, obj):
         """

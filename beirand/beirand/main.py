@@ -78,6 +78,7 @@ async def on_new_node_added(ip_address, service_port):
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
 async def on_node_docker_connected():
+    """Placeholder for event on node docker connected"""
     logger.info("connected to docker daemon")
 
 def db_init():
@@ -104,6 +105,8 @@ def db_init():
         create_tables(database)
 
 async def probe_docker_daemon():
+    """Deal with local docker daemon states"""
+
     while True:
         await update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT)
         # connected to docker daemon
@@ -113,16 +116,16 @@ async def probe_docker_daemon():
         for image in list(DockerImage.select()):
             image.available_at = [n for n in image.available_at if n != NODES.local_node.uuid.hex]
 
-            if len(image.available_at) == 0:
+            if not image.available_at:
                 logger.info("debug: deleting image from db: %s", image.hash_id)
                 image.delete().execute()
 
         # Get Images
         image_list = await AIO_DOCKER_CLIENT.images.list()
-        for imageData in image_list:
-            image = DockerImage.from_dict(imageData, format="docker")
+        for image_data in image_list:
+            image = DockerImage.from_dict(image_data, format="docker")
             try:
-                image_ = DockerImage.get(DockerImage.hash_id == imageData['Id'])
+                image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
                 old_available_at = image_.available_at
                 image_.update_using_obj(image)
                 image = image_

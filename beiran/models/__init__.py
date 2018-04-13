@@ -18,4 +18,4 @@ def create_tables(database):
     """
     # import them locally!
     LOGGER.info("creating database tables!...")
-    database.create_tables([ Node, DockerImage ])
+    database.create_tables([Node, DockerImage])

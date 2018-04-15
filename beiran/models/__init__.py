@@ -4,8 +4,7 @@ Import all data models to make import statements clear.
 from beiran.log import build_logger
 from .base import BaseModel
 from .node import Node
-from .docker_image import DockerImage
-from .docker_layer import DockerLayer
+from .docker_objects import DockerImage, DockerLayer
 
 LOGGER = build_logger()
 

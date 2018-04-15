@@ -288,8 +288,10 @@ async def aio_isdir(path):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 class DockerUtil:
+    """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):
+        """..."""
         pass
 
     def __init__(self, docker_path="/var/lib/docker", aiodocker=None, logger=None):
@@ -300,7 +302,7 @@ class DockerUtil:
         self.logger = logger if logger else LOGGER
 
     async def reset_docker_info_of_node(self, uuid_hex):
-        # Delete all (local) layers and images from database
+        """ Delete all (local) layers and images from database """
         for image in list(DockerImage.select()):
             image.unset_available_at(uuid_hex)
 
@@ -346,8 +348,6 @@ class DockerUtil:
 
         Returns:
             (None): updates `node` object
-
-
         """
         self.logger.debug("Updating local docker info")
         retry_after = 0
@@ -359,12 +359,16 @@ class DockerUtil:
                 node.docker = docker_info['daemon_info']
                 break
             else:
-                self.logger.debug("Cannot fetch docker info, retrying after %d seconds", retry_after)
+                self.logger.debug("Cannot fetch docker info," +
+                                  " retrying after %d seconds",
+                                  retry_after)
                 await asyncio.sleep(retry_after)
             if retry_after < 30:
                 retry_after += 5
 
     async def get_diffid_mappings(self):
+        """..."""
+
         # TODO: Cache in database and make it faster
         # - Also allow on demand lookup for these
         self.logger.debug("Getting diff-id digest mappings..")
@@ -374,14 +378,16 @@ class DockerUtil:
             if await aio_isdir(mapping_dir + '/' + filename):
                 continue
 
-            async with aiofiles.open(mapping_dir + '/' + filename, mode='r') as f:
-                contents = await f.read()
+            async with aiofiles.open(mapping_dir + '/' + filename, mode='r') as mapping_file:
+                contents = await mapping_file.read()
             contents = contents.strip()
             diffid_mapping[contents] = 'sha256:' + filename
         self.diffid_mapping = diffid_mapping
         return diffid_mapping
 
     async def get_layerdb_mappings(self):
+        """..."""
+
         # TODO: Cache in database and make it faster
         # - Also allow on demand lookup for these
         self.logger.debug("Getting layerdb digest mappings..")
@@ -391,8 +397,10 @@ class DockerUtil:
             if not await aio_isdir(layerdb_path + '/' + filename):
                 continue
 
-            async with aiofiles.open(layerdb_path + '/' + filename + '/diff', mode='r') as f:
-                contents = await f.read()
+            async with aiofiles.open(layerdb_path + '/' +
+                                     filename + '/diff',
+                                     mode='r') as mapping_file:
+                contents = await mapping_file.read()
             contents = contents.strip()
             layerdb_mapping[contents] = 'sha256:' + filename
 
@@ -400,6 +408,8 @@ class DockerUtil:
         return layerdb_mapping
 
     async def get_image_layers(self, diffid_list):
+        """Returns an array of DockerLayer objects given diffid array"""
+
         layers = []
         for idx, diffid in enumerate(diffid_list):
             layer = await self.get_layer_by_diffid(diffid, idx)
@@ -408,6 +418,17 @@ class DockerUtil:
         return layers
 
     async def get_layer_by_diffid(self, diffid, idx):
+        """
+        Makes an DockerLayer objects using diffid of layer
+
+        Args:
+            diffid (string)
+            idx (integer): order of layer in docker image
+
+        Returns:
+            (DockerLayer): `layer` object
+        """
+
         layer_storage_path = self.docker_path + "/image/overlay2/layerdb"
         if not diffid in self.diffid_mapping:
             raise DockerUtil.CannotFindLayerMappingError()
@@ -439,8 +460,8 @@ class DockerUtil:
 
         # try:
         layer_meta_folder = layer_storage_path + '/' + layer.layerdb_diff_id.replace(':', '/')
-        async with aiofiles.open(layer_meta_folder + '/size', mode='r') as f:
-            size_str = await f.read()
+        async with aiofiles.open(layer_meta_folder + '/size', mode='r') as layer_size_file:
+            size_str = await layer_size_file.read()
 
         layer.size = int(size_str.strip())
 

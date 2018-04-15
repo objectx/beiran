@@ -21,12 +21,12 @@ from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port
 
-from beiran.models import Node, DockerImage, DockerLayer
+from beiran.models import Node, DockerImage
 
 AsyncIOMainLoop().install()
 
 
-async def new_node(ip_address, service_port=None):
+async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=unused-argument
     """
     Discovered new node on beiran network
     Args:
@@ -120,10 +120,10 @@ async def probe_docker_daemon():
         EVENTS.emit('node.docker.up')
 
         # Get mapping of diff-id and digest mappings of docker daemon
-        diffid_mapping = await DOCKER_UTIL.get_diffid_mappings()
+        await DOCKER_UTIL.get_diffid_mappings()
 
         # Get layerdb mapping
-        layerdb_mapping = await DOCKER_UTIL.get_layerdb_mappings()
+        await DOCKER_UTIL.get_layerdb_mappings()
 
         # Get Images
         logger.debug("Getting docker image list..")
@@ -153,7 +153,7 @@ async def probe_docker_daemon():
                 image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
 
                 layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
-            except Exception as e:
+            except Exception as err: # pylint: disable=unused-variable,broad-except
                 continue
 
             image.layers = [layer.digest for layer in layers]

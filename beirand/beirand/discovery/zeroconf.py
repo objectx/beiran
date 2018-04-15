@@ -157,7 +157,7 @@ class ZeroconfListener(object):
                            (service_info.weight, service_info.priority))
             self.log.debug("  Server: %s" % service_info.server)
             self.discovery.emit('discovered', ip_address=socket.inet_ntoa(service_info.address),
-                                port=service_info.port)
+                                service_port=service_info.port)
             if service_info.properties:
                 self.log.debug("  Properties are:")
                 for key, value in service_info.properties.items():

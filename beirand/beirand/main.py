@@ -192,12 +192,11 @@ async def main(loop):
 
     # collect node info and create node object
     NODES.local_node = Node.from_dict(collect_node_info())
+    NODES.add_or_update(NODES.local_node)
+    logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     # this is async but we will let it run in background, we have no rush
     loop.create_task(probe_docker_daemon())
-
-    NODES.add_or_update(NODES.local_node)
-    logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     # HTTP Daemon. Listen on Unix Socket
     logger.info("Starting Daemon HTTP Server...")
@@ -215,7 +214,7 @@ async def main(loop):
     EVENTS.on('node.removed', on_node_removed)
     EVENTS.on('node.docker.up', on_node_docker_connected)
 
-    # peer discovery starts
+    # peer discovery
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
     logger.debug("Discovery method is %s", discovery_mode)
 
@@ -231,7 +230,6 @@ async def main(loop):
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()
-    # peer discovery
 
 def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """

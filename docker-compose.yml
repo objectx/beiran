@@ -1,0 +1,18 @@
+# This docker-compose is for development environment
+version: '2'
+services:
+  beirand:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    build: .
+    privileged: true
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock
+     - /var/lib/docker:/var/lib/docker
+     - .:/src
+    command: python3.6 -u beirand/main.py
+    network_mode: host
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
+      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - LOG_LEVEL=INFO

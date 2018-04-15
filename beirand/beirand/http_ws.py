@@ -10,6 +10,7 @@ from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 
+from beiran.models import DockerImage
 
 define('listen_address',
        group='webserver',
@@ -168,45 +169,6 @@ class NodeInfo(web.RequestHandler):
 
     # pylint: enable=arguments-differ
 
-
-class ImagesHandler(web.RequestHandler):
-    """Endpoint to list docker images"""
-
-    def data_received(self, chunk):
-        pass
-
-    # pylint: disable=arguments-differ
-    async def get(self):
-        """Retrieve image list of the node
-
-        Available arguments are:
-            - all          // all images
-            - filter       // filter by name ?filter=beiran
-            - dangling     // list dangling images ?dangling=true
-            - label        // filter by label  ?label=
-
-        """
-
-        params = dict()
-        params.update(
-            {
-                "all": self.get_argument('all', False),
-                "filter": self.get_argument('filter', None),
-                "dangling": self.get_argument('dangling', False),
-                "label": self.get_argument('label', None),
-            }
-        )
-
-        logger.debug("listing images with params: %s", params)
-
-        image_list = await AIO_DOCKER_CLIENT.images.list(**params)
-
-        self.write({
-            "images": image_list
-        })
-    # pylint: enable=arguments-differ
-
-
 class ImagePullHandler(web.RequestHandler):
     """Docker image pull"""
     def data_received(self, chunk):
@@ -248,6 +210,37 @@ class ImagePullHandler(web.RequestHandler):
 
     # pylint: enable=arguments-differ
 
+class ImageList(web.RequestHandler):
+    """List images"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        """
+        Return list of nodes, if specified `all`from database or discovered ones from memory.
+
+        Returns:
+            (dict) list of nodes, it is a dict, since tornado does not write list for security
+                   reasons; see:
+                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+
+        """
+
+        # Sorry for hand-typed json, this is for streaming.
+        self.write('{ "items": [')
+        is_first = True
+        for image in DockerImage.select():
+            if is_first:
+                is_first = False
+            else:
+                self.write(',')
+            self.write(json.dumps(image.to_dict(dialect="api")))
+
+        self.write('}')
+        self.finish()
+    # pylint: enable=arguments-differ
 
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
@@ -304,10 +297,10 @@ APP = web.Application([
     (r'/', ApiRootHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
+    (r'/images', ImageList),
     (r'/nodes', NodeList),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
-    (r'/images', ImagesHandler),
     (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
     (r'/ws', EchoWebSocket),
 ])

@@ -34,6 +34,15 @@ class DockerImage(BaseModel):
             _dict = new_dict
         return super().from_dict(_dict, **kwargs)
 
+    def to_dict(self, **kwargs):
+        _dict = super().to_dict(**kwargs)
+        if 'dialect' in kwargs and kwargs['dialect'] == 'api':
+            del _dict['data']
+            del _dict['has_not_found_layers']
+            del _dict['has_unknown_layers']
+
+        return _dict
+
     def set_available_at(self, uuid_hex):
         if uuid_hex in self.available_at:
             return

@@ -78,12 +78,12 @@ class Cli:
     main.add_command(node)
 
     @click.command('list')
-    @click.option('--all', default=False, is_flag=True,
+    @click.option('--all', 'all_nodes', default=False, is_flag=True,
                   help='List all known nodes (including offline ones)')
     @click.pass_obj
-    def node_list(self, all):
+    def node_list(self, all_nodes):
         """List known beiran nodes"""
-        nodes = self.beiran_client.get_nodes(all_nodes=all)
+        nodes = self.beiran_client.get_nodes(all_nodes=all_nodes)
         table = [[n['uuid'], n['ip_address'] + ':8888', 'N/A', 'OK'] for n in nodes]
         print(tabulate(table, headers=["UUID", "IP:Port", "Docker Ver.", "Status?"]))
 

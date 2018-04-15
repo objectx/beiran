@@ -1,3 +1,4 @@
+# This docker-compose is for development environment
 version: '2'
 services:
   beirand:

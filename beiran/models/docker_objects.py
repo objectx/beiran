@@ -1,10 +1,27 @@
 """
-Module for DockerImage Model
+Module for DockerLayer and DockerImage Model
 """
 from peewee import IntegerField, CharField, BooleanField
 from beiran.models.base import BaseModel, JSONStringField
 
-class DockerImage(BaseModel):
+class CommonDockerObjectFunctions:
+    """..."""
+
+    available_at = JSONStringField(default=list)
+
+    def set_available_at(self, uuid_hex):
+        """add uuid of node to available_at list"""
+        if uuid_hex in self.available_at:
+            return
+        self.available_at.append(uuid_hex)
+
+    def unset_available_at(self, uuid_hex):
+        """remove uuid of node from available_at list"""
+        if uuid_hex not in self.available_at:
+            return
+        self.available_at = [n for n in self.available_at if n != uuid_hex]
+
+class DockerImage(BaseModel, CommonDockerObjectFunctions):
     """DockerImage"""
 
     created_at = IntegerField()
@@ -13,7 +30,6 @@ class DockerImage(BaseModel):
     size = IntegerField()
     tags = JSONStringField(default=list)
     data = JSONStringField(null=True)
-    available_at = JSONStringField(default=list)
     layers = JSONStringField(default=list)
 
     has_not_found_layers = BooleanField(default=False)
@@ -43,12 +59,11 @@ class DockerImage(BaseModel):
 
         return _dict
 
-    def set_available_at(self, uuid_hex):
-        if uuid_hex in self.available_at:
-            return
-        self.available_at.append(uuid_hex)
+class DockerLayer(BaseModel, CommonDockerObjectFunctions):
+    """DockerLayer"""
 
-    def unset_available_at(self, uuid_hex):
-        if uuid_hex not in self.available_at:
-            return
-        self.available_at = [n for n in self.available_at if n != uuid_hex]
+    digest = CharField(max_length=128)
+    local_diff_id = CharField(max_length=128)
+    layerdb_diff_id = CharField(max_length=128)
+    size = IntegerField()
+    available_at = JSONStringField(default=list)

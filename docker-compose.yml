@@ -12,6 +12,7 @@ services:
     command: python3.6 -u beirand/main.py
     network_mode: host
     environment:
-      - DISCOVERY_METHOD=dns
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO

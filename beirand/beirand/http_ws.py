@@ -169,6 +169,7 @@ class NodeInfo(web.RequestHandler):
 
     # pylint: enable=arguments-differ
 
+
 class ImagePullHandler(web.RequestHandler):
     """Docker image pull"""
     def data_received(self, chunk):
@@ -209,6 +210,7 @@ class ImagePullHandler(web.RequestHandler):
         self.finish()
 
     # pylint: enable=arguments-differ
+
 
 class ImageList(web.RequestHandler):
     """List images"""

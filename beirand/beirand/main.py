@@ -26,7 +26,7 @@ from beiran.models import Node, DockerImage
 AsyncIOMainLoop().install()
 
 
-async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=unused-argument
+async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
     """
     Discovered new node on beiran network
     Args:
@@ -53,6 +53,7 @@ async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=u
             node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
             timeout -= 1
 
+
 async def removed_node(node):
     """
     Node on beiran network is down
@@ -69,17 +70,21 @@ async def removed_node(node):
     if removed:
         EVENTS.emit('node.removed', node)
 
+
 async def on_node_removed(node):
     """Placeholder for event on node removed"""
     logger.info("new event: an existing node removed %s", node.uuid)
+
 
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
+
 async def on_node_docker_connected():
     """Placeholder for event on node docker connected"""
     logger.info("connected to docker daemon")
+
 
 def db_init():
     """Initialize database"""
@@ -104,7 +109,9 @@ def db_init():
 
         create_tables(database)
 
+
 DOCKER_UTIL = DockerUtil("/var/lib/docker", AIO_DOCKER_CLIENT)
+
 
 async def probe_docker_daemon():
     """Deal with local docker daemon states"""
@@ -153,7 +160,7 @@ async def probe_docker_daemon():
                 image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
 
                 layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
-            except Exception as err: # pylint: disable=unused-variable,broad-except
+            except Exception as err:  # pylint: disable=unused-variable,broad-except
                 continue
 
             image.layers = [layer.digest for layer in layers]
@@ -182,6 +189,7 @@ async def probe_docker_daemon():
         EVENTS.emit('node.docker.down')
         logger.warning("docker connection lost")
         await asyncio.sleep(100)
+
 
 async def main(loop):
     """ Main function """
@@ -231,12 +239,14 @@ async def main(loop):
     discovery.on('undiscovered', removed_node)
     discovery.start()
 
+
 def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """
     loop = asyncio.get_event_loop()
     loop.create_task(main(loop))
     loop.set_debug(True)
     loop.run_forever()
+
 
 if __name__ == '__main__':
     run()

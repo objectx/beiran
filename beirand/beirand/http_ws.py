@@ -227,9 +227,10 @@ class ImageList(web.RequestHandler):
                    http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
 
         """
+        self.set_header("Content-Type", "application/json")
 
         # Sorry for hand-typed json, this is for streaming.
-        self.write('{ "items": [')
+        self.write('{"items": [')
         is_first = True
         for image in DockerImage.select():
             if is_first:
@@ -238,9 +239,10 @@ class ImageList(web.RequestHandler):
                 self.write(',')
             self.write(json.dumps(image.to_dict(dialect="api")))
 
-        self.write('}')
+        self.write(']}')
         self.finish()
     # pylint: enable=arguments-differ
+
 
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""

@@ -2,17 +2,17 @@
 import os
 import json
 import asyncio
-import aiodocker
 import aiohttp
 
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
+import aiodocker
+
 from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
-
 
 define('listen_address',
        group='webserver',

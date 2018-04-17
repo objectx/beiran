@@ -53,7 +53,7 @@ pipeline:
       - |
         echo "waiting until docker is accessible"
         times=0
-        until $(wget -q -T 2 -O /dev/null http://dockerd:2375); do
+        until $(wget -q -T 2 -O /dev/null http://dockerd:2375/info); do
             printf '.'
             sleep 3
             times=$(( $times + 1 ))
@@ -64,6 +64,7 @@ pipeline:
         done
       - docker pull hello-world
       - docker pull alpine:latest
+      - docker images
 
   beirand:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}

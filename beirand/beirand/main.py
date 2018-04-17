@@ -165,7 +165,7 @@ async def probe_docker_daemon():
             image.set_available_at(NODES.local_node.uuid.hex)
             image.save()
 
-        # This will be converted to something like 
+        # This will be converted to something like
         #   daemon.plugins['docker'].setReady(true)
         # in the future; will we in docker plugin code.
         EVENTS.emit('node.docker.ready')
@@ -180,7 +180,7 @@ async def probe_docker_daemon():
 
             logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
 
-        # This will be converted to something like 
+        # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
         # in the future; will we in docker plugin code.
         EVENTS.emit('node.docker.down')

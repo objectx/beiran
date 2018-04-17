@@ -47,7 +47,7 @@ pipeline:
   docker_test_seeds:
     image: docker:18.03.0-ce
     environment:
-      - DOCKER_HOST=http://dockerd:2375
+      - DOCKER_HOST=tcp://dockerd:2375
     commands: 
       - date
       - |

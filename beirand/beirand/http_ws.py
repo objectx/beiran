@@ -84,9 +84,14 @@ class ImagesTarHandler(web.RequestHandler):
         try:
             content = await APP.docker.images.export_image(image_id_or_sha)
             self.set_header("Content-Type", "application/x-tar")
-            async for chunk in content:
+
+            while True:
+                chunk = await content.read(2048*1024)
+                if not chunk:
+                    break
                 self.write(chunk)
                 await self.flush()
+            self.finish()
         except aiodocker.exceptions.DockerError as error:
             raise HTTPError(status_code=404, log_message=error.message)
 

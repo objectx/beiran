@@ -240,6 +240,7 @@ class ImageList(web.RequestHandler):
             else:
                 self.write(',')
             self.write(json.dumps(image.to_dict(dialect="api")))
+            self.flush()
 
         self.write(']}')
         self.finish()

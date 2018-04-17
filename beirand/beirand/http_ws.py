@@ -1,6 +1,9 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
 import json
+import asyncio
+import aiodocker
+import aiohttp
 
 from tornado import websocket, web
 from tornado.options import options, define
@@ -66,6 +69,26 @@ class ApiRootHandler(web.RequestHandler):
         self.set_header("Content-Type", "application/json")
         self.write('{"version":"' + VERSION + '"}')
         self.finish()
+
+class ImagesTarHandler(web.RequestHandler):
+    """ Images export handler """
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    async def get(self, image_id_or_sha):
+        """
+            Get image as a tarball
+        """
+        try:
+            content = await APP.docker.images.export_image(image_id_or_sha)
+            self.set_header("Content-Type", "application/x-tar")
+            async for chunk in content:
+                self.write(chunk)
+                await self.flush()
+        except aiodocker.exceptions.DockerError as error:
+            raise HTTPError(status_code=404, log_message=error.message)
 
 
 class LayerDownload(web.RequestHandler):
@@ -169,11 +192,14 @@ class NodeInfo(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
+@web.stream_request_body
 class ImagesHandler(web.RequestHandler):
     """Endpoint to list docker images"""
 
-    def data_received(self, chunk):
-        pass
+    def __init__(self):
+        super().__init__()
+        self.chunks = None
+        self.future_response = None
 
     # pylint: disable=arguments-differ
     async def get(self):
@@ -206,6 +232,35 @@ class ImagesHandler(web.RequestHandler):
         })
     # pylint: enable=arguments-differ
 
+    def prepare(self):
+        self.chunks = asyncio.Queue()
+
+        @aiohttp.streamer
+        async def sender(writer, chunks):
+            """ async generator data sender for aiodocker """
+            chunk = await chunks.get()
+            while chunk:
+                await writer.write(chunk)
+                chunk = await chunks.get()
+
+        self.future_response = APP.docker.images.import_image(data=sender(self.chunks)) # pylint: disable=no-value-for-parameter
+
+    # pylint: disable=arguments-differ
+    async def data_received(self, chunk):
+        self.chunks.put_nowait(chunk)
+
+    async def post(self):
+        """
+            Loads tarball to docker
+        """
+        try:
+            await self.chunks.put(None)
+            await self.future_response
+            self.write("OK")
+            self.finish()
+        except  aiodocker.exceptions.DockerError as error:
+            raise HTTPError(status_code=404, log_message=error.message)
+    # pylint: enable=arguments-differ
 
 class ImagePullHandler(web.RequestHandler):
     """Docker image pull"""
@@ -302,6 +357,7 @@ class Ping(web.RequestHandler):
 
 APP = web.Application([
     (r'/', ApiRootHandler),
+    (r'/images/(.*)', ImagesTarHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
     (r'/nodes', NodeList),

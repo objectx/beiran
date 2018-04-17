@@ -43,6 +43,7 @@ pipeline:
 
   docker:
     image: docker:18.03.0-ce-dind
+    privileged: true
     detach: true
 
   beirand:

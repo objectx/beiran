@@ -42,6 +42,7 @@ pipeline:
     image: docker:18.03.0-ce-dind
     privileged: true
     detach: true
+    command:  [ "-D" ]
 
   docker_test_seeds:
     image: docker:18.03.0-ce
@@ -52,7 +53,7 @@ pipeline:
       - |
         echo "waiting until docker is accessible"
         times=0
-        until $(curl --output /dev/null --silent --fail http://dockerd:2375); do
+        until $(wget -q -T 2 -O /dev/null http://dockerd:2375); do
             printf '.'
             sleep 3
             times=$(( $times + 1 ))

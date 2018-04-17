@@ -3,6 +3,9 @@
 ---
 - config:
   - testset: "Beiran"
+  - variable_binds:
+    - sample_image_name: 'hello-world'
+
 - test:
   - name: "Version from root handler"
   - headers: {accept: 'application/json'}

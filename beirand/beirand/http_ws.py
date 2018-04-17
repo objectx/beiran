@@ -1,5 +1,6 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
+import json
 
 from tornado import websocket, web
 from tornado.options import options, define
@@ -168,6 +169,86 @@ class NodeInfo(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
+class ImagesHandler(web.RequestHandler):
+    """Endpoint to list docker images"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    async def get(self):
+        """Retrieve image list of the node
+
+        Available arguments are:
+            - all          // all images
+            - filter       // filter by name ?filter=beiran
+            - dangling     // list dangling images ?dangling=true
+            - label        // filter by label  ?label=
+
+        """
+
+        params = dict()
+        params.update(
+            {
+                "all": self.get_argument('all', False),
+                "filter": self.get_argument('filter', None),
+                "dangling": self.get_argument('dangling', False),
+                "label": self.get_argument('label', None),
+            }
+        )
+
+        logger.debug("listing images with params: %s", params)
+
+        image_list = await AIO_DOCKER_CLIENT.images.list(**params)
+
+        self.write({
+            "images": image_list
+        })
+    # pylint: enable=arguments-differ
+
+
+class ImagePullHandler(web.RequestHandler):
+    """Docker image pull"""
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+
+    @web.asynchronous
+    async def get(self, image):
+        """
+
+        Pull images
+
+        Args:
+            image (str): image name
+
+        Returns:
+            streams image pulling progress
+
+        """
+        self.set_header("Content-Type", "application/json")
+
+        tag = self.get_argument('tag', 'latest')
+
+        logger.info("pulling image %s:%s", image, tag)
+
+        result = await AIO_DOCKER_CLIENT.images.pull(from_image=image, tag=tag, stream=True)
+        self.write('{"statuses": [')
+
+        comma = ""
+        async for data in result:
+            data = json.dumps(data)
+            self.write("{comma}{status_data}".format(comma=comma, status_data=data))
+            comma = ", "
+            self.flush()
+
+        self.write(']}')
+        self.finish()
+
+    # pylint: enable=arguments-differ
+
+
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
@@ -216,9 +297,8 @@ class Ping(web.RequestHandler):
         """Just write PONG string"""
         self.write("PONG")
         self.finish()
+    # pylint: enable=arguments-differ
 
-
-# pylint: enable=arguments-differ
 
 APP = web.Application([
     (r'/', ApiRootHandler),
@@ -227,7 +307,8 @@ APP = web.Application([
     (r'/nodes', NodeList),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
-    # (r'/images', ImagesHandler),
+    (r'/images', ImagesHandler),
+    (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
     (r'/ws', EchoWebSocket),
 ])
 

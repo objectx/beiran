@@ -24,6 +24,9 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
+      - apk add --update --no-cache python-dev gcc linux-headers musl-dev g++
+      - pip install -r beiran/requirements.txt
+      - pip install -r beirand/requirements.txt
       - pylint beirand/beirand
 
   lint-lib:

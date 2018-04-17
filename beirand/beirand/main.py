@@ -18,15 +18,15 @@ from beirand.common import EVENTS
 from beirand.common import AIO_DOCKER_CLIENT
 
 from beirand.http_ws import APP
-from beirand.lib import collect_node_info, update_docker_info
+from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port
 
-from beiran.models import Node
+from beiran.models import Node, DockerImage
 
 AsyncIOMainLoop().install()
 
 
-async def new_node(ip_address, service_port=None):
+async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=unused-argument
     """
     Discovered new node on beiran network
     Args:
@@ -77,6 +77,10 @@ async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
+async def on_node_docker_connected():
+    """Placeholder for event on node docker connected"""
+    logger.info("connected to docker daemon")
+
 def db_init():
     """Initialize database"""
     from peewee import SqliteDatabase
@@ -100,6 +104,89 @@ def db_init():
 
         create_tables(database)
 
+DOCKER_UTIL = DockerUtil("/var/lib/docker", AIO_DOCKER_CLIENT)
+
+async def probe_docker_daemon():
+    """Deal with local docker daemon states"""
+
+    while True:
+        # Delete all data regarding our node
+        await DOCKER_UTIL.reset_docker_info_of_node(NODES.local_node.uuid.hex)
+
+        # wait until we can update our docker info
+        await DOCKER_UTIL.update_docker_info(NODES.local_node)
+
+        # connected to docker daemon
+        EVENTS.emit('node.docker.up')
+
+        # Get mapping of diff-id and digest mappings of docker daemon
+        await DOCKER_UTIL.get_diffid_mappings()
+
+        # Get layerdb mapping
+        await DOCKER_UTIL.get_layerdb_mappings()
+
+        # Get Images
+        logger.debug("Getting docker image list..")
+        image_list = await AIO_DOCKER_CLIENT.images.list()
+        for image_data in image_list:
+            if not image_data['RepoTags']:
+                continue
+
+            # remove the non-tag tag from tag list
+            image_data['RepoTags'] = [t for t in image_data['RepoTags'] if t != '<none>:<none>']
+
+            if not image_data['RepoTags']:
+                continue
+
+            image = DockerImage.from_dict(image_data, dialect="docker")
+            try:
+                image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+                old_available_at = image_.available_at
+                image_.update_using_obj(image)
+                image = image_
+                image.available_at = old_available_at
+
+            except DockerImage.DoesNotExist:
+                pass
+
+            try:
+                image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
+
+                layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
+            except Exception as err: # pylint: disable=unused-variable,broad-except
+                continue
+
+            image.layers = [layer.digest for layer in layers]
+
+            for layer in layers:
+                layer.set_available_at(NODES.local_node.uuid.hex)
+                layer.save()
+
+            image.set_available_at(NODES.local_node.uuid.hex)
+            image.save()
+
+        # This will be converted to something like
+        #   daemon.plugins['docker'].setReady(true)
+        # in the future; will we in docker plugin code.
+        EVENTS.emit('node.docker.ready')
+
+        # await until docker is unavailable
+        logger.debug("subscribing to docker events for further changes")
+        subscriber = AIO_DOCKER_CLIENT.events.subscribe()
+        while True:
+            event = await subscriber.get()
+            if event is None:
+                break
+
+            logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+
+        # This will be converted to something like
+        #   daemon.plugins['docker'].setReady(false)
+        # in the future; will we in docker plugin code.
+        EVENTS.emit('node.docker.down')
+        logger.warning("docker connection lost")
+        await asyncio.sleep(100)
+
 async def main(loop):
     """ Main function """
 
@@ -113,7 +200,7 @@ async def main(loop):
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     # this is async but we will let it run in background, we have no rush
-    loop.create_task(update_docker_info(NODES.local_node, AIO_DOCKER_CLIENT))
+    loop.create_task(probe_docker_daemon())
 
     # HTTP Daemon. Listen on Unix Socket
     logger.info("Starting Daemon HTTP Server...")
@@ -129,6 +216,7 @@ async def main(loop):
     # Register daemon events
     EVENTS.on('node.added', on_new_node_added)
     EVENTS.on('node.removed', on_node_removed)
+    EVENTS.on('node.docker.up', on_node_docker_connected)
 
     # peer discovery
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'

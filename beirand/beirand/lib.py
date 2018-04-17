@@ -369,8 +369,6 @@ class DockerUtil:
     async def get_diffid_mappings(self):
         """..."""
 
-        # TODO: Cache in database and make it faster
-        # - Also allow on demand lookup for these
         self.logger.debug("Getting diff-id digest mappings..")
         diffid_mapping = {}
         mapping_dir = self.docker_path + "/image/overlay2/distribution/diffid-by-digest/sha256"
@@ -388,8 +386,6 @@ class DockerUtil:
     async def get_layerdb_mappings(self):
         """..."""
 
-        # TODO: Cache in database and make it faster
-        # - Also allow on demand lookup for these
         self.logger.debug("Getting layerdb digest mappings..")
         layerdb_mapping = {}
         layerdb_path = self.docker_path + "/image/overlay2/layerdb/sha256"

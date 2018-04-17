@@ -1,5 +1,9 @@
-FROM clburlison/pylint
+FROM python:3-alpine
 
+RUN apk add --no-cache \
+    git \
+    openssh-client \
+    && pip install flake8 flake8-docstrings pylint
 RUN apk add --update --no-cache python-dev gcc g++ linux-headers musl-dev
 
 ADD beiran/requirements.txt /root/r-lib.txt

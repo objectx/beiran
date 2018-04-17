@@ -165,10 +165,12 @@ async def probe_docker_daemon():
             image.set_available_at(NODES.local_node.uuid.hex)
             image.save()
 
-        # TODO: Set daemon.plugins['docker'].setReady(true)
+        # This will be converted to something like 
+        #   daemon.plugins['docker'].setReady(true)
+        # in the future; will we in docker plugin code.
         EVENTS.emit('node.docker.ready')
 
-        # TODO: await until docker is unavailable
+        # await until docker is unavailable
         logger.debug("subscribing to docker events for further changes")
         subscriber = AIO_DOCKER_CLIENT.events.subscribe()
         while True:
@@ -178,7 +180,9 @@ async def probe_docker_daemon():
 
             logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
 
-        # TODO: Set daemon.plugins['docker'].setReady(false)
+        # This will be converted to something like 
+        #   daemon.plugins['docker'].setReady(false)
+        # in the future; will we in docker plugin code.
         EVENTS.emit('node.docker.down')
         logger.warning("docker connection lost")
         await asyncio.sleep(100)

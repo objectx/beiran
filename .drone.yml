@@ -16,7 +16,6 @@ pipeline:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
       - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f helpers/docker/pylint/Dockerfile .
-      - docker push dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 

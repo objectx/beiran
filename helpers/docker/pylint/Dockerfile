@@ -1,10 +1,15 @@
-FROM python:3-alpine
+FROM python:3.6-alpine
 
 RUN apk add --no-cache \
     git \
     openssh-client \
-    && pip install flake8 flake8-docstrings pylint
-RUN apk add --update --no-cache python-dev gcc g++ linux-headers musl-dev
+    python-dev \
+    gcc \
+    g++ \
+    linux-headers \
+    musl-dev
+
+RUN pip install flake8 flake8-docstrings pylint
 
 ADD beiran/requirements.txt /root/r-lib.txt
 RUN pip3 install -r /root/r-lib.txt

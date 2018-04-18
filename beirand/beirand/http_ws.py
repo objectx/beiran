@@ -190,10 +190,9 @@ class NodeInfo(web.RequestHandler):
         #         }
         #     }
         # )
-        if node is not None:
-            self.write(node.to_dict())
-        else:
+        if node is None:
             raise HTTPError(status_code=404, log_message="Node Not Found")
+        self.write(node.to_dict())
         self.finish()
 
     # pylint: enable=arguments-differ

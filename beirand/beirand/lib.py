@@ -303,14 +303,18 @@ class DockerUtil:
 
     async def reset_docker_info_of_node(self, uuid_hex):
         """ Delete all (local) layers and images from database """
-        for image in list(DockerImage.select(DockerImage.id, DockerImage.hash_id, DockerImage.available_at)):
+        for image in list(DockerImage.select(DockerImage.id,
+                                             DockerImage.hash_id,
+                                             DockerImage.available_at)):
             image.unset_available_at(uuid_hex)
 
             if not image.available_at:
                 self.logger.info("deleting image from db: %s", image.hash_id)
                 image.delete().execute()
 
-        for layer in list(DockerLayer.select(DockerLayer.id, DockerLayer.digest, DockerLayer.available_at)):
+        for layer in list(DockerLayer.select(DockerLayer.id,
+                                             DockerLayer.digest,
+                                             DockerLayer.available_at)):
             layer.unset_available_at(uuid_hex)
 
             if not layer.available_at:

@@ -190,7 +190,7 @@ class NodeInfo(web.RequestHandler):
         #         }
         #     }
         # )
-        if node is None:
+        if not node:
             raise HTTPError(status_code=404, log_message="Node Not Found")
         self.write(node.to_dict())
         self.finish()

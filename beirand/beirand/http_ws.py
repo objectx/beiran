@@ -201,8 +201,8 @@ class NodeInfo(web.RequestHandler):
 class ImagesHandler(web.RequestHandler):
     """Endpoint to list docker images"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
         self.chunks = None
         self.future_response = None
 

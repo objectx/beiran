@@ -217,6 +217,7 @@ class ImagesHandler(web.RequestHandler):
             - label        // filter by label  ?label=
 
         """
+        logger.debug("image: streaming image directly from docker daemon")
 
         params = dict()
         params.update(
@@ -241,6 +242,7 @@ class ImagesHandler(web.RequestHandler):
         if self.request.method != 'POST':
             return
 
+        logger.debug("image: preparing for receiving upload")
         self.chunks = asyncio.Queue()
 
         @aiohttp.streamer
@@ -261,6 +263,7 @@ class ImagesHandler(web.RequestHandler):
         """
             Loads tarball to docker
         """
+        logger.debug("image: upload done")
         try:
             await self.chunks.put(None)
             response = await self.future_response

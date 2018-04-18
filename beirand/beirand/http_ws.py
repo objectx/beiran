@@ -238,6 +238,9 @@ class ImagesHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
     def prepare(self):
+        if self.request.method != 'POST':
+            return
+
         self.chunks = asyncio.Queue()
 
         @aiohttp.streamer

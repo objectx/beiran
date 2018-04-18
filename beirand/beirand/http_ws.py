@@ -263,7 +263,12 @@ class ImagesHandler(web.RequestHandler):
         """
         try:
             await self.chunks.put(None)
-            await self.future_response
+            response = await self.future_response
+            for state in response:
+                if 'error' in state:
+                    if 'archive/tar' in state['error']:
+                        raise HTTPError(status_code=400, log_message=state['error'])
+                    raise HTTPError(status_code=500, log_message=state['error'])
             self.write("OK")
             self.finish()
         except  aiodocker.exceptions.DockerError as error:

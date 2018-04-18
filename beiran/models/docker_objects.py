@@ -31,6 +31,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     tags = JSONStringField(default=list)
     data = JSONStringField(null=True)
     layers = JSONStringField(default=list)
+    available_at = JSONStringField(default=list)
 
     has_not_found_layers = BooleanField(default=False)
     has_unknown_layers = BooleanField(default=False)

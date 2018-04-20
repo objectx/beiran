@@ -3,8 +3,6 @@
 ---
 - config:
   - testset: "Beiran"
-  - variable_binds:
-    - sample_image_name: 'hello-world'
 
 - test:
   - name: "Version from root handler"
@@ -26,16 +24,6 @@
 
 
 - test:
-  - name: "Pull Sample Image"
-  - headers: {accept: 'application/json'}
-  - url: {template: "/image/pull/$sample_image_name"}
-  - expected_status: [200]
-  - validators:
-     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
-     - compare: {jsonpath_mini: "statuses.-1.status",   comparator: "contains",     expected: {template: "Downloaded newer image for $sample_image_name:latest"}}
-
-
-- test:
   - name: "List Images"
   - headers: {accept: 'application/json'}
   - url: "/images"
@@ -43,12 +31,11 @@
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
 
-# filters not implemented yet
-#- test:
-#  - name: "List Image, Filter SampleImage"
-#  - headers: {accept: 'application/json'}
-#  - url: {template: "/images?filter=$sample_image_name"}
-#  - expected_status: [200]
-#  - validators:
-#     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
-#     - compare: {jsonpath_mini: "images.0.RepoTags",   comparator: "contains",     expected: {template: "$sample_image_name:latest"}}
+
+- test:
+  - name: "List Images"
+  - headers: {accept: 'application/json'}
+  - url: "/images?all=true"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}

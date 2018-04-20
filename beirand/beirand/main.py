@@ -19,7 +19,7 @@ from beirand.common import AIO_DOCKER_CLIENT
 
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
-from beirand.lib import get_listen_port
+from beirand.lib import get_listen_port, get_advertise_address
 
 from beiran.models import Node, DockerImage
 
@@ -35,23 +35,34 @@ async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=
     """
     service_port = service_port or get_listen_port()
 
-    logger.info('New node has reached ip: %s / port: %s', ip_address, service_port)
+    logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
 
-    timeout = 10
-    while timeout:
-        node = NODES.get_node_by_ip(ip_address)
-        if node:
-            logger.info(
-                'New node will be published has reached ip: %s / port: %s',
-                ip_address, service_port)
-            EVENTS.emit('node.added', ip_address, service_port)
-            return node
-        else:
-            logger.info(
-                'New node is not accesible, trying again: %s / port: %s', ip_address, service_port)
-            await asyncio.sleep(3)  # no need to rush, take your time!
-            node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
-            timeout -= 1
+    retries_left = 10
+
+    # check if we had prior communication with this node
+    node = NODES.get_node_by_ip(ip_address)
+    if node:
+        # fetch up-to-date information and mark the node as online
+        node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
+
+    # first time we met with this node, wait for information to be fetched
+    # or we couldn't fetch node information at first try
+    while retries_left and not node:
+        logger.info(
+            'Detected not is not accesible, trying again: %s:%s', ip_address, service_port)
+        await asyncio.sleep(3)  # no need to rush, take your time!
+        node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
+        retries_left -= 1
+
+    if not node:
+        logger.warning('Cannot fetch node information, %s:%s', ip_address, service_port)
+        EVENTS.emit('node.error', ip_address, service_port)
+        return
+
+    logger.info(
+        'Detected node became online, uuid: %s, %s:%s',
+        node.uuid.hex, ip_address, service_port)
+    EVENTS.emit('node.added', ip_address, service_port)
 
 
 async def removed_node(node):
@@ -185,7 +196,10 @@ async def probe_docker_daemon():
             if event is None:
                 break
 
-            logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+            if 'id' in event:
+                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+            else:
+                logger.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
@@ -238,7 +252,10 @@ async def main(loop):
         logger.error("Unsupported discovery mode: %s", discovery_mode)
         sys.exit(1)
 
-    discovery = discovery_class(loop)
+    discovery = discovery_class(loop, {
+        "address": get_advertise_address(),
+        "port": get_listen_port()
+    })
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()

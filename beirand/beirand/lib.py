@@ -228,9 +228,8 @@ def get_advertise_address():
     if listen_address != '0.0.0.0':
         return listen_address
 
-    ip_v4, _ = get_default_gateway_interface()
-
-    return ip_v4
+    _, default_interface = get_default_gateway_interface()
+    return netifaces.ifaddresses(default_interface)[netifaces.AF_INET][0]['addr']
 
 
 def get_hostname():
@@ -263,7 +262,8 @@ def collect_node_info():
     return {
         "uuid": local_node_uuid().hex,
         "hostname": get_hostname(),
-        "ip_address": get_listen_address(),
+        "ip_address": get_advertise_address(),
+        "port": get_listen_port(),
         "ip_address_6": None,
         "os_type": platform.system(),
         "os_version": platform.version(),

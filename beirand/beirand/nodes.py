@@ -66,6 +66,16 @@ class Nodes(object):
 
         return node
 
+    def set_online(self, node):
+        """Append node to online nodes collection
+        """
+        self.all_nodes.update({node.uuid.hex: node})
+
+    def set_offline(self, node):
+        """Remove node from online nodes collection
+        """
+        del self.all_nodes[node.uuid.hex]
+
     def add_or_update(self, node):
         """
         Appends the new node into nodes dict or updates if exists
@@ -85,7 +95,7 @@ class Nodes(object):
             # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
             node_.save(force_insert=True)
 
-        self.all_nodes.update({node.uuid.hex: node_})
+        self.set_online(node_)
 
         return node_
 
@@ -138,8 +148,11 @@ class Nodes(object):
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
         status, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
-        if status == 200:
-            return self.add_or_update(Node.from_dict(response))
+        if status != 200:
+            raise Exception("Cannot fetch node information")
+
+        self.logger.debug("received node information %s", str(response))
+        return self.add_or_update(Node.from_dict(response))
 
     def get_node_by_ip(self, ip_address):
         """

@@ -10,7 +10,7 @@ class DnsDiscovery(Discovery):
     """Beiran Implementation of DNS Service Discovery
     """
 
-    def __init__(self, aioloop):
+    def __init__(self, aioloop, config):
         """ Creates an instance of Dns Discovery Service
 
         Args:
@@ -18,6 +18,7 @@ class DnsDiscovery(Discovery):
         """
         super().__init__(aioloop)
         self.loop = aioloop
+        self.config = config
         self.resolver = aiodns.DNSResolver(loop=self.loop)
         self.nodes = set()
 

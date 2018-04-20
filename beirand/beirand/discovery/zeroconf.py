@@ -19,7 +19,7 @@ class ZeroconfDiscovery(Discovery):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
 
-    def __init__(self, aioloop):
+    def __init__(self, aioloop, config):
         """ Creates an instance of Zeroconf Discovery Service
 
         Args:
@@ -27,6 +27,7 @@ class ZeroconfDiscovery(Discovery):
         """
         super().__init__(aioloop)
         self.info = None
+        self.config = config
         self.network_interface = self.get_network_interface()
         self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET],
                                   iface=self.network_interface)
@@ -76,14 +77,6 @@ class ZeroconfDiscovery(Discovery):
 
         return netifaces.gateways()['default'][2][1]
 
-    def get_listen_address(self):
-        """ Gets listen address for daemon
-        """
-        if 'LISTEN_ADDR' in os.environ:
-            return os.environ['LISTEN_ADDR']
-        interface = self.get_network_interface()
-        return netifaces.ifaddresses(interface)[2][0]['addr']
-
     def get_hostname(self):
         """ Gets hostname for discovery
         """
@@ -94,14 +87,15 @@ class ZeroconfDiscovery(Discovery):
     def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        host_ip = self.get_listen_address()
         self.log.debug("hostname = %s", self.hostname)
         self.log.debug("interface = %s", self.network_interface)
-        self.log.debug("ip = %s", host_ip)
+        self.log.debug("ip = %s", self.config['address'])
+        self.log.debug("port = %d", self.config['port'])
         desc = {'name': self.hostname, 'version': '0.1.0'}
         self.info = ServiceInfo(_DOMAIN,
                                 self.hostname + "." + _DOMAIN,
-                                socket.inet_aton(self.host_ip), 3000, 0, 0,
+                                socket.inet_aton(self.config['address']),
+                                self.config['port'], 0, 0,
                                 desc, self.hostname + ".local.")
 
     def start_browse(self):

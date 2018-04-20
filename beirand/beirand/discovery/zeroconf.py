@@ -77,14 +77,6 @@ class ZeroconfDiscovery(Discovery):
 
         return netifaces.gateways()['default'][2][1]
 
-    def get_listen_address(self):
-        """ Gets listen address for daemon
-        """
-        if 'LISTEN_ADDR' in os.environ:
-            return os.environ['LISTEN_ADDR']
-        interface = self.get_network_interface()
-        return netifaces.ifaddresses(interface)[2][0]['addr']
-
     def get_hostname(self):
         """ Gets hostname for discovery
         """
@@ -95,7 +87,6 @@ class ZeroconfDiscovery(Discovery):
     def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        host_ip = self.get_listen_address()
         self.log.debug("hostname = %s", self.hostname)
         self.log.debug("interface = %s", self.network_interface)
         self.log.debug("ip = %s", self.config['address'])

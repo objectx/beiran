@@ -19,7 +19,7 @@ from beirand.common import AIO_DOCKER_CLIENT
 
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
-from beirand.lib import get_listen_port
+from beirand.lib import get_listen_port, get_advertise_address
 
 from beiran.models import Node, DockerImage
 

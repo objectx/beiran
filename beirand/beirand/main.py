@@ -189,7 +189,10 @@ async def probe_docker_daemon():
             if event is None:
                 break
 
-            logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+            if 'id' in event:
+                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+            else:
+                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'])
 
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)

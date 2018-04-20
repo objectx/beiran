@@ -1,5 +1,6 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
+import re
 import json
 import asyncio
 import aiohttp
@@ -7,6 +8,8 @@ import aiohttp
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
+
+from peewee import SQL
 
 import aiodocker
 
@@ -343,19 +346,19 @@ class ImageList(web.RequestHandler):
         """
         self.set_header("Content-Type", "application/json")
 
-        all_images = self.get_argument('all', False)
-
-        if all_images and all_images not in ['True', 'true', '1', 1]:
-            raise HTTPError(status_code=400,
-                            log_message="Bad argument please use `True` or `1` for argument `all`")
+        all_images = self.get_argument('all', False) == 'true'
 
         # todo: validate `node` argument if it is valid UUID
         node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
+        if node and not node_pattern.match(node):
+            raise HTTPError(status_code=400,
+                            log_message="invalid node uuid")
 
         query = DockerImage.select()
 
         if not all_images:
-            query = query.where(DockerImage.available_at.contains(node))
+            query = query.where(SQL('available_at LIKE \'%%"%s"%%\'' % node))
 
         # Sorry for hand-typed json, this is for streaming.
         self.write('{"items": [')
@@ -390,11 +393,7 @@ class NodeList(web.RequestHandler):
                    http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
 
         """
-        all_nodes = self.get_argument('all', False)
-
-        if all_nodes and all_nodes not in ['True', 'true', '1', 1]:
-            raise HTTPError(status_code=400,
-                            log_message="Bad argument please use `True` or `1` for argument `all`")
+        all_nodes = self.get_argument('all', False) == 'true'
 
         node_list = NODES.list_of_nodes(
             from_db=all_nodes

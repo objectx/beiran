@@ -20,6 +20,18 @@ VERSION = get_version('short', 'cli')
 
 sys.stdout = Unbuffered(sys.stdout)
 
+
+def sizeof_fmt(num, suffix='B'):
+    """Human readable format for sizes
+    source: https://stackoverflow.com/a/1094933
+    """
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
 @click.group()
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
 @click.pass_context
@@ -109,10 +121,21 @@ class Cli:
     image.add_command(image_pull)
 
     @click.command('list')
+    @click.option('--all', 'all_nodes', default=False, is_flag=True,
+                  help='List images from all known nodes')
+    @click.option('--node', default=None,
+                  help='List images from specific node')
     @click.pass_obj
-    def image_list(self):
+    def image_list(self, all_nodes, node):
         """List container images across the cluster"""
-        click.echo('Listing images!')
+        """List known beiran nodes"""
+        images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
+        print(images)
+        table = [
+            [",\n".join(i['tags']), sizeof_fmt(i['size']), 'N/A']
+            for i in images
+        ]
+        print(tabulate(table, headers=["Tags", "Size", "Availability"]))
 
     image.add_command(image_list)
 

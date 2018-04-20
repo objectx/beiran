@@ -22,7 +22,7 @@
 
 ```sh
 mkdir env
-virtualenv -p ptyhon3 env
+virtualenv env --python=$(which python3.6)
 source env/bin/activate
 pip install -r beirand/requirements.txt
 pip install -r beiran/requirements.txt

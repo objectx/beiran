@@ -16,6 +16,47 @@
 - [zeroconf](https://pypi.python.org/pypi/zeroconf) (for local node discovery)
 - [click](https://pypi.python.org/pypi/click) (for cli options, commands)
 
+## Docker Setteings
+
+### Install Docker
+
+beiran is run on the machine on which Docker is installed. 
+
+### Change Storage Driver
+
+You need to use `overlay2`. Stop your Docker daemon.
+
+```sh
+$ systemctl stop docker.service 
+```
+
+Edit Systemd Service File. (/lib/systemd/system/docker.service)
+
+```
+ExecStart=/usr/bin/dockerd -H fd:// -s overlay2
+```
+
+Start Docker daemon. 
+
+```sh
+$ systemctl daemon-reload 
+$ systemctl start docker.service
+```
+
+Check your Storage Driver.
+
+```sh
+$ docker info
+Containers: 0
+ Running: 0
+ Paused: 0
+ Stopped: 0
+Images: 0
+Server Version: 17.03.2-ce
+Storage Driver: overlay2
+...
+```
+
 ## Virtualenv
 
 ### - Setup

@@ -1,3 +1,4 @@
+# beiran roadmap
 
 See the [issues](https://git.rlab.io/poc/beiran/issues)
 
@@ -36,21 +37,21 @@ Tasks:
    - [x] generate uuid {config_folder:-/etc/beiran}/node.uuid
    - [x] create database structure on init (if necessary)
  - [x] api: /info endpoint
- - [ ] #5 & #9 beirand: when a node is discovered, throw a daemon-wide event `new-node`
- - [ ] #5 beirand: with a listener on `new-node` event, probe that node's `/info` endpoint, and record collected info into local database
- - [ ] #5 api: /nodes endpoint: list known nodes and their information
+ - [x] #5 & #9 beirand: when a node is discovered, throw a daemon-wide event `new-node`
+ - [x] #5 beirand: with a listener on `new-node` event, probe that node's `/info` endpoint, and record collected info into local database
+ - [x] #5 api: /nodes endpoint: list known nodes and their information
    - /nodes?all=true returns all known nodes, by default only online nodes are returned?
- - [ ] #10 lib: beiran.Client.get_online_nodes method
- - [ ] #10 lib: beiran.Client.get_known_nodes method
- - [ ] #8 cli: `beiran node list --all` (known)
- - [ ] #8 cli: `beiran node list` (online only)
+ - [x] #10 lib: beiran.Client.get_online_nodes method
+ - [x] #10 lib: beiran.Client.get_known_nodes method
+ - [x] #8 cli: `beiran node list --all` (known)
+ - [x] #8 cli: `beiran node list` (online only)
 
 ## [v0.0.5](https://git.rsnc.io/rlab/beiran/issues?state=open&milestone=2)
 
 Main Objectives:
  - Sharing image and layer list between nodes and updating image/layer database
 
- - [ ] #14 lib: finalize layer and image models (enough for this milestone)
+ - [x] #14 lib: finalize layer and image models (enough for this milestone)
    - for now we don't need anything other than docker's format
    - we need to be able to store which nodes have which images and layers
    - some of images and layers might already exist in the local database, add information that this node also has those images/layers.
@@ -79,7 +80,7 @@ Main Objectives:
      - have a docker daemon
      - have specific images and layers in docker daemon
      - check the expected result in final cli command invoke, which would check the functionality all layers in between
- - [ ] behavior tests for http/api interface?
+ - [x] behavior tests for http/api interface?
    - pyresttest?
  - [ ] behavior tests for library interface?
    - pytest?
@@ -100,7 +101,7 @@ Main Objectives:
 
  - INSPECT: https://github.com/behave/behave ?
 
- - [ ] TASK: "Document usage"
+ - [x] TASK: "Document usage"
 
 ## v0.0.6
 

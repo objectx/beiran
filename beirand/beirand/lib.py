@@ -252,6 +252,7 @@ def collect_node_info():
         "uuid": local_node_uuid().hex,
         "hostname": get_hostname(),
         "ip_address": get_listen_address(),
+        "port": get_listen_port(),
         "ip_address_6": None,
         "os_type": platform.system(),
         "os_version": platform.version(),

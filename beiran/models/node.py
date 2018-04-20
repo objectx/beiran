@@ -13,6 +13,7 @@ class Node(BaseModel):
     hostname = CharField(max_length=100)
     ip_address = CharField(max_length=15)  # dotted-decimal
     ip_address_6 = CharField(max_length=39, null=True)  # hexadecimal
+    port = IntegerField()
     os_type = CharField(max_length=20)  # linux, win,
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
@@ -21,9 +22,11 @@ class Node(BaseModel):
     docker = JSONStringField(null=True)  # dump all data from docker_client.info()
 
     def __str__(self):
-        return "Node: {hostname}, Address: {ip}, UUID: {uuid}".format(hostname=self.hostname,
-                                                                      ip=self.ip_address,
-                                                                      uuid=self.uuid)
+        fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"
+        return fmt.format(hostname=self.hostname,
+                          ip=self.ip_address,
+                          port=self.port,
+                          uuid=self.uuid)
 
     @classmethod
     def from_dict(cls, _dict, **kwargs):

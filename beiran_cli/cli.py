@@ -84,7 +84,7 @@ class Cli:
     def node_list(self, all_nodes):
         """List known beiran nodes"""
         nodes = self.beiran_client.get_nodes(all_nodes=all_nodes)
-        table = [[n['uuid'], n['ip_address'] + ':8888', 'N/A', 'OK'] for n in nodes]
+        table = [[n['uuid'], n['ip_address'] + ':' + str(n['port']), 'N/A', 'OK'] for n in nodes]
         print(tabulate(table, headers=["UUID", "IP:Port", "Docker Ver.", "Status?"]))
 
     node.add_command(node_list)

@@ -28,11 +28,7 @@ class BaseModel(Model):
             (dict): serialized model object
 
         """
-        if 'dialect' in kwargs:
-            _kwargs = dict(kwargs)
-            del _kwargs['dialect']
-            kwargs = _kwargs
-
+        kwargs.pop('dialect', None)
         return model_to_dict(self, **kwargs)
 
     @classmethod
@@ -46,11 +42,7 @@ class BaseModel(Model):
             (BaseModel): model object
 
         """
-        if 'dialect' in kwargs:
-            _kwargs = dict(kwargs)
-            del _kwargs['dialect']
-            kwargs = _kwargs
-
+        kwargs.pop('dialect', None)
         return dict_to_model(cls, _dict, **kwargs)
 
     def update_using_obj(self, obj):
@@ -67,6 +59,7 @@ class BaseModel(Model):
         fields = self._meta.fields
         for field in fields:
             setattr(self, field, getattr(obj, field))
+
 
 class JSONStringField(TextField):
     """A basic JSON Field based on text field"""

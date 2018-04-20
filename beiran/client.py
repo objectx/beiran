@@ -68,12 +68,14 @@ class Client:
             self.socket_path = location
 
             resolver = UnixResolver(self.socket_path)
-            AsyncHTTPClient.configure(None, resolver=resolver)
+            # AsyncHTTPClient.configure(None, resolver=resolver)
             # self.http_client = httpclient.HTTPClient()
-            self.http_client = httpclient.HTTPClient(async_client_class=AsyncHTTPClient)
+            self.http_client = httpclient.HTTPClient(force_instance=True,
+                                                     async_client_class=AsyncHTTPClient,
+                                                     resolver=resolver)
             self.url = proto + "://unixsocket"
         else:
-            self.http_client = httpclient.HTTPClient()
+            self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
     def request(self, path="/", parse_json=True):

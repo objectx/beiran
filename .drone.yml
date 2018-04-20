@@ -16,7 +16,6 @@ pipeline:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
       - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f helpers/docker/pylint/Dockerfile .
-      - docker push dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
@@ -38,10 +37,33 @@ pipeline:
     commands:
       - pylint beiran_cli
 
-  docker:
+  dockerd:
     image: docker:18.03.0-ce-dind
     privileged: true
     detach: true
+    command:  [ "-D" ]
+
+  docker_test_seeds:
+    image: docker:18.03.0-ce
+    environment:
+      - DOCKER_HOST=tcp://dockerd:2375
+    commands: 
+      - date
+      - |
+        echo "waiting until docker is accessible"
+        times=0
+        until $(wget -q -T 2 -O /dev/null http://dockerd:2375/info); do
+            printf '.'
+            sleep 3
+            times=$(( $times + 1 ))
+            if [ $times -eq 10 ]; then
+              2>&1 echo "timed out waiting for dockerd"
+              exit 1
+            fi
+        done
+      - docker pull hello-world
+      - docker pull alpine:latest
+      - docker images
 
   beirand:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
@@ -50,13 +72,13 @@ pipeline:
       - DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beirand
       - LOG_LEVEL=INFO
-      - DOCKER_HOST=http://docker:2375
+      - DOCKER_HOST=http://dockerd:2375
       - LISTEN_ADDR=0.0.0.0
     commands:
       - date
       - ip addr show
       - python3 /src/beirand/main.py
-  
+
   rest_test:
     image: dkr.rsnc.io/poc/beiran/pyresttest
     environment:
@@ -65,7 +87,6 @@ pipeline:
       - PRINT_BODIES=True
     commands: 
       - date
-      - ip addr show
       - |
         echo "waiting until beirand is accessible"
         times=0
@@ -78,8 +99,7 @@ pipeline:
               exit 1
             fi
         done
-      - ss -aut || netstat -anp || cat /proc/net/tcp || echo "nothing supported for listing ports :/"
-      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml
 
   publish:
     image: docker

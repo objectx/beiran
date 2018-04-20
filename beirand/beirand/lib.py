@@ -22,6 +22,7 @@ from beiran.models import DockerImage, DockerLayer
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
 
+
 def docker_sha_summary(sha):
     """
     shorten sha to 12 bytes length str as docker uses
@@ -36,6 +37,7 @@ def docker_sha_summary(sha):
 
     """
     return sha.split(":")[1][0:12]
+
 
 def docker_find_layer_dir_by_sha(sha):
     """
@@ -70,6 +72,7 @@ def docker_find_layer_dir_by_sha(sha):
         except ValueError:
             pass
 
+
 def create_tar_archive(dir_path, output_file_path):
     """
     create a tar archive from given path
@@ -85,6 +88,7 @@ def create_tar_archive(dir_path, output_file_path):
     with tarfile.open(output_file_path, "w") as tar:
         tar.add(dir_path, arcname='.')
 
+
 def local_node_uuid():
     """
     Get UUID from config file if it exists, else return a new one and write it to config file
@@ -97,7 +101,7 @@ def local_node_uuid():
        that will allow eliminate the global usage
 
     """
-    global LOCAL_NODE_UUID_CACHED # pylint: disable=global-statement
+    global LOCAL_NODE_UUID_CACHED  # pylint: disable=global-statement
 
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
@@ -122,6 +126,7 @@ def local_node_uuid():
     LOCAL_NODE_UUID_CACHED = uuid
     return uuid
 
+
 def get_default_gateway_interface():
     """
     Get default gateway's ip and interface info.
@@ -131,6 +136,7 @@ def get_default_gateway_interface():
 
     """
     return netifaces.gateways()['default'][netifaces.AF_INET]
+
 
 def get_listen_address():
     """
@@ -155,6 +161,7 @@ def get_listen_address():
             """Please check environment variable LISTEN_ADDR,
             it must be a valid IP4 address. `{}` is not a valid one!""".format(env_addr))
 
+
 def get_listen_port():
     """
     Get listen port from env or default 8888
@@ -166,6 +173,7 @@ def get_listen_port():
         return int(os.environ.get('LISTEN_PORT', '8888'))
     except ValueError:
         raise ValueError('LISTEN_PORT must be a valid port number!')
+
 
 def get_listen_interface():
     """
@@ -195,6 +203,7 @@ def get_listen_interface():
 
     return interface
 
+
 def get_advertise_address():
     """
     First try environment variable `ADVERTISE_ADDR`. If it is not set,
@@ -219,9 +228,9 @@ def get_advertise_address():
     if listen_address != '0.0.0.0':
         return listen_address
 
-    ip_v4, _ = get_default_gateway_interface()
+    _, default_interface = get_default_gateway_interface()
+    return netifaces.ifaddresses(default_interface)[netifaces.AF_INET][0]['addr']
 
-    return ip_v4
 
 def get_hostname():
     """ Gets hostname for discovery
@@ -229,6 +238,7 @@ def get_hostname():
     if 'HOSTNAME' in os.environ:
         return os.environ['HOSTNAME']
     return socket.gethostname()
+
 
 def get_plugin_list():
     """Return plugin list"""
@@ -239,6 +249,7 @@ def get_plugin_list():
             "docker",
         ]
     }
+
 
 def collect_node_info():
     """
@@ -251,7 +262,8 @@ def collect_node_info():
     return {
         "uuid": local_node_uuid().hex,
         "hostname": get_hostname(),
-        "ip_address": get_listen_address(),
+        "ip_address": get_advertise_address(),
+        "port": get_listen_port(),
         "ip_address_6": None,
         "os_type": platform.system(),
         "os_version": platform.version(),
@@ -259,6 +271,7 @@ def collect_node_info():
         "beiran_version": get_version(),
         "beiran_service_port": get_listen_port()
     }
+
 
 async def async_fetch(url, timeout=3):
     """
@@ -277,15 +290,18 @@ async def async_fetch(url, timeout=3):
                 status, response = resp.status, await resp.json()
                 return status, response
 
+
 async def aio_dirlist(path):
     """async proxy method for os.listdir"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, os.listdir, path)
 
+
 async def aio_isdir(path):
     """async proxy method for os.isdir"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, os.path.isdir, path)
+
 
 class DockerUtil:
     """Docker Utilities"""
@@ -303,14 +319,18 @@ class DockerUtil:
 
     async def reset_docker_info_of_node(self, uuid_hex):
         """ Delete all (local) layers and images from database """
-        for image in list(DockerImage.select()):
+        for image in list(DockerImage.select(DockerImage.id,
+                                             DockerImage.hash_id,
+                                             DockerImage.available_at)):
             image.unset_available_at(uuid_hex)
 
             if not image.available_at:
                 self.logger.info("deleting image from db: %s", image.hash_id)
                 image.delete().execute()
 
-        for layer in list(DockerLayer.select()):
+        for layer in list(DockerLayer.select(DockerLayer.id,
+                                             DockerLayer.digest,
+                                             DockerLayer.available_at)):
             layer.unset_available_at(uuid_hex)
 
             if not layer.available_at:
@@ -332,7 +352,7 @@ class DockerUtil:
                 "status": True,
                 "daemon_info": info
             }
-        except Exception as error: # pylint: disable=broad-except
+        except Exception as error:  # pylint: disable=broad-except
             self.logger.error("Error while connecting local docker daemon %s", error)
             return {
                 "status": False,
@@ -426,7 +446,7 @@ class DockerUtil:
         """
 
         layer_storage_path = self.docker_path + "/image/overlay2/layerdb"
-        if not diffid in self.diffid_mapping:
+        if diffid not in self.diffid_mapping:
             raise DockerUtil.CannotFindLayerMappingError()
             # image.has_unknown_layers = True
             # # This layer is not pulled from a registry

@@ -19,14 +19,14 @@ from beirand.common import AIO_DOCKER_CLIENT
 
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
-from beirand.lib import get_listen_port
+from beirand.lib import get_listen_port, get_advertise_address
 
 from beiran.models import Node, DockerImage
 
 AsyncIOMainLoop().install()
 
 
-async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=unused-argument
+async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
     """
     Discovered new node on beiran network
     Args:
@@ -35,23 +35,35 @@ async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=u
     """
     service_port = service_port or get_listen_port()
 
-    logger.info('New node has reached ip: %s / port: %s', ip_address, service_port)
+    logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
 
-    timeout = 10
-    while timeout:
-        node = NODES.get_node_by_ip(ip_address)
-        if node:
-            logger.info(
-                'New node will be published has reached ip: %s / port: %s',
-                ip_address, service_port)
-            EVENTS.emit('node.added', ip_address, service_port)
-            return node
-        else:
-            logger.info(
-                'New node is not accesible, trying again: %s / port: %s', ip_address, service_port)
-            await asyncio.sleep(3)  # no need to rush, take your time!
-            node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
-            timeout -= 1
+    retries_left = 10
+
+    # check if we had prior communication with this node
+    node = NODES.get_node_by_ip(ip_address)
+    if node:
+        # fetch up-to-date information and mark the node as online
+        node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
+
+    # first time we met with this node, wait for information to be fetched
+    # or we couldn't fetch node information at first try
+    while retries_left and not node:
+        logger.info(
+            'Detected not is not accesible, trying again: %s:%s', ip_address, service_port)
+        await asyncio.sleep(3)  # no need to rush, take your time!
+        node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
+        retries_left -= 1
+
+    if not node:
+        logger.warning('Cannot fetch node information, %s:%s', ip_address, service_port)
+        EVENTS.emit('node.error', ip_address, service_port)
+        return
+
+    logger.info(
+        'Detected node became online, uuid: %s, %s:%s',
+        node.uuid.hex, ip_address, service_port)
+    EVENTS.emit('node.added', ip_address, service_port)
+
 
 async def removed_node(node):
     """
@@ -69,17 +81,21 @@ async def removed_node(node):
     if removed:
         EVENTS.emit('node.removed', node)
 
+
 async def on_node_removed(node):
     """Placeholder for event on node removed"""
     logger.info("new event: an existing node removed %s", node.uuid)
+
 
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
+
 async def on_node_docker_connected():
     """Placeholder for event on node docker connected"""
     logger.info("connected to docker daemon")
+
 
 def db_init():
     """Initialize database"""
@@ -104,7 +120,9 @@ def db_init():
 
         create_tables(database)
 
+
 DOCKER_UTIL = DockerUtil("/var/lib/docker", AIO_DOCKER_CLIENT)
+
 
 async def probe_docker_daemon():
     """Deal with local docker daemon states"""
@@ -153,7 +171,7 @@ async def probe_docker_daemon():
                 image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
 
                 layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
-            except Exception as err: # pylint: disable=unused-variable,broad-except
+            except Exception as err:  # pylint: disable=unused-variable,broad-except
                 continue
 
             image.layers = [layer.digest for layer in layers]
@@ -178,7 +196,10 @@ async def probe_docker_daemon():
             if event is None:
                 break
 
-            logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+            if 'id' in event:
+                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+            else:
+                logger.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
@@ -186,6 +207,7 @@ async def probe_docker_daemon():
         EVENTS.emit('node.docker.down')
         logger.warning("docker connection lost")
         await asyncio.sleep(100)
+
 
 async def main(loop):
     """ Main function """
@@ -230,10 +252,14 @@ async def main(loop):
         logger.error("Unsupported discovery mode: %s", discovery_mode)
         sys.exit(1)
 
-    discovery = discovery_class(loop)
+    discovery = discovery_class(loop, {
+        "address": get_advertise_address(),
+        "port": get_listen_port()
+    })
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()
+
 
 def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """
@@ -241,6 +267,7 @@ def run():
     loop.create_task(main(loop))
     loop.set_debug(True)
     loop.run_forever()
+
 
 if __name__ == '__main__':
     run()

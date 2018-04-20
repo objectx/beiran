@@ -192,7 +192,7 @@ async def probe_docker_daemon():
             if 'id' in event:
                 logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
             else:
-                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'])
+                logger.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
@@ -244,7 +244,10 @@ async def main(loop):
         logger.error("Unsupported discovery mode: %s", discovery_mode)
         sys.exit(1)
 
-    discovery = discovery_class(loop)
+    discovery = discovery_class(loop, {
+        "address": get_advertise_address(),
+        "port": get_listen_port()
+    })
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()

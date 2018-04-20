@@ -33,9 +33,27 @@
 
 
 - test:
-  - name: "List Images"
+  - name: "List All Images"
   - headers: {accept: 'application/json'}
   - url: "/images?all=true"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+
+
+- test:
+  - name: "List Layers"
+  - headers: {accept: 'application/json'}
+  - url: "/layers"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+
+
+- test:
+  - name: "List All Layers"
+  - headers: {accept: 'application/json'}
+  - url: "/layers?all=true"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}

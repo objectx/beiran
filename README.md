@@ -22,7 +22,7 @@
 
 ```sh
 mkdir env
-virtualenv3 env
+virtualenv -p ptyhon3 env
 source env/bin/activate
 pip install -r beirand/requirements.txt
 pip install -r beiran/requirements.txt
@@ -30,7 +30,7 @@ pip install -r beiran_cli/requirements.txt
 pip install ipython
 ln -s $(pwd)/beirand/beirand env/lib/python3.6/site-packages/
 ln -s $(pwd)/beiran env/lib/python3.6/site-packages/
-ln -s $(pwd)/beiran_cli env/lib/python3.6/site-packages/beiran_cli
+ln -s $(pwd)/beiran_cli env/lib/python3.6/site-packages/
 ```
 
 #### - Settings (Environment Variables)

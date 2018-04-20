@@ -25,7 +25,7 @@ def sizeof_fmt(num, suffix='B'):
     """Human readable format for sizes
     source: https://stackoverflow.com/a/1094933
     """
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
@@ -128,14 +128,13 @@ class Cli:
     @click.pass_obj
     def image_list(self, all_nodes, node):
         """List container images across the cluster"""
-        """List known beiran nodes"""
         images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
-        print(images)
+
         table = [
             [",\n".join(i['tags']), sizeof_fmt(i['size']), 'N/A']
             for i in images
         ]
-        print(tabulate(table, headers=["Tags", "Size", "Availability"]))
+        click.echo(tabulate(table, headers=["Tags", "Size", "Availability"]))
 
     image.add_command(image_list)
 

@@ -27,10 +27,10 @@ beiran is run on the machine on which Docker is installed.
 You need to use `overlay2`. Stop your Docker daemon.
 
 ```sh
-systemctl stop docker.service 
+$ systemctl stop docker.service 
 ```
 
-Edit Systemed Service File. (/lib/systemd/system/docker.service)
+Edit Systemd Service File. (/lib/systemd/system/docker.service)
 
 ```
 ExecStart=/usr/bin/dockerd -H fd:// -s overlay2
@@ -39,8 +39,8 @@ ExecStart=/usr/bin/dockerd -H fd:// -s overlay2
 Start Docker daemon. 
 
 ```sh
-systemctl daemon-reload 
-systemctl start docker.service
+$ systemctl daemon-reload 
+$ systemctl start docker.service
 ```
 
 Check your Storage Driver.

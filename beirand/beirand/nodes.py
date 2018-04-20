@@ -67,9 +67,13 @@ class Nodes(object):
         return node
 
     def set_online(self, node):
+        """Append node to online nodes collection
+        """
         self.all_nodes.update({node.uuid.hex: node})
 
     def set_offline(self, node):
+        """Remove node from online nodes collection
+        """
         del self.all_nodes[node.uuid.hex]
 
     def add_or_update(self, node):

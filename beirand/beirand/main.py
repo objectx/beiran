@@ -5,13 +5,16 @@
 import os
 import sys
 import asyncio
+import logging
 import importlib
+import signal
 
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options
 from tornado.netutil import bind_unix_socket
 from tornado import httpserver
 
+from beirand.common import VERSION
 from beirand.common import logger
 from beirand.common import NODES
 from beirand.common import EVENTS
@@ -22,6 +25,7 @@ from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port, get_advertise_address
 
 from beiran.models import Node, DockerImage
+from beiran.log import build_logger
 
 AsyncIOMainLoop().install()
 
@@ -201,6 +205,20 @@ async def probe_docker_daemon():
         logger.warning("docker connection lost")
         await asyncio.sleep(100)
 
+async def get_plugin(name, config):
+    try:
+        config['logger'] = build_logger('plugin:' + name)
+        module = importlib.import_module("beirand.plugins." + name)
+        logger.debug("initializing plugin: " + name)
+        instance = module.Plugin(config)
+        await instance.init()
+        logger.info("plugin initialisation done: " + name)
+        return instance
+    except ModuleNotFoundError as error:
+        logger.error(error)
+        logger.error("Cannot find plugin : %s", name)
+        sys.exit(1)
+
 async def main(loop):
     """ Main function """
 
@@ -214,7 +232,7 @@ async def main(loop):
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
     # this is async but we will let it run in background, we have no rush
-    loop.create_task(probe_docker_daemon())
+    # loop.create_task(probe_docker_daemon())
 
     # HTTP Daemon. Listen on Unix Socket
     logger.info("Starting Daemon HTTP Server...")
@@ -236,25 +254,46 @@ async def main(loop):
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
     logger.debug("Discovery method is %s", discovery_mode)
 
-    try:
-        module = importlib.import_module("beirand.discovery." + discovery_mode)
-        discovery_class = getattr(module, discovery_mode.title() + "Discovery")
-    except ModuleNotFoundError as error:
-        logger.error(error)
-        logger.error("Unsupported discovery mode: %s", discovery_mode)
-        sys.exit(1)
+    discovery = await get_plugin(discovery_mode, {
+        "address": get_advertise_address(),
+        "port": get_listen_port(),
+        "version": VERSION
+    })
 
-    discovery = discovery_class(loop)
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
-    discovery.start()
+    await discovery.start()
+
+async def shutdown(loop):
+    logger.debug("shutting down")
+    await asyncio.sleep(5)
+    logger.info("exiting normally")
+    sys.exit(0)
+
+def schedule_shutdown(signum, frame):
+    loop = asyncio.get_event_loop()
+    loop.stop()
 
 def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """
+
+    signal.signal(signal.SIGTERM, schedule_shutdown)
+
     loop = asyncio.get_event_loop()
     loop.create_task(main(loop))
     loop.set_debug(True)
-    loop.run_forever()
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt as e:
+        logger.info("Received interrupt, shutting down gracefully")
+
+    try:
+        loop.run_until_complete(shutdown(loop))
+    except KeyboardInterrupt as e:
+        logger.warning("Received interrupt while shutting down, exiting")
+        sys.exit(1)
+
+    loop.close()
 
 if __name__ == '__main__':
     run()

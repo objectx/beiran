@@ -1,23 +1,29 @@
-"""Beiran Implementation of DNS Service Discovery
 """
+Zeroconf multicast discovery service implementation
+"""
+
 import os
 import asyncio
 import aiodns
-from beirand.discovery.discovery import Discovery
+
+from beirand.plugins import BeiranDiscoveryPlugin
+
+# Beiran plugin variables
+PLUGIN_NAME = 'dns'
+PLUGIN_TYPE = 'discovery'
+
+# Constants
+DEFAULT_DOMAIN = "_beiran._tcp.local."
 
 
-class DnsDiscovery(Discovery):
+class DNSDiscovery(BeiranDiscoveryPlugin):
     """Beiran Implementation of DNS Service Discovery
     """
 
-    def __init__(self, aioloop):
+    def __init__(self, config):
         """ Creates an instance of Dns Discovery Service
-
-        Args:
-            aioloop: AsyncIO Loop
         """
-        super().__init__(aioloop)
-        self.loop = aioloop
+        super().__init__(config)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
         self.nodes = set()
 
@@ -39,7 +45,7 @@ class DnsDiscovery(Discovery):
         """
         return os.getenv('DISCOVERY_SERVICE_ADDRESS', 'beirand')
 
-    def start(self):
+    async def start(self):
         """ Starts discovery service
         """
         asyncio.ensure_future(self.browse(), loop=self.loop)
@@ -50,7 +56,7 @@ class DnsDiscovery(Discovery):
         while True:
             result = await self.query(self.get_query_address(), 'A')
             result = list(map(lambda x: x.host, result))
-            result = list(filter(lambda x: x != self.host_ip, result))
+            result = list(filter(lambda x: x != self.address, result))
             new_comers = list(filter(lambda x: x not in self.nodes, result))
             sadly_goodbyers = list(filter(lambda x: x not in result, self.nodes))
             for node in new_comers:

@@ -10,99 +10,70 @@ import os
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 import netifaces
 
-from beirand.discovery.discovery import Discovery
+from beirand.plugins import BeiranDiscoveryPlugin
 
-_DOMAIN = "_beiran._tcp.local."
+# Beiran plugin variables
+PLUGIN_NAME = 'zeroconf'
+PLUGIN_TYPE = 'discovery'
+
+# Constants
+DEFAULT_DOMAIN = "_beiran._tcp.local."
 
 
-class ZeroconfDiscovery(Discovery):
+class ZeroconfDiscovery(BeiranDiscoveryPlugin):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
 
-    def __init__(self, aioloop):
+    def __init__(self, config):
         """ Creates an instance of Zeroconf Discovery Service
-
-        Args:
-            aioloop: AsyncIO Loop
         """
-        super().__init__(aioloop)
+        super().__init__(config)
         self.info = None
-        self.network_interface = self.get_network_interface()
-        self.zero_conf = Zeroconf(self.loop, address_family=[netifaces.AF_INET],
+        self.domain = config['domain'] if 'domain' in config else DEFAULT_DOMAIN
+        self.version = config['version']
+        self.zeroconf = Zeroconf(self.loop, address_family=[netifaces.AF_INET],
                                   iface=self.network_interface)
 
-        self.log = logging.getLogger('zeroconf')
-
-        self.hostname = socket.gethostname()
-
-    def start(self):
+    async def start(self):
         """ Starts discovery service
         """
-        self.init()
         self.start_browse()
-        asyncio.ensure_future(self.register(), loop=self.loop)
+        await self.register()
 
-    async def stop(self, zeroconf: Zeroconf):
+    async def stop(self):
         """ Unregister service and close zeroconf
-        Args:
-            zeroconf (Zeroconf):
-
-        Returns:
-            None:
         """
         self.log.debug("Unregistering...")
-        await zeroconf.unregister_service(self.info)
-        await zeroconf.close()
+        await self.zeroconf.unregister_service(self.info)
+        await self.zeroconf.close()
 
     async def list_service(self) -> tuple:
         """ Get already registered services on zeroconf
         Returns:
             tuple: List of services
         """
-        list_of_services = await ZeroconfServiceTypes.find(self.zero_conf, timeout=0.5)
-        self.log.debug("Found %s", format(list_of_services))
+        list_of_services = await ZeroconfServiceTypes.find(self.zeroconf, timeout=0.5)
+        self.log.info("Found %s", format(list_of_services))
         return list_of_services
 
-    def get_network_interface(self):
-        """ Gets listen interface for daemon
+    @property
+    def advertise_name(self):
+        return self.hostname + '-' + str(self.port) + "." + self.domain
 
-        Todo:
-            * is LISTEN_ADDR is set and LISTEN_INTERFACE is not set,
-            find the related interface from the address. Throw exception
-            if it's not found.
-        """
-        if 'LISTEN_INTERFACE' in os.environ:
-            return os.environ['LISTEN_INTERFACE']
-
-        return netifaces.gateways()['default'][2][1]
-
-    def get_listen_address(self):
-        """ Gets listen address for daemon
-        """
-        if 'LISTEN_ADDR' in os.environ:
-            return os.environ['LISTEN_ADDR']
-        interface = self.get_network_interface()
-        return netifaces.ifaddresses(interface)[2][0]['addr']
-
-    def get_hostname(self):
-        """ Gets hostname for discovery
-        """
-        if 'HOSTNAME' in os.environ:
-            return os.environ['HOSTNAME']
-        return socket.gethostname()
-
-    def init(self):
+    async def init(self):
         """ Initialization of discovery service with all information and starts service browser
         """
-        host_ip = self.get_listen_address()
         self.log.debug("hostname = %s", self.hostname)
         self.log.debug("interface = %s", self.network_interface)
-        self.log.debug("ip = %s", host_ip)
-        desc = {'name': self.hostname, 'version': '0.1.0'}
-        self.info = ServiceInfo(_DOMAIN,
-                                self.hostname + "." + _DOMAIN,
-                                socket.inet_aton(self.host_ip), 3000, 0, 0,
-                                desc, self.hostname + ".local.")
+        self.log.debug("ip = %s", self.address)
+        desc = {'name': self.hostname, 'version': self.version }
+        self.info = ServiceInfo(self.domain,
+                                self.advertise_name,
+                                socket.inet_aton(self.address),
+                                self.port, 0, 0,
+                                desc,
+                                self.hostname + ".local.")
+        print("INFO", self.info)
 
     def start_browse(self):
         """ Start browsing changes on discovery
@@ -110,13 +81,13 @@ class ZeroconfDiscovery(Discovery):
         self.log.debug("\nBrowsing services, press Ctrl-C to exit...\n")
 
         listener = ZeroconfListener(self)
-        ServiceBrowser(self.zero_conf, _DOMAIN, listener=listener)
+        ServiceBrowser(self.zeroconf, self.domain, listener=listener)
 
     async def register(self):
         """ Registering own service to zeroconf
         """
         self.log.debug("Registering %s ...", self.hostname)
-        await self.zero_conf.register_service(self.info)
+        await self.zeroconf.register_service(self.info)
 
 
 class ZeroconfListener(object):
@@ -147,7 +118,7 @@ class ZeroconfListener(object):
             name: Name of the service
         """
         service_info = await zeroconf.get_service_info(typeos, name)
-        if socket.inet_ntoa(service_info.address) == self.discovery.host_ip:
+        if socket.inet_ntoa(service_info.address) == self.discovery.address and service_info.port == self.discovery.port:
             return
         if service_info:
             self.log.debug("  Address: %s:%d" %

@@ -17,7 +17,7 @@ from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
 
-from beiran.models import DockerImage
+from beiran.models import DockerImage, DockerLayer
 
 define('listen_address',
        group='webserver',
@@ -376,6 +376,55 @@ class ImageList(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
+class LayerList(web.RequestHandler):
+    """List images"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        """
+        Return list of nodes, if specified `all`from database or discovered ones from memory.
+
+        Returns:
+            (dict) list of nodes, it is a dict, since tornado does not write list for security
+                   reasons; see:
+                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+
+        """
+        self.set_header("Content-Type", "application/json")
+
+        all_images = self.get_argument('all', False) == 'true'
+
+        # todo: validate `node` argument if it is valid UUID
+        node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
+        if node and not node_pattern.match(node):
+            raise HTTPError(status_code=400,
+                            log_message="invalid node uuid")
+
+        query = DockerLayer.select()
+
+        if not all_images:
+            query = query.where(SQL('available_at LIKE \'%%"%s"%%\'' % node))
+
+        # Sorry for hand-typed json, this is for streaming.
+        self.write('{"items": [')
+        is_first = True
+        for layer in query:
+            if is_first:
+                is_first = False
+            else:
+                self.write(',')
+            self.write(json.dumps(layer.to_dict(dialect="api")))
+            self.flush()
+
+        self.write(']}')
+        self.finish()
+    # pylint: enable=arguments-differ
+
+
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
@@ -425,10 +474,11 @@ class Ping(web.RequestHandler):
 
 APP = web.Application([
     (r'/', ApiRootHandler),
+    (r'/images', ImageList),
+    (r'/layers', LayerList),
     (r'/images/(.*)', ImagesTarHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
-    (r'/images', ImageList),
     (r'/nodes', NodeList),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),

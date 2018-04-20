@@ -361,7 +361,7 @@ class ImageList(web.RequestHandler):
             query = query.where(SQL('available_at LIKE \'%%"%s"%%\'' % node))
 
         # Sorry for hand-typed json, this is for streaming.
-        self.write('{"items": [')
+        self.write('{"images": [')
         is_first = True
         for image in query:
             if is_first:

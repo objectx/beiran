@@ -99,7 +99,7 @@ pipeline:
               exit 1
             fi
         done
-      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml --print-bodies=True --print-headers=True --log=debug
+      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml
 
   publish:
     image: docker

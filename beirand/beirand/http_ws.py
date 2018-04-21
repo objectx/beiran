@@ -1,5 +1,6 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
+import re
 import json
 import asyncio
 import aiohttp
@@ -8,11 +9,15 @@ from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
+from peewee import SQL
+
 import aiodocker
 
 from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
 from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
 from beirand.lib import get_listen_address, get_listen_port
+
+from beiran.models import DockerImage
 
 define('listen_address',
        group='webserver',
@@ -69,6 +74,7 @@ class ApiRootHandler(web.RequestHandler):
         self.set_header("Content-Type", "application/json")
         self.write('{"version":"' + VERSION + '"}')
         self.finish()
+
 
 class ImagesTarHandler(web.RequestHandler):
     """ Images export handler """
@@ -253,7 +259,7 @@ class ImagesHandler(web.RequestHandler):
                 await writer.write(chunk)
                 chunk = await chunks.get()
 
-        self.future_response = APP.docker.images.import_image(data=sender(self.chunks)) # pylint: disable=no-value-for-parameter
+        self.future_response = APP.docker.images.import_image(data=sender(self.chunks))  # pylint: disable=no-value-for-parameter
 
     # pylint: disable=arguments-differ
     async def data_received(self, chunk):
@@ -277,6 +283,7 @@ class ImagesHandler(web.RequestHandler):
         except  aiodocker.exceptions.DockerError as error:
             raise HTTPError(status_code=404, log_message=error.message)
     # pylint: enable=arguments-differ
+
 
 class ImagePullHandler(web.RequestHandler):
     """Docker image pull"""
@@ -320,6 +327,55 @@ class ImagePullHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
+class ImageList(web.RequestHandler):
+    """List images"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        """
+        Return list of nodes, if specified `all`from database or discovered ones from memory.
+
+        Returns:
+            (dict) list of nodes, it is a dict, since tornado does not write list for security
+                   reasons; see:
+                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+
+        """
+        self.set_header("Content-Type", "application/json")
+
+        all_images = self.get_argument('all', False) == 'true'
+
+        # todo: validate `node` argument if it is valid UUID
+        node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
+        if node and not node_pattern.match(node):
+            raise HTTPError(status_code=400,
+                            log_message="invalid node uuid")
+
+        query = DockerImage.select()
+
+        if not all_images:
+            query = query.where(SQL('available_at LIKE \'%%"%s"%%\'' % node))
+
+        # Sorry for hand-typed json, this is for streaming.
+        self.write('{"images": [')
+        is_first = True
+        for image in query:
+            if is_first:
+                is_first = False
+            else:
+                self.write(',')
+            self.write(json.dumps(image.to_dict(dialect="api")))
+            self.flush()
+
+        self.write(']}')
+        self.finish()
+    # pylint: enable=arguments-differ
+
+
 class NodeList(web.RequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
@@ -337,11 +393,7 @@ class NodeList(web.RequestHandler):
                    http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
 
         """
-        all_nodes = self.get_argument('all', False)
-
-        if all_nodes and all_nodes not in ['True', 'true', '1', 1]:
-            raise HTTPError(status_code=400,
-                            log_message="Bad argument please use `True` or `1` for argument `all`")
+        all_nodes = self.get_argument('all', False) == 'true'
 
         node_list = NODES.list_of_nodes(
             from_db=all_nodes
@@ -376,10 +428,10 @@ APP = web.Application([
     (r'/images/(.*)', ImagesTarHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
+    (r'/images', ImageList),
     (r'/nodes', NodeList),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
-    (r'/images', ImagesHandler),
     (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
     (r'/ws', EchoWebSocket),
 ])

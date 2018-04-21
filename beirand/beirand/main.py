@@ -20,8 +20,9 @@ from beirand.common import AIO_DOCKER_CLIENT
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port, get_advertise_address
+from beirand.lib import async_fetch
 
-from beiran.models import Node, DockerImage
+from beiran.models import Node, DockerImage, DockerLayer
 
 AsyncIOMainLoop().install()
 
@@ -89,6 +90,31 @@ async def on_node_removed(node):
 
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
+
+    # images
+    status, response = await async_fetch('http://{}:{}/images'.format(ip_address, service_port))
+    if status != 200:
+        # do not raise error not to interrupt process, just log. we may emit another
+        # event `check.node` which marks the node offline or calls back
+        # the caller event, the `node.added` in this case.
+        logger.debug("Cannot fetch images from remote node %s", str(ip_address))
+
+    logger.debug("received image information %s", str(response))
+
+    for image in response.get('images'):
+        new_image = DockerImage.from_dict(image)
+        new_image.save()
+
+
+    # layers
+    status, response = await async_fetch('http://{}:{}/images'.format(ip_address, service_port))
+    if status != 200:
+        logger.debug("Cannot fetch images from remote node %s", str(ip_address))
+
+    for layer in response.get('layers'):
+        new_layer = DockerLayer.from_dict(layer)
+        new_layer.save()
+
     logger.info("new event: new node added on %s at port %s", ip_address, service_port)
 
 
@@ -156,7 +182,7 @@ async def probe_docker_daemon():
             if not image_data['RepoTags']:
                 continue
 
-            image = DockerImage.from_dict(image_data, dialect="docker")
+                image = DockerImage.from_dict(image_data, dialect="docker")
             try:
                 image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
                 old_available_at = image_.available_at

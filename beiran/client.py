@@ -156,4 +156,3 @@ class Client:
         resp = self.request(path=path)
 
         return resp.get('layers', [])
-

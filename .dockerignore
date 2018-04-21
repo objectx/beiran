@@ -5,4 +5,8 @@ pip-delete-this-directory.txt
 .cache
 run
 .git
-
+*
+!beirand
+!beiran
+!beiran_cli
+!Dockerfile

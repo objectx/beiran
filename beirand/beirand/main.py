@@ -91,6 +91,9 @@ async def on_node_removed(node):
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
 
+    logger.info("\n\n new event: new node added, getting image and layers from %s at port %s\n\n ",
+                ip_address, service_port)
+
     # images
     status, response = await async_fetch('http://{}:{}/images'.format(ip_address, service_port))
     if status != 200:
@@ -104,18 +107,24 @@ async def on_new_node_added(ip_address, service_port):
     for image in response.get('images'):
         new_image = DockerImage.from_dict(image)
         new_image.save()
-
+        logger.debug("new image from remote %s", str(image))
 
     # layers
-    status, response = await async_fetch('http://{}:{}/images'.format(ip_address, service_port))
-    if status != 200:
+    status_layer, response_layer = await async_fetch(
+        'http://{}:{}/layers'.format(ip_address, service_port))
+
+    if status_layer != 200:
         logger.debug("Cannot fetch images from remote node %s", str(ip_address))
 
-    for layer in response.get('layers'):
+    logger.debug("received layer information %s", str(response_layer))
+
+    for layer in response_layer.get('layers'):
         new_layer = DockerLayer.from_dict(layer)
         new_layer.save()
+        logger.debug("new image from remote %s", str(layer))
 
-    logger.info("new event: new node added on %s at port %s", ip_address, service_port)
+    logger.info("done: new node's layer and image info added on %s at port %s",
+                ip_address, service_port)
 
 
 async def on_node_docker_connected():

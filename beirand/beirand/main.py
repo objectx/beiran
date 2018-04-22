@@ -91,7 +91,7 @@ async def on_node_removed(node):
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
 
-    new_node = NODES.get_node_by_ip(ip_address)
+    node_new = NODES.get_node_by_ip(ip_address)
 
     logger.info("new event: getting new nodes' images and layers from %s at port %s\n\n ",
                 ip_address, service_port)
@@ -109,10 +109,10 @@ async def on_new_node_added(ip_address, service_port):
     for image in response.get('images'):
         try:
             image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
-            image_.set_available_at(new_node.uuid.hex)
+            image_.set_available_at(node_new.uuid.hex)
             image_.save()
             logger.debug("update existing image %s, now available on new node: %s",
-                         image['hash_id'], new_node.uuid.hex)
+                         image['hash_id'], node_new.uuid.hex)
         except DockerImage.DoesNotExist:
             new_image = DockerImage.from_dict(image)
             new_image.save()
@@ -131,11 +131,11 @@ async def on_new_node_added(ip_address, service_port):
     for layer in response_layer.get('layers'):
         try:
             layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
-            layer_.set_available_at(new_node.uuid.hex)
+            layer_.set_available_at(node_new.uuid.hex)
             layer_.save()
             logger.debug("update existing layer %s, now available on new node: %s",
-                         layer['digest'], new_node.uuid.hex)
-        except:
+                         layer['digest'], node_new.uuid.hex)
+        except DockerLayer.DoesNotExist:
             new_layer = DockerLayer.from_dict(layer)
             new_layer.save()
             logger.debug("new layer from remote %s", str(layer))

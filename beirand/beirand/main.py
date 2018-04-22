@@ -91,37 +91,54 @@ async def on_node_removed(node):
 async def on_new_node_added(ip_address, service_port):
     """Placeholder for event on node removed"""
 
-    logger.info("\n\n new event: new node added, getting image and layers from %s at port %s\n\n ",
+    new_node = NODES.get_node_by_ip(ip_address)
+
+    logger.info("new event: getting new nodes' images and layers from %s at port %s\n\n ",
                 ip_address, service_port)
 
     # images
     status, response = await async_fetch('http://{}:{}/images'.format(ip_address, service_port))
     if status != 200:
         # do not raise error not to interrupt process, just log. we may emit another
-        # event `check.node` which marks the node offline or calls back
-        # the caller event, the `node.added` in this case.
+        # event `check.node` which marks the node offline or emits back
+        # for the caller event, the `node.added` in this case.
         logger.debug("Cannot fetch images from remote node %s", str(ip_address))
 
     logger.debug("received image information %s", str(response))
 
     for image in response.get('images'):
-        new_image = DockerImage.from_dict(image)
-        new_image.save()
-        logger.debug("new image from remote %s", str(image))
+        try:
+            image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
+            image_.set_available_at(new_node.uuid.hex)
+            image_.save()
+            logger.debug("update existing image %s, now available on new node: %s",
+                         image['hash_id'], new_node.uuid.hex)
+        except DockerImage.DoesNotExist:
+            new_image = DockerImage.from_dict(image)
+            new_image.save()
+            logger.debug("new image from remote %s", str(image))
 
     # layers
     status_layer, response_layer = await async_fetch(
         'http://{}:{}/layers'.format(ip_address, service_port))
 
     if status_layer != 200:
+        # same case with above, will be handled later..
         logger.debug("Cannot fetch images from remote node %s", str(ip_address))
 
     logger.debug("received layer information %s", str(response_layer))
 
     for layer in response_layer.get('layers'):
-        new_layer = DockerLayer.from_dict(layer)
-        new_layer.save()
-        logger.debug("new image from remote %s", str(layer))
+        try:
+            layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
+            layer_.set_available_at(new_node.uuid.hex)
+            layer_.save()
+            logger.debug("update existing layer %s, now available on new node: %s",
+                         layer['digest'], new_node.uuid.hex)
+        except:
+            new_layer = DockerLayer.from_dict(layer)
+            new_layer.save()
+            logger.debug("new layer from remote %s", str(layer))
 
     logger.info("done: new node's layer and image info added on %s at port %s",
                 ip_address, service_port)

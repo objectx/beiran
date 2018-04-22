@@ -182,7 +182,7 @@ async def probe_docker_daemon():
             if not image_data['RepoTags']:
                 continue
 
-                image = DockerImage.from_dict(image_data, dialect="docker")
+            image = DockerImage.from_dict(image_data, dialect="docker")
             try:
                 image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
                 old_available_at = image_.available_at

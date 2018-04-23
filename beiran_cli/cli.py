@@ -116,7 +116,7 @@ class Cli:
         table = []
         for key, value in info.items():
             if key == 'docker':
-                table.append([key, value['ServerVersion']])
+                table.append([key, value['ServerVersion'] if value else 'N/A'])
                 continue
             table.append([key, value])
         print(tabulate(table, headers=["Item", "Value"]))

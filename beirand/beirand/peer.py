@@ -53,14 +53,15 @@ class Peer(EventEmitter):
         while True:
             await asyncio.sleep(check_interval)
             try:
-                status = await self.request('/ping', timeout=timeout)
-                if status != 200:
+                status, response = await self.request('/ping', timeout=timeout)
+                if status != 200 or not response:
                     raise Exception("Failed to receive ping response from node")
                 # TODO: Track ping duration
                 # that can be utilized in download priorities etc. in future
                 fails = 0
                 check_interval = 15
             except Exception as err:  # pylint: disable=unused-variable,broad-except
+                logger.debug("pinging node failed, because %s", str(err))
                 check_interval = retry_interval
                 fails += 1
                 if fails >= 2:

@@ -467,8 +467,8 @@ class Ping(web.RequestHandler):
 
     # pylint: disable=arguments-differ
     def get(self):
-        """Just write PONG string"""
-        self.write("PONG")
+        """Just return a PONG response"""
+        self.write('{"ping":"pong"}')
         self.finish()
     # pylint: enable=arguments-differ
 

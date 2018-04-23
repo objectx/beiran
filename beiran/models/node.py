@@ -20,6 +20,7 @@ class Node(BaseModel):
     beiran_version = CharField(max_length=10)  # beiran daemon version of node
     beiran_service_port = IntegerField()
     docker = JSONStringField(null=True)  # dump all data from docker_client.info()
+    status = CharField(max_length=32, default='new')
 
     def __str__(self):
         fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"
@@ -36,6 +37,8 @@ class Node(BaseModel):
     def to_dict(self, **kwargs):
         _dict = super().to_dict(**kwargs)
         _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
+        if 'dialect' in kwargs and kwargs['dialect'] == 'api':
+            _dict.pop('status')
         return _dict
 
     def __repr__(self):

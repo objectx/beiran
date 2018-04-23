@@ -20,9 +20,9 @@ from beirand.common import AIO_DOCKER_CLIENT
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port, get_advertise_address
-from beirand.lib import async_fetch
+from beirand.peer import Peer
 
-from beiran.models import Node, DockerImage, DockerLayer
+from beiran.models import Node, DockerImage
 
 AsyncIOMainLoop().install()
 
@@ -60,10 +60,13 @@ async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=
         EVENTS.emit('node.error', ip_address, service_port)
         return
 
+    node.status = 'connecting'
+    node.save()
+
     logger.info(
         'Detected node became online, uuid: %s, %s:%s',
         node.uuid.hex, ip_address, service_port)
-    EVENTS.emit('node.added', ip_address, service_port)
+    EVENTS.emit('node.added', node)
 
 
 async def removed_node(node):
@@ -88,60 +91,10 @@ async def on_node_removed(node):
     logger.info("new event: an existing node removed %s", node.uuid)
 
 
-async def on_new_node_added(ip_address, service_port):
+async def on_new_node_added(node):
     """Placeholder for event on node removed"""
 
-    node_new = NODES.get_node_by_ip(ip_address)
-
-    logger.info("new event: getting new nodes' images and layers from %s at port %s\n\n ",
-                ip_address, service_port)
-
-    # images
-    status, response = await async_fetch('http://{}:{}/images'.format(ip_address, service_port))
-    if status != 200:
-        # do not raise error not to interrupt process, just log. we may emit another
-        # event `check.node` which marks the node offline or emits back
-        # for the caller event, the `node.added` in this case.
-        logger.debug("Cannot fetch images from remote node %s", str(ip_address))
-
-    logger.debug("received image information %s", str(response))
-
-    for image in response.get('images'):
-        try:
-            image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
-            image_.set_available_at(node_new.uuid.hex)
-            image_.save()
-            logger.debug("update existing image %s, now available on new node: %s",
-                         image['hash_id'], node_new.uuid.hex)
-        except DockerImage.DoesNotExist:
-            new_image = DockerImage.from_dict(image)
-            new_image.save()
-            logger.debug("new image from remote %s", str(image))
-
-    # layers
-    status_layer, response_layer = await async_fetch(
-        'http://{}:{}/layers'.format(ip_address, service_port))
-
-    if status_layer != 200:
-        # same case with above, will be handled later..
-        logger.debug("Cannot fetch images from remote node %s", str(ip_address))
-
-    logger.debug("received layer information %s", str(response_layer))
-
-    for layer in response_layer.get('layers'):
-        try:
-            layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
-            layer_.set_available_at(node_new.uuid.hex)
-            layer_.save()
-            logger.debug("update existing layer %s, now available on new node: %s",
-                         layer['digest'], node_new.uuid.hex)
-        except DockerLayer.DoesNotExist:
-            new_layer = DockerLayer.from_dict(layer)
-            new_layer.save()
-            logger.debug("new layer from remote %s", str(layer))
-
-    logger.info("done: new node's layer and image info added on %s at port %s",
-                ip_address, service_port)
+    Peer(node)
 
 
 async def on_node_docker_connected():
@@ -205,7 +158,7 @@ async def probe_docker_daemon():
 
     while True:
         # Delete all data regarding our node
-        await DOCKER_UTIL.reset_docker_info_of_node(NODES.local_node.uuid.hex)
+        await DockerUtil.reset_docker_info_of_node(NODES.local_node.uuid.hex)
 
         # wait until we can update our docker info
         await DOCKER_UTIL.update_docker_info(NODES.local_node)
@@ -213,6 +166,8 @@ async def probe_docker_daemon():
         # connected to docker daemon
         EVENTS.emit('node.docker.up')
         NODES.local_node.save()
+        logger.debug("Saved local node")
+        print(NODES.local_node.to_dict())
 
         # Get mapping of diff-id and digest mappings of docker daemon
         await DOCKER_UTIL.get_diffid_mappings()
@@ -295,6 +250,7 @@ async def main(loop):
 
     # collect node info and create node object
     NODES.local_node = Node.from_dict(collect_node_info())
+    NODES.local_node.status = 'local'
     NODES.add_or_update(NODES.local_node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
@@ -342,7 +298,7 @@ def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """
     loop = asyncio.get_event_loop()
     loop.create_task(main(loop))
-    loop.set_debug(True)
+    # loop.set_debug(True)
     loop.run_forever()
 
 

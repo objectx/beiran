@@ -105,10 +105,11 @@ class Cli:
             table.append([
                 node_['uuid'],
                 node_['ip_address'] + ':' + str(node_['port']),
+                node_['beiran_version'],
                 docker_version,
-                'OK'
+                node_['status'] if 'status' in node_ else 'unknown'
             ])
-        print(tabulate(table, headers=["UUID", "IP:Port", "Docker Ver.", "Status?"]))
+        print(tabulate(table, headers=["UUID", "IP:Port", "Version", "Docker Ver.", "Status?"]))
 
     node.add_command(node_list)
 

@@ -131,12 +131,40 @@ class Cli:
         images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
 
         table = [
-            [",\n".join(i['tags']), sizeof_fmt(i['size']), 'N/A']
+            [",\n".join(i['tags']), sizeof_fmt(i['size']), str(len(i['available_at'])) + ' node(s)']
             for i in images
         ]
         click.echo(tabulate(table, headers=["Tags", "Size", "Availability"]))
 
     image.add_command(image_list)
+
+    # ##########  Layer management commands
+
+    @click.group()
+    @click.pass_obj
+    def layer(self):
+        """group command for layer management"""
+        pass
+
+    main.add_command(layer)
+
+    @click.command('list')
+    @click.option('--all', 'all_nodes', default=False, is_flag=True,
+                  help='List layers from all known nodes')
+    @click.option('--node', default=None,
+                  help='List layers from specific node')
+    @click.pass_obj
+    def layer_list(self, all_nodes, node):
+        """List container layers across the cluster"""
+        layers = self.beiran_client.get_layers(all_nodes=all_nodes, node_uuid=node)
+        table = [
+            [i['digest'], sizeof_fmt(i['size']), str(len(i['available_at'])) + ' node(s)']
+            for i in layers
+        ]
+        print(tabulate(table, headers=["Digest", "Size", "Availability"]))
+
+    layer.add_command(layer_list)
+
 
 Cli()
 

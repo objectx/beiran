@@ -151,8 +151,9 @@ async def on_node_docker_connected():
 
 def db_init():
     """Initialize database"""
-    from peewee import SqliteDatabase
+    from peewee import SqliteDatabase, OperationalError
     from beiran.models.base import DB_PROXY
+    from beiran.models import MODEL_LIST
 
     # check database file exists
     beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
@@ -165,6 +166,29 @@ def db_init():
     # init database object
     database = SqliteDatabase(beiran_db_path)
     DB_PROXY.initialize(database)
+
+    logger.debug("Checking tables")
+    for model in list(MODEL_LIST):
+        logger.debug("Checking a model")
+        try:
+            model.select().limit(0).get()
+        except OperationalError as err:
+            logger.info("Database schema is not up-to-date, destroying")
+            # database is somewhat broken (old)
+            # purge it so it can be created again
+            database.close()
+            os.remove(beiran_db_path)
+            open(beiran_db_path, 'a').close()
+            database = SqliteDatabase(beiran_db_path)
+            DB_PROXY.initialize(database)
+            db_file_exists = False
+        except model.DoesNotExist as err:  # pylint: disable=unused-variable
+            # not a problem
+            continue
+        except Exception as err:  # pylint: disable=broad-except
+            logger.error("Checking a table failed")
+            print(err)
+    logger.debug("Checking tables done")
 
     if not db_file_exists:
         logger.info("db hasn't initialized yet, creating tables!..")

@@ -125,6 +125,15 @@ class Client:
         """
         return self.get_server_info()['version']
 
+    def get_node_info(self, uuid=None):
+        """
+        Retrieve information about node
+        Returns:
+            object: info of node
+        """
+        path = "/info" if not uuid else "/info/{}".format(uuid)
+        return self.request(path=path, parse_json=True)
+
     def get_nodes(self, all_nodes=False):
         """
         Daemon get nodes

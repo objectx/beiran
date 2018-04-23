@@ -101,6 +101,22 @@ class Cli:
 
     node.add_command(node_list)
 
+    @click.command('info')
+    @click.argument('uuid', required=False)
+    @click.pass_obj
+    def node_info(self, uuid):
+        """Sof information about node"""
+        info = self.beiran_client.get_node_info(uuid)
+        table = []
+        for key, value in info.items():
+            if key == 'docker':
+                table.append([key, value['ServerVersion']])
+                continue
+            table.append([key, value])
+        print(tabulate(table, headers=["Item", "Value"]))
+
+    node.add_command(node_info)
+
     # ##########  Image management commands
 
     @click.group()

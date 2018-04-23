@@ -136,3 +136,43 @@ class Client:
         resp = self.request(path=path)
 
         return resp.get('nodes', [])
+
+    def get_images(self, all_nodes=False, node_uuid=None):
+        """
+        Get Image list from beiran API
+        Returns:
+            list: list of images
+
+        """
+        if node_uuid and all_nodes:
+            raise Exception("node_uuid and all_nodes cannot be defined at the same time")
+
+        path = '/images'
+
+        if node_uuid:
+            path = path + '?node={}'.format(node_uuid)
+        elif all_nodes:
+            path = path + '?all=true'
+
+        resp = self.request(path=path)
+        return resp.get('images', [])
+
+    def get_layers(self, all_nodes=False, node_uuid=None):
+        """
+        Get Layer list from beiran API
+        Returns:
+            list: list of layers
+        """
+        if node_uuid and all_nodes:
+            raise Exception("node_uuid and all_nodes cannot be defined at the same time")
+
+        path = '/layers'
+
+        if node_uuid:
+            path = path + '?node={}'.format(node_uuid)
+        elif all_nodes:
+            path = path + '?all=true'
+
+        resp = self.request(path=path)
+
+        return resp.get('layers', [])

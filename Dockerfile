@@ -1,29 +1,29 @@
-FROM python:3-jessie
-LABEL maintainer="beiran@rlab.io"
+FROM python:3.6-jessie
+LABEL maintainer="info@beiran.io"
 RUN apt-get update && apt-get -y install \
 	--no-install-recommends \
 	python3-pip git curl make libsqlite3-dev
 
-RUN mkdir -p /src
-WORKDIR /src
+RUN mkdir -p /opt/beiran/beiran
+WORKDIR /opt
 
 # Install bats
-ADD beiran/requirements.txt /src/r-lib.txt
-RUN pip3 install -r /src/r-lib.txt
+ADD beiran/requirements.txt /opt/beiran/r-lib.txt
+RUN pip install -r /opt/beiran/r-lib.txt
 
-ADD beiran_cli/requirements.txt /src/r-cli.txt
-RUN pip3 install -r /src/r-cli.txt
+ADD beiran_cli/requirements.txt /opt/beiran/r-cli.txt
+RUN pip install -r /opt/beiran/r-cli.txt
 
-ADD beirand/requirements.txt /src/r-daemon.txt
-RUN pip3 install -r /src/r-daemon.txt
+ADD beirand/requirements.txt /opt/beiran/r-daemon.txt
+RUN pip install -r /opt/beiran/r-daemon.txt
 
-ADD [ "beirand/beirand", "/src/beirand" ]
-ADD [ "beiran", "/src/beiran"]
+ADD [ "beirand/beirand", "/opt/beiran/beirand" ]
+ADD [ "beiran", "/opt/beiran/beiran" ]
+ADD [ "beiran_cli", "/opt/beiran/beiran_cli" ]
 
-ENV PYTHONPATH=/src/beirand:/src
-WORKDIR /src/beirand
+ENV PYTHONPATH=/opt/beiran/beirand:/opt/beiran
 
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran
 
-CMD [ "python3", "/src/beirand/main.py" ]
+CMD [ "python3", "-m", "beirand" ]

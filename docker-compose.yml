@@ -8,8 +8,9 @@ services:
     volumes:
      - /var/run/docker.sock:/var/run/docker.sock
      - /var/lib/docker:/var/lib/docker
-     - .:/src
-    command: python3.6 -u beirand/main.py
+     - ./beiran:/opt/beiran/beiran:ro
+     - ./beiran_cli:/opt/beiran/beiran_cli:ro
+     - ./beirand/beirand:/opt/beiran/beirand:ro
     network_mode: host
     environment:
       - DISCOVERY_METHOD=zeroconf

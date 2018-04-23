@@ -77,7 +77,7 @@ pipeline:
     commands:
       - date
       - ip addr show
-      - python3 /src/beirand/main.py
+      - python3 -m beirand
 
   rest_test:
     image: dkr.rsnc.io/poc/beiran/pyresttest

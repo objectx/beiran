@@ -5,9 +5,9 @@ from subprocess import Popen, PIPE
 from os.path import abspath, dirname
 
 COMPONENTS = {
-    'daemon': (0, 0, 1, 'final', 0),
-    'cli': (0, 0, 1, 'final', 0),
-    'library': (0, 0, 1, 'final', 0)
+    'daemon': (0, 0, 5, 'final', 0),
+    'cli': (0, 0, 5, 'final', 0),
+    'library': (0, 0, 5, 'final', 0)
 }
 
 

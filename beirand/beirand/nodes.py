@@ -40,7 +40,7 @@ class Nodes(object):
         """
         return Node.get(uuid == uuid)
 
-    def get_node_by_uuid(self, uuid=None, from_db=False):
+    async def get_node_by_uuid(self, uuid=None, from_db=False):
         """
         Unless from_db is True, get node dict from self.all_nodes memory
         object, if available.

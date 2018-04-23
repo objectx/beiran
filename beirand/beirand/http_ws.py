@@ -196,7 +196,8 @@ class NodeInfo(web.RequestHandler):
         #         }
         #     }
         # )
-
+        if not node:
+            raise HTTPError(status_code=404, log_message="Node Not Found")
         self.write(node.to_dict())
         self.finish()
 
@@ -478,7 +479,7 @@ APP = web.Application([
     (r'/layers', LayerList),
     (r'/images/(.*)', ImagesTarHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/info(/[0-9a-fsh:]+)?', NodeInfo),
+    (r'/info(?:/([0-9a-fsh:]+))?', NodeInfo),
     (r'/nodes', NodeList),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),

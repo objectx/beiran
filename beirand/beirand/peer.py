@@ -14,6 +14,7 @@ from beiran.models import DockerImage, DockerLayer
 
 
 class Peer(EventEmitter):
+    """Peer class"""
 
     def __init__(self, node, loop=None):
         super().__init__()
@@ -22,12 +23,13 @@ class Peer(EventEmitter):
         self.start_loop()
 
     def start_loop(self):
+        """schedule handling of peer in the asyncio loop"""
         # TODO: Figure out handling errors when scheduling like this
         self.loop.create_task(self.peerloop())
 
     async def peerloop(self):
-        
-        logger.info("new event: getting new nodes' images and layers from %s at port %s\n\n ",
+        """lifecycle of a beiran-node connection"""
+        logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
                     self.node.ip_address, self.node.port)
         self.node.status = 'syncing'
         self.node.save()
@@ -40,7 +42,7 @@ class Peer(EventEmitter):
         self.node.status = 'online'
         self.node.save()
 
-        logger.info("done: new node's layer and image info added on %s at port %s",
+        logger.info("new node's layer and image info added on %s at port %s",
                     self.node.ip_address, self.node.port)
 
         # Check node availability every x second, drop online status if it fails
@@ -51,14 +53,14 @@ class Peer(EventEmitter):
         while True:
             await asyncio.sleep(check_interval)
             try:
-                status, response = await self.request('/ping', timeout=timeout)
+                status = await self.request('/ping', timeout=timeout)
                 if status != 200:
                     raise Exception("Failed to receive ping response from node")
                 # TODO: Track ping duration
                 # that can be utilized in download priorities etc. in future
                 fails = 0
                 check_interval = 15
-            except Exception as e:
+            except Exception as err:  # pylint: disable=unused-variable,broad-except
                 check_interval = retry_interval
                 fails += 1
                 if fails >= 2:
@@ -72,6 +74,8 @@ class Peer(EventEmitter):
         # so it can allow re-discovery of this node when found again
 
     async def request(self, uri, *args, **kwargs):
+        """make a request to the peer using preferred transport method"""
+
         protocol = 'http' # for now it's hardcoded
         host = '{}:{}'.format(self.node.ip_address, self.node.port)
         url = '{}://{}{}'.format(protocol, host, uri)
@@ -79,7 +83,8 @@ class Peer(EventEmitter):
         return response
 
     async def fetch_images(self):
-        # images
+        """fetch image list from the node and update local db"""
+
         status, response = await self.request('/images')
         if status != 200:
             # do not raise error not to interrupt process, just log. we may emit another
@@ -102,7 +107,8 @@ class Peer(EventEmitter):
                 logger.debug("new image from remote %s", str(image))
 
     async def fetch_layers(self):
-        # layers
+        """fetch layer list from the node and update local db"""
+
         status, response = await self.request('/layers')
         if status != 200:
             # same case with above, will be handled later..

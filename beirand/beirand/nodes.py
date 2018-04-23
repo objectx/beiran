@@ -95,9 +95,9 @@ class Nodes(object):
             # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
             node_.save(force_insert=True)
 
-        self.set_online(node_)
+        self.set_online(node)
 
-        return node_
+        return node
 
     def remove_node(self, node):
         """

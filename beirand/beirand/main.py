@@ -188,6 +188,7 @@ async def probe_docker_daemon():
 
         # connected to docker daemon
         EVENTS.emit('node.docker.up')
+        NODES.local_node.save()
 
         # Get mapping of diff-id and digest mappings of docker daemon
         await DOCKER_UTIL.get_diffid_mappings()

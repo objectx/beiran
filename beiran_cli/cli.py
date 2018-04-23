@@ -102,7 +102,12 @@ class Cli:
                 docker_version = node_['docker']['ServerVersion']
             else:
                 docker_version = 'N/A'
-            table.append([node_['uuid'], node_['ip_address'] + ':' + str(node_['port']), docker_version, 'OK'])
+            table.append([
+                node_['uuid'],
+                node_['ip_address'] + ':' + str(node_['port']),
+                docker_version,
+                'OK'
+            ])
         print(tabulate(table, headers=["UUID", "IP:Port", "Docker Ver.", "Status?"]))
 
     node.add_command(node_list)

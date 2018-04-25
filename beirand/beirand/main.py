@@ -23,6 +23,7 @@ from beirand.common import AIO_DOCKER_CLIENT
 from beirand.http_ws import APP
 from beirand.lib import collect_node_info, DockerUtil
 from beirand.lib import get_listen_port, get_advertise_address
+from beirand.peer import Peer
 
 from beiran.models import Node, DockerImage
 from beiran.log import build_logger
@@ -30,7 +31,7 @@ from beiran.log import build_logger
 AsyncIOMainLoop().install()
 
 
-async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=unused-argument
+async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
     """
     Discovered new node on beiran network
     Args:
@@ -63,10 +64,14 @@ async def new_node(ip_address, service_port=None, **kwargs): # pylint: disable=u
         EVENTS.emit('node.error', ip_address, service_port)
         return
 
+    node.status = 'connecting'
+    node.save()
+
     logger.info(
         'Detected node became online, uuid: %s, %s:%s',
         node.uuid.hex, ip_address, service_port)
-    EVENTS.emit('node.added', ip_address, service_port)
+    EVENTS.emit('node.added', node)
+
 
 async def removed_node(node):
     """
@@ -84,22 +89,28 @@ async def removed_node(node):
     if removed:
         EVENTS.emit('node.removed', node)
 
+
 async def on_node_removed(node):
     """Placeholder for event on node removed"""
     logger.info("new event: an existing node removed %s", node.uuid)
 
-async def on_new_node_added(ip_address, service_port):
+
+async def on_new_node_added(node):
     """Placeholder for event on node removed"""
-    logger.info("new event: new node added on %s at port %s", ip_address, service_port)
+
+    Peer(node)
+
 
 async def on_node_docker_connected():
     """Placeholder for event on node docker connected"""
     logger.info("connected to docker daemon")
 
+
 def db_init():
     """Initialize database"""
-    from peewee import SqliteDatabase
+    from peewee import SqliteDatabase, OperationalError
     from beiran.models.base import DB_PROXY
+    from beiran.models import MODEL_LIST
 
     # check database file exists
     beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
@@ -113,26 +124,54 @@ def db_init():
     database = SqliteDatabase(beiran_db_path)
     DB_PROXY.initialize(database)
 
+    logger.debug("Checking tables")
+    for model in list(MODEL_LIST):
+        logger.debug("Checking a model")
+        try:
+            model.select().limit(0).get()
+        except OperationalError as err:
+            logger.info("Database schema is not up-to-date, destroying")
+            # database is somewhat broken (old)
+            # purge it so it can be created again
+            database.close()
+            os.remove(beiran_db_path)
+            open(beiran_db_path, 'a').close()
+            database = SqliteDatabase(beiran_db_path)
+            DB_PROXY.initialize(database)
+            db_file_exists = False
+        except model.DoesNotExist as err:  # pylint: disable=unused-variable
+            # not a problem
+            continue
+        except Exception as err:  # pylint: disable=broad-except
+            logger.error("Checking a table failed")
+            print(err)
+    logger.debug("Checking tables done")
+
     if not db_file_exists:
         logger.info("db hasn't initialized yet, creating tables!..")
         from beiran.models import create_tables
 
         create_tables(database)
 
+
 DOCKER_UTIL = DockerUtil("/var/lib/docker", AIO_DOCKER_CLIENT)
+
 
 async def probe_docker_daemon():
     """Deal with local docker daemon states"""
 
     while True:
         # Delete all data regarding our node
-        await DOCKER_UTIL.reset_docker_info_of_node(NODES.local_node.uuid.hex)
+        await DockerUtil.reset_docker_info_of_node(NODES.local_node.uuid.hex)
 
         # wait until we can update our docker info
         await DOCKER_UTIL.update_docker_info(NODES.local_node)
 
         # connected to docker daemon
         EVENTS.emit('node.docker.up')
+        NODES.local_node.save()
+        logger.debug("Saved local node")
+        print(NODES.local_node.to_dict())
 
         # Get mapping of diff-id and digest mappings of docker daemon
         await DOCKER_UTIL.get_diffid_mappings()
@@ -168,7 +207,7 @@ async def probe_docker_daemon():
                 image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
 
                 layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
-            except Exception as err: # pylint: disable=unused-variable,broad-except
+            except Exception as err:  # pylint: disable=unused-variable,broad-except
                 continue
 
             image.layers = [layer.digest for layer in layers]
@@ -196,7 +235,7 @@ async def probe_docker_daemon():
             if 'id' in event:
                 logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
             else:
-                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'])
+                logger.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
@@ -228,6 +267,7 @@ async def main(loop):
 
     # collect node info and create node object
     NODES.local_node = Node.from_dict(collect_node_info())
+    NODES.local_node.status = 'local'
     NODES.add_or_update(NODES.local_node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
@@ -274,6 +314,7 @@ def schedule_shutdown(signum, frame):
     loop = asyncio.get_event_loop()
     loop.stop()
 
+
 def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """
 
@@ -294,6 +335,7 @@ def run():
         sys.exit(1)
 
     loop.close()
+
 
 if __name__ == '__main__':
     run()

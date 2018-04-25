@@ -8,6 +8,7 @@ from .docker_objects import DockerImage, DockerLayer
 
 LOGGER = build_logger()
 
+MODEL_LIST = [Node, DockerImage, DockerLayer]
 
 def create_tables(database):
     """
@@ -18,4 +19,4 @@ def create_tables(database):
     """
     # import them locally!
     LOGGER.info("creating database tables!...")
-    database.create_tables([Node, DockerImage, DockerLayer])
+    database.create_tables(MODEL_LIST)

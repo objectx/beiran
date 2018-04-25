@@ -40,7 +40,7 @@ class Nodes(object):
         """
         return Node.get(uuid == uuid)
 
-    def get_node_by_uuid(self, uuid=None, from_db=False):
+    async def get_node_by_uuid(self, uuid=None, from_db=False):
         """
         Unless from_db is True, get node dict from self.all_nodes memory
         object, if available.
@@ -67,9 +67,13 @@ class Nodes(object):
         return node
 
     def set_online(self, node):
+        """Append node to online nodes collection
+        """
         self.all_nodes.update({node.uuid.hex: node})
 
     def set_offline(self, node):
+        """Remove node from online nodes collection
+        """
         del self.all_nodes[node.uuid.hex]
 
     def add_or_update(self, node):
@@ -91,9 +95,9 @@ class Nodes(object):
             # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
             node_.save(force_insert=True)
 
-        self.set_online(node_)
+        self.set_online(node)
 
-        return node_
+        return node
 
     def remove_node(self, node):
         """

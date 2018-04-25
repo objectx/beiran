@@ -27,9 +27,10 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     created_at = IntegerField()
     hash_id = CharField(max_length=128, primary_key=True)
     parent_hash_id = CharField(max_length=128, null=True)
-    size = IntegerField()
+    size = IntegerField(null=True)
     tags = JSONStringField(default=list)
     data = JSONStringField(null=True)
+    manifest = JSONStringField(null=True)
     layers = JSONStringField(default=list)
     available_at = JSONStringField(default=list)
 
@@ -47,6 +48,19 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             new_dict['tags'] = _dict['RepoTags']
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
+
+            _dict = new_dict
+        elif 'dialect' in kwargs and kwargs['dialect'] == "manifest":
+            new_dict = {}
+
+            new_dict['hash_id'] = _dict['hashid']
+            new_dict['tags'] = [_dict['tag']]
+            new_dict['manifest'] = dict(_dict)
+
+            new_layer_list = []
+            for layer in _dict['fsLayers']:
+                new_layer_list.append(layer['blobSum'])
+            new_dict['layers'] = new_layer_list
 
             _dict = new_dict
         return super().from_dict(_dict, **kwargs)

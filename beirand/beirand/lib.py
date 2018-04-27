@@ -511,24 +511,6 @@ class DockerUtil:
         #     print(" -- Result: Cannot find layer folder")
         #     image.layers.append("<not-found>")
         return layer
-        # print("layerdb: ", layer.layerdb_diff_id)
-
-        # try:
-        layer_meta_folder = layer_storage_path + '/' + layer.layerdb_diff_id.replace(':', '/')
-        async with aiofiles.open(layer_meta_folder + '/size', mode='r') as layer_size_file:
-            size_str = await layer_size_file.read()
-
-        layer.size = int(size_str.strip())
-
-        # except FileNotFoundError as e:
-        #     # Actually some other layers refers to this layer
-        #     # (grep in /var/lib/docker/image/overlay2/layerdb/sha256/
-        #     # shows some results)
-        #     image.has_not_found_layers = True
-        #     print(" -- Result: Cannot find layer folder")
-        #     image.layers.append("<not-found>")
-        return layer
-
 
     async def fetch_docker_image_info(self, name):
         """

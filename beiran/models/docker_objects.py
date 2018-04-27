@@ -53,7 +53,10 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         elif 'dialect' in kwargs and kwargs['dialect'] == "manifest":
             new_dict = {}
 
+            # this param is included in manifest response header as 'Docker-Content-Digest'
+            # so you need to add it to the dictionary produced from manifest response body
             new_dict['hash_id'] = _dict['hashid']
+
             new_dict['tags'] = [_dict['tag']]
             new_dict['manifest'] = dict(_dict)
 

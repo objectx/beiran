@@ -306,7 +306,7 @@ async def async_req(url, timeout=3, **kwargs):
     async with aiohttp.ClientSession() as session:
         async with async_timeout.timeout(timeout):
             async with session.get(url, headers=kwargs) as resp:
-                status, body = resp.status, await resp.read()
+                body = await resp.read()
                 return resp, json.loads(body)
 
 
@@ -534,62 +534,92 @@ class DockerUtil:
         """
         Fetch Docker Image manifest specified repository.
         Args:
-            name (str): image name (e.g. nginx, nginx:latest, openshift/origin:latest, dkr.rsnc.io/nginx:latest, dkr.rsnc.io/beiran/beirand:v0.1)
+            name (str): image name (e.g. dkr.rsnc.io/beiran/beirand:v0.1, beirand:latest)
         """
 
-        default_host = "index.docker.io"
-        default_repository = "library"
-        default_tag = "latest"
+        default_elem = {
+            "host": "index.docker.io",
+            "repository": "library",
+            "tag": "latest"
+        }
 
-        name_list = name.split("/") # divide into Domain and Repository and Image
-        if len(name_list) == 1:
-            # nginx:latest
-            host = default_host  
-            repo = default_repository + "/"
-            img_tag = name_list[0]
-        
-        elif len(name_list) == 2:
+        url_elem = {
+            "host": "",
+            "port": "",
+            "repository": "",
+            "image": "",
+            "tag": ""
+        }
+
+        # 'name' --- 5 patterns
+        # # - beirand
+        # # - beirand:v0.1
+        # # - beiran/beirand:v0.1
+        # # - dkr.rsnc.io/beirand:v0.1
+        # # - dkr.rsnc.io/beiran/beirand:v0.1
+        #
+
+        #
+        # # divide into Domain and Repository and Image
+        #
+        name_list = name.split("/")
+
+        # nginx:latest
+        url_elem['host'] = default_elem['host']
+        url_elem['repository'] = default_elem['repository'] + "/"
+        img_tag = name_list[0]
+
+        if len(name_list) == 2:
             # openshift/origin:latest, dkr.rsnc.io/nginx:latest
             # determine host name and repository name with "."
+            url_elem['host'] = default_elem['host']
+            url_elem['repository'] = name_list[0] + "/"
             if "." in name_list[0]:
-                host = name_list[0]
-                repo = ""
-            else:
-                host = default_host 
-                repo = name_list[0] + "/"
+                url_elem['host'] = name_list[0]
+                url_elem['repository'] = ""
             img_tag = name_list[1]
 
-        else:
+        elif len(name_list) == 3:
             # dkr.rsnc.io/beiran/beirand:v0.1
-            host = name_list[0]
-            repo = name_list[1] + "/"
+            url_elem['host'] = name_list[0]
+            url_elem['repository'] = name_list[1] + "/"
             img_tag = name_list[2]
 
-        host_list = host.split(":") # divide into Host and Port
-        if len(host_list) == 1:
-            host = host_list[0]
-            port = ""
-        else:
-            host, port = host_list
-            host += ":"
+        #
+        # # divide into Host and Port
+        #
+        host_list = url_elem['host'].split(":")
+        url_elem['host'] = host_list[0]
+        url_elem['port'] = ""
+        if len(host_list) == 2:
+            url_elem['host'], url_elem['port'] = host_list
+            url_elem['host'] += ":"
 
+        #
+        # # divide into Host and Port
+        #
+        url_elem['image'] = img_tag
+        url_elem['tag'] = default_elem['tag']
         if ":" in img_tag:
-            img, tag = img_tag.split(":")
-        else:
-            img = img_tag
-            tag = default_tag
+            url_elem['image'], url_elem['tag'] = img_tag.split(":")
 
-            
-        url = 'https://{}{}/v2/{}{}/manifests/{}'.format(host, port, repo, img, tag)          
+        url = 'https://{}{}/v2/{}{}/manifests/{}'.format(
+            url_elem['host'], url_elem['port'],
+            url_elem['repository'], url_elem['image'],
+            url_elem['tag']
+        )
         #print("------------------")
         #print("URL: ", url)
 
-        if host == default_host:
-            token_url = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{}{}:pull".format(repo, img)
-            resp, token = await async_req(token_url)
+        if url_elem['host'] == default_elem['host']:
+            resp, token = await async_req(
+                "https://auth.docker.io/" + \
+                "token?service=registry.docker.io&scope=repository:{}{}:pull" \
+                .format(url_elem['repository'], url_elem['image'])
+            )
             if resp.status != 200:
                 raise Exception("Failed to get token")
-            
+
             resp, manifest = await async_req(url, Authorization="Bearer " + token["token"])
             self.logger.debug("fetching Docker Image manifest: %s", url)
             if resp.status != 200:
@@ -606,7 +636,7 @@ class DockerUtil:
 
             self.logger.debug("fetched Docker Image %s", str(manifest))
 
-        manifest['hashid'] = resp.headers['Docker-Content-Digest'] 
+        manifest['hashid'] = resp.headers['Docker-Content-Digest']
 
-        new_image = DockerImage.from_dict(manifest, dialect="manifest")
-        new_image.save()
+        DockerImage.from_dict(manifest, dialect="manifest").save()
+        

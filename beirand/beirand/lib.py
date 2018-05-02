@@ -320,8 +320,7 @@ class DockerUtil:
     @staticmethod
     async def reset_docker_info_of_node(uuid_hex):
         """ Delete all (local) layers and images from database """
-        for image in list(DockerImage.select(DockerImage.id,
-                                             DockerImage.hash_id,
+        for image in list(DockerImage.select(DockerImage.hash_id,
                                              DockerImage.available_at)):
             image.unset_available_at(uuid_hex)
 

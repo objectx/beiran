@@ -25,7 +25,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     """DockerImage"""
 
     created_at = IntegerField()
-    hash_id = CharField(max_length=128)
+    hash_id = CharField(max_length=128, primary_key=True)
     parent_hash_id = CharField(max_length=128, null=True)
     size = IntegerField()
     tags = JSONStringField(default=list)

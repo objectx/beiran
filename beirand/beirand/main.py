@@ -189,12 +189,14 @@ async def probe_docker_daemon():
                 continue
 
             image = DockerImage.from_dict(image_data, dialect="docker")
+            image_exists_in_db = False
             try:
                 image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
                 old_available_at = image_.available_at
                 image_.update_using_obj(image)
                 image = image_
                 image.available_at = old_available_at
+                image_exists_in_db = True
 
             except DockerImage.DoesNotExist:
                 pass
@@ -213,7 +215,7 @@ async def probe_docker_daemon():
                 layer.save()
 
             image.set_available_at(NODES.local_node.uuid.hex)
-            image.save()
+            image.save(force_insert=not image_exists_in_db)
 
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(true)

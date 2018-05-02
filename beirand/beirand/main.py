@@ -42,6 +42,7 @@ async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=
 
     # check if we had prior communication with this node
     node = NODES.get_node_by_ip(ip_address)
+    # FIXME! NO! fetch that node's info, get it's uuid. and match db using that
     if node:
         # fetch up-to-date information and mark the node as online
         node = await NODES.add_or_update_new_remote_node(ip_address, service_port)

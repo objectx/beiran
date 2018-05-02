@@ -117,7 +117,7 @@ class Cli:
     @click.argument('uuid', required=False)
     @click.pass_obj
     def node_info(self, uuid):
-        """Sof information about node"""
+        """Show information about node"""
         info = self.beiran_client.get_node_info(uuid)
         table = []
         for key, value in info.items():

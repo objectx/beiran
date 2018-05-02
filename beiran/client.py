@@ -78,7 +78,7 @@ class Client:
             self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
-    def request(self, path="/", parse_json=True):
+    def request(self, path="/", parse_json=True, data=None, method="GET"):
         """
         Request call to daemon
         Args:
@@ -89,8 +89,13 @@ class Client:
         Returns: Response from daemon
 
         """
+
+        data_options = {}
+        if data:
+            data_options['body'] = json.dumps(data)
+
         try:
-            response = self.http_client.fetch(self.url + path)
+            response = self.http_client.fetch(self.url + path, method=method, **data_options)
             # TODO: Parse JSON
         except httpclient.HTTPError as error:
             print("Error: " + str(error))

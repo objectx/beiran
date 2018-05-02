@@ -129,6 +129,16 @@ class Cli:
 
     node.add_command(node_info)
 
+    @click.command('probe')
+    @click.argument('address', required=False)
+    @click.pass_obj
+    def node_probe(self, address):
+        """Probe a non-discovered node"""
+        info = self.beiran_client.probe_node(address)
+        print(info)
+
+    node.add_command(node_probe)
+
     # ##########  Image management commands
 
     @click.group()

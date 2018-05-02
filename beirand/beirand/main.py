@@ -292,6 +292,7 @@ async def main(loop):
         "address": get_advertise_address(),
         "port": get_listen_port()
     })
+    EVENTS.on('probe', new_node) # TEMP
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
     discovery.start()

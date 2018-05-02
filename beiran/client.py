@@ -139,6 +139,18 @@ class Client:
         path = "/info" if not uuid else "/info/{}".format(uuid)
         return self.request(path=path, parse_json=True)
 
+    def probe_node(self, address):
+        """
+        Connect to a new node
+        Returns:
+            object: info of node if successful
+        """
+        path = "/nodes"
+        new_node = {
+            "address": address
+        }
+        return self.request(path=path, data=new_node, parse_json=True, method="POST")
+
     def get_nodes(self, all_nodes=False):
         """
         Daemon get nodes

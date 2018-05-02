@@ -15,6 +15,8 @@ import aiofiles
 import async_timeout
 import netifaces
 
+from peewee import SQL
+
 from beiran.log import build_logger
 from beiran.version import get_version
 from beiran.models import DockerImage, DockerLayer
@@ -322,20 +324,23 @@ class DockerUtil:
         """ Delete all (local) layers and images from database """
         for image in list(DockerImage.select(DockerImage.hash_id,
                                              DockerImage.available_at)):
-            image.unset_available_at(uuid_hex)
-
-            if not image.available_at:
-                LOGGER.info("deleting image from db: %s", image.hash_id)
-                image.delete().execute()
+            if uuid_hex in image.available_at:
+                image.unset_available_at(uuid_hex)
+                image.save()
 
         for layer in list(DockerLayer.select(DockerLayer.id,
                                              DockerLayer.digest,
                                              DockerLayer.available_at)):
-            layer.unset_available_at(uuid_hex)
+            if uuid_hex in layer.available_at:
+                layer.unset_available_at(uuid_hex)
+                layer.save()
 
-            if not layer.available_at:
-                LOGGER.info("deleting layer from db: %s", layer.digest)
-                layer.delete().execute()
+        await DockerUtil.delete_unavailable_objects()
+
+    @staticmethod
+    async def delete_unavailable_objects():
+        DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
+        DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
 
     async def fetch_docker_info(self):
         """

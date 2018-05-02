@@ -104,7 +104,8 @@ class Peer(EventEmitter):
                              image['hash_id'], self.node.uuid.hex)
             except DockerImage.DoesNotExist:
                 new_image = DockerImage.from_dict(image)
-                new_image.save()
+                new_image.set_available_at(self.node.uuid.hex)
+                new_image.save(force_insert=True)
                 logger.debug("new image from remote %s", str(image))
 
     async def fetch_layers(self):

@@ -397,6 +397,11 @@ class DockerUtil:
         self.logger.debug("Getting diff-id digest mappings..")
         diffid_mapping = {}
         mapping_dir = self.docker_path + "/image/overlay2/distribution/diffid-by-digest/sha256"
+
+        # check if docker daemon has created the overlay dir
+        if not await aio_isdir(mapping_dir):
+            return {}
+
         for filename in await aio_dirlist(mapping_dir):
             if await aio_isdir(mapping_dir + '/' + filename):
                 continue
@@ -414,6 +419,11 @@ class DockerUtil:
         self.logger.debug("Getting layerdb digest mappings..")
         layerdb_mapping = {}
         layerdb_path = self.docker_path + "/image/overlay2/layerdb/sha256"
+
+        # check if docker daemon has created the overlay layerdb dir
+        if not await aio_isdir(layerdb_path):
+            return {}
+
         for filename in await aio_dirlist(layerdb_path):
             if not await aio_isdir(layerdb_path + '/' + filename):
                 continue

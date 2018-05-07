@@ -13,9 +13,8 @@ from uuid import uuid4, UUID
 import aiohttp
 import aiofiles
 import async_timeout
-import netifaces
-
 from peewee import SQL
+import netifaces
 
 from beiran.log import build_logger
 from beiran.version import get_version
@@ -339,6 +338,7 @@ class DockerUtil:
 
     @staticmethod
     async def delete_unavailable_objects():
+        """Delete unavailable layers and images"""
         DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
 

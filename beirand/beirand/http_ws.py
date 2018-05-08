@@ -3,8 +3,8 @@ import os
 import re
 import json
 import asyncio
-import aiohttp
 import urllib
+import aiohttp
 
 from tornado import websocket, web
 from tornado.options import options, define
@@ -67,6 +67,15 @@ class EchoWebSocket(websocket.WebSocketHandler):
 
 class JsonHandler(web.RequestHandler):
     """Request handler where requests and responses speak JSON."""
+
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.json_data = dict()
+        self.response = dict()
+
+    def data_received(self, chunk):
+        pass
+
     def prepare(self):
         # Incorporate request JSON into arguments dictionary.
         if self.request.body:
@@ -93,6 +102,7 @@ class JsonHandler(web.RequestHandler):
         self.write_json()
 
     def write_json(self):
+        """Write json output"""
         output = json.dumps(self.response)
         self.write(output)
 
@@ -476,7 +486,7 @@ class NodesHandler(JsonHandler):
         # task = loop.create_task(NODES.add_or_update_new_remote_node(parsed.hostname, parsed.port))
         EVENTS.emit('probe', ip_address=parsed.hostname, service_port=parsed.port) # TEMP
 
-        self.write({ "status": "OK" })
+        self.write({"status": "OK"})
         self.finish()
     # pylint: enable=arguments-differ
 

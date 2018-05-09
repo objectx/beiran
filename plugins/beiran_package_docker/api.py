@@ -292,9 +292,9 @@ class LayerList(web.RequestHandler):
 
 
 ROUTES = [
-    (r'/images', ImageList),
-    (r'/layers', LayerList),
-    (r'/images/(.*)', ImagesTarHandler),
-    (r'/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
+    (r'/docker/images', ImageList),
+    (r'/docker/layers', LayerList),
+    (r'/docker/images/(.*)', ImagesTarHandler),
+    (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
+    (r'/docker/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
 ]

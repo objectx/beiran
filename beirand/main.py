@@ -242,6 +242,9 @@ class BeiranDaemon(EventEmitter):
             })
             PLUGINS['package:' + _plugin] = _plugin_obj
             await _plugin_obj.start()
+            if _plugin_obj.api_routes:
+                logger.info("insert {plugin} routes {plugin} namespace".format(plugin=_plugin))
+                api_app.add_handlers(r".*", _plugin_obj.api_routes)
 
         await discovery.start()
         self.set_status('ready')

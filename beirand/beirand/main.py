@@ -246,9 +246,34 @@ async def probe_docker_daemon():
         logger.warning("docker connection lost")
         await asyncio.sleep(100)
 
-class Daemon(EventEmitter):
+class BeiranDaemon(EventEmitter):
+    """Beiran Daemon"""
 
-    async def main(self, loop):
+    def __init__(self, loop=None):
+        super().__init__()
+        self.loop = loop if loop else asyncio.get_event_loop()
+        self.discovery = self.init_discovery()
+
+    def init_discovery(self):
+        """load discovery module and initialize class instance"""
+
+        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+        logger.debug("Discovery method is %s", discovery_mode)
+
+        try:
+            module = importlib.import_module("beirand.discovery." + discovery_mode)
+            discovery_class = getattr(module, discovery_mode.title() + "Discovery")
+        except ModuleNotFoundError as error:
+            logger.error(error)
+            logger.error("Unsupported discovery mode: %s", discovery_mode)
+            sys.exit(1)
+
+        return discovery_class(self.loop, {
+            "address": get_advertise_address(),
+            "port": get_listen_port()
+        })
+
+    async def main(self):
         """ Main function """
 
         # set database
@@ -262,7 +287,7 @@ class Daemon(EventEmitter):
         logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
         # this is async but we will let it run in background, we have no rush
-        loop.create_task(probe_docker_daemon())
+        self.loop.create_task(probe_docker_daemon())
 
         # HTTP Daemon. Listen on Unix Socket
         logger.info("Starting Daemon HTTP Server...")
@@ -280,53 +305,39 @@ class Daemon(EventEmitter):
         EVENTS.on('node.removed', on_node_removed)
         EVENTS.on('node.docker.up', on_node_docker_connected)
 
-        # peer discovery
-        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
-        logger.debug("Discovery method is %s", discovery_mode)
-
-        try:
-            module = importlib.import_module("beirand.discovery." + discovery_mode)
-            discovery_class = getattr(module, discovery_mode.title() + "Discovery")
-        except ModuleNotFoundError as error:
-            logger.error(error)
-            logger.error("Unsupported discovery mode: %s", discovery_mode)
-            sys.exit(1)
-
-        self.discovery = discovery_class(loop, {
-            "address": get_advertise_address(),
-            "port": get_listen_port()
-        })
         EVENTS.on('probe', new_node) # TEMP
         self.discovery.on('discovered', new_node)
         self.discovery.on('undiscovered', removed_node)
         self.discovery.start()
 
     async def shutdown(self):
-        print("Shutting down")
+        """Graceful shutdown"""
         await self.discovery.stop()
-        print("done")
+        print("exiting")
+        sys.exit(0)
 
+    def schedule_shutdown(self, signum, frame): # pylint: disable=unused-argument
+        """Signal Handler"""
+        print("Shutting down")
+        self.loop.stop()
 
-def schedule_shutdown(signum, frame):
-    loop = asyncio.get_event_loop()
-    loop.stop()
+    def run(self):
+        """
+        Main function wrapper, creates the main loop and
+        schedules the main function in there
+        """
+        signal.signal(signal.SIGTERM, self.schedule_shutdown)
+        signal.signal(signal.SIGINT, self.schedule_shutdown)
+        self.loop.create_task(self.main())
+        # self.loop.set_debug(True)
+        try:
+            self.loop.run_forever()
+        except Exception as err:
+            raise err
+        finally:
+            self.loop.run_until_complete(self.shutdown())
 
-
-def run():
-    """ Main function wrapper, creates the main loop and schedules the main function in there """
-
-    signal.signal(signal.SIGTERM, schedule_shutdown)
-
-    loop = asyncio.get_event_loop()
-    daemon = Daemon(loop)
-    loop.create_task(daemon.main(loop))
-    # loop.set_debug(True)
-    try:
-        loop.run_forever()
-    except Exception as e:
-        raise e
-    finally:
-        loop.run_until_complete(daemon.shutdown())
 
 if __name__ == '__main__':
-    run()
+    THE_DAEMON = BeiranDaemon()
+    THE_DAEMON.run()

@@ -32,13 +32,8 @@ class AbstractDiscovery(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def stop(self, zeroconf):
+    def stop(self):
         """ Unregister service itself and close
-        Args:
-            zeroconf (Zeroconf):
-
-        Returns:
-            None:
         """
         pass
 
@@ -58,7 +53,7 @@ class Discovery(AbstractDiscovery, EventEmitter):
     def start(self):
         pass
 
-    def stop(self, zeroconf):
+    def stop(self):
         pass
 
     def list_service(self):

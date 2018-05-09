@@ -117,7 +117,7 @@ class Cli:
     @click.argument('uuid', required=False)
     @click.pass_obj
     def node_info(self, uuid):
-        """Sof information about node"""
+        """Show information about node"""
         info = self.beiran_client.get_node_info(uuid)
         table = []
         for key, value in info.items():
@@ -128,6 +128,16 @@ class Cli:
         print(tabulate(table, headers=["Item", "Value"]))
 
     node.add_command(node_info)
+
+    @click.command('probe')
+    @click.argument('address', required=False)
+    @click.pass_obj
+    def node_probe(self, address):
+        """Probe a non-discovered node"""
+        info = self.beiran_client.probe_node(address)
+        print(info)
+
+    node.add_command(node_probe)
 
     # ##########  Image management commands
 

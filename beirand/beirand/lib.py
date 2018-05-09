@@ -239,6 +239,23 @@ async def async_fetch(url, timeout=3):
                 status, response = resp.status, await resp.json()
                 return status, response
 
+async def async_req(url, timeout=3, **kwargs):
+    """
+    Async http get with aiohttp
+    Args:
+        url (str): get url
+        timeout (int): timeout
+
+    Returns:
+        (ClientResponse, dict): resonse instance, response json
+
+    """
+    async with aiohttp.ClientSession() as session:
+        async with async_timeout.timeout(timeout):
+            async with session.get(url, headers=kwargs) as resp:
+                body = await resp.read()
+                return resp, json.loads(body)
+
 
 async def aio_dirlist(path):
     """async proxy method for os.listdir"""

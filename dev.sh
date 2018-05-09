@@ -50,6 +50,7 @@ export BEIRAN_SOCK=${DIR}/beirand.sock
 export BEIRAN_PORT=${BEIRAN_PORT:-8888}
 export BEIRAN_URL=http://localhost:${BEIRAN_PORT}
 export BEIRAN_DB_PATH=${DIR}/beiran.db
+export LISTEN_ADDR=0.0.0.0
 export CONFIG_FOLDER_PATH=${DIR}
 
 alias beirand="python3.6 -m beirand"

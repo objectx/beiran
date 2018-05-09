@@ -78,7 +78,7 @@ class Client:
             self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
-    def request(self, path="/", parse_json=True):
+    def request(self, path="/", parse_json=True, data=None, method="GET"):
         """
         Request call to daemon
         Args:
@@ -89,8 +89,13 @@ class Client:
         Returns: Response from daemon
 
         """
+
+        data_options = {}
+        if data:
+            data_options['body'] = json.dumps(data)
+
         try:
-            response = self.http_client.fetch(self.url + path)
+            response = self.http_client.fetch(self.url + path, method=method, **data_options)
             # TODO: Parse JSON
         except httpclient.HTTPError as error:
             print("Error: " + str(error))
@@ -133,6 +138,18 @@ class Client:
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
         return self.request(path=path, parse_json=True)
+
+    def probe_node(self, address):
+        """
+        Connect to a new node
+        Returns:
+            object: info of node if successful
+        """
+        path = "/nodes"
+        new_node = {
+            "address": address
+        }
+        return self.request(path=path, data=new_node, parse_json=True, method="POST")
 
     def get_nodes(self, all_nodes=False):
         """

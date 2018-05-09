@@ -152,7 +152,11 @@ class Nodes(object):
             raise Exception("Cannot fetch node information")
 
         self.logger.debug("received node information %s", str(response))
-        return self.add_or_update(Node.from_dict(response))
+        node = Node.from_dict(response)
+        # but for us, addresses might be different than what that node thinks or herself
+        node.ip_address = node_ip
+        node.port = node_port
+        return self.add_or_update(node)
 
     def get_node_by_ip(self, ip_address):
         """

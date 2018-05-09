@@ -41,8 +41,7 @@ class ZeroconfDiscovery(BeiranDiscoveryPlugin):
         await self.register()
 
     async def stop(self):
-        """ Unregister service and close zeroconf
-        """
+        """ Unregister service and close zeroconf"""
         self.log.debug("Unregistering...")
         await self.zeroconf.unregister_service(self.info)
         await self.zeroconf.close()
@@ -78,7 +77,7 @@ class ZeroconfDiscovery(BeiranDiscoveryPlugin):
     def start_browse(self):
         """ Start browsing changes on discovery
         """
-        self.log.debug("\nBrowsing services, press Ctrl-C to exit...\n")
+        self.log.debug("\nBrowsing services...\n")
 
         listener = ZeroconfListener(self)
         ServiceBrowser(self.zeroconf, self.domain, listener=listener)

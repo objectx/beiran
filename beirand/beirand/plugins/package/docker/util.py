@@ -77,23 +77,27 @@ class DockerUtil:
     @staticmethod
     async def reset_docker_info_of_node(uuid_hex):
         """ Delete all (local) layers and images from database """
-        for image in list(DockerImage.select(DockerImage.id,
-                                             DockerImage.hash_id,
+        for image in list(DockerImage.select(DockerImage.hash_id,
                                              DockerImage.available_at)):
-            image.unset_available_at(uuid_hex)
-
-            if not image.available_at:
-                LOGGER.info("deleting image from db: %s", image.hash_id)
-                image.delete().execute()
+            if uuid_hex in image.available_at:
+                image.unset_available_at(uuid_hex)
+                image.save()
 
         for layer in list(DockerLayer.select(DockerLayer.id,
                                              DockerLayer.digest,
                                              DockerLayer.available_at)):
-            layer.unset_available_at(uuid_hex)
+            if uuid_hex in layer.available_at:
+                layer.unset_available_at(uuid_hex)
+                layer.save()
 
-            if not layer.available_at:
-                LOGGER.info("deleting layer from db: %s", layer.digest)
-                layer.delete().execute()
+        await DockerUtil.delete_unavailable_objects()
+
+    @staticmethod
+    async def delete_unavailable_objects():
+        """Delete unavailable layers and images"""
+        DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
+        DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
+
 
     async def fetch_docker_info(self):
         """
@@ -150,6 +154,11 @@ class DockerUtil:
         self.logger.debug("Getting diff-id digest mappings..")
         diffid_mapping = {}
         mapping_dir = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256"
+
+        # check if docker daemon has created the overlay dir
+        if not await aio_isdir(mapping_dir):
+            return {}
+
         for filename in await aio_dirlist(mapping_dir):
             if await aio_isdir(mapping_dir + '/' + filename):
                 continue
@@ -167,6 +176,11 @@ class DockerUtil:
         self.logger.debug("Getting layerdb digest mappings..")
         layerdb_mapping = {}
         layerdb_path = self.storage + "/image/overlay2/layerdb/sha256"
+
+        # check if docker daemon has created the overlay layerdb dir
+        if not await aio_isdir(layerdb_path):
+            return {}
+
         for filename in await aio_dirlist(layerdb_path):
             if not await aio_isdir(layerdb_path + '/' + filename):
                 continue
@@ -247,3 +261,113 @@ class DockerUtil:
         #     print(" -- Result: Cannot find layer folder")
         #     image.layers.append("<not-found>")
         return layer
+
+    async def fetch_docker_image_info(self, name):
+        """
+        Fetch Docker Image manifest specified repository.
+        Args:
+            name (str): image name (e.g. dkr.rsnc.io/beiran/beirand:v0.1, beirand:latest)
+        """
+
+        default_elem = {
+            "host": "index.docker.io",
+            "repository": "library",
+            "tag": "latest"
+        }
+
+        url_elem = {
+            "host": "",
+            "port": "",
+            "repository": "",
+            "image": "",
+            "tag": ""
+        }
+
+        # 'name' --- 5 patterns
+        # # - beirand
+        # # - beirand:v0.1
+        # # - beiran/beirand:v0.1
+        # # - dkr.rsnc.io/beirand:v0.1
+        # # - dkr.rsnc.io/beiran/beirand:v0.1
+        #
+
+        #
+        # # divide into Domain and Repository and Image
+        #
+        name_list = name.split("/")
+
+        # nginx:latest
+        url_elem['host'] = default_elem['host']
+        url_elem['repository'] = default_elem['repository'] + "/"
+        img_tag = name_list[0]
+
+        if len(name_list) == 2:
+            # openshift/origin:latest, dkr.rsnc.io/nginx:latest
+            # determine host name and repository name with "."
+            url_elem['host'] = default_elem['host']
+            url_elem['repository'] = name_list[0] + "/"
+            if "." in name_list[0]:
+                url_elem['host'] = name_list[0]
+                url_elem['repository'] = ""
+            img_tag = name_list[1]
+
+        elif len(name_list) == 3:
+            # dkr.rsnc.io/beiran/beirand:v0.1
+            url_elem['host'] = name_list[0]
+            url_elem['repository'] = name_list[1] + "/"
+            img_tag = name_list[2]
+
+        #
+        # # divide into Host and Port
+        #
+        host_list = url_elem['host'].split(":")
+        url_elem['host'] = host_list[0]
+        url_elem['port'] = ""
+        if len(host_list) == 2:
+            url_elem['host'], url_elem['port'] = host_list
+            url_elem['host'] += ":"
+
+        #
+        # # divide into Host and Port
+        #
+        url_elem['image'] = img_tag
+        url_elem['tag'] = default_elem['tag']
+        if ":" in img_tag:
+            url_elem['image'], url_elem['tag'] = img_tag.split(":")
+
+        url = 'https://{}{}/v2/{}{}/manifests/{}'.format(
+            url_elem['host'], url_elem['port'],
+            url_elem['repository'], url_elem['image'],
+            url_elem['tag']
+        )
+        #print("------------------")
+        #print("URL: ", url)
+
+        if url_elem['host'] == default_elem['host']:
+            resp, token = await async_req(
+                "https://auth.docker.io/" + \
+                "token?service=registry.docker.io&scope=repository:{}{}:pull" \
+                .format(url_elem['repository'], url_elem['image'])
+            )
+            if resp.status != 200:
+                raise Exception("Failed to get token")
+
+            resp, manifest = await async_req(url, Authorization="Bearer " + token["token"])
+            self.logger.debug("fetching Docker Image manifest: %s", url)
+            if resp.status != 200:
+                raise Exception("Cannnot fetch Docker image")
+
+            self.logger.debug("fetched Docker Image %s", str(manifest))
+
+        else:
+            resp, manifest = await async_req(url)
+            self.logger.debug("fetching Docker Image manifest: %s", url)
+
+            if resp.status != 200:
+                raise Exception("Cannot fetch Docker Image")
+
+            self.logger.debug("fetched Docker Image %s", str(manifest))
+
+        manifest['hashid'] = resp.headers['Docker-Content-Digest']
+
+        DockerImage.from_dict(manifest, dialect="manifest").save()

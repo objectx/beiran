@@ -3,6 +3,7 @@ import os
 import re
 import json
 import asyncio
+import urllib
 import aiohttp
 
 from tornado import websocket, web
@@ -12,7 +13,6 @@ from tornado.web import HTTPError
 from peewee import SQL
 
 from beirand.common import logger, VERSION, NODES
-from beirand.lib import create_tar_archive
 from beirand.lib import get_listen_address, get_listen_port
 
 from beiran.models import DockerImage, DockerLayer
@@ -61,6 +61,47 @@ class EchoWebSocket(websocket.WebSocketHandler):
         """
         logger.info("WebSocket closed")
 
+
+class JsonHandler(web.RequestHandler):
+    """Request handler where requests and responses speak JSON."""
+
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.json_data = dict()
+        self.response = dict()
+
+    def data_received(self, chunk):
+        pass
+
+    def prepare(self):
+        # Incorporate request JSON into arguments dictionary.
+        if self.request.body:
+            try:
+                self.json_data = json.loads(self.request.body)
+            except ValueError:
+                message = 'Unable to parse JSON.'
+                self.send_error(400, message=message) # Bad Request
+
+        # Set up response dictionary.
+        self.response = dict()
+
+    def set_default_headers(self):
+        self.set_header('Content-Type', 'application/json')
+
+    def write_error(self, status_code, **kwargs):
+        if 'message' not in kwargs:
+            if status_code == 405:
+                kwargs['message'] = 'Invalid HTTP method.'
+            else:
+                kwargs['message'] = 'Unknown error.'
+
+        self.response = kwargs
+        self.write_json()
+
+    def write_json(self):
+        """Write json output"""
+        output = json.dumps(self.response)
+        self.write(output)
 
 class ApiRootHandler(web.RequestHandler):
     """ API Root endpoint `/` handling"""
@@ -392,11 +433,27 @@ class LayerList(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class NodeList(web.RequestHandler):
+class NodesHandler(JsonHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
     def data_received(self, chunk):
         pass
+
+    # pylint: disable=arguments-differ
+    def post(self):
+        if 'address' not in self.json_data:
+            raise Exception("Unacceptable data")
+
+        address = self.json_data['address']
+        parsed = urllib.parse.urlparse(address)
+
+        # loop = asyncio.get_event_loop()
+        # task = loop.create_task(NODES.add_or_update_new_remote_node(parsed.hostname, parsed.port))
+        EVENTS.emit('probe', ip_address=parsed.hostname, service_port=parsed.port) # TEMP
+
+        self.write({"status": "OK"})
+        self.finish()
+    # pylint: enable=arguments-differ
 
     # pylint: disable=arguments-differ
     def get(self):
@@ -445,7 +502,7 @@ ROUTES = [
     (r'/images/(.*)', ImagesTarHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
     (r'/info(?:/([0-9a-fsh:]+))?', NodeInfo),
-    (r'/nodes', NodeList),
+    (r'/nodes', NodesHandler),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),
     (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),

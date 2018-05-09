@@ -188,8 +188,7 @@ class Nodes(object):
 
         """
         for _, node in self.all_nodes.items():
-            if node.ip_address == ip_address:
-                if node.port == int(service_port):
-                    return node
+            if node.ip_address == ip_address and node.port == int(service_port):
+                return node
 
         return None

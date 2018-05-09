@@ -115,6 +115,7 @@ class ZeroconfListener(object):
     def __init__(self, discovery=None):
         self.discovery = discovery
         self.log = discovery.log
+        self.services = {}
 
     def remove_service(self, zeroconf, typeos, name):
         """Service removed change receives
@@ -136,6 +137,7 @@ class ZeroconfListener(object):
             name: Name of the service
         """
         service_info = await zeroconf.get_service_info(typeos, name)
+        self.services[name] = service_info
         if socket.inet_ntoa(service_info.address) == self.discovery.host_ip:
             return
         if service_info:
@@ -166,7 +168,9 @@ class ZeroconfListener(object):
             name: Name of the service
         """
         service_info = await zeroconf.get_service_info(typeos, name)
-        self.log.debug("Service is removed. Name: ", service_info.server)
-        self.discovery.emit('undiscovered',
-                            ip_address=socket.inet_ntoa(service_info.address),
-                            port=service_info.port)
+        if not service_info:
+            self.log.debug("Service is removed. Name: %s", name)
+            self.discovery.emit('undiscovered',
+                                ip_address=socket.inet_ntoa(self.services[name].address),
+                                service_port=self.services[name].port)
+            del self.services[name]

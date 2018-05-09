@@ -73,7 +73,7 @@ async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=
     EVENTS.emit('node.added', node)
 
 
-async def removed_node(ip_address, service_port=None, **kwargs):
+async def removed_node(ip_address, service_port=None):
     """
     Node on beiran network is down
     Args:

@@ -5,7 +5,7 @@ service implementations.
 
 import netifaces
 import socket
-from .base import BeiranPlugin
+from beirand.plugins.base import BeiranPlugin
 
 
 class BeiranDiscoveryPlugin(BeiranPlugin):

@@ -34,6 +34,13 @@ class AbstractBeiranPlugin(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    async def sync(self, peer):
+        """ Sync with another peer
+        node object is accessible at peer.node
+        """
+        pass
+
+    @abstractmethod
     def is_available(self):
         """ Can plugin be utilized by other components
         at the moment of call
@@ -52,6 +59,9 @@ class BeiranPlugin(AbstractBeiranPlugin, EventEmitter):
         pass
 
     async def stop(self):
+        pass
+
+    async def sync(self, peer):
         pass
 
     def is_available(self):
@@ -86,6 +96,7 @@ class BeiranPlugin(AbstractBeiranPlugin, EventEmitter):
 
         self.__plugin_name = sys.modules[self.__module__].PLUGIN_NAME
         self.__plugin_type = sys.modules[self.__module__].PLUGIN_TYPE
+        self.node = config['node']
 
         if 'logger' in config:
             self.log = config['logger']

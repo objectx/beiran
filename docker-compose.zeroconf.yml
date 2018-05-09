@@ -1,0 +1,51 @@
+# This docker-compose is for development environment
+version: '2'
+services:
+  beirand1:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    build: .
+    privileged: true
+    volumes:
+     # - /var/run/docker.sock:/var/run/docker.sock
+     # - /var/lib/docker:/var/lib/docker
+     - ./beiran:/opt/beiran/beiran:ro
+     - ./beiran_cli:/opt/beiran/beiran_cli:ro
+     - ./beirand/beirand:/opt/beiran/beirand:ro
+    # network_mode: host
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
+      - LISTEN_PORT=8890
+      - LOG_LEVEL=INFO
+      # - HOSTNAME=b1
+      - DOCKER_HOST=http://172.17.0.1:2375
+    ports:
+      - 8890:8890
+    networks:
+      - test
+
+  beirand2:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    build: .
+    privileged: true
+    volumes:
+     # - /var/run/docker.sock:/var/run/docker.sock
+     # - /var/lib/docker:/var/lib/docker
+     - ./beiran:/opt/beiran/beiran:ro
+     - ./beiran_cli:/opt/beiran/beiran_cli:ro
+     - ./beirand/beirand:/opt/beiran/beirand:ro
+    # network_mode: host
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
+      - LISTEN_PORT=8891
+      - LOG_LEVEL=INFO
+      # - HOSTNAME=b2
+      - DOCKER_HOST=http://172.17.0.1:2375
+    ports:
+      - 8891:8891
+    networks:
+      - test
+
+networks:
+  test:

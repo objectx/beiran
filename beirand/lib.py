@@ -255,15 +255,3 @@ async def async_req(url, timeout=3, **kwargs):
             async with session.get(url, headers=kwargs) as resp:
                 body = await resp.read()
                 return resp, json.loads(body)
-
-
-async def aio_dirlist(path):
-    """async proxy method for os.listdir"""
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, os.listdir, path)
-
-
-async def aio_isdir(path):
-    """async proxy method for os.isdir"""
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, os.path.isdir, path)

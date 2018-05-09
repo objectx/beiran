@@ -10,7 +10,7 @@ import os
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 import netifaces
 
-from beirand.plugins import BeiranDiscoveryPlugin
+from beiran.plugin import BaseDiscoveryPlugin
 
 # Beiran plugin variables
 PLUGIN_NAME = 'zeroconf'
@@ -20,7 +20,7 @@ PLUGIN_TYPE = 'discovery'
 DEFAULT_DOMAIN = "_beiran._tcp.local."
 
 
-class ZeroconfDiscovery(BeiranDiscoveryPlugin):
+class ZeroconfDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
 

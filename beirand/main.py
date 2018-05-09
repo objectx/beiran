@@ -40,6 +40,8 @@ class BeiranDaemon(EventEmitter):
     def __init__(self, loop=None):
         super().__init__()
         self.loop = loop if loop else asyncio.get_event_loop()
+        self.available_plugins = []
+        self.search_plugins()
 
     async def new_node(self, ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
         """
@@ -111,7 +113,7 @@ class BeiranDaemon(EventEmitter):
         try:
             config['logger'] = build_logger('plugin:' + plugin_name)
             config['node'] = NODES.local_node
-            module = importlib.import_module('beirand.plugins.%s.%s' % (plugin_type, plugin_name))
+            module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
             logger.debug("initializing plugin: " + plugin_name)
             instance = module.Plugin(config)
             await instance.init()
@@ -121,6 +123,18 @@ class BeiranDaemon(EventEmitter):
             logger.error(error)
             logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
+
+    def search_plugins(self):
+        """Temporary function for testing python plugin distribution methods"""
+        import pkgutil
+
+        self.available_plugins = [
+            name
+            for finder, name, ispkg
+            in pkgutil.iter_modules()
+            if name.startswith('beiran_')
+        ]
+        print("Found plugins;", self.available_plugins)
 
     async def db_init(self):
         """Initialize database"""

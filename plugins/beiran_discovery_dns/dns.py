@@ -6,7 +6,7 @@ import os
 import asyncio
 import aiodns
 
-from beirand.plugins import BeiranDiscoveryPlugin
+from beiran.plugin import BaseDiscoveryPlugin
 
 # Beiran plugin variables
 PLUGIN_NAME = 'dns'
@@ -16,7 +16,7 @@ PLUGIN_TYPE = 'discovery'
 DEFAULT_DOMAIN = "_beiran._tcp.local."
 
 
-class DNSDiscovery(BeiranDiscoveryPlugin):
+class DNSDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of DNS Service Discovery
     """
 

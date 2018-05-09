@@ -3,12 +3,25 @@ import os
 import json
 
 import aiofiles
+from peewee import SQL
 
 from beiran.log import build_logger
 from beiran.models import DockerImage, DockerLayer
 
 
 LOGGER = build_logger()
+
+
+async def aio_dirlist(path):
+    """async proxy method for os.listdir"""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, os.listdir, path)
+
+
+async def aio_isdir(path):
+    """async proxy method for os.isdir"""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, os.path.isdir, path)
 
 
 class DockerUtil:
@@ -155,20 +168,19 @@ class DockerUtil:
         diffid_mapping = {}
         mapping_dir = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256"
 
-        # check if docker daemon has created the overlay dir
-        if not await aio_isdir(mapping_dir):
+        try:
+            for filename in await aio_dirlist(mapping_dir):
+                if await aio_isdir(mapping_dir + '/' + filename):
+                    continue
+
+                async with aiofiles.open(mapping_dir + '/' + filename, mode='r') as mapping_file:
+                    contents = await mapping_file.read()
+                contents = contents.strip()
+                diffid_mapping[contents] = 'sha256:' + filename
+            self.diffid_mapping = diffid_mapping
+            return diffid_mapping
+        except FileNotFoundError as e:
             return {}
-
-        for filename in await aio_dirlist(mapping_dir):
-            if await aio_isdir(mapping_dir + '/' + filename):
-                continue
-
-            async with aiofiles.open(mapping_dir + '/' + filename, mode='r') as mapping_file:
-                contents = await mapping_file.read()
-            contents = contents.strip()
-            diffid_mapping[contents] = 'sha256:' + filename
-        self.diffid_mapping = diffid_mapping
-        return diffid_mapping
 
     async def get_layerdb_mappings(self):
         """..."""
@@ -177,23 +189,22 @@ class DockerUtil:
         layerdb_mapping = {}
         layerdb_path = self.storage + "/image/overlay2/layerdb/sha256"
 
-        # check if docker daemon has created the overlay layerdb dir
-        if not await aio_isdir(layerdb_path):
+        try:
+            for filename in await aio_dirlist(layerdb_path):
+                if not await aio_isdir(layerdb_path + '/' + filename):
+                    continue
+
+                async with aiofiles.open(layerdb_path + '/' +
+                                         filename + '/diff',
+                                         mode='r') as mapping_file:
+                    contents = await mapping_file.read()
+                contents = contents.strip()
+                layerdb_mapping[contents] = 'sha256:' + filename
+
+            self.layerdb_mapping = layerdb_mapping
+            return layerdb_mapping
+        except FileNotFoundError as e:
             return {}
-
-        for filename in await aio_dirlist(layerdb_path):
-            if not await aio_isdir(layerdb_path + '/' + filename):
-                continue
-
-            async with aiofiles.open(layerdb_path + '/' +
-                                     filename + '/diff',
-                                     mode='r') as mapping_file:
-                contents = await mapping_file.read()
-            contents = contents.strip()
-            layerdb_mapping[contents] = 'sha256:' + filename
-
-        self.layerdb_mapping = layerdb_mapping
-        return layerdb_mapping
 
     async def get_image_layers(self, diffid_list):
         """Returns an array of DockerLayer objects given diffid array"""

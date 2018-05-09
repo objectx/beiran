@@ -1,5 +1,5 @@
 """Main script for beiran daemon"""
-from . import main
+from .main import BeiranDaemon
 
-THE_DAEMON = main.BeiranDaemon()
+THE_DAEMON = BeiranDaemon()
 THE_DAEMON.run()

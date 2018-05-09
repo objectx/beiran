@@ -11,7 +11,7 @@ import docker
 from aiodocker import Docker
 
 from beiran.models import DockerImage, DockerLayer
-from beirand.plugins import BeiranPlugin
+from beiran.plugin import BasePackagePlugin
 
 from .util import DockerUtil
 
@@ -20,7 +20,7 @@ PLUGIN_NAME = 'docker'
 PLUGIN_TYPE = 'package'
 
 
-class DockerPackaging(BeiranPlugin):
+class DockerPackaging(BasePackagePlugin):
     """Docker support for Beiran"""
 
     # def __init__(self, config):
@@ -98,25 +98,53 @@ class DockerPackaging(BeiranPlugin):
                 new_layer.save()
                 self.log.debug("new layer from remote %s", str(layer))
 
+    async def daemon_error(self, error):
+        # This will be converted to something like
+        #   daemon.plugins['docker'].setReady(false)
+        # in the future; will we in docker plugin code.
+        self.log.error("docker connection error: %s", error, exc_info=True)
+        self.emit('error', error)
+        self.emit('down')
+
+        # re-schedule
+        await asyncio.sleep(30)
+        self.probe_task = self.loop.create_task(self.probe_daemon())
+
+    async def daemon_lost(self):
+        # This will be converted to something like
+        #   daemon.plugins['docker'].setReady(false)
+        # in the future; will we in docker plugin code.
+        self.emit('down')
+        self.log.warning("docker connection lost")
+
+        # re-schedule
+        await asyncio.sleep(30)
+        self.probe_task = self.loop.create_task(self.probe_daemon())
+
     async def probe_daemon(self):
         """Deal with local docker daemon states"""
 
-        while True:
+        try:
+            self.log.debug("Probing docker daemon")
+
             # Delete all data regarding our node
             await DockerUtil.reset_docker_info_of_node(self.node.uuid.hex)
 
             # wait until we can update our docker info
-            await DOCKER_UTIL.update_docker_info(self.node)
+            await self.util.update_docker_info(self.node)
 
             # connected to docker daemon
             self.emit('up')
             self.node.save()
 
-            # Get mapping of diff-id and digest mappings of docker daemon
-            await DOCKER_UTIL.get_diffid_mappings()
-
-            # Get layerdb mapping
-            await DOCKER_UTIL.get_layerdb_mappings()
+            try:
+                # Get mapping of diff-id and digest mappings of docker daemon
+                await self.util.get_diffid_mappings()
+                # Get layerdb mapping
+                await self.util.get_layerdb_mappings()
+            except PermissionError as err:
+                self.log.error("Cannot access docker storage, please run as sudo for now")
+                raise err
 
             # Get Images
             self.log.debug("Getting docker image list..")
@@ -147,8 +175,8 @@ class DockerPackaging(BeiranPlugin):
                 try:
                     image_details = await self.aiodocker.images.get(name=image_data['Id'])
 
-                    layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
-                except Exception as err:  # pylint: disable=unused-variable,broad-except
+                    layers = await self.util.get_image_layers(image_details['RootFS']['Layers'])
+                except DockerUtil.CannotFindLayerMappingError as err:
                     continue
 
                 image.layers = [layer.digest for layer in layers]
@@ -178,9 +206,7 @@ class DockerPackaging(BeiranPlugin):
                 else:
                     self.log.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
-            # This will be converted to something like
-            #   daemon.plugins['docker'].setReady(false)
-            # in the future; will we in docker plugin code.
-            self.emit('down')
-            self.log.warning("docker connection lost")
-            await asyncio.sleep(100)
+            await self.daemon_lost()
+
+        except Exception as err:
+            await self.daemon_error(err)

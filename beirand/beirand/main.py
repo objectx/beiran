@@ -44,7 +44,7 @@ async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=
     retries_left = 10
 
     # check if we had prior communication with this node
-    node = NODES.get_node_by_ip(ip_address)
+    node = NODES.get_node_by_ip_and_port(ip_address, service_port)
     # FIXME! NO! fetch that node's info, get it's uuid. and match db using that
     if node:
         # fetch up-to-date information and mark the node as online
@@ -73,16 +73,15 @@ async def new_node(ip_address, service_port=None, **kwargs):  # pylint: disable=
     EVENTS.emit('node.added', node)
 
 
-async def removed_node(node):
+async def removed_node(ip_address, service_port=None, **kwargs):
     """
     Node on beiran network is down
     Args:
-        node: Node object
+        ip_address (str): ip_address of new node
+        service_port (str): service port of new node
     """
+    node = NODES.get_node_by_ip_and_port(ip_address, service_port)
     logger.info('Node is about to be removed %s', str(node))
-    if isinstance(node, str):
-        node = NODES.get_node_by_ip(node)
-        logger.debug('Pointed the node by ip address: %s', node.uuid)
     removed = NODES.remove_node(node)
     logger.debug('Removed? %s', removed)
 

@@ -7,7 +7,6 @@ services:
     network_mode: host
     volumes:
      - .:/src
-    command: python3.6 -u beirand/main.py
     environment:
       - DISCOVERY_METHOD=zeroconf
       - LISTEN_ADDR=0.0.0.0
@@ -20,7 +19,6 @@ services:
     network_mode: host
     volumes:
      - .:/src
-    command: python3.6 -u beirand/main.py
     environment:
       - DISCOVERY_METHOD=zeroconf
       - LISTEN_ADDR=0.0.0.0
@@ -33,7 +31,6 @@ services:
     network_mode: host
     volumes:
      - .:/src
-    command: python3.6 -u beirand/main.py
     environment:
       - DISCOVERY_METHOD=zeroconf
       - LISTEN_ADDR=0.0.0.0

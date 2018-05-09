@@ -23,7 +23,7 @@ if [ ! -d $DIR/env ]; then
 	pip install -r beiran/requirements.txt
 	pip install -r beiran_cli/requirements.txt
 	pip install ipython
-	ln -s ${DIR}/beirand/beirand env/lib/python3.6/site-packages/
+	ln -s ${DIR}/beirand env/lib/python3.6/site-packages/
 	ln -s ${DIR}/beiran env/lib/python3.6/site-packages/
 	ln -s ${DIR}/beiran_cli env/lib/python3.6/site-packages/
 fi

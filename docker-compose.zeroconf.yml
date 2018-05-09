@@ -10,7 +10,7 @@ services:
      # - /var/lib/docker:/var/lib/docker
      - ./beiran:/opt/beiran/beiran:ro
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
-     - ./beirand/beirand:/opt/beiran/beirand:ro
+     - ./beirand:/opt/beiran/beirand:ro
     # network_mode: host
     environment:
       - DISCOVERY_METHOD=zeroconf
@@ -33,7 +33,7 @@ services:
      # - /var/lib/docker:/var/lib/docker
      - ./beiran:/opt/beiran/beiran:ro
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
-     - ./beirand/beirand:/opt/beiran/beirand:ro
+     - ./beirand:/opt/beiran/beirand:ro
     # network_mode: host
     environment:
       - DISCOVERY_METHOD=zeroconf

@@ -14,6 +14,7 @@ from beiran.models import DockerImage, DockerLayer
 from beiran.plugin import BasePackagePlugin
 
 from .util import DockerUtil
+from .api import ROUTES
 
 
 PLUGIN_NAME = 'docker'
@@ -33,6 +34,7 @@ class DockerPackaging(BasePackagePlugin):
         self.docker_lc = docker.APIClient()
         self.tar_cache_dir = "tar_cache"
         self.probe_task = None
+        self.api_routes = ROUTES
 
     async def start(self):
         self.log.debug("starting docker plugin")

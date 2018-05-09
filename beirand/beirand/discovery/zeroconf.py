@@ -43,17 +43,12 @@ class ZeroconfDiscovery(Discovery):
         self.start_browse()
         asyncio.ensure_future(self.register(), loop=self.loop)
 
-    async def stop(self, zeroconf: Zeroconf):
-        """ Unregister service and close zeroconf
-        Args:
-            zeroconf (Zeroconf):
+    async def stop(self):
+        """ Unregister service and close zeroconf"""
 
-        Returns:
-            None:
-        """
         self.log.debug("Unregistering...")
-        await zeroconf.unregister_service(self.info)
-        await zeroconf.close()
+        await self.zero_conf.unregister_service(self.info)
+        await self.zero_conf.close()
 
     async def list_service(self) -> tuple:
         """ Get already registered services on zeroconf

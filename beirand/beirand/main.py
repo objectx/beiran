@@ -9,6 +9,7 @@ import logging
 import importlib
 import signal
 
+from tornado import websocket, web
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options
 from tornado.netutil import bind_unix_socket
@@ -18,14 +19,14 @@ from beirand.common import VERSION
 from beirand.common import logger
 from beirand.common import NODES
 from beirand.common import EVENTS
-from beirand.common import AIO_DOCKER_CLIENT
+from beirand.common import PLUGINS
 
-from beirand.http_ws import APP
-from beirand.lib import collect_node_info, DockerUtil
+from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
 from beirand.peer import Peer
+from beirand.http_ws import ROUTES
 
-from beiran.models import Node, DockerImage
+from beiran.models import Node
 from beiran.log import build_logger
 
 AsyncIOMainLoop().install()
@@ -101,11 +102,6 @@ async def on_new_node_added(node):
     Peer(node)
 
 
-async def on_node_docker_connected():
-    """Placeholder for event on node docker connected"""
-    logger.info("connected to docker daemon")
-
-
 def db_init():
     """Initialize database"""
     from peewee import SqliteDatabase, OperationalError
@@ -154,108 +150,19 @@ def db_init():
         create_tables(database)
 
 
-DOCKER_UTIL = DockerUtil("/var/lib/docker", AIO_DOCKER_CLIENT)
-
-
-async def probe_docker_daemon():
-    """Deal with local docker daemon states"""
-
-    while True:
-        # Delete all data regarding our node
-        await DockerUtil.reset_docker_info_of_node(NODES.local_node.uuid.hex)
-
-        # wait until we can update our docker info
-        await DOCKER_UTIL.update_docker_info(NODES.local_node)
-
-        # connected to docker daemon
-        EVENTS.emit('node.docker.up')
-        NODES.local_node.save()
-        logger.debug("Saved local node")
-        print(NODES.local_node.to_dict())
-
-        # Get mapping of diff-id and digest mappings of docker daemon
-        await DOCKER_UTIL.get_diffid_mappings()
-
-        # Get layerdb mapping
-        await DOCKER_UTIL.get_layerdb_mappings()
-
-        # Get Images
-        logger.debug("Getting docker image list..")
-        image_list = await AIO_DOCKER_CLIENT.images.list()
-        for image_data in image_list:
-            if not image_data['RepoTags']:
-                continue
-
-            # remove the non-tag tag from tag list
-            image_data['RepoTags'] = [t for t in image_data['RepoTags'] if t != '<none>:<none>']
-
-            if not image_data['RepoTags']:
-                continue
-
-            image = DockerImage.from_dict(image_data, dialect="docker")
-            try:
-                image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
-                old_available_at = image_.available_at
-                image_.update_using_obj(image)
-                image = image_
-                image.available_at = old_available_at
-
-            except DockerImage.DoesNotExist:
-                pass
-
-            try:
-                image_details = await AIO_DOCKER_CLIENT.images.get(name=image_data['Id'])
-
-                layers = await DOCKER_UTIL.get_image_layers(image_details['RootFS']['Layers'])
-            except Exception as err:  # pylint: disable=unused-variable,broad-except
-                continue
-
-            image.layers = [layer.digest for layer in layers]
-
-            for layer in layers:
-                layer.set_available_at(NODES.local_node.uuid.hex)
-                layer.save()
-
-            image.set_available_at(NODES.local_node.uuid.hex)
-            image.save()
-
-        # This will be converted to something like
-        #   daemon.plugins['docker'].setReady(true)
-        # in the future; will we in docker plugin code.
-        EVENTS.emit('node.docker.ready')
-
-        # await until docker is unavailable
-        logger.debug("subscribing to docker events for further changes")
-        subscriber = AIO_DOCKER_CLIENT.events.subscribe()
-        while True:
-            event = await subscriber.get()
-            if event is None:
-                break
-
-            if 'id' in event:
-                logger.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
-            else:
-                logger.debug("docker event: %s[%s]", event['Action'], event['Type'])
-
-        # This will be converted to something like
-        #   daemon.plugins['docker'].setReady(false)
-        # in the future; will we in docker plugin code.
-        EVENTS.emit('node.docker.down')
-        logger.warning("docker connection lost")
-        await asyncio.sleep(100)
-
-async def get_plugin(name, config):
+async def get_plugin(plugin_type, plugin_name, config):
     try:
-        config['logger'] = build_logger('plugin:' + name)
-        module = importlib.import_module("beirand.plugins." + name)
-        logger.debug("initializing plugin: " + name)
+        config['logger'] = build_logger('plugin:' + plugin_name)
+        config['node'] = NODES.local_node
+        module = importlib.import_module('beirand.plugins.%s.%s' % (plugin_type, plugin_name))
+        logger.debug("initializing plugin: " + plugin_name)
         instance = module.Plugin(config)
         await instance.init()
-        logger.info("plugin initialisation done: " + name)
+        logger.info("plugin initialisation done: " + plugin_name)
         return instance
     except ModuleNotFoundError as error:
         logger.error(error)
-        logger.error("Cannot find plugin : %s", name)
+        logger.error("Cannot find plugin : %s", plugin_name)
         sys.exit(1)
 
 async def main(loop):
@@ -267,16 +174,19 @@ async def main(loop):
 
     # collect node info and create node object
     NODES.local_node = Node.from_dict(collect_node_info())
-    NODES.local_node.status = 'local'
+    NODES.local_node.status = 'init'
     NODES.add_or_update(NODES.local_node)
     logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
-    # this is async but we will let it run in background, we have no rush
-    # loop.create_task(probe_docker_daemon())
+    NODES.local_node.status = 'boot'
+    NODES.local_node.save()
+
+    # PREPARE ROUTES
+    api_app = web.Application(ROUTES)
 
     # HTTP Daemon. Listen on Unix Socket
     logger.info("Starting Daemon HTTP Server...")
-    server = httpserver.HTTPServer(APP)
+    server = httpserver.HTTPServer(api_app)
     logger.info("Listening on unix socket: %s", options.unix_socket)
     socket = bind_unix_socket(options.unix_socket)
     server.add_socket(socket)
@@ -288,21 +198,39 @@ async def main(loop):
     # Register daemon events
     EVENTS.on('node.added', on_new_node_added)
     EVENTS.on('node.removed', on_node_removed)
-    EVENTS.on('node.docker.up', on_node_docker_connected)
 
     # peer discovery
     discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
     logger.debug("Discovery method is %s", discovery_mode)
 
-    discovery = await get_plugin(discovery_mode, {
+    discovery = await get_plugin('discovery', discovery_mode, {
         "address": get_advertise_address(),
         "port": get_listen_port(),
-        "version": VERSION
+        "version": VERSION,
+        "events": EVENTS
     })
 
     discovery.on('discovered', new_node)
     discovery.on('undiscovered', removed_node)
+
+    # Only one discovery plugin at a time is supported
+    PLUGINS['discovery'] = discovery
+
     await discovery.start()
+
+    package_plugins_enabled = ['docker']
+
+    for _plugin in package_plugins_enabled:
+        _plugin_obj = await get_plugin('package', _plugin, {
+            "storage": "/var/lib/docker",
+            "url": None, # default
+            "events": EVENTS
+        })
+        PLUGINS['package:' + _plugin] = _plugin_obj
+        await _plugin_obj.start()
+
+    NODES.local_node.status = 'ready'
+    NODES.local_node.save()
 
 async def shutdown(loop):
     logger.debug("shutting down")

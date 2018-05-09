@@ -11,10 +11,8 @@ from tornado.web import HTTPError
 
 from peewee import SQL
 
-import aiodocker
-
-from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES
-from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
+from beirand.common import logger, VERSION, NODES
+from beirand.lib import create_tar_archive
 from beirand.lib import get_listen_address, get_listen_port
 
 from beiran.models import DockerImage, DockerLayer
@@ -212,38 +210,6 @@ class ImagesHandler(web.RequestHandler):
         super().__init__(application, request, **kwargs)
         self.chunks = None
         self.future_response = None
-
-    # pylint: disable=arguments-differ
-    async def get(self):
-        """Retrieve image list of the node
-
-        Available arguments are:
-            - all          // all images
-            - filter       // filter by name ?filter=beiran
-            - dangling     // list dangling images ?dangling=true
-            - label        // filter by label  ?label=
-
-        """
-        logger.debug("image: streaming image directly from docker daemon")
-
-        params = dict()
-        params.update(
-            {
-                "all": self.get_argument('all', False),
-                "filter": self.get_argument('filter', None),
-                "dangling": self.get_argument('dangling', False),
-                "label": self.get_argument('label', None),
-            }
-        )
-
-        logger.debug("listing images with params: %s", params)
-
-        image_list = await AIO_DOCKER_CLIENT.images.list(**params)
-
-        self.write({
-            "images": image_list
-        })
-    # pylint: enable=arguments-differ
 
     def prepare(self):
         if self.request.method != 'POST':
@@ -472,8 +438,7 @@ class Ping(web.RequestHandler):
         self.finish()
     # pylint: enable=arguments-differ
 
-
-APP = web.Application([
+ROUTES = [
     (r'/', ApiRootHandler),
     (r'/images', ImageList),
     (r'/layers', LayerList),
@@ -485,6 +450,4 @@ APP = web.Application([
     # (r'/layers', LayersHandler),
     (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
     (r'/ws', EchoWebSocket),
-])
-
-APP.docker = AIO_DOCKER_CLIENT
+]

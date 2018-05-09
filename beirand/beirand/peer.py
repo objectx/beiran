@@ -8,8 +8,10 @@
 import asyncio
 from pyee import EventEmitter
 
-from beirand.common import logger
-from beirand.lib import async_fetch, DockerUtil
+from beirand.common import logger, PLUGINS
+from beirand.lib import async_fetch
+
+
 from beiran.models import DockerImage, DockerLayer
 
 
@@ -34,16 +36,19 @@ class Peer(EventEmitter):
         self.node.status = 'syncing'
         self.node.save()
 
-        await DockerUtil.reset_docker_info_of_node(self.node.uuid.hex)
+        sync_futures = []
+        for plugin_name, plugin in PLUGINS.items():
+            sync_futures.append(plugin.sync(self))
 
-        await self.fetch_images()
-        await self.fetch_layers()
+        await asyncio.gather(*sync_futures)
 
         self.node.status = 'online'
         self.node.save()
 
-        logger.info("new node's layer and image info added on %s at port %s",
-                    self.node.ip_address, self.node.port)
+        logger.info("node(%s) synced on %s at port %s",
+                    self.node.uuid.hex,
+                    self.node.ip_address,
+                    self.node.port)
 
         # Check node availability every x second, drop online status if it fails
         check_interval = 15
@@ -82,49 +87,3 @@ class Peer(EventEmitter):
         url = '{}://{}{}'.format(protocol, host, uri)
         response = await async_fetch(url, *args, **kwargs)
         return response
-
-    async def fetch_images(self):
-        """fetch image list from the node and update local db"""
-
-        status, response = await self.request('/images')
-        if status != 200:
-            # do not raise error not to interrupt process, just log. we may emit another
-            # event `check.node` which marks the node offline or emits back
-            # for the caller event, the `node.added` in this case.
-            logger.error("Cannot fetch images from remote node %s", str(self.node.ip_address))
-
-        logger.debug("received image information %s", str(response))
-
-        for image in response.get('images'):
-            try:
-                image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
-                image_.set_available_at(self.node.uuid.hex)
-                image_.save()
-                logger.debug("update existing image %s, now available on new node: %s",
-                             image['hash_id'], self.node.uuid.hex)
-            except DockerImage.DoesNotExist:
-                new_image = DockerImage.from_dict(image)
-                new_image.save()
-                logger.debug("new image from remote %s", str(image))
-
-    async def fetch_layers(self):
-        """fetch layer list from the node and update local db"""
-
-        status, response = await self.request('/layers')
-        if status != 200:
-            # same case with above, will be handled later..
-            logger.error("Cannot fetch images from remote node %s", str(self.node.ip_address))
-
-        logger.debug("received layer information %s", str(response))
-
-        for layer in response.get('layers'):
-            try:
-                layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
-                layer_.set_available_at(self.node.uuid.hex)
-                layer_.save()
-                logger.debug("update existing layer %s, now available on new node: %s",
-                             layer['digest'], self.node.uuid.hex)
-            except DockerLayer.DoesNotExist:
-                new_layer = DockerLayer.from_dict(layer)
-                new_layer.save()
-                logger.debug("new layer from remote %s", str(layer))

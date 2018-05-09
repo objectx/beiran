@@ -6,11 +6,14 @@ import os
 import sys
 import asyncio
 import importlib
+import signal
 
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options
 from tornado.netutil import bind_unix_socket
 from tornado import httpserver
+
+from pyee import EventEmitter
 
 from beirand.common import logger
 from beirand.common import NODES
@@ -243,68 +246,87 @@ async def probe_docker_daemon():
         logger.warning("docker connection lost")
         await asyncio.sleep(100)
 
+class Daemon(EventEmitter):
 
-async def main(loop):
-    """ Main function """
+    async def main(self, loop):
+        """ Main function """
 
-    # set database
-    logger.info("Initializing database...")
-    db_init()
+        # set database
+        logger.info("Initializing database...")
+        db_init()
 
-    # collect node info and create node object
-    NODES.local_node = Node.from_dict(collect_node_info())
-    NODES.local_node.status = 'local'
-    NODES.add_or_update(NODES.local_node)
-    logger.info("local node added, known nodes are: %s", NODES.all_nodes)
+        # collect node info and create node object
+        NODES.local_node = Node.from_dict(collect_node_info())
+        NODES.local_node.status = 'local'
+        NODES.add_or_update(NODES.local_node)
+        logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
-    # this is async but we will let it run in background, we have no rush
-    loop.create_task(probe_docker_daemon())
+        # this is async but we will let it run in background, we have no rush
+        loop.create_task(probe_docker_daemon())
 
-    # HTTP Daemon. Listen on Unix Socket
-    logger.info("Starting Daemon HTTP Server...")
-    server = httpserver.HTTPServer(APP)
-    logger.info("Listening on unix socket: %s", options.unix_socket)
-    socket = bind_unix_socket(options.unix_socket)
-    server.add_socket(socket)
+        # HTTP Daemon. Listen on Unix Socket
+        logger.info("Starting Daemon HTTP Server...")
+        server = httpserver.HTTPServer(APP)
+        logger.info("Listening on unix socket: %s", options.unix_socket)
+        socket = bind_unix_socket(options.unix_socket)
+        server.add_socket(socket)
 
-    # Also Listen on TCP
-    logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
-    server.listen(options.listen_port, address=options.listen_address)
+        # Also Listen on TCP
+        logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
+        server.listen(options.listen_port, address=options.listen_address)
 
-    # Register daemon events
-    EVENTS.on('node.added', on_new_node_added)
-    EVENTS.on('node.removed', on_node_removed)
-    EVENTS.on('node.docker.up', on_node_docker_connected)
+        # Register daemon events
+        EVENTS.on('node.added', on_new_node_added)
+        EVENTS.on('node.removed', on_node_removed)
+        EVENTS.on('node.docker.up', on_node_docker_connected)
 
-    # peer discovery
-    discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
-    logger.debug("Discovery method is %s", discovery_mode)
+        # peer discovery
+        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+        logger.debug("Discovery method is %s", discovery_mode)
 
-    try:
-        module = importlib.import_module("beirand.discovery." + discovery_mode)
-        discovery_class = getattr(module, discovery_mode.title() + "Discovery")
-    except ModuleNotFoundError as error:
-        logger.error(error)
-        logger.error("Unsupported discovery mode: %s", discovery_mode)
-        sys.exit(1)
+        try:
+            module = importlib.import_module("beirand.discovery." + discovery_mode)
+            discovery_class = getattr(module, discovery_mode.title() + "Discovery")
+        except ModuleNotFoundError as error:
+            logger.error(error)
+            logger.error("Unsupported discovery mode: %s", discovery_mode)
+            sys.exit(1)
 
-    discovery = discovery_class(loop, {
-        "address": get_advertise_address(),
-        "port": get_listen_port()
-    })
-    EVENTS.on('probe', new_node) # TEMP
-    discovery.on('discovered', new_node)
-    discovery.on('undiscovered', removed_node)
-    discovery.start()
+        self.discovery = discovery_class(loop, {
+            "address": get_advertise_address(),
+            "port": get_listen_port()
+        })
+        EVENTS.on('probe', new_node) # TEMP
+        self.discovery.on('discovered', new_node)
+        self.discovery.on('undiscovered', removed_node)
+        self.discovery.start()
+
+    async def shutdown(self):
+        print("Shutting down")
+        await self.discovery.stop()
+        print("done")
+
+
+def schedule_shutdown(signum, frame):
+    loop = asyncio.get_event_loop()
+    loop.stop()
 
 
 def run():
     """ Main function wrapper, creates the main loop and schedules the main function in there """
-    loop = asyncio.get_event_loop()
-    loop.create_task(main(loop))
-    # loop.set_debug(True)
-    loop.run_forever()
 
+    signal.signal(signal.SIGTERM, schedule_shutdown)
+
+    loop = asyncio.get_event_loop()
+    daemon = Daemon(loop)
+    loop.create_task(daemon.main(loop))
+    # loop.set_debug(True)
+    try:
+        loop.run_forever()
+    except Exception as e:
+        raise e
+    finally:
+        loop.run_until_complete(daemon.shutdown())
 
 if __name__ == '__main__':
     run()

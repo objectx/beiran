@@ -34,7 +34,7 @@ class ZeroconfDiscovery(Discovery):
 
         self.log = logging.getLogger('zeroconf')
 
-        self.hostname = socket.gethostname()
+        self.hostname = self.get_hostname()
 
     def start(self):
         """ Starts discovery service
@@ -101,7 +101,7 @@ class ZeroconfDiscovery(Discovery):
     def start_browse(self):
         """ Start browsing changes on discovery
         """
-        self.log.debug("\nBrowsing services, press Ctrl-C to exit...\n")
+        self.log.debug("\nBrowsing services...\n")
 
         listener = ZeroconfListener(self)
         ServiceBrowser(self.zero_conf, _DOMAIN, listener=listener)

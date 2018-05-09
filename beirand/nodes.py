@@ -158,19 +158,20 @@ class Nodes(object):
         node.port = node_port
         return self.add_or_update(node)
 
-    def get_node_by_ip(self, ip_address):
+    def get_node_by_ip_and_port(self, ip_address, service_port):
         """
         Returns the node specified by `ip` address.
 
         Args:
             ip_address (str): ip address
+            service_port (str): port of node
 
         Returns:
             (Node) found node object
 
         """
         for _, node in self.all_nodes.items():
-            if node.ip_address == ip_address:
+            if node.ip_address == ip_address and node.port == int(service_port):
                 return node
 
         return None

@@ -15,12 +15,12 @@ services:
     environment:
       - DISCOVERY_METHOD=zeroconf
       - LISTEN_ADDR=0.0.0.0
-      - LISTEN_PORT=8890
+      - LISTEN_PORT=8892
       - LOG_LEVEL=INFO
       # - HOSTNAME=b1
       - DOCKER_HOST=http://172.17.0.1:2375
     ports:
-      - 8890:8890
+      - 8892:8892
     networks:
       - test
 

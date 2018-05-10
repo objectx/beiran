@@ -75,7 +75,7 @@ class DockerPackaging(BasePackagePlugin):
                              image['hash_id'], peer.node.uuid.hex)
             except DockerImage.DoesNotExist:
                 new_image = DockerImage.from_dict(image)
-                new_image.save()
+                new_image.save(force_insert=True)
                 self.log.debug("new image from remote %s", str(image))
 
     async def fetch_layers_from_peer(self, peer):
@@ -97,7 +97,7 @@ class DockerPackaging(BasePackagePlugin):
                              layer['digest'], peer.node.uuid.hex)
             except DockerLayer.DoesNotExist:
                 new_layer = DockerLayer.from_dict(layer)
-                new_layer.save()
+                new_layer.save(force_insert=True)
                 self.log.debug("new layer from remote %s", str(layer))
 
     async def daemon_error(self, error):

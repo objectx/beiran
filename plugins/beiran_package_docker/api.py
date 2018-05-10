@@ -1,4 +1,3 @@
-# TODO: Move docker endpoints here
 """Docker API endpoints"""
 import os
 import re
@@ -9,15 +8,18 @@ import aiodocker
 from tornado import web
 from tornado.web import HTTPError
 from peewee import SQL
-from beirand.common import logger, NODES
-from beirand.lib import create_tar_archive
+from beiran.util import create_tar_archive
 from beiran.models import DockerImage, DockerLayer
 from .util import DockerUtil
 
-AIO_DOCKER_CLIENT = aiodocker.Docker()
-docker_util = DockerUtil()
-DOCKER_TAR_CACHE_DIR = "tar_cache"
-
+class Services:
+    """These needs to be injected from the plugin init code"""
+    local_node = None
+    logger = None
+    aiodocker = None
+    docker_util = None
+    tar_cache_dir = "tar_cache"
+    loop = None
 
 class ImagesTarHandler(web.RequestHandler):
     """ Images export handler """
@@ -31,7 +33,7 @@ class ImagesTarHandler(web.RequestHandler):
             Get image as a tarball
         """
         try:
-            content = await AIO_DOCKER_CLIENT.images.export_image(image_id_or_sha)
+            content = await Services.aiodocker.images.export_image(image_id_or_sha)
             self.set_header("Content-Type", "application/x-tar")
 
             while True:
@@ -76,14 +78,14 @@ class LayerDownload(web.RequestHandler):
         Get layer info by given layer_id
         """
         self._set_headers(layer_id)
-        layer_path = docker_util.docker_find_layer_dir_by_sha(layer_id)
+        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
 
         if not layer_path:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         tar_path = "{cache_dir}/{cache_tar_name}" \
-            .format(cache_dir=DOCKER_TAR_CACHE_DIR,
-                    cache_tar_name=docker_util.docker_sha_summary(layer_id))
+            .format(cache_dir=Services.tar_cache_dir,
+                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id))
         if not os.path.isfile(tar_path):
             create_tar_archive(layer_path, tar_path)
 
@@ -112,7 +114,7 @@ class ImagesHandler(web.RequestHandler):
         if self.request.method != 'POST':
             return
 
-        logger.debug("image: preparing for receiving upload")
+        Services.logger.debug("image: preparing for receiving upload")
         self.chunks = asyncio.Queue()
 
         @aiohttp.streamer
@@ -124,7 +126,7 @@ class ImagesHandler(web.RequestHandler):
                 chunk = await chunks.get()
 
         # pylint: disable=no-value-for-parameter
-        self.future_response = AIO_DOCKER_CLIENT.images.import_image(data=sender(self.chunks))
+        self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
         # pylint: enable=no-value-for-parameter
 
     # pylint: disable=arguments-differ
@@ -135,7 +137,7 @@ class ImagesHandler(web.RequestHandler):
         """
             Loads tarball to docker
         """
-        logger.debug("image: upload done")
+        Services.logger.debug("image: upload done")
         try:
             await self.chunks.put(None)
             response = await self.future_response
@@ -175,9 +177,9 @@ class ImagePullHandler(web.RequestHandler):
 
         tag = self.get_argument('tag', 'latest')
 
-        logger.info("pulling image %s:%s", image, tag)
+        Services.logger.info("pulling image %s:%s", image, tag)
 
-        result = await AIO_DOCKER_CLIENT.images.pull(from_image=image, tag=tag, stream=True)
+        result = await Services.aiodocker.images.pull(from_image=image, tag=tag, stream=True)
         self.write('{"statuses": [')
 
         comma = ""
@@ -215,7 +217,7 @@ class ImageList(web.RequestHandler):
         all_images = self.get_argument('all', False) == 'true'
 
         # todo: validate `node` argument if it is valid UUID
-        node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node = self.get_argument('node', Services.local_node.uuid.hex)
         node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
         if node and not node_pattern.match(node):
             raise HTTPError(status_code=400,
@@ -264,7 +266,7 @@ class LayerList(web.RequestHandler):
         all_images = self.get_argument('all', False) == 'true'
 
         # todo: validate `node` argument if it is valid UUID
-        node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node = self.get_argument('node', Services.local_node.uuid.hex)
         node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
         if node and not node_pattern.match(node):
             raise HTTPError(status_code=400,

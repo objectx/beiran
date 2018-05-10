@@ -7,7 +7,6 @@ import ipaddress
 import json
 import platform
 import socket
-import tarfile
 from uuid import uuid4, UUID
 
 import aiohttp
@@ -20,22 +19,6 @@ from beiran.version import get_version
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
-
-
-def create_tar_archive(dir_path, output_file_path):
-    """
-    create a tar archive from given path
-
-    Args:
-        output_file_path: directory path to be saved!
-        dir_path (string): directory path to be tarred!
-
-    Returns:
-
-
-    """
-    with tarfile.open(output_file_path, "w") as tar:
-        tar.add(dir_path, arcname='.')
 
 
 def local_node_uuid():

@@ -85,7 +85,7 @@ class BeiranDaemon(EventEmitter):
             node.uuid.hex, ip_address, service_port)
         EVENTS.emit('node.added', node)
 
-    async def removed_node(ip_address, service_port=None):
+    async def removed_node(self, ip_address, service_port=None):
         """
         Node on beiran network is down
         Args:

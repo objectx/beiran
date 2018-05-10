@@ -81,12 +81,3 @@ class Peer(EventEmitter):
         self.node.save()
         # TODO: Communicate this to the discovery plugin
         # so it can allow re-discovery of this node when found again
-
-    async def request(self, uri, *args, **kwargs):
-        """make a request to the peer using preferred transport method"""
-
-        protocol = 'http' # for now it's hardcoded
-        host = '{}:{}'.format(self.node.ip_address, self.node.port)
-        url = '{}://{}{}'.format(protocol, host, uri)
-        response = await async_fetch(url, *args, **kwargs)
-        return response

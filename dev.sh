@@ -27,7 +27,7 @@ source ${DIR}/env/bin/activate
 STAMP=$(date +%s)
 INSTALLED=0
 LAST_INSTALL=$(date -r ${DIR}/env/.last_install +%s 2>/dev/null || echo "0")
-packages="beiran beirand beiran_cli plugins/*"
+packages="beiran beirand plugins/*"
 for package in $packages; do
 	package_name=$(basename $package)
 	if [ ! -d env/lib/python3.6/site-packages/$package_name ]; then
@@ -47,19 +47,17 @@ if [ $INSTALLED -eq 1 ]; then
 	echo $STAMP > ${DIR}/env/.last_install
 fi
 
-if [ ! -x $VIRTUAL_ENV/bin/beiran ]; then
-	cat > $VIRTUAL_ENV/bin/beiran <<EOF
+cat > $VIRTUAL_ENV/bin/beiran <<EOF
 #!/bin/sh -e
-exec python3.6 -m beiran_cli "\$@"
+exec python3.6 -m beiran "\$@"
 EOF
 
-	cat > $VIRTUAL_ENV/bin/beirand <<EOF
+cat > $VIRTUAL_ENV/bin/beirand <<EOF
 #!/bin/sh -e
 exec python3.6 -m beirand "\$@"
 EOF
 
-	chmod +x $VIRTUAL_ENV/bin/beiran*
-fi
+chmod +x $VIRTUAL_ENV/bin/beiran*
 
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 

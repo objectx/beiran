@@ -10,9 +10,6 @@ WORKDIR /opt
 ADD beiran/requirements.txt /opt/beiran/r-lib.txt
 RUN pip install -r /opt/beiran/r-lib.txt
 
-ADD beiran_cli/requirements.txt /opt/beiran/r-cli.txt
-RUN pip install -r /opt/beiran/r-cli.txt
-
 ADD beirand/requirements.txt /opt/beiran/r-daemon.txt
 RUN pip install -r /opt/beiran/r-daemon.txt
 
@@ -30,7 +27,6 @@ RUN pip install -r /opt/beiran/r-docker.txt
 
 ADD [ "beirand", "/opt/beiran/beirand" ]
 ADD [ "beiran", "/opt/beiran/beiran" ]
-ADD [ "beiran_cli", "/opt/beiran/beiran_cli" ]
 
 ADD [ "plugins/beiran_discovery_dns", "/opt/beiran/beiran_discovery_dns" ]
 ADD [ "plugins/beiran_discovery_zeroconf", "/opt/beiran/beiran_discovery_zeroconf" ]

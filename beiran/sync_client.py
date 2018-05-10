@@ -103,7 +103,6 @@ class Client:
         except Exception as error:
             print("Cannot connect to beiran daemon at %s" % self.url)
             print("Error: " + str(error))
-            sys.exit(1)
 
             # Other errors are possible, such as IOError.
             raise error
@@ -173,7 +172,7 @@ class Client:
         if node_uuid and all_nodes:
             raise Exception("node_uuid and all_nodes cannot be defined at the same time")
 
-        path = '/images'
+        path = '/docker/images'
 
         if node_uuid:
             path = path + '?node={}'.format(node_uuid)
@@ -192,7 +191,7 @@ class Client:
         if node_uuid and all_nodes:
             raise Exception("node_uuid and all_nodes cannot be defined at the same time")
 
-        path = '/layers'
+        path = '/docker/layers'
 
         if node_uuid:
             path = path + '?node={}'.format(node_uuid)

@@ -61,17 +61,10 @@ Storage Driver: overlay2
 
 ### - Setup
 
+This will setup a virtualenv under `env` folder here
+
 ```sh
-mkdir env
-virtualenv env --python=$(which python3.6)
-source env/bin/activate
-pip install -r beirand/requirements.txt
-pip install -r beiran/requirements.txt
-pip install -r beiran_cli/requirements.txt
-pip install ipython
-ln -s $(pwd)/beirand/beirand env/lib/python3.6/site-packages/
-ln -s $(pwd)/beiran env/lib/python3.6/site-packages/
-ln -s $(pwd)/beiran_cli env/lib/python3.6/site-packages/
+$ ./dev.sh
 ```
 
 #### - Settings (Environment Variables)
@@ -87,34 +80,34 @@ export CONFIG_FOLDER_PATH=$(pwd)
 #### - Start Daemon
 
 ```sh
-source env/bin/activate
-python -m beirand
+./dev.sh
+beirand
 ```
 
 or as root (potentially UNSAFE) to allow beiran to peek into /var/lib/docker
 
 ```sh
-source env/bin/activate
-sudo -E python -m beirand
+./dev.sh
+sudo -E beirand
 ```
 
 #### - Use cli
 
 ```sh
-python -m beiran_cli image list
+beiran image list
 ```
 
 ## Build
 
 ```sh
-./make.sh build_daemon_image
+docker-compose build
 ```
 
 ## Environment variables
 
 All has default values.
 
-```sh
+```
 LISTEN_INTERFACE
 LISTEN_ADDR
 HOSTNAME
@@ -124,8 +117,7 @@ BEIRAN_SOCK
 ## Using (PoC)
 
 ```sh
-cd beirand
-docker-compose up --scale beirand=3
+docker-compose up
 ```
 
 CURL'ing unix socket

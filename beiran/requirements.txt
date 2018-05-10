@@ -1,2 +1,4 @@
 tornado==4.5.2
 peewee==3.1.2
+click==6.7
+tabulate==0.8.2

@@ -12,6 +12,7 @@ from beirand.common import logger, PLUGINS
 from beirand.lib import async_fetch
 
 from beiran.models import DockerImage, DockerLayer
+from beiran.client import Client
 
 
 class Peer(EventEmitter):
@@ -22,6 +23,9 @@ class Peer(EventEmitter):
         self.node = node
         self.loop = loop if loop else asyncio.get_event_loop()
         self.start_loop()
+
+        url = "http://{}:{}".format(self.node.ip_address, self.node.port)
+        self.client = Client(url, node=self.node)
 
     def start_loop(self):
         """schedule handling of peer in the asyncio loop"""
@@ -49,17 +53,17 @@ class Peer(EventEmitter):
                     self.node.ip_address,
                     self.node.port)
 
+        # In future this part will be replaced with a websocket or gRPC connection
         # Check node availability every x second, drop online status if it fails
-        check_interval = 15
+        check_interval = 30
         retry_interval = 5
         timeout = 4
         fails = 0
         while True:
             await asyncio.sleep(check_interval)
             try:
-                status, response = await self.request('/ping', timeout=timeout)
-                if status != 200 or not response:
-                    raise Exception("Failed to receive ping response from node")
+                await self.client.ping(timeout=timeout)
+
                 # TODO: Track ping duration
                 # that can be utilized in download priorities etc. in future
                 fails = 0

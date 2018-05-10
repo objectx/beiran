@@ -64,16 +64,10 @@ class DockerPackaging(BasePackagePlugin):
     async def fetch_images_from_peer(self, peer):
         """fetch image list from the node and update local db"""
 
-        status, response = await peer.request('/images')
-        if status != 200:
-            # do not raise error not to interrupt process, just log. we may emit another
-            # event `check.node` which marks the node offline or emits back
-            # for the caller event, the `node.added` in this case.
-            self.log.error("Cannot fetch images from remote node %s", str(peer.node.ip_address))
+        images = await peer.client.get_images()
+        self.log.debug("received image list from peer")
 
-        self.log.debug("received image information %s", str(response))
-
-        for image in response.get('images'):
+        for image in images:
             try:
                 image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
                 image_.set_available_at(peer.node.uuid.hex)
@@ -88,14 +82,10 @@ class DockerPackaging(BasePackagePlugin):
     async def fetch_layers_from_peer(self, peer):
         """fetch layer list from the node and update local db"""
 
-        status, response = await peer.request('/layers')
-        if status != 200:
-            # same case with above, will be handled later..
-            self.log.error("Cannot fetch images from remote node %s", str(peer.node.ip_address))
+        layers = await peer.client.get_layers()
+        self.log.debug("received layer list from peer")
 
-        self.log.debug("received layer information %s", str(response))
-
-        for layer in response.get('layers'):
+        for layer in layers:
             try:
                 layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
                 layer_.set_available_at(peer.node.uuid.hex)

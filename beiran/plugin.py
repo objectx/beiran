@@ -95,6 +95,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):
         super().__init__()
         self.__status = None
         self.api_routes = []
+        self.model_list = []
 
         self.__plugin_name = sys.modules[self.__module__].PLUGIN_NAME
         self.__plugin_type = sys.modules[self.__module__].PLUGIN_TYPE

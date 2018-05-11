@@ -10,7 +10,8 @@ import docker
 
 from aiodocker import Docker
 
-from beiran.models import DockerImage, DockerLayer
+from .models import DockerImage, DockerLayer
+from .models import MODEL_LIST
 from beiran.plugin import BasePackagePlugin
 
 from .util import DockerUtil
@@ -36,6 +37,7 @@ class DockerPackaging(BasePackagePlugin):
         self.tar_cache_dir = "tar_cache"
         self.probe_task = None
         self.api_routes = ROUTES
+        self.model_list = MODEL_LIST
 
         ApiDependencies.aiodocker = self.aiodocker
         ApiDependencies.logger = self.log

@@ -109,7 +109,7 @@ class ZeroconfListener(object):
         """
         asyncio.ensure_future(self.found_service(zeroconf, typeos, name))
 
-    async def found_service(self, zeroconf, typeos, name):
+    async def found_service(self, zeroconf, typeos, name, retries=5):
         """
         Service Info for newly added node
         Args:
@@ -118,6 +118,15 @@ class ZeroconfListener(object):
             name: Name of the service
         """
         service_info = await zeroconf.get_service_info(typeos, name)
+        if not service_info:
+            self.log.warning("could not fetch info of discovered service: %s", name)
+            if retries == 0:
+                # give up
+                return
+            retries -= 1
+            await asyncio.sleep(5)
+            return self.found_service(zeroconf, typeos, name, retries)
+
         if socket.inet_ntoa(service_info.address) == self.discovery.address and service_info.port == self.discovery.port:
             # return here if we discovered ourselves
             return

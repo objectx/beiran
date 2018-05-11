@@ -150,11 +150,20 @@ class Cli:
     main.add_command(image)
 
     @click.command('pull')
+    @click.option('--from', 'node', default=None,
+                  help='Pull from spesific node')
+    @click.option('--wait', 'wait', default=False, is_flag=True,
+                  help='Waits result of pulling image')
     @click.argument('imagename')
     @click.pass_obj
-    def image_pull(self, imagename):
+    def image_pull(self, node, wait, imagename):
         """Pull a container image from cluster or repository"""
-        click.echo('Pulling image %s!' % imagename)
+        click.echo('Pulling image %s from %s!' % (imagename, node))
+        result = self.beiran_client.pull_image(imagename, node, wait)
+        if "started" in result:
+            click.echo("Process is started")
+        if "finished" in result:
+            click.echo("Process is finished")
 
     image.add_command(image_pull)
 

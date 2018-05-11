@@ -23,13 +23,19 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
-      - pylint beirand/beirand
+      - pylint beirand
 
   lint-client:
     image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
     group: lint
     commands:
       - pylint beiran
+
+  lint-plugins:
+    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
+    group: lint
+    commands:
+      - pylint plugins
 
   dockerd:
     image: docker:18.03.0-ce-dind

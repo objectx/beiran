@@ -101,10 +101,10 @@ class Client:
             kwargs['raise_error'] = False
 
         if 'timeout' in kwargs:
-            # this is not good, I want a total timeout..
+            # this is not good, we want a total timeout..
             # but will do for now..
-            kwargs['connect_timeout'] = timeout
-            kwargs['request_timeout'] = timeout
+            kwargs['connect_timeout'] = kwargs['timeout']
+            kwargs['request_timeout'] = kwargs['timeout']
             del kwargs['timeout']
 
         response = await to_asyncio_future(self.http_client.fetch(self.url + path, method=method, **kwargs))

@@ -78,7 +78,7 @@ class Client:
             self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
-    def request(self, path="/", parse_json=True, data=None, method="GET", timeout=30):
+    def request(self, path="/", parse_json=True, data=None, method="GET", timeout=30): #pylint: disable=too-many-arguments
         """
         Request call to daemon
         Args:

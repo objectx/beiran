@@ -156,6 +156,8 @@ class ImagesTarHandler(web.RequestHandler):
                 query = DockerImage.select()
                 query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
                 image = query.first()
+                if not image:
+                    raise HTTPError(status_code=404, log_message="Image Not Found")
 
             self.set_header("Docker-Image-HashID", image.hash_id)
             self.set_header("Docker-Image-CreatedAt", image.created_at)
@@ -163,7 +165,7 @@ class ImagesTarHandler(web.RequestHandler):
 
             self.finish()
 
-        except (AttributeError, DockerImage.DoesNotExist) as error:
+        except DockerImage.DoesNotExist as error:
             raise HTTPError(status_code=404, log_message=str(error))
 
 class LayerDownload(web.RequestHandler):

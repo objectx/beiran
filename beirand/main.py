@@ -135,7 +135,7 @@ class BeiranDaemon(EventEmitter):
         ]
         print("Found plugins;", self.available_plugins)
 
-    async def db_init(self, append_new=False):
+    async def init_db(self, append_new=False):
         """Initialize database"""
         from peewee import SqliteDatabase, OperationalError
         from beiran.models.base import DB_PROXY
@@ -189,12 +189,39 @@ class BeiranDaemon(EventEmitter):
 
             create_tables(database)
 
+    async def init_plugins(self):
+        """Initialize configured plugins"""
+
+        # Initialize discovery
+        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+        logger.debug("Discovery method is %s", discovery_mode)
+        discovery = await self.get_plugin('discovery', discovery_mode, {
+            "address": get_advertise_address(),
+            "port": get_listen_port(),
+            "version": VERSION,
+            "events": EVENTS
+        })
+
+        # Only one discovery plugin at a time is supported (for now)
+        PLUGINS['discovery'] = discovery
+
+        # Initialize package plugins
+        package_plugins_enabled = ['docker']
+
+        for _plugin in package_plugins_enabled:
+            _plugin_obj = await self.get_plugin('package', _plugin, {
+                "storage": "/var/lib/docker",
+                "url": None, # default
+                "events": EVENTS
+            })
+            PLUGINS['package:' + _plugin] = _plugin_obj
+
     async def main(self):
         """ Main function """
 
         # set database
         logger.info("Initializing database...")
-        await self.db_init()
+        await self.init_db()
 
         # collect node info and create node object
         NODES.local_node = Node.from_dict(collect_node_info())
@@ -202,8 +229,23 @@ class BeiranDaemon(EventEmitter):
         self.set_status('init')
         logger.info("local node added, known nodes are: %s", NODES.all_nodes)
 
+        # initialize plugins
+        await self.init_plugins()
+
+        # initialize plugin models
+        for name, plugin in PLUGINS.items():
+            if not plugin.model_list:
+                continue
+            await self.init_db(append_new=plugin.model_list)
+
         # PREPARE ROUTES
         api_app = web.Application(ROUTES)
+
+        for name, plugin in PLUGINS.items():
+            if not plugin.api_routes:
+                continue
+            logger.info("insert {plugin} routes {plugin} namespace".format(plugin=name))
+            api_app.add_handlers(r".*", plugin.api_routes)
 
         # HTTP Daemon. Listen on Unix Socket
         logger.info("Starting Daemon HTTP Server...")
@@ -222,43 +264,22 @@ class BeiranDaemon(EventEmitter):
 
         EVENTS.on('probe', self.new_node) # TEMP
 
-        # Initialize discovery
-        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
-        logger.debug("Discovery method is %s", discovery_mode)
-        discovery = await self.get_plugin('discovery', discovery_mode, {
-            "address": get_advertise_address(),
-            "port": get_listen_port(),
-            "version": VERSION,
-            "events": EVENTS
-        })
+        # Start plugins
+        for name, plugin in PLUGINS.items():
+            if plugin == PLUGINS['discovery']:
+                continue
+            logger.info("starting plugin: %s", name)
+            await plugin.start()
 
-        discovery.on('discovered', self.new_node)
-        discovery.on('undiscovered', self.removed_node)
+        # Start discovery last
+        PLUGINS['discovery'].on('discovered', self.new_node)
+        PLUGINS['discovery'].on('undiscovered', self.removed_node)
 
-        # Only one discovery plugin at a time is supported
-        PLUGINS['discovery'] = discovery
+        await PLUGINS['discovery'].start()
 
-        # Initialize package plugins
-        package_plugins_enabled = ['docker']
-
-        for _plugin in package_plugins_enabled:
-            _plugin_obj = await self.get_plugin('package', _plugin, {
-                "storage": "/var/lib/docker",
-                "url": None, # default
-                "events": EVENTS
-            })
-            PLUGINS['package:' + _plugin] = _plugin_obj
-            if _plugin_obj.api_routes:
-                logger.info("insert {plugin} routes {plugin} namespace".format(plugin=_plugin))
-                api_app.add_handlers(r".*", _plugin_obj.api_routes)
-
-            if _plugin_obj.model_list:  # todo: collect model list and create tables after for loop
-                await self.db_init(append_new=_plugin_obj.model_list)
-
-            await _plugin_obj.start()
-
-        await discovery.start()
+        # Ready
         self.set_status('ready')
+
 
     def set_status(self, new_status):
         NODES.local_node.status = new_status
@@ -292,8 +313,7 @@ class BeiranDaemon(EventEmitter):
         """
         signal.signal(signal.SIGTERM, self.schedule_shutdown)
 
-        self.loop.create_task(self.main())
-        self.loop.set_debug(True)
+        self.loop.run_until_complete(self.main())
         try:
             self.loop.run_forever()
         except KeyboardInterrupt as e:

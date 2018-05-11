@@ -410,23 +410,24 @@ class ImageList(web.RequestHandler):
                 chunk = await chunks.get()
 
         try:
-            docker_future = asyncio.ensure_future(APP.docker.images.import_image(data=sender(chunks)))  # pylint: disable=no-value-for-parameter
+            docker_future = APP.docker.images.import_image(data=sender(chunks)) # pylint: disable=no-value-for-parameter
+            docker_result = asyncio.ensure_future(docker_future)
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     async for data in resp.content.iter_chunked(64*1024):
                         # logger.debug("Pull: Chunk received with length: %s", len(data))
                         chunks.put_nowait(data)
             chunks.put_nowait(None)
-            await docker_future
-        except Exception as error:
+            await docker_result
+        except aiohttp.ClientError as error:
             logger.error(error)
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
         if wait:
             self.write({'finished':True})
             self.finish()
-    
-    
+
+
     # pylint: disable=arguments-differ
     @web.asynchronous
     async def post(self):

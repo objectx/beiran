@@ -146,6 +146,31 @@ class ImagesTarHandler(web.RequestHandler):
             logger.error("Image Stream failed: %s", str(error))
             raise HTTPError(status_code=500, log_message=str(error))
 
+    async def head(self, image_id_or_sha):
+        """
+            HEAD endpoint
+        """
+        try:
+            if image_id_or_sha.startswith("sha256:"):
+                image = DockerImage.get(DockerImage.hash_id == image_id_or_sha)
+            else:
+                if not ":" in image_id_or_sha:
+                    image_id_or_sha += ":latest"
+                query = DockerImage.select()
+                query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
+                image = query.first()
+                if not image:
+                    raise HTTPError(status_code=404, log_message="Image Not Found")
+
+            self.set_header("Docker-Image-HashID", image.hash_id)
+            self.set_header("Docker-Image-CreatedAt", image.created_at)
+            self.set_header("Docker-Image-Size", image.size)
+
+            self.finish()
+
+        except DockerImage.DoesNotExist as error:
+            raise HTTPError(status_code=404, log_message=str(error))
+
 class LayerDownload(web.RequestHandler):
     """ Container image layer downloading handler """
 

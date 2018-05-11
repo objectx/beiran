@@ -135,7 +135,7 @@ class BeiranDaemon(EventEmitter):
         ]
         print("Found plugins;", self.available_plugins)
 
-    async def db_init(self):
+    async def db_init(self, append_new=False):
         """Initialize database"""
         from peewee import SqliteDatabase, OperationalError
         from beiran.models.base import DB_PROXY
@@ -152,6 +152,13 @@ class BeiranDaemon(EventEmitter):
         # init database object
         database = SqliteDatabase(beiran_db_path)
         DB_PROXY.initialize(database)
+
+        if append_new:
+            logger.info("append new tables %s into existing database", append_new)
+            from beiran.models import create_tables
+
+            create_tables(database, model_list=append_new)
+            return
 
         logger.debug("Checking tables")
         for model in list(MODEL_LIST):
@@ -241,10 +248,14 @@ class BeiranDaemon(EventEmitter):
                 "events": EVENTS
             })
             PLUGINS['package:' + _plugin] = _plugin_obj
-            await _plugin_obj.start()
             if _plugin_obj.api_routes:
                 logger.info("insert {plugin} routes {plugin} namespace".format(plugin=_plugin))
                 api_app.add_handlers(r".*", _plugin_obj.api_routes)
+
+            if _plugin_obj.model_list:  # todo: collect model list and create tables after for loop
+                await self.db_init(append_new=_plugin_obj.model_list)
+
+            await _plugin_obj.start()
 
         await discovery.start()
         self.set_status('ready')

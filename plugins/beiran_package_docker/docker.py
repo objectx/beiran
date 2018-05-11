@@ -52,6 +52,10 @@ class DockerPackaging(BasePackagePlugin):
         # # background, we have no rush and it will run
         # # forever anyway
         self.probe_task = self.loop.create_task(self.probe_daemon())
+        await self.probe_task
+
+        # Do not block on this
+        self.probe_task = self.loop.create_task(self.listen_daemon_events())
 
     async def stop(self):
         if self.probe_task:
@@ -200,6 +204,11 @@ class DockerPackaging(BasePackagePlugin):
             # in the future; will we in docker plugin code.
             self.emit('ready')
 
+        except Exception as err:
+            await self.daemon_error(err)
+
+    async def listen_daemon_events(self):
+        try:
             # await until docker is unavailable
             self.log.debug("subscribing to docker events for further changes")
             subscriber = self.aiodocker.events.subscribe()
@@ -214,6 +223,5 @@ class DockerPackaging(BasePackagePlugin):
                     self.log.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
             await self.daemon_lost()
-
         except Exception as err:
             await self.daemon_error(err)

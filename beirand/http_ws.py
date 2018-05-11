@@ -15,7 +15,6 @@ from peewee import SQL
 from beirand.common import logger, VERSION, NODES
 from beirand.lib import get_listen_address, get_listen_port
 
-from beiran.models import DockerImage, DockerLayer
 
 define('listen_address',
        group='webserver',
@@ -136,26 +135,6 @@ class NodeInfo(web.RequestHandler):
         else:
             node = await NODES.get_node_by_uuid(uuid)
 
-        # error = info = version = ""
-
-        # try:
-        #     info = await self.application.docker.system.info()
-        #     version = await self.application.docker.version()
-        #     status = True
-        # except DockerError as error:
-        #     status = False
-        #     logger.error('Docker Client error %s', error)
-
-        # node_info.update(
-        #     {
-        #         "docker": {
-        #             "status": status,
-        #             "daemon_info": info,
-        #             "version": version,
-        #             "error": error
-        #         }
-        #     }
-        # )
         if not node:
             raise HTTPError(status_code=404, log_message="Node Not Found")
         self.write(node.to_dict())

@@ -6,7 +6,7 @@ import aiofiles
 from peewee import SQL
 
 from beiran.log import build_logger
-from beiran.models import DockerImage, DockerLayer
+from .models import DockerImage, DockerLayer
 
 
 LOGGER = build_logger()

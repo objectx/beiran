@@ -4,11 +4,11 @@ Import all data models to make import statements clear.
 from beiran.log import build_logger
 from .base import BaseModel
 from .node import Node
-from .docker_objects import DockerImage, DockerLayer
+# from .docker_objects import DockerImage, DockerLayer
 
 LOGGER = build_logger()
 
-MODEL_LIST = [Node, DockerImage, DockerLayer]
+MODEL_LIST = [Node, ] # DockerImage, DockerLayer]
 
 def create_tables(database):
     """

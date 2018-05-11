@@ -9,7 +9,7 @@ from tornado import web
 from tornado.web import HTTPError
 from peewee import SQL
 from beiran.util import create_tar_archive
-from beiran.models import DockerImage, DockerLayer
+from .models import DockerImage, DockerLayer
 from .util import DockerUtil
 
 class Services:

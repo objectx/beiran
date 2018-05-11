@@ -11,7 +11,6 @@ from pyee import EventEmitter
 from beirand.common import logger, PLUGINS
 from beirand.lib import async_fetch
 
-from beiran.models import DockerImage, DockerLayer
 from beiran.client import Client
 
 

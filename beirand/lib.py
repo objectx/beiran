@@ -1,7 +1,6 @@
 """
 Support library for beiran daemon
 """
-import asyncio
 import os
 import ipaddress
 import json
@@ -10,7 +9,6 @@ import socket
 from uuid import uuid4, UUID
 
 import aiohttp
-import aiofiles
 import async_timeout
 import netifaces
 

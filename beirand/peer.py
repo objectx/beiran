@@ -9,7 +9,6 @@ import asyncio
 from pyee import EventEmitter
 
 from beirand.common import logger, PLUGINS
-from beirand.lib import async_fetch
 
 from beiran.client import Client
 
@@ -39,7 +38,7 @@ class Peer(EventEmitter):
         self.node.save()
 
         sync_futures = []
-        for plugin_name, plugin in PLUGINS.items():
+        for _, plugin in PLUGINS.items():
             sync_futures.append(plugin.sync(self))
 
         await asyncio.gather(*sync_futures)

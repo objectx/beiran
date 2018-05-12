@@ -1,18 +1,13 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import re
 import json
-import asyncio
 import urllib
-import aiohttp
 
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from peewee import SQL
-
-from beirand.common import logger, VERSION, NODES
+from beirand.common import logger, VERSION, NODES, EVENTS
 from beirand.lib import get_listen_address, get_listen_port
 
 

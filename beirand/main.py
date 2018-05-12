@@ -5,11 +5,10 @@
 import os
 import sys
 import asyncio
-import logging
 import importlib
 import signal
 
-from tornado import websocket, web
+from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options
 from tornado.netutil import bind_unix_socket
@@ -109,16 +108,26 @@ class BeiranDaemon(EventEmitter):
         Peer(node)
 
     async def get_plugin(self, plugin_type, plugin_name, config):
+        """
+        Load and initiate plugin
+        Args:
+            plugin_type (str): plugin type
+            plugin_name (str): plugin name
+            config (dict): config parameters
+
+        Returns:
+
+        """
         try:
             config['logger'] = build_logger('plugin:' + plugin_name)
             config['node'] = NODES.local_node
             module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
-            logger.debug("initializing plugin: " + plugin_name)
+            logger.debug("initializing plugin: %s", plugin_name)
             instance = module.Plugin(config)
             await instance.init()
-            logger.info("plugin initialisation done: " + plugin_name)
+            logger.info("plugin initialisation done: %s", plugin_name)
             return instance
-        except ModuleNotFoundError as error:
+        except ModuleNotFoundError as error:  # pylint: disable=undefined-variable
             logger.error(error)
             logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
@@ -244,7 +253,7 @@ class BeiranDaemon(EventEmitter):
         for name, plugin in PLUGINS.items():
             if not plugin.api_routes:
                 continue
-            logger.info("insert {plugin} routes {plugin} namespace".format(plugin=name))
+            logger.info("inserting %s routes...", name)
             api_app.add_handlers(r".*", plugin.api_routes)
 
         # HTTP Daemon. Listen on Unix Socket
@@ -282,6 +291,12 @@ class BeiranDaemon(EventEmitter):
 
 
     def set_status(self, new_status):
+        """
+        Set and emit node's new status
+        Args:
+            new_status (str): status
+
+        """
         NODES.local_node.status = new_status
         NODES.local_node.save()
         EVENTS.emit('node.status', NODES.local_node, new_status)
@@ -316,12 +331,12 @@ class BeiranDaemon(EventEmitter):
         self.loop.run_until_complete(self.main())
         try:
             self.loop.run_forever()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             logger.info("Received interrupt, shutting down gracefully")
 
         try:
             self.loop.run_until_complete(self.shutdown())
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             logger.warning("Received interrupt while shutting down, exiting")
             sys.exit(1)
 

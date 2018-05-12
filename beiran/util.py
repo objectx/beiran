@@ -82,5 +82,3 @@ def create_tar_archive(dir_path, output_file_path):
     """
     with tarfile.open(output_file_path, "w") as tar:
         tar.add(dir_path, arcname='.')
-
-

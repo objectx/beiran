@@ -3,17 +3,13 @@ Docker packaging plugin
 """
 
 import asyncio
-import logging
-import socket
-import os
 import docker
-
 from aiodocker import Docker
+
+from beiran.plugin import BasePackagePlugin
 
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
-from beiran.plugin import BasePackagePlugin
-
 from .util import DockerUtil
 from .api import ROUTES
 from .api import Services as ApiDependencies
@@ -22,8 +18,8 @@ from .api import Services as ApiDependencies
 PLUGIN_NAME = 'docker'
 PLUGIN_TYPE = 'package'
 
-
-class DockerPackaging(BasePackagePlugin):
+# pylint: disable=attribute-defined-outside-init
+class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
 
     # def __init__(self, config):
@@ -82,7 +78,7 @@ class DockerPackaging(BasePackagePlugin):
                 image_.set_available_at(peer.node.uuid.hex)
                 image_.save()
                 self.log.debug("update existing image %s, now available on new node: %s",
-                             image['hash_id'], peer.node.uuid.hex)
+                               image['hash_id'], peer.node.uuid.hex)
             except DockerImage.DoesNotExist:
                 new_image = DockerImage.from_dict(image)
                 new_image.save(force_insert=True)
@@ -103,13 +99,19 @@ class DockerPackaging(BasePackagePlugin):
                 layer_.set_available_at(peer.node.uuid.hex)
                 layer_.save()
                 self.log.debug("update existing layer %s, now available on new node: %s",
-                             layer['digest'], peer.node.uuid.hex)
+                               layer['digest'], peer.node.uuid.hex)
             except DockerLayer.DoesNotExist:
                 new_layer = DockerLayer.from_dict(layer)
                 new_layer.save(force_insert=True)
                 self.log.debug("new layer from remote %s", str(layer))
 
     async def daemon_error(self, error):
+        """
+        Daemon error emitter.
+        Args:
+            error (str): error message
+
+        """
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
         # in the future; will we in docker plugin code.
@@ -122,6 +124,9 @@ class DockerPackaging(BasePackagePlugin):
         self.probe_task = self.loop.create_task(self.probe_daemon())
 
     async def daemon_lost(self):
+        """
+        Daemon lost emitter.
+        """
         # This will be converted to something like
         #   daemon.plugins['docker'].setReady(false)
         # in the future; will we in docker plugin code.
@@ -204,10 +209,15 @@ class DockerPackaging(BasePackagePlugin):
             # in the future; will we in docker plugin code.
             self.emit('ready')
 
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(err)
 
     async def listen_daemon_events(self):
+        """
+        Subscribes aiodocker events channel and logs them.
+        If docker daemon is unavailable calls deamon_lost method
+        to emit the lost event.
+        """
         try:
             # await until docker is unavailable
             self.log.debug("subscribing to docker events for further changes")
@@ -218,10 +228,11 @@ class DockerPackaging(BasePackagePlugin):
                     break
 
                 if 'id' in event:
-                    self.log.debug("docker event: %s[%s] %s", event['Action'], event['Type'], event['id'])
+                    self.log.debug("docker event: %s[%s] %s", event['Action'],
+                                   event['Type'], event['id'])
                 else:
                     self.log.debug("docker event: %s[%s]", event['Action'], event['Type'])
 
             await self.daemon_lost()
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(err)

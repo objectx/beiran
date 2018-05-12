@@ -3,9 +3,7 @@ Zeroconf multicast discovery service implementation
 """
 
 import asyncio
-import logging
 import socket
-import os
 
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 import netifaces
@@ -31,8 +29,9 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
         self.info = None
         self.domain = config['domain'] if 'domain' in config else DEFAULT_DOMAIN
         self.version = config['version']
-        self.zeroconf = Zeroconf(self.loop, address_family=[netifaces.AF_INET],
-                                  iface=self.network_interface)
+        self.zeroconf = Zeroconf(self.loop,
+                                 address_family=[netifaces.AF_INET],
+                                 iface=self.network_interface)
 
     async def start(self):
         """ Starts discovery service
@@ -57,7 +56,8 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
 
     @property
     def advertise_name(self):
-        return self.hostname + '-' + str(self.port) + "." + self.domain
+        """Return concatenated string as advertise name"""
+        return "{}-{}.{}".format(self.hostname, str(self.port), self.domain)
 
     async def init(self):
         """ Initialization of discovery service with all information and starts service browser
@@ -65,7 +65,7 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
         self.log.debug("hostname = %s", self.hostname)
         self.log.debug("interface = %s", self.network_interface)
         self.log.debug("ip = %s", self.address)
-        desc = {'name': self.hostname, 'version': self.version }
+        desc = {'name': self.hostname, 'version': self.version}
         self.info = ServiceInfo(self.domain,
                                 self.advertise_name,
                                 socket.inet_aton(self.address),
@@ -127,9 +127,14 @@ class ZeroconfListener(object):
             await asyncio.sleep(5)
             return self.found_service(zeroconf, typeos, name, retries)
 
-        if socket.inet_ntoa(service_info.address) == self.discovery.address and service_info.port == self.discovery.port:
-            # return here if we discovered ourselves
-            return
+        is_itself = all(
+            [
+                socket.inet_ntoa(service_info.address) == self.discovery.address,
+                service_info.port == self.discovery.port
+            ]
+        )
+        if is_itself:
+            return  # return here if we discovered ourselves
 
         self.services[name] = service_info
         if service_info:

@@ -1,3 +1,4 @@
+"""Docker Plugin Utility Module"""
 import asyncio
 import os
 import json
@@ -6,6 +7,7 @@ import aiofiles
 from peewee import SQL
 
 from beiran.log import build_logger
+from beirand.lib import async_fetch as async_req
 from .models import DockerImage, DockerLayer
 
 
@@ -43,7 +45,8 @@ class DockerUtil:
         """
         shorten sha to 12 bytes length str as docker uses
 
-        e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25" to "53478ce18e19"
+        e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25"
+        to "53478ce18e19"
 
         Args:
             sha (string): sha string
@@ -56,7 +59,8 @@ class DockerUtil:
 
     def docker_find_layer_dir_by_sha(self, sha):
         """
-        try to find local layer directory containing tar archive contents pulled from remote repository
+        try to find local layer directory containing tar archive
+        contents pulled from remote repository
 
         Args:
             sha (string): sha string
@@ -71,7 +75,6 @@ class DockerUtil:
         local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff/'
 
         for file_name in os.listdir(local_diff_dir):
-            # f_path = file'{local_diff_dir}/{file_name}'  # python 3.5 does not support file strings.
             f_path = '{}/{}'.format(local_diff_dir, file_name)
             file = open(f_path)
             try:
@@ -179,7 +182,7 @@ class DockerUtil:
                 diffid_mapping[contents] = 'sha256:' + filename
             self.diffid_mapping = diffid_mapping
             return diffid_mapping
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             return {}
 
     async def get_layerdb_mappings(self):
@@ -203,7 +206,7 @@ class DockerUtil:
 
             self.layerdb_mapping = layerdb_mapping
             return layerdb_mapping
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             return {}
 
     async def get_image_layers(self, diffid_list):
@@ -351,8 +354,6 @@ class DockerUtil:
             url_elem['repository'], url_elem['image'],
             url_elem['tag']
         )
-        #print("------------------")
-        #print("URL: ", url)
 
         if url_elem['host'] == default_elem['host']:
             resp, token = await async_req(

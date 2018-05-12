@@ -1,12 +1,12 @@
 """
 Common client for beiran project
 """
+# pylint: disable=duplicate-code
+
 
 import socket
 import json
-import sys
 import re
-# from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
@@ -208,7 +208,7 @@ class Client:
         path = '/images?cmd=pull'
 
         resp = self.request(path,
-                            data={'image':imagename, 'node':node, 'wait':wait},
+                            data={'image': imagename, 'node': node, 'wait': wait},
                             method='POST',
                             timeout=600)
         return resp
@@ -232,4 +232,3 @@ class Client:
         resp = self.request(path=path)
 
         return resp.get('layers', [])
-

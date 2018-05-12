@@ -4,13 +4,13 @@ import re
 import json
 import asyncio
 import aiohttp
-import aiodocker
 from tornado import web
 from tornado.web import HTTPError
 from peewee import SQL
+import aiodocker
 from beiran.util import create_tar_archive
 from .models import DockerImage, DockerLayer
-from .util import DockerUtil
+
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -20,6 +20,7 @@ class Services:
     docker_util = None
     tar_cache_dir = "tar_cache"
     loop = None
+
 
 class ImagesTarHandler(web.RequestHandler):
     """ Images export handler """
@@ -33,7 +34,9 @@ class ImagesTarHandler(web.RequestHandler):
             Get image as a tarball
         """
         try:
+            # pylint: disable=no-member
             content = await Services.aiodocker.images.export_image(image_id_or_sha)
+            # pylint: enable=no-member
             self.set_header("Content-Type", "application/x-tar")
 
             while True:
@@ -46,7 +49,7 @@ class ImagesTarHandler(web.RequestHandler):
         except aiodocker.exceptions.DockerError as error:
             raise HTTPError(status_code=404, log_message=error.message)
         except Exception as error:
-            logger.error("Image Stream failed: %s", str(error))
+            Services.logger.error("Image Stream failed: %s", str(error))
             raise HTTPError(status_code=500, log_message=str(error))
 
     async def head(self, image_id_or_sha):
@@ -153,9 +156,9 @@ class ImagesHandler(web.RequestHandler):
                 await writer.write(chunk)
                 chunk = await chunks.get()
 
-        # pylint: disable=no-value-for-parameter
+        # pylint: disable=no-value-for-parameter,no-member
         self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
-        # pylint: enable=no-value-for-parameter
+        # pylint: enable=no-value-for-parameter,no-member
 
     # pylint: disable=arguments-differ
     async def data_received(self, chunk):
@@ -261,7 +264,9 @@ class ImageList(web.RequestHandler):
                 chunk = await chunks.get()
 
         try:
-            docker_future = Services.aiodocker.images.import_image(data=sender(chunks)) # pylint: disable=no-value-for-parameter
+            # pylint: disable=no-value-for-parameter,no-member
+            docker_future = Services.aiodocker.images.import_image(data=sender(chunks))
+            # pylint: enable=no-value-for-parameter,no-member
             docker_result = asyncio.ensure_future(docker_future)
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
@@ -278,7 +283,6 @@ class ImageList(web.RequestHandler):
             self.write({'finished':True})
             self.finish()
 
-
     # pylint: disable=arguments-differ
     @web.asynchronous
     async def post(self):
@@ -294,7 +298,6 @@ class ImageList(web.RequestHandler):
 
             return await method()
         raise NotImplementedError()
-
 
     def get(self):
         """

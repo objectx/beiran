@@ -147,8 +147,8 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        status, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
-        if status != 200:
+        resp, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
+        if resp.status != 200:
             raise Exception("Cannot fetch node information")
 
         self.logger.debug("received node information %s", str(response))

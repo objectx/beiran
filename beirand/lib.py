@@ -3,7 +3,6 @@ Support library for beiran daemon
 """
 import os
 import ipaddress
-import json
 import platform
 import socket
 from uuid import uuid4, UUID
@@ -203,7 +202,7 @@ def collect_node_info():
     }
 
 
-async def async_fetch(url, timeout=3):
+async def async_fetch(url, timeout=3, **kwargs):
     """
     Async http get with aiohttp
     Args:
@@ -211,28 +210,30 @@ async def async_fetch(url, timeout=3):
         timeout (int): timeout
 
     Returns:
-        (int, dict): resonse status code, response json
-
-    """
-    async with aiohttp.ClientSession() as session:
-        async with async_timeout.timeout(timeout):
-            async with session.get(url) as resp:
-                status, response = resp.status, await resp.json()
-                return status, response
-
-async def async_req(url, timeout=3, **kwargs):
-    """
-    Async http get with aiohttp
-    Args:
-        url (str): get url
-        timeout (int): timeout
-
-    Returns:
-        (ClientResponse, dict): resonse instance, response json
+        (ClientResponse, dict): response instance, response json
 
     """
     async with aiohttp.ClientSession() as session:
         async with async_timeout.timeout(timeout):
             async with session.get(url, headers=kwargs) as resp:
-                body = await resp.read()
-                return resp, json.loads(body)
+                response, response = resp, await resp.json()
+                return response, response
+
+
+# todo: remove redundant method after test. modified above
+# async def async_req(url, timeout=3, **kwargs):
+#     """
+#     Async http get with aiohttp
+#     Args:
+#         url (str): get url
+#         timeout (int): timeout
+#
+#     Returns:
+#         (ClientResponse, dict): resonse instance, response json
+#
+#     """
+#     async with aiohttp.ClientSession() as session:
+#         async with async_timeout.timeout(timeout):
+#             async with session.get(url, headers=kwargs) as resp:
+#                 body = await resp.read()
+#                 return resp, json.loads(body)

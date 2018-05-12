@@ -1,29 +1,31 @@
 """
 Common client for beiran project
 """
+# pylint: disable=duplicate-code
 
 import socket
 import json
-import sys
 import re
-# from tornado.platform.asyncio import AsyncIOMainLoop
-from tornado import httpclient, gen
+from tornado import gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
 from tornado.platform.asyncio import to_asyncio_future
+
 
 class UnixResolver(Resolver):
 
     """
     Resolver for unix socket implementation
     """
-    def initialize(self, socket_path=None): #pylint: disable=arguments-differ
+    def initialize(self, socket_path=None):  # pylint: disable=arguments-differ
         """
         Class initialization method
+
         Args:
             socket_path: Path for unix socket
         """
-        self.socket_path = socket_path #pylint: disable=attribute-defined-outside-init
+
+        self.socket_path = socket_path  # pylint: disable=attribute-defined-outside-init
         Resolver.initialize(self)
 
     def close(self):
@@ -80,19 +82,25 @@ class Client:
             self.http_client = AsyncHTTPClient(force_instance=True)
             self.url = url
 
-    async def request(self, path="/", parse_json=True, return_response=False, data=None, method="GET", **kwargs):
+    async def request(self, path="/", parse_json=True,  # pylint: disable=too-many-arguments
+                      return_response=False, data=None, method="GET", **kwargs):
         """
         Request call to daemon
+
         Args:
             path: http path to request from daemon
             parse_json: if return value is JSON from daemon,
+            return_response (bool): determine if the response returns or not
+            data (dict): request payload
+            method (str): request method
             it returns parsed JSON
 
-        Returns: Response from daemon
+        Returns:
+            (dict or str) Response from daemon, dict or json string
 
         """
         headers = kwargs['headers'] if 'headers' in kwargs else {}
-        data_options = {}
+
         if data:
             headers['Content-Type'] = 'application/json'
             kwargs['body'] = json.dumps(data)
@@ -107,7 +115,8 @@ class Client:
             kwargs['request_timeout'] = kwargs['timeout']
             del kwargs['timeout']
 
-        response = await to_asyncio_future(self.http_client.fetch(self.url + path, method=method, **kwargs))
+        response = await to_asyncio_future(self.http_client.fetch(self.url + path,
+                                                                  method=method, **kwargs))
 
         if return_response:
             return response
@@ -208,11 +217,11 @@ class Client:
             result: Pulling process result
         """
         path = '/images?cmd=pull'
-        payload = {'image':imagename, 'node':node, 'wait':wait}
+        payload = {'image': imagename, 'node': node, 'wait': wait}
         resp = await self.request(path,
-                            data=payload,
-                            method='POST',
-                            timeout=600)
+                                  data=payload,
+                                  method='POST',
+                                  timeout=600)
         return resp
 
     async def get_layers(self, all_nodes=False, node_uuid=None):

@@ -4,12 +4,12 @@ service implementations.
 """
 
 import logging
-import netifaces
 import socket
 import sys
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
+import netifaces
 
 
 class AbstractBasePlugin(metaclass=ABCMeta):
@@ -18,7 +18,7 @@ class AbstractBasePlugin(metaclass=ABCMeta):
 
     @abstractmethod
     async def init(self):
-        """ 
+        """ Init plugin
         """
         pass
 
@@ -49,7 +49,7 @@ class AbstractBasePlugin(metaclass=ABCMeta):
         pass
 
 
-class BasePlugin(AbstractBasePlugin, EventEmitter):
+class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-instance-attributes
     """BeiranPlugin with EventEmmiter
     """
 
@@ -70,23 +70,28 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):
 
     @property
     def status(self):
+        """Return plugin status"""
         return self.__status
 
     @status.setter
     def status(self, value):
         if value == self.__status:
-            return
+            return self.__status
         self.__status = value
         self.emit('status', value)
         return self.__status
 
-    def get_status(self):
-        return self.__status
+    # todo: remove if we do not need anymore!
+    # def get_status(self):
+    #     """Get plugin status"""
+    #     return self.__status
 
-    def emit(self, eventname, *args, **kwargs):
-        if eventname != 'new_listener':
-            self.log.debug('[' + self.__plugin_type + ':' + self.__plugin_name + ':event] ' + eventname)
-        super().emit(eventname, *args, **kwargs)
+    def emit(self, event, *args, **kwargs):
+        if event != 'new_listener':
+            # self.log.debug('[' + self.__plugin_type
+            # + ':' + self.__plugin_name + ':event] ' + event)
+            self.log.debug('[%s:%s:event] %s', self.__plugin_type, self.__plugin_name, event)
+        super().emit(event, *args, **kwargs)
 
     def __init__(self, config):
         """
@@ -135,7 +140,9 @@ class BaseDiscoveryPlugin(BasePlugin):
             self.port = port
 
         def __str__(self):
-            return 'Node: ' + self.hostname + ' Address: ' + self.ip_address + ' Port: ' + str(self.port)
+            return 'Node: {} Address: {} Port: {}'.format(self.hostname,
+                                                          self.ip_address,
+                                                          str(self.port))
 
         def __repr__(self):
             return self.__str__()
@@ -163,7 +170,7 @@ class BaseDiscoveryPlugin(BasePlugin):
         if 'address' in self.config:
             return self.config['address']
 
-        interface = self.get_network_interface()
+        interface = self.get_network_interface()  # todo: fix, no such method pylint: disable=no-member
         return netifaces.ifaddresses(interface)[2][0]['addr']
 
     @property
@@ -177,4 +184,5 @@ class BaseDiscoveryPlugin(BasePlugin):
 
 
 class BasePackagePlugin(BasePlugin):
+    """Base class for package plugins"""
     pass

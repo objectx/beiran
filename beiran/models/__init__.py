@@ -10,7 +10,8 @@ LOGGER = build_logger()
 
 MODEL_LIST = [Node, ] # DockerImage, DockerLayer]
 
-def create_tables(database, model_list=MODEL_LIST):
+
+def create_tables(database, model_list=None):
     """
     We need to create tables for first time. This method can be called by an
     init script or manually while development.
@@ -19,4 +20,4 @@ def create_tables(database, model_list=MODEL_LIST):
     """
     # import them locally!
     LOGGER.info("creating database tables!...")
-    database.create_tables(model_list)
+    database.create_tables(model_list or MODEL_LIST)

@@ -90,15 +90,14 @@ class Client:
         """
 
         headers = kwargs['headers'] if 'headers' in kwargs else {}
+        data = kwargs.pop('data', None)
         if data:
             kwargs['body'] = json.dumps(data)
             headers['Content-Type'] = 'application/json'
 
         method = kwargs.pop('method', "GET")
-        data = kwargs.pop('data', None)
         parse_json = kwargs.pop('parse_json', True)
         return_response = kwargs.pop('return_response', False)
-
         if return_response and 'raise_error' not in kwargs:
             kwargs['raise_error'] = False
 

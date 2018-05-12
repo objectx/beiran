@@ -20,26 +20,26 @@
 
 ### Install Docker
 
-beiran is run on the machine on which Docker is installed. 
+beiran is run on the machine on which Docker is installed.
 
 ### Change Storage Driver
 
 You need to use `overlay2`. Stop your Docker daemon.
 
 ```sh
-$ systemctl stop docker.service 
+$ systemctl stop docker.service
 ```
 
 Edit Systemd Service File. (/lib/systemd/system/docker.service)
 
-```
+```bash
 ExecStart=/usr/bin/dockerd -H fd:// -s overlay2
 ```
 
-Start Docker daemon. 
+Start Docker daemon.
 
 ```sh
-$ systemctl daemon-reload 
+$ systemctl daemon-reload
 $ systemctl start docker.service
 ```
 

@@ -78,7 +78,7 @@ class Client:
             self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
-    def request(self, path="/", parse_json=True, data=None, method="GET"):
+    def request(self, path="/", parse_json=True, data=None, method="GET", timeout=30): #pylint: disable=too-many-arguments
         """
         Request call to daemon
         Args:
@@ -90,12 +90,16 @@ class Client:
 
         """
 
+        headers = {}
         data_options = {}
         if data:
             data_options['body'] = json.dumps(data)
+            headers = {'Content-Type':'application/json'}
 
         try:
-            response = self.http_client.fetch(self.url + path, method=method, **data_options)
+            response = self.http_client.fetch(self.url + path,
+                                              request_timeout=timeout,
+                                              method=method, headers=headers, **data_options)
             # TODO: Parse JSON
         except httpclient.HTTPError as error:
             print("Error: " + str(error))
@@ -182,6 +186,20 @@ class Client:
 
         resp = self.request(path=path)
         return resp.get('images', [])
+
+    def pull_image(self, imagename, node=None, wait=False):
+        """
+        Pull image accross cluster with spesific node support
+        Returns:
+            result: Pulling process result
+        """
+        path = '/images?cmd=pull'
+
+        resp = self.request(path,
+                            data={'image':imagename, 'node':node, 'wait':wait},
+                            method='POST',
+                            timeout=6000)
+        return resp
 
     def get_layers(self, all_nodes=False, node_uuid=None):
         """

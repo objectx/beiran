@@ -201,6 +201,20 @@ class Client:
         resp = await self.request(path=path)
         return resp.get('images', [])
 
+    async def pull_image(self, imagename, node=None, wait=False):
+        """
+        Pull image accross cluster with spesific node support
+        Returns:
+            result: Pulling process result
+        """
+        path = '/images?cmd=pull'
+        payload = {'image':imagename, 'node':node, 'wait':wait}
+        resp = await self.request(path,
+                            data=payload,
+                            method='POST',
+                            timeout=600)
+        return resp
+
     async def get_layers(self, all_nodes=False, node_uuid=None):
         """
         Get Layer list from beiran API

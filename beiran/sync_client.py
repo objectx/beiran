@@ -78,7 +78,7 @@ class Client:
             self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
-    def request(self, path="/", parse_json=True, data=None, method="GET"):
+    def request(self, path="/", **kwargs):
         """
         Request call to daemon
         Args:
@@ -87,15 +87,30 @@ class Client:
             it returns parsed JSON
 
         Returns: Response from daemon
-
         """
 
-        data_options = {}
+        headers = kwargs['headers'] if 'headers' in kwargs else {}
         if data:
-            data_options['body'] = json.dumps(data)
+            kwargs['body'] = json.dumps(data)
+            headers['Content-Type'] = 'application/json'
+
+        method = kwargs.pop('method', "GET")
+        data = kwargs.pop('data', None)
+        parse_json = kwargs.pop('parse_json', True)
+        return_response = kwargs.pop('return_response', False)
+
+        if return_response and 'raise_error' not in kwargs:
+            kwargs['raise_error'] = False
+
+        if 'timeout' in kwargs:
+            # this is not good, we want a total timeout
+            # but will do for now..
+            kwargs['connect_timeout'] = kwargs['timeout']
+            kwargs['request_timeout'] = kwargs['timeout']
+            del kwargs['timeout']
 
         try:
-            response = self.http_client.fetch(self.url + path, method=method, **data_options)
+            response = self.http_client.fetch(self.url + path, method=method, **kwargs)
             # TODO: Parse JSON
         except httpclient.HTTPError as error:
             print("Error: " + str(error))
@@ -106,6 +121,9 @@ class Client:
 
             # Other errors are possible, such as IOError.
             raise error
+
+        if return_response:
+            return response
 
         if parse_json:
             return json.loads(response.body)
@@ -182,6 +200,20 @@ class Client:
         resp = self.request(path=path)
         return resp.get('images', [])
 
+    def pull_image(self, imagename, node=None, wait=False):
+        """
+        Pull image accross cluster with spesific node support
+        Returns:
+            result: Pulling process result
+        """
+        path = '/images?cmd=pull'
+
+        resp = self.request(path,
+                            data={'image':imagename, 'node':node, 'wait':wait},
+                            method='POST',
+                            timeout=600)
+        return resp
+
     def get_layers(self, all_nodes=False, node_uuid=None):
         """
         Get Layer list from beiran API
@@ -201,3 +233,4 @@ class Client:
         resp = self.request(path=path)
 
         return resp.get('layers', [])
+

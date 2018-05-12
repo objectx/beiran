@@ -248,7 +248,7 @@ class ImageList(web.RequestHandler):
 
         # TODO: Replacing protocols should be reconsidered
         url = '{}/images/{}'.format(body['node'].replace('beiran', 'http'), body['image'])
-        logger.debug("Requesting image from %s", url)
+        Services.logger.debug("Requesting image from %s", url)
 
         chunks = asyncio.Queue()
 
@@ -261,17 +261,17 @@ class ImageList(web.RequestHandler):
                 chunk = await chunks.get()
 
         try:
-            docker_future = APP.docker.images.import_image(data=sender(chunks)) # pylint: disable=no-value-for-parameter
+            docker_future = Services.aiodocker.images.import_image(data=sender(chunks)) # pylint: disable=no-value-for-parameter
             docker_result = asyncio.ensure_future(docker_future)
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     async for data in resp.content.iter_chunked(64*1024):
-                        # logger.debug("Pull: Chunk received with length: %s", len(data))
+                        # Services.logger.debug("Pull: Chunk received with length: %s", len(data))
                         chunks.put_nowait(data)
             chunks.put_nowait(None)
             await docker_result
         except aiohttp.ClientError as error:
-            logger.error(error)
+            Services.logger.error(error)
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
         if wait:
@@ -284,7 +284,7 @@ class ImageList(web.RequestHandler):
     async def post(self):
         cmd = self.get_argument('cmd')
         if cmd:
-            logger.debug("Image endpoint is invoked with command `%s`", cmd)
+            Services.logger.debug("Image endpoint is invoked with command `%s`", cmd)
             method = None
             try:
                 method = getattr(self, cmd)

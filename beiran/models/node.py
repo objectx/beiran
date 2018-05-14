@@ -3,7 +3,7 @@ Module for Node Data Model
 """
 import uuid
 from peewee import IntegerField, CharField, UUIDField
-from beiran.models.base import BaseModel, JSONStringField
+from beiran.models.base import BaseModel
 
 # Proposed new model for replacing address and port info in Node model
 # This will fix discovering same node over several networks, etc.

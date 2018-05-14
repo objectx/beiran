@@ -4,7 +4,7 @@ Module for in memory node tracking object `Nodes`
 import logging
 from beiran.models import Node
 
-from beirand.lib import async_fetch
+from beiran.lib import async_fetch
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""

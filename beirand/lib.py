@@ -7,8 +7,6 @@ import platform
 import socket
 from uuid import uuid4, UUID
 
-import aiohttp
-import async_timeout
 import netifaces
 
 from beiran.log import build_logger
@@ -200,25 +198,6 @@ def collect_node_info():
         "beiran_version": get_version(),
         "beiran_service_port": get_listen_port()
     }
-
-
-async def async_fetch(url, timeout=3, **kwargs):
-    """
-    Async http get with aiohttp
-    Args:
-        url (str): get url
-        timeout (int): timeout
-
-    Returns:
-        (ClientResponse, dict): response instance, response json
-
-    """
-    async with aiohttp.ClientSession() as session:
-        async with async_timeout.timeout(timeout):
-            async with session.get(url, headers=kwargs) as resp:
-                response, response = resp, await resp.json()
-                return response, response
-
 
 # todo: remove redundant method after test. modified above
 # async def async_req(url, timeout=3, **kwargs):

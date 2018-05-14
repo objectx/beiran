@@ -31,7 +31,6 @@ class Node(BaseModel):
     architecture = CharField(max_length=20)  # x86_64
     beiran_version = CharField(max_length=10)  # beiran daemon version of node
     beiran_service_port = IntegerField()
-    docker = JSONStringField(null=True)  # dump all data from docker_client.info()
     status = CharField(max_length=32, default='new')
 
     def __str__(self):
@@ -55,18 +54,3 @@ class Node(BaseModel):
 
     def __repr__(self):
         return self.__str__()
-
-    @property
-    def docker_version(self):
-        """Docker version"""
-        return self.docker['ServerVersion'] if self.docker else None
-
-    @property
-    def docker_storage_driver(self):
-        """Docker storage driver"""
-        return self.docker['Driver'] if self.docker else None
-
-    @property
-    def docker_root_dir(self):
-        """Docker root directory"""
-        return self.docker['DockerRootDir'] if self.docker else None

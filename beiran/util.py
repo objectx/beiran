@@ -3,6 +3,7 @@ Utilities for beiran project
 """
 
 import sys
+import tarfile
 
 
 class Unbuffered(object):
@@ -65,3 +66,19 @@ def exit_print(exit_code, *args, **kwargs):
     """
     print(*args, file=sys.stderr, **kwargs)
     sys.exit(exit_code)
+
+
+def create_tar_archive(dir_path, output_file_path):
+    """
+    create a tar archive from given path
+
+    Args:
+        output_file_path: directory path to be saved!
+        dir_path (string): directory path to be tarred!
+
+    Returns:
+
+
+    """
+    with tarfile.open(output_file_path, "w") as tar:
+        tar.add(dir_path, arcname='.')

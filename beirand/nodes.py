@@ -4,7 +4,7 @@ Module for in memory node tracking object `Nodes`
 import logging
 from beiran.models import Node
 
-from beirand.lib import async_fetch
+from beiran.lib import async_fetch
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
@@ -147,8 +147,8 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        status, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
-        if status != 200:
+        resp, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
+        if resp.status != 200:
             raise Exception("Cannot fetch node information")
 
         self.logger.debug("received node information %s", str(response))
@@ -157,23 +157,6 @@ class Nodes(object):
         node.ip_address = node_ip
         node.port = node_port
         return self.add_or_update(node)
-
-    def get_node_by_ip(self, ip_address):
-        """
-        Returns the node specified by `ip` address.
-
-        Args:
-            ip_address (str): ip address
-
-        Returns:
-            (Node) found node object
-
-        """
-        for _, node in self.all_nodes.items():
-            if node.ip_address == ip_address:
-                return node
-
-        return None
 
     def get_node_by_ip_and_port(self, ip_address, service_port):
         """

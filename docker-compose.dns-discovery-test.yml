@@ -1,0 +1,18 @@
+# This docker-compose is for dns discovery test environment
+version: '2'
+services:
+  beiran_dns:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    build: .
+    networks:
+      - test
+    volumes:
+     - .:/src
+    environment:
+      - DISCOVERY_METHOD=dns
+      - DISCOVERY_SERVICE_ADDRESS=beiran_dns
+      - LISTEN_ADDR=0.0.0.0
+      - LOG_LEVEL=INFO
+
+networks:
+  test:

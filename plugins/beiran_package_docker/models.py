@@ -1,8 +1,11 @@
+# TODO : Move docker models here
+# TODO : Support plugin models on daemon
 """
 Module for DockerLayer and DockerImage Model
 """
 from peewee import IntegerField, CharField, BooleanField
 from beiran.models.base import BaseModel, JSONStringField
+
 
 class CommonDockerObjectFunctions:
     """..."""
@@ -20,6 +23,7 @@ class CommonDockerObjectFunctions:
         if uuid_hex not in self.available_at:
             return
         self.available_at = [n for n in self.available_at if n != uuid_hex]
+
 
 class DockerImage(BaseModel, CommonDockerObjectFunctions):
     """DockerImage"""
@@ -77,6 +81,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
 
         return _dict
 
+
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     """DockerLayer"""
 
@@ -85,3 +90,6 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     layerdb_diff_id = CharField(max_length=128)
     size = IntegerField()
     available_at = JSONStringField(default=list)
+
+
+MODEL_LIST = [DockerImage, DockerLayer]  # we may discover dynamically

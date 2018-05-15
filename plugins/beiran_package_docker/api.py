@@ -1,121 +1,25 @@
-"""HTTP and WS API implementation of beiran daemon"""
+"""Docker API endpoints"""
 import os
 import re
 import json
 import asyncio
-import urllib
 import aiohttp
-
-from tornado import websocket, web
-from tornado.options import options, define
+from tornado import web
 from tornado.web import HTTPError
-
 from peewee import SQL
-
 import aiodocker
-
-from beirand.common import logger, VERSION, AIO_DOCKER_CLIENT, DOCKER_TAR_CACHE_DIR, NODES, EVENTS
-from beirand.lib import docker_find_layer_dir_by_sha, create_tar_archive, docker_sha_summary
-from beirand.lib import get_listen_address, get_listen_port
-
-from beiran.models import DockerImage, DockerLayer
-
-define('listen_address',
-       group='webserver',
-       default=get_listen_address(),
-       help='Listen address')
-define('listen_port',
-       group='webserver',
-       default=get_listen_port(),
-       help='Listen port')
-define('unix_socket',
-       group='webserver',
-       default="/var/run/beirand.sock",
-       help='Path to unix socket to bind')
-
-if 'BEIRAN_SOCK' in os.environ:
-    options.unix_socket = os.environ['BEIRAN_SOCK']
+from beiran.util import create_tar_archive
+from .models import DockerImage, DockerLayer
 
 
-class EchoWebSocket(websocket.WebSocketHandler):
-    """ Websocket implementation for test
-    """
-
-    def data_received(self, chunk):
-        """
-        Web socket data received in chunk
-        Args:
-            chunk: Current received data
-        """
-        pass
-
-    def open(self, *args, **kwargs):
-        """ Monitor if websocket is opened
-        """
-        logger.info("WebSocket opened")
-
-    def on_message(self, message):
-        """ Received message from websocket
-        """
-        self.write_message(u"You said: " + message)
-
-    def on_close(self):
-        """ Monitor if websocket is closed
-        """
-        logger.info("WebSocket closed")
-
-
-class JsonHandler(web.RequestHandler):
-    """Request handler where requests and responses speak JSON."""
-
-    def __init__(self, application, request, **kwargs):
-        super().__init__(application, request, **kwargs)
-        self.json_data = dict()
-        self.response = dict()
-
-    def data_received(self, chunk):
-        pass
-
-    def prepare(self):
-        # Incorporate request JSON into arguments dictionary.
-        if self.request.body:
-            try:
-                self.json_data = json.loads(self.request.body)
-            except ValueError:
-                message = 'Unable to parse JSON.'
-                self.send_error(400, message=message) # Bad Request
-
-        # Set up response dictionary.
-        self.response = dict()
-
-    def set_default_headers(self):
-        self.set_header('Content-Type', 'application/json')
-
-    def write_error(self, status_code, **kwargs):
-        if 'message' not in kwargs:
-            if status_code == 405:
-                kwargs['message'] = 'Invalid HTTP method.'
-            else:
-                kwargs['message'] = 'Unknown error.'
-
-        self.response = kwargs
-        self.write_json()
-
-    def write_json(self):
-        """Write json output"""
-        output = json.dumps(self.response)
-        self.write(output)
-
-class ApiRootHandler(web.RequestHandler):
-    """ API Root endpoint `/` handling"""
-
-    def data_received(self, chunk):
-        pass
-
-    def get(self, *args, **kwargs):
-        self.set_header("Content-Type", "application/json")
-        self.write('{"version":"' + VERSION + '"}')
-        self.finish()
+class Services:
+    """These needs to be injected from the plugin init code"""
+    local_node = None
+    logger = None
+    aiodocker = None
+    docker_util = None
+    tar_cache_dir = "tar_cache"
+    loop = None
 
 
 class ImagesTarHandler(web.RequestHandler):
@@ -130,7 +34,9 @@ class ImagesTarHandler(web.RequestHandler):
             Get image as a tarball
         """
         try:
-            content = await APP.docker.images.export_image(image_id_or_sha)
+            # pylint: disable=no-member
+            content = await Services.aiodocker.images.export_image(image_id_or_sha)
+            # pylint: enable=no-member
             self.set_header("Content-Type", "application/x-tar")
 
             while True:
@@ -143,7 +49,7 @@ class ImagesTarHandler(web.RequestHandler):
         except aiodocker.exceptions.DockerError as error:
             raise HTTPError(status_code=404, log_message=error.message)
         except Exception as error:
-            logger.error("Image Stream failed: %s", str(error))
+            Services.logger.error("Image Stream failed: %s", str(error))
             raise HTTPError(status_code=500, log_message=str(error))
 
     async def head(self, image_id_or_sha):
@@ -170,6 +76,7 @@ class ImagesTarHandler(web.RequestHandler):
 
         except DockerImage.DoesNotExist as error:
             raise HTTPError(status_code=404, log_message=str(error))
+
 
 class LayerDownload(web.RequestHandler):
     """ Container image layer downloading handler """
@@ -202,14 +109,14 @@ class LayerDownload(web.RequestHandler):
         Get layer info by given layer_id
         """
         self._set_headers(layer_id)
-        layer_path = docker_find_layer_dir_by_sha(layer_id)
+        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
 
         if not layer_path:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         tar_path = "{cache_dir}/{cache_tar_name}" \
-            .format(cache_dir=DOCKER_TAR_CACHE_DIR,
-                    cache_tar_name=docker_sha_summary(layer_id))
+            .format(cache_dir=Services.tar_cache_dir,
+                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id))
         if not os.path.isfile(tar_path):
             create_tar_archive(layer_path, tar_path)
 
@@ -225,54 +132,6 @@ class LayerDownload(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class NodeInfo(web.RequestHandler):
-    """Endpoint which reports node information"""
-
-    def __init__(self, application, request, **kwargs):
-        super().__init__(application, request, **kwargs)
-        self.node_info = {}
-
-    def data_received(self, chunk):
-        pass
-
-    # pylint: disable=arguments-differ
-    @web.asynchronous
-    async def get(self, uuid=None):
-        """Retrieve info of the node by `uuid` or the local node"""
-
-        if not uuid:
-            node = NODES.local_node
-        else:
-            node = await NODES.get_node_by_uuid(uuid)
-
-        # error = info = version = ""
-
-        # try:
-        #     info = await self.application.docker.system.info()
-        #     version = await self.application.docker.version()
-        #     status = True
-        # except DockerError as error:
-        #     status = False
-        #     logger.error('Docker Client error %s', error)
-
-        # node_info.update(
-        #     {
-        #         "docker": {
-        #             "status": status,
-        #             "daemon_info": info,
-        #             "version": version,
-        #             "error": error
-        #         }
-        #     }
-        # )
-        if not node:
-            raise HTTPError(status_code=404, log_message="Node Not Found")
-        self.write(node.to_dict())
-        self.finish()
-
-    # pylint: enable=arguments-differ
-
-
 @web.stream_request_body
 class ImagesHandler(web.RequestHandler):
     """Endpoint to list docker images"""
@@ -282,43 +141,11 @@ class ImagesHandler(web.RequestHandler):
         self.chunks = None
         self.future_response = None
 
-    # pylint: disable=arguments-differ
-    async def get(self):
-        """Retrieve image list of the node
-
-        Available arguments are:
-            - all          // all images
-            - filter       // filter by name ?filter=beiran
-            - dangling     // list dangling images ?dangling=true
-            - label        // filter by label  ?label=
-
-        """
-        logger.debug("image: streaming image directly from docker daemon")
-
-        params = dict()
-        params.update(
-            {
-                "all": self.get_argument('all', False),
-                "filter": self.get_argument('filter', None),
-                "dangling": self.get_argument('dangling', False),
-                "label": self.get_argument('label', None),
-            }
-        )
-
-        logger.debug("listing images with params: %s", params)
-
-        image_list = await AIO_DOCKER_CLIENT.images.list(**params)
-
-        self.write({
-            "images": image_list
-        })
-    # pylint: enable=arguments-differ
-
     def prepare(self):
         if self.request.method != 'POST':
             return
 
-        logger.debug("image: preparing for receiving upload")
+        Services.logger.debug("image: preparing for receiving upload")
         self.chunks = asyncio.Queue()
 
         @aiohttp.streamer
@@ -329,7 +156,9 @@ class ImagesHandler(web.RequestHandler):
                 await writer.write(chunk)
                 chunk = await chunks.get()
 
-        self.future_response = APP.docker.images.import_image(data=sender(self.chunks))  # pylint: disable=no-value-for-parameter
+        # pylint: disable=no-value-for-parameter,no-member
+        self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
+        # pylint: enable=no-value-for-parameter,no-member
 
     # pylint: disable=arguments-differ
     async def data_received(self, chunk):
@@ -339,7 +168,7 @@ class ImagesHandler(web.RequestHandler):
         """
             Loads tarball to docker
         """
-        logger.debug("image: upload done")
+        Services.logger.debug("image: upload done")
         try:
             await self.chunks.put(None)
             response = await self.future_response
@@ -350,7 +179,7 @@ class ImagesHandler(web.RequestHandler):
                     raise HTTPError(status_code=500, log_message=state['error'])
             self.write("OK")
             self.finish()
-        except  aiodocker.exceptions.DockerError as error:
+        except aiodocker.exceptions.DockerError as error:
             raise HTTPError(status_code=404, log_message=error.message)
     # pylint: enable=arguments-differ
 
@@ -379,9 +208,9 @@ class ImagePullHandler(web.RequestHandler):
 
         tag = self.get_argument('tag', 'latest')
 
-        logger.info("pulling image %s:%s", image, tag)
+        Services.logger.info("pulling image %s:%s", image, tag)
 
-        result = await AIO_DOCKER_CLIENT.images.pull(from_image=image, tag=tag, stream=True)
+        result = await Services.aiodocker.images.pull(from_image=image, tag=tag, stream=True)
         self.write('{"statuses": [')
 
         comma = ""
@@ -422,7 +251,7 @@ class ImageList(web.RequestHandler):
 
         # TODO: Replacing protocols should be reconsidered
         url = '{}/images/{}'.format(body['node'].replace('beiran', 'http'), body['image'])
-        logger.debug("Requesting image from %s", url)
+        Services.logger.debug("Requesting image from %s", url)
 
         chunks = asyncio.Queue()
 
@@ -435,30 +264,31 @@ class ImageList(web.RequestHandler):
                 chunk = await chunks.get()
 
         try:
-            docker_future = APP.docker.images.import_image(data=sender(chunks)) # pylint: disable=no-value-for-parameter
+            # pylint: disable=no-value-for-parameter,no-member
+            docker_future = Services.aiodocker.images.import_image(data=sender(chunks))
+            # pylint: enable=no-value-for-parameter,no-member
             docker_result = asyncio.ensure_future(docker_future)
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     async for data in resp.content.iter_chunked(64*1024):
-                        # logger.debug("Pull: Chunk received with length: %s", len(data))
+                        # Services.logger.debug("Pull: Chunk received with length: %s", len(data))
                         chunks.put_nowait(data)
             chunks.put_nowait(None)
             await docker_result
         except aiohttp.ClientError as error:
-            logger.error(error)
+            Services.logger.error(error)
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
         if wait:
             self.write({'finished':True})
             self.finish()
 
-
     # pylint: disable=arguments-differ
     @web.asynchronous
     async def post(self):
         cmd = self.get_argument('cmd')
         if cmd:
-            logger.debug("Image endpoint is invoked with command `%s`", cmd)
+            Services.logger.debug("Image endpoint is invoked with command `%s`", cmd)
             method = None
             try:
                 method = getattr(self, cmd)
@@ -468,7 +298,6 @@ class ImageList(web.RequestHandler):
 
             return await method()
         raise NotImplementedError()
-
 
     def get(self):
         """
@@ -485,7 +314,7 @@ class ImageList(web.RequestHandler):
         all_images = self.get_argument('all', False) == 'true'
 
         # todo: validate `node` argument if it is valid UUID
-        node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node = self.get_argument('node', Services.local_node.uuid.hex)
         node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
         if node and not node_pattern.match(node):
             raise HTTPError(status_code=400,
@@ -534,7 +363,7 @@ class LayerList(web.RequestHandler):
         all_images = self.get_argument('all', False) == 'true'
 
         # todo: validate `node` argument if it is valid UUID
-        node = self.get_argument('node', NODES.local_node.uuid.hex)
+        node = self.get_argument('node', Services.local_node.uuid.hex)
         node_pattern = re.compile("^([A-Fa-f0-9-]+)$")
         if node and not node_pattern.match(node):
             raise HTTPError(status_code=400,
@@ -561,81 +390,17 @@ class LayerList(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class NodesHandler(JsonHandler):
-    """List nodes by arguments specified in uri all, online, offline, etc."""
-
-    def data_received(self, chunk):
-        pass
-
-    # pylint: disable=arguments-differ
-    def post(self):
-        if 'address' not in self.json_data:
-            raise Exception("Unacceptable data")
-
-        address = self.json_data['address']
-        parsed = urllib.parse.urlparse(address)
-
-        # loop = asyncio.get_event_loop()
-        # task = loop.create_task(NODES.add_or_update_new_remote_node(parsed.hostname, parsed.port))
-        EVENTS.emit('probe', ip_address=parsed.hostname, service_port=parsed.port) # TEMP
-
-        self.write({"status": "OK"})
-        self.finish()
-    # pylint: enable=arguments-differ
-
-    # pylint: disable=arguments-differ
-    def get(self):
-        """
-        Return list of nodes, if specified `all`from database or discovered ones from memory.
-
-        Returns:
-            (dict) list of nodes, it is a dict, since tornado does not write list for security
-                   reasons; see:
-                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
-
-        """
-        all_nodes = self.get_argument('all', False) == 'true'
-
-        node_list = NODES.list_of_nodes(
-            from_db=all_nodes
-        )
-
-        self.write(
-            {
-                "nodes": [n.to_dict() for n in node_list]
-            }
-        )
-        self.finish()
-
-    # pylint: enable=arguments-differ
-
-
-class Ping(web.RequestHandler):
-    """Ping / Pong endpoint"""
-
-    def data_received(self, chunk):
-        pass
-
-    # pylint: disable=arguments-differ
-    def get(self):
-        """Just return a PONG response"""
-        self.write({"ping":"pong"})
-        self.finish()
-    # pylint: enable=arguments-differ
-
-
-APP = web.Application([
-    (r'/', ApiRootHandler),
+ROUTES = [
+    # 0.0.5 compat (TODO: delete at 0.0.6 release)
     (r'/images', ImageList),
     (r'/layers', LayerList),
     (r'/images/(.*)', ImagesTarHandler),
     (r'/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/info(?:/([0-9a-fsh:]+))?', NodeInfo),
-    (r'/nodes', NodesHandler),
-    (r'/ping', Ping),
-    # (r'/layers', LayersHandler),
     (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
-    (r'/ws', EchoWebSocket),
-])
-
-APP.docker = AIO_DOCKER_CLIENT
+    # 0.0.6+
+    (r'/docker/images', ImageList),
+    (r'/docker/layers', LayerList),
+    (r'/docker/images/(.*)', ImagesTarHandler),
+    (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
+    (r'/docker/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
+]

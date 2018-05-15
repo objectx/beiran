@@ -4,13 +4,14 @@ Import all data models to make import statements clear.
 from beiran.log import build_logger
 from .base import BaseModel
 from .node import Node
-from .docker_objects import DockerImage, DockerLayer
+# from .docker_objects import DockerImage, DockerLayer
 
 LOGGER = build_logger()
 
-MODEL_LIST = [Node, DockerImage, DockerLayer]
+MODEL_LIST = [Node, ] # DockerImage, DockerLayer]
 
-def create_tables(database):
+
+def create_tables(database, model_list=None):
     """
     We need to create tables for first time. This method can be called by an
     init script or manually while development.
@@ -19,4 +20,4 @@ def create_tables(database):
     """
     # import them locally!
     LOGGER.info("creating database tables!...")
-    database.create_tables(MODEL_LIST)
+    database.create_tables(model_list or MODEL_LIST)

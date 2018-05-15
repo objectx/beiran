@@ -2,9 +2,7 @@
 import logging
 import os
 
-import docker
 from pyee import EventEmitter
-from aiodocker import Docker
 
 from beiran.log import build_logger
 from beiran.version import get_version
@@ -20,15 +18,6 @@ logger = build_logger(LOG_FILE, LOG_LEVEL)  # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'daemon')
 
-# Initialize docker client
-DOCKER_CLIENT = docker.from_env()
-
-# docker low level api client to get image data
-DOCKER_LC = docker.APIClient()
-
-# we may have a settings file later, create this dir while init wherever it would be
-DOCKER_TAR_CACHE_DIR = "tar_cache"
-
-AIO_DOCKER_CLIENT = Docker()
-
 NODES = Nodes()
+
+PLUGINS = {}

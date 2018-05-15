@@ -9,14 +9,14 @@ from tabulate import tabulate
 from beiran.util import exit_print
 from beiran.util import Unbuffered
 from beiran.version import get_version
-from beiran.client import Client
+from beiran.sync_client import Client
 from beiran.log import build_logger
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
 # LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
 logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 
-VERSION = get_version('short', 'cli')
+VERSION = get_version('short', 'library')
 
 sys.stdout = Unbuffered(sys.stdout)
 

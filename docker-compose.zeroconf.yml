@@ -10,17 +10,17 @@ services:
      # - /var/lib/docker:/var/lib/docker
      - ./beiran:/opt/beiran/beiran:ro
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
-     - ./beirand/beirand:/opt/beiran/beirand:ro
+     - ./beirand:/opt/beiran/beirand:ro
     # network_mode: host
     environment:
       - DISCOVERY_METHOD=zeroconf
       - LISTEN_ADDR=0.0.0.0
-      - LISTEN_PORT=8890
+      - LISTEN_PORT=8892
       - LOG_LEVEL=INFO
       # - HOSTNAME=b1
       - DOCKER_HOST=http://172.17.0.1:2375
     ports:
-      - 8890:8890
+      - 8892:8892
     networks:
       - test
 
@@ -33,7 +33,7 @@ services:
      # - /var/lib/docker:/var/lib/docker
      - ./beiran:/opt/beiran/beiran:ro
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
-     - ./beirand/beirand:/opt/beiran/beirand:ro
+     - ./beirand:/opt/beiran/beirand:ro
     # network_mode: host
     environment:
       - DISCOVERY_METHOD=zeroconf

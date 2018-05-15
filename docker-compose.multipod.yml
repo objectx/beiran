@@ -1,0 +1,69 @@
+version: '2'
+services:
+  pod1:
+    image: gcr.io/google_containers/pause:0.8.0
+    volumes:
+      - /var/run
+      - /var/lib/docker
+      - /var/lib/beiran
+    networks:
+      - test
+  docker1:
+    image: docker:18.03.0-ce-dind
+    privileged: true
+    command:  [ "-D" ]
+    volumes_from:
+      - pod1
+    network_mode: "service:pod1"
+  beiran1:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    volumes_from:
+      - pod1
+    network_mode: "service:pod1"
+
+
+  pod2:
+    image: gcr.io/google_containers/pause:0.8.0
+    volumes:
+      - /var/run
+      - /var/lib/docker
+      - /var/lib/beiran
+    networks:
+      - test
+  docker2:
+    image: docker:18.03.0-ce-dind
+    privileged: true
+    command:  [ "-D" ]
+    volumes_from:
+      - pod2
+    network_mode: "service:pod2"
+  beiran2:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    volumes_from:
+      - pod2
+    network_mode: "service:pod2"
+
+
+  pod3:
+    image: gcr.io/google_containers/pause:0.8.0
+    volumes:
+      - /var/run
+      - /var/lib/docker
+      - /var/lib/beiran
+    networks:
+      - test
+  docker3:
+    image: docker:18.03.0-ce-dind
+    privileged: true
+    command:  [ "-D" ]
+    volumes_from:
+      - pod3
+    network_mode: "service:pod1"
+  beiran3:
+    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    volumes_from:
+      - pod3
+    network_mode: "service:pod3"
+
+networks:
+  test:

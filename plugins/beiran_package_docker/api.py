@@ -96,10 +96,32 @@ class LayerDownload(web.RequestHandler):
         # how is 31536000 calculated?
         self.set_header("cache-control", "max-age=31536000")
 
+    @staticmethod
+    def get_layer_path_or_404(layer_id):
+        """
+        Try to find layer path locally or raise 404
+        Args:
+            layer_id (str): uuid str of layer
+
+        Returns:
+            (str) layer path
+
+        Raises:
+            404 if not found
+
+        """
+        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
+        if not layer_path:
+            raise HTTPError(status_code=404, log_message="Layer Not Found")
+        return layer_path
+
+
     # pylint: disable=arguments-differ
     def head(self, layer_id):
         self._set_headers(layer_id)
-        return self.get(layer_id)
+        self.get_layer_path_or_404(layer_id)
+        self.write("OK")
+        self.finish()
 
     # pylint: enable=arguments-differ
 
@@ -109,10 +131,7 @@ class LayerDownload(web.RequestHandler):
         Get layer info by given layer_id
         """
         self._set_headers(layer_id)
-        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
-
-        if not layer_path:
-            raise HTTPError(status_code=404, log_message="Layer Not Found")
+        layer_path = self.get_layer_path_or_404(layer_id)
 
         tar_path = "{cache_dir}/{cache_tar_name}" \
             .format(cache_dir=Services.tar_cache_dir,

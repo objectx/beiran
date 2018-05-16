@@ -147,6 +147,9 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
+        # TODO: Use beiran client
+        # TODO: Leave this work (fetching info) to Peer class
+        # These changes will save us from hardcoded `http` here
         resp, data = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
         if resp.status != 200:
             raise Exception("Cannot fetch node information")

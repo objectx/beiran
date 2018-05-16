@@ -91,7 +91,13 @@ class BeiranDaemon(EventEmitter):
             ip_address (str): ip_address of new node
             service_port (str): service port of new node
         """
+
+        service_port = service_port or get_listen_port()
         node = NODES.get_node_by_ip_and_port(ip_address, service_port)
+        if not node:
+            logger.warning('Cannot find node at %s:%d for removing', ip_address, service_port)
+            return
+
         logger.info('Node is about to be removed %s', str(node))
         removed = NODES.remove_node(node)
         logger.debug('Removed? %s', removed)

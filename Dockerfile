@@ -28,12 +28,9 @@ RUN pip install -r /opt/beiran/r-docker.txt
 ADD [ "beirand", "/opt/beiran/beirand" ]
 ADD [ "beiran", "/opt/beiran/beiran" ]
 
-ADD [ "plugins/beiran_discovery_dns", "/opt/beiran/beiran_discovery_dns" ]
-ADD [ "plugins/beiran_discovery_zeroconf", "/opt/beiran/beiran_discovery_zeroconf" ]
-ADD [ "plugins/beiran_package_docker", "/opt/beiran/beiran_package_docker" ]
-# ADD [ "plugins/beiran_package_npm", "/opt/beiran/beiran_package_npm" ]
+ADD [ "plugins", "/opt/beiran/plugins" ]
 
-ENV PYTHONPATH=/opt/beiran
+ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
 
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran

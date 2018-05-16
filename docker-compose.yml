@@ -11,6 +11,7 @@ services:
      - ./beiran:/opt/beiran/beiran:ro
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
      - ./beirand:/opt/beiran/beirand:ro
+     - ./plugins:/opt/beiran/plugins:ro
     network_mode: host
     environment:
       - DISCOVERY_METHOD=zeroconf

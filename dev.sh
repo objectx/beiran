@@ -2,11 +2,13 @@
 
 DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 NAME=$(basename $DIR)
-export VIRTUAL_ENV="${DIR}/env"
+export VIRTUAL_ENV_DIR="${DIR}/env"
 unset PYTHON_HOME
-export PYTHONPATH=${DIR}/beirand:${DIR}
+# export PYTHONPATH=${DIR}
+export PYTHON_BINARY=python3.6
+export PKG_DIR=${VIRTUAL_ENV_DIR}/lib/${PYTHON_BINARY}/site-packages
 
-REQS="python3.6 virtualenv pip"
+REQS="$PYTHON_BINARY virtualenv pip"
 
 for req in $REQS; do
 	if ! which ${req} >/dev/null; then
@@ -16,22 +18,22 @@ for req in $REQS; do
 	fi
 done
 
-if [ ! -d $DIR/env ]; then
-	virtualenv env --python=$(which python3.6)
-	source ${DIR}/env/bin/activate
+if [ ! -d ${VIRTUAL_ENV_DIR} ]; then
+	virtualenv env --python=$(which $PYTHON_BINARY)
+	source ${VIRTUAL_ENV_DIR}/bin/activate
 	pip install ipython
+else
+	source ${VIRTUAL_ENV_DIR}/bin/activate
 fi
-
-source ${DIR}/env/bin/activate
 
 STAMP=$(date +%s)
 INSTALLED=0
-LAST_INSTALL=$(date -r ${DIR}/env/.last_install +%s 2>/dev/null || echo "0")
+LAST_INSTALL=$(date -r ${VIRTUAL_ENV_DIR}/.last_install +%s 2>/dev/null || echo "0")
 packages="beiran beirand plugins/*"
 for package in $packages; do
 	package_name=$(basename $package)
-	if [ ! -d env/lib/python3.6/site-packages/$package_name ]; then
-		ln -s ${DIR}/$package env/lib/python3.6/site-packages/
+	if [ ! -h ${PKG_DIR}/$package_name ]; then
+		ln -s ${DIR}/$package ${PKG_DIR}/
 	fi
 
 	if [ -f $package/requirements.txt ]; then
@@ -44,22 +46,22 @@ for package in $packages; do
 done
 
 if [ $INSTALLED -eq 1 ]; then
-	echo $STAMP > ${DIR}/env/.last_install
+	echo $STAMP > ${VIRTUAL_ENV_DIR}/.last_install
 fi
 
-cat > $VIRTUAL_ENV/bin/beiran <<EOF
+cat > ${VIRTUAL_ENV_DIR}/bin/beiran <<EOF
 #!/bin/sh -e
-exec python3.6 -m beiran "\$@"
+exec ${PYTHON_BINARY} -m beiran "\$@"
 EOF
 
-cat > $VIRTUAL_ENV/bin/beirand <<EOF
+cat > ${VIRTUAL_ENV_DIR}/bin/beirand <<EOF
 #!/bin/sh -e
-exec python3.6 -m beirand "\$@"
+exec ${PYTHON_BINARY} -m beirand "\$@"
 EOF
 
-chmod +x $VIRTUAL_ENV/bin/beiran*
+chmod +x ${VIRTUAL_ENV_DIR}/bin/beiran*
 
-export PATH="$VIRTUAL_ENV/bin:$PATH"
+export PATH="${VIRTUAL_ENV_DIR}/bin:$PATH"
 
 export LOG_LEVEL=DEBUG
 export LOG_FILE=${DIR}/beirand.log

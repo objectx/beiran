@@ -57,3 +57,26 @@
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+
+- test:
+  - name: "Layer Download"
+  - headers: {accept: 'application/json'}
+  - url: "/layers/sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/octet-stream'}
+     - compare: {header: "Docker-Content-Digest", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
+     - compare: {header: "Etag", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
+     - compare: {header: "Content-Length", comparator: equals, expected: '132700160'}
+
+- test:
+  - name: "Layer Download HEAD"
+  - headers: {accept: 'application/json'}
+  - url: "/layers/sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0"
+  - method: "HEAD"
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/octet-stream'}
+     - compare: {header: "Docker-Content-Digest", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
+     - compare: {header: "Etag", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
+     - compare: {header: "Content-Length", comparator: equals, expected: '2'}

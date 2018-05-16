@@ -136,6 +136,10 @@ class LayerDownload(web.RequestHandler):
         tar_path = "{cache_dir}/{cache_tar_name}" \
             .format(cache_dir=Services.tar_cache_dir,
                     cache_tar_name=Services.docker_util.docker_sha_summary(layer_id))
+
+        if not os.path.isdir(Services.tar_cache_dir):
+            os.makedirs(Services.tar_cache_dir)
+
         if not os.path.isfile(tar_path):
             create_tar_archive(layer_path, tar_path)
 

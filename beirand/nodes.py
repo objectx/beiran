@@ -147,12 +147,12 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        resp, response = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
+        resp, data = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
         if resp.status != 200:
             raise Exception("Cannot fetch node information")
 
-        self.logger.debug("received node information %s", str(response))
-        node = Node.from_dict(response)
+        self.logger.debug("received node information %s", str(data))
+        node = Node.from_dict(data)
         # but for us, addresses might be different than what that node thinks or herself
         node.ip_address = node_ip
         node.port = node_port

@@ -70,9 +70,6 @@ export BEIRAN_DB_PATH=${DIR}/beiran.db
 export LISTEN_ADDR=0.0.0.0
 export CONFIG_FOLDER_PATH=${DIR}
 
-alias beirand="python3.6 -m beirand"
-alias beiran="python3.6 -m beiran"
-
 function ps1_context {
 	# For any of these bits of context that exist, display them and append
 	# a space.

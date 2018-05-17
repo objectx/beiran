@@ -79,4 +79,4 @@
      - compare: {header: "content-type", comparator: contains, expected: 'application/octet-stream'}
      - compare: {header: "Docker-Content-Digest", comparator: contains, expected: {template: "$test_docker_layer"}}
      - compare: {header: "Etag", comparator: contains, expected: {template: "$test_docker_layer"}}
-     - compare: {header: "Content-Length", comparator: equals, expected: '2'}
+     - compare: {header: "Content-Length", comparator: equals, expected: '10240'}

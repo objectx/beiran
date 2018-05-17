@@ -3,6 +3,7 @@
 ---
 - config:
   - testset: "Beiran"
+  - - variable_binds: {test_docker_layer: 'sha256:9bb5a5d4561a5511fa7f80718617e67cf2ed2e6cdcd02e31be111a8d0ac4d6b7', test_docker_image: 'hello-world'}
 
 - test:
   - name: "Version from root handler"
@@ -49,7 +50,6 @@
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
 
-
 - test:
   - name: "List All Layers"
   - headers: {accept: 'application/json'}
@@ -61,22 +61,22 @@
 - test:
   - name: "Layer Download"
   - headers: {accept: 'application/json'}
-  - url: "/layers/sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0"
+  - url: {template: "/layers/$test_docker_layer"}
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/octet-stream'}
-     - compare: {header: "Docker-Content-Digest", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
-     - compare: {header: "Etag", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
-     - compare: {header: "Content-Length", comparator: equals, expected: '132700160'}
+     - compare: {header: "Docker-Content-Digest", comparator: contains, expected: {template: "$test_docker_layer"}}
+     - compare: {header: "Etag", comparator: contains, expected: {template: "$test_docker_layer"}}
+     - compare: {header: "Content-Length", comparator: equals, expected: '10240'}
 
 - test:
   - name: "Layer Download HEAD"
   - headers: {accept: 'application/json'}
-  - url: "/layers/sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0"
+  - url: {template: "/layers/$test_docker_layer"}
   - method: "HEAD"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/octet-stream'}
-     - compare: {header: "Docker-Content-Digest", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
-     - compare: {header: "Etag", comparator: contains, expected: 'sha256:3d77ce4481b119f00e53bee9b4a443469c42c224db954ddaa2e6b74cd73cd5d0'}
+     - compare: {header: "Docker-Content-Digest", comparator: contains, expected: {template: "$test_docker_layer"}}
+     - compare: {header: "Etag", comparator: contains, expected: {template: "$test_docker_layer"}}
      - compare: {header: "Content-Length", comparator: equals, expected: '2'}

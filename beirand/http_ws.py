@@ -7,7 +7,7 @@ from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from beirand.common import logger, VERSION, NODES, EVENTS
+from beirand.common import logger, VERSION, NODES
 from beirand.lib import get_listen_address, get_listen_port
 
 
@@ -109,7 +109,6 @@ class ApiRootHandler(web.RequestHandler):
         self.finish()
 
 
-
 class NodeInfo(web.RequestHandler):
     """Endpoint which reports node information"""
 
@@ -145,23 +144,46 @@ class NodesHandler(JsonHandler):
     def data_received(self, chunk):
         pass
 
-    # pylint: disable=arguments-differ
-    def post(self):
-        if 'address' not in self.json_data:
-            raise Exception("Unacceptable data")
+    async def probe(self):
+        """
+        Probe the node on `address` specified in request body.
 
+        Returns:
+            http response
+
+        """
         address = self.json_data['address']
         parsed = urllib.parse.urlparse(address)
 
-        # loop = asyncio.get_event_loop()
-        # task = loop.create_task(NODES.add_or_update_new_remote_node(parsed.hostname, parsed.port))
-        EVENTS.emit('probe', ip_address=parsed.hostname, service_port=parsed.port) # TEMP
+        if self.json_data.get('probe_back', None):
+            await NODES.probe_node_bidirectional(ip_address=parsed.hostname,
+                                                 service_port=parsed.port)
+        else:
+            await NODES.probe_node(ip_address=parsed.hostname, service_port=parsed.port)
 
         self.write({"status": "OK"})
         self.finish()
-    # pylint: enable=arguments-differ
 
     # pylint: disable=arguments-differ
+    @web.asynchronous
+    async def post(self):
+
+        if 'address' not in self.json_data:
+            raise Exception("Unacceptable data")
+
+        cmd = self.get_argument('cmd')
+        if cmd:
+            logger.debug("Node endpoint is invoked with command `%s`", cmd)
+            try:
+                method = getattr(self, cmd)
+            except AttributeError:
+                raise NotImplementedError("Endpoint `/node` does not implement `{}`"
+                                          .format(cmd))
+
+            return await method()
+        raise NotImplementedError()
+
+
     def get(self):
         """
         Return list of nodes, if specified `all`from database or discovered ones from memory.

@@ -197,19 +197,11 @@ class Nodes(object):
         """
         self.logger.debug("\n\nBidirectional starts\n\n")
 
-        self.logger.debug("\n\nProbe remote starts\n\n")
-
         await self.probe_node(ip_address, service_port)
 
         self.logger.debug("\n\nProbe remote finished\n\n")
 
-        self.logger.debug("\n\nAsync post to {}{} remote finished\n\n".format(
-                    self.local_node.ip_address, self.local_node.port
-                ))
-
-
-
-        resp, data = await async_post(
+        resp, _ = await async_post(
             url='http://{}:{}/nodes?cmd=probe'.format(ip_address, service_port),
             data={
                 "address": "http://{}:{}".format(
@@ -218,7 +210,7 @@ class Nodes(object):
             }
         )
         if resp.status != 200:
-            self.logger.debug("Cannot make remote node {} {} to probe local node itself",
+            self.logger.debug("Cannot make remote node %s %s to probe local node itself",
                               ip_address, service_port)
 
     async def probe_node(self, ip_address, service_port=None):

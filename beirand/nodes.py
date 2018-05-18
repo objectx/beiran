@@ -2,9 +2,14 @@
 Module for in memory node tracking object `Nodes`
 """
 import logging
+
+import asyncio
+
 from beiran.models import Node
 
-from beiran.lib import async_fetch
+from beiran.lib import async_fetch, async_post
+from beirand.lib import get_listen_port
+
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
@@ -178,3 +183,84 @@ class Nodes(object):
                 return node
 
         return None
+
+    async def probe_node_bidirectional(self, ip_address, service_port):
+        """
+        Probe remote node at `ip_address`:`port` and ask probe back local node
+
+        Args:
+            ip_address (str): service ip address to be probed
+            service_port (int): service port to be probed
+
+        Returns:
+
+        """
+        self.logger.debug("\n\nBidirectional starts\n\n")
+
+        self.logger.debug("\n\nProbe remote starts\n\n")
+
+        await self.probe_node(ip_address, service_port)
+
+        self.logger.debug("\n\nProbe remote finished\n\n")
+
+        self.logger.debug("\n\nAsync post to {}{} remote finished\n\n".format(
+                    self.local_node.ip_address, self.local_node.port
+                ))
+
+
+
+        resp, data = await async_post(
+            url='http://{}:{}/nodes?cmd=probe'.format(ip_address, service_port),
+            data={
+                "address": "http://{}:{}".format(
+                    self.local_node.ip_address, self.local_node.port
+                )
+            }
+        )
+        if resp.status != 200:
+            self.logger.debug("Cannot make remote node {} {} to probe local node itself",
+                              ip_address, service_port)
+
+    async def probe_node(self, ip_address, service_port=None):
+        """
+        Probe remote node, get info and save.
+
+        Args:
+            ip_address (str): service ip address to be probed
+            service_port (int): service port to be probed
+
+        Returns:
+
+        """
+        service_port = service_port or get_listen_port()
+
+        retries_left = 10
+
+        # check if we had prior communication with this node
+        node = self.get_node_by_ip_and_port(ip_address, service_port)
+        # FIXME! NO! fetch that node's info, get it's uuid. and match db using that
+        if node:
+            # fetch up-to-date information and mark the node as online
+            node = await self.add_or_update_new_remote_node(ip_address, service_port)
+
+        # first time we met with this node, wait for information to be fetched
+        # or we couldn't fetch node information at first try
+        while retries_left and not node:
+            self.logger.info(
+                'Detected not is not accesible, trying again: %s:%s', ip_address, service_port)
+            await asyncio.sleep(3)  # no need to rush, take your time!
+            node = await self.add_or_update_new_remote_node(ip_address, service_port)
+            retries_left -= 1
+
+        if not node:
+            self.logger.warning('Cannot fetch node information, %s:%s', ip_address, service_port)
+            return
+
+        node.status = 'connecting'
+        node.save()
+
+        self.logger.info(
+            'Detected node became online, uuid: %s, %s:%s',
+            node.uuid.hex, ip_address, service_port)
+
+        return node

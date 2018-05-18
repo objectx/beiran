@@ -53,36 +53,14 @@ class BeiranDaemon(EventEmitter):
 
         logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
 
-        retries_left = 10
-
-        # check if we had prior communication with this node
-        node = NODES.get_node_by_ip_and_port(ip_address, service_port)
-        # FIXME! NO! fetch that node's info, get it's uuid. and match db using that
-        if node:
-            # fetch up-to-date information and mark the node as online
-            node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
-
-        # first time we met with this node, wait for information to be fetched
-        # or we couldn't fetch node information at first try
-        while retries_left and not node:
-            logger.info(
-                'Detected not is not accesible, trying again: %s:%s', ip_address, service_port)
-            await asyncio.sleep(3)  # no need to rush, take your time!
-            node = await NODES.add_or_update_new_remote_node(ip_address, service_port)
-            retries_left -= 1
+        node = await NODES.probe_node(ip_address, service_port)
 
         if not node:
-            logger.warning('Cannot fetch node information, %s:%s', ip_address, service_port)
             EVENTS.emit('node.error', ip_address, service_port)
             return
 
-        node.status = 'connecting'
-        node.save()
-
-        logger.info(
-            'Detected node became online, uuid: %s, %s:%s',
-            node.uuid.hex, ip_address, service_port)
         EVENTS.emit('node.added', node)
+
 
     async def removed_node(self, ip_address, service_port=None):
         """
@@ -294,7 +272,6 @@ class BeiranDaemon(EventEmitter):
 
         # Ready
         self.set_status('ready')
-
 
     def set_status(self, new_status):
         """

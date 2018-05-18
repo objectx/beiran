@@ -169,9 +169,10 @@ class Client:
         Returns:
             object: info of node if successful
         """
-        path = "/nodes"
+        path = "/nodes?cmd=probe"
         new_node = {
-            "address": address
+            "address": address,
+            "probe_back": True
         }
         return await self.request(path=path, data=new_node, parse_json=True, method="POST")
 

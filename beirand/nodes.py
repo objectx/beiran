@@ -7,7 +7,7 @@ import asyncio
 
 from beiran.models import Node
 
-from beiran.lib import async_fetch, async_post
+from beiran.lib import async_fetch, async_post_json
 from beirand.lib import get_listen_port
 
 
@@ -195,13 +195,12 @@ class Nodes(object):
         Returns:
 
         """
-        self.logger.debug("\n\nBidirectional starts\n\n")
 
+        # firstly, probe remote
         await self.probe_node(ip_address, service_port)
 
-        self.logger.debug("\n\nProbe remote finished\n\n")
-
-        resp, _ = await async_post(
+        # secondly, ask remote to probe back
+        resp, _ = await async_post_json(
             url='http://{}:{}/nodes?cmd=probe'.format(ip_address, service_port),
             data={
                 "address": "http://{}:{}".format(

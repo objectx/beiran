@@ -3,7 +3,7 @@ import aiohttp
 import async_timeout
 
 
-async def async_fetch(url, timeout=3, **kwargs):
+async def async_req(url, timeout=3, method="GET", **headers):
     """
     Async http get with aiohttp
     Args:
@@ -16,6 +16,6 @@ async def async_fetch(url, timeout=3, **kwargs):
     """
     async with aiohttp.ClientSession() as session:
         async with async_timeout.timeout(timeout):
-            async with session.get(url, headers=kwargs) as resp:
-                response, data = resp, await resp.json()
+            async with session.request(method, url, headers=headers) as resp:
+                response, data = resp, await resp.json(content_type=None)
                 return response, data

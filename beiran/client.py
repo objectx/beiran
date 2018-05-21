@@ -70,20 +70,31 @@ class Client:
         proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
+        self.url = url
 
-        # "http+unix://hoge.sock"
         if is_unix_socket:
             self.socket_path = location
-            self.url = proto + "://unixsocket"
-
             conn = aiohttp.UnixConnector(path=self.socket_path)
             self.http_client = aiohttp.ClientSession(connector=conn)
         else:
-            self.url = url
             self.http_client = aiohttp.ClientSession()
 
-    async def request(self, path="/", parse_json=True,  # pylint: disable=too-many-arguments
-                      return_response=False, data=None, method="GET", **kwargs):
+    class Error(Exception):
+        def __init__(self, message):
+            super().__init__(message)
+            self.message = message
+        pass
+
+    class TimeoutError(Error):
+        pass
+
+    class HTTPError(Error):
+        def __init__(self, status, message):
+            super().__init__(message)
+            self.status = status
+        pass
+
+    async def request(self, path="/", **kwargs):
         """
         Request call to daemon
 
@@ -101,25 +112,45 @@ class Client:
         """
         headers = kwargs['headers'] if 'headers' in kwargs else {}
 
+        data = kwargs.pop('data', None)
         if data:
-            headers['Content-Type'] = 'application/json'
             kwargs['body'] = json.dumps(data)
+            headers['Content-Type'] = 'application/json'
+
         kwargs['headers'] = headers
 
-        if 'timeout' in kwargs:
-            async with async_timeout.timeout(kwargs['timeout']):
-                resp = await self.http_client.request(method, self.url + path, **kwargs)
-                if return_response:
-                    return resp
-                response, data = resp, await resp.json()
-        else:
-            resp = await self.http_client.request(method, self.url + path, **kwargs)
-            if return_response:
-                return resp
-            response, data = resp, await resp.json()
+        method = kwargs.pop('method', "GET")
+        parse_json = kwargs.pop('parse_json', True)
+
+        return_response = kwargs.pop('return_response', False)
+        raise_error = kwargs.pop('raise_error', not return_response)
+
+        try:
+            if 'timeout' in kwargs:
+                # raises;
+                # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
+                async with async_timeout.timeout(kwargs['timeout']):
+                    response = await self.http_client.request(method, self.url + path, **kwargs)
+            else:
+                response = await self.http_client.request(method, self.url + path, **kwargs)
+
+            if raise_error:
+                # this only raises if status code is >=400
+                # raises;
+                # aiohttp.HttpProcessingError
+                response.raise_for_status()
+
+        except asyncio.TimeoutError as err:
+            raise Client.TimeoutError("Timeout")
+
+        except aiohttp.HttpProcessingError as err:
+            raise Client.HTTPError(err.code, err.message)
+
+        if return_response:
+            return response
 
         if parse_json:
-            return data
+            return await response.json()
 
         return response.content
 

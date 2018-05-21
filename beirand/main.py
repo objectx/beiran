@@ -78,11 +78,10 @@ class BeiranDaemon(EventEmitter):
 
         node.status = 'connecting'
         node.save()
+        peer = Peer(node)
 
-        logger.info(
-            'Detected node became online, uuid: %s, %s:%s',
-            node.uuid.hex, ip_address, service_port)
         EVENTS.emit('node.added', node)
+        EVENTS.emit('peer.added', peer)
 
     async def removed_node(self, ip_address, service_port=None):
         """
@@ -111,7 +110,7 @@ class BeiranDaemon(EventEmitter):
 
     async def on_new_node_added(self, node):
         """Placeholder for event on node removed"""
-        Peer(node)
+        pass
 
     async def get_plugin(self, plugin_type, plugin_name, config):
         """

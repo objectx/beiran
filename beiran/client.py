@@ -7,9 +7,9 @@ import socket
 import json
 import re
 from tornado import gen
-from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
-from tornado.platform.asyncio import to_asyncio_future
+import aiohttp
+import async_timeout
 
 
 class UnixResolver(Resolver):
@@ -71,16 +71,16 @@ class Client:
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
 
+        # "http+unix://hoge.sock"
         if is_unix_socket:
             self.socket_path = location
-
-            resolver = UnixResolver(self.socket_path)
-            self.http_client = AsyncHTTPClient(force_instance=True,
-                                               resolver=resolver)
             self.url = proto + "://unixsocket"
+
+            conn = aiohttp.UnixConnector(path=self.socket_path)
+            self.http_client = aiohttp.ClientSession(connector=conn)
         else:
-            self.http_client = AsyncHTTPClient(force_instance=True)
             self.url = url
+            self.http_client = aiohttp.ClientSession()
 
     async def request(self, path="/", parse_json=True,  # pylint: disable=too-many-arguments
                       return_response=False, data=None, method="GET", **kwargs):
@@ -104,27 +104,24 @@ class Client:
         if data:
             headers['Content-Type'] = 'application/json'
             kwargs['body'] = json.dumps(data)
-
-        if return_response and 'raise_error' not in kwargs:
-            kwargs['raise_error'] = False
+        kwargs['headers'] = headers
 
         if 'timeout' in kwargs:
-            # this is not good, we want a total timeout..
-            # but will do for now..
-            kwargs['connect_timeout'] = kwargs['timeout']
-            kwargs['request_timeout'] = kwargs['timeout']
-            del kwargs['timeout']
-
-        response = await to_asyncio_future(self.http_client.fetch(self.url + path,
-                                                                  method=method, **kwargs))
-
-        if return_response:
-            return response
+            async with async_timeout.timeout(kwargs['timeout']):
+                resp = await self.http_client.request(method, self.url + path, **kwargs)
+                if return_response:
+                    return resp
+                response, data = resp, await resp.json()
+        else:
+            resp = await self.http_client.request(method, self.url + path, **kwargs)
+            if return_response:
+                return resp
+            response, data = resp, await resp.json()
 
         if parse_json:
-            return json.loads(response.body)
+            return data
 
-        return response.body
+        return response.content
 
     async def get_server_info(self):
         """
@@ -157,7 +154,7 @@ class Client:
         Pings the node
         """
         response = await self.request("/ping", return_response=True, timeout=timeout)
-        if not response or response.code != 200:
+        if not response or response.status != 200:
             raise Exception("Failed to receive ping response from node")
 
         # TODO: Return ping time

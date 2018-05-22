@@ -12,6 +12,8 @@ import netifaces
 from beiran.log import build_logger
 from beiran.version import get_version
 
+import beirand.defaults as defaults
+
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
 
@@ -33,7 +35,7 @@ def local_node_uuid():
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
 
-    uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", '/etc/beiran'), 'uuid.conf'])
+    uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER), 'uuid.conf'])
     try:
         uuid_file = open(uuid_conf_path)
         uuid_hex = uuid_file.read()
@@ -97,7 +99,7 @@ def get_listen_port():
 
     """
     try:
-        return int(os.environ.get('LISTEN_PORT', '8888'))
+        return int(os.environ.get('LISTEN_PORT', defaults.LISTEN_PORT))
     except ValueError:
         raise ValueError('LISTEN_PORT must be a valid port number!')
 

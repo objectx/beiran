@@ -191,7 +191,7 @@ class Client:
         # TODO: Return ping time
         return True
 
-    async def probe_node(self, address):
+    async def probe_node(self, address, probe_back: bool = True):
         """
         Connect to a new node
         Returns:
@@ -200,7 +200,7 @@ class Client:
         path = "/nodes?cmd=probe"
         new_node = {
             "address": address,
-            "probe_back": True
+            "probe_back": probe_back
         }
         return await self.request(path=path, data=new_node, parse_json=True, method="POST")
 

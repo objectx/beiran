@@ -7,7 +7,7 @@ import aiofiles
 from peewee import SQL
 
 from beiran.log import build_logger
-from beiran.lib import async_fetch as async_req
+from beiran.lib import async_req
 from .models import DockerImage, DockerLayer
 
 

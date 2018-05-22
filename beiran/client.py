@@ -7,9 +7,9 @@ import socket
 import json
 import re
 from tornado import gen
-from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
-from tornado.platform.asyncio import to_asyncio_future
+import aiohttp
+import async_timeout
 
 
 class UnixResolver(Resolver):
@@ -70,20 +70,31 @@ class Client:
         proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
+        self.url = url
 
         if is_unix_socket:
             self.socket_path = location
-
-            resolver = UnixResolver(self.socket_path)
-            self.http_client = AsyncHTTPClient(force_instance=True,
-                                               resolver=resolver)
-            self.url = proto + "://unixsocket"
+            conn = aiohttp.UnixConnector(path=self.socket_path)
+            self.http_client = aiohttp.ClientSession(connector=conn)
         else:
-            self.http_client = AsyncHTTPClient(force_instance=True)
-            self.url = url
+            self.http_client = aiohttp.ClientSession()
 
-    async def request(self, path="/", parse_json=True,  # pylint: disable=too-many-arguments
-                      return_response=False, data=None, method="GET", **kwargs):
+    class Error(Exception):
+        def __init__(self, message):
+            super().__init__(message)
+            self.message = message
+        pass
+
+    class TimeoutError(Error):
+        pass
+
+    class HTTPError(Error):
+        def __init__(self, status, message):
+            super().__init__(message)
+            self.status = status
+        pass
+
+    async def request(self, path="/", **kwargs):
         """
         Request call to daemon
 
@@ -101,30 +112,47 @@ class Client:
         """
         headers = kwargs['headers'] if 'headers' in kwargs else {}
 
+        data = kwargs.pop('data', None)
         if data:
-            headers['Content-Type'] = 'application/json'
             kwargs['body'] = json.dumps(data)
+            headers['Content-Type'] = 'application/json'
 
-        if return_response and 'raise_error' not in kwargs:
-            kwargs['raise_error'] = False
+        kwargs['headers'] = headers
 
-        if 'timeout' in kwargs:
-            # this is not good, we want a total timeout..
-            # but will do for now..
-            kwargs['connect_timeout'] = kwargs['timeout']
-            kwargs['request_timeout'] = kwargs['timeout']
-            del kwargs['timeout']
+        method = kwargs.pop('method', "GET")
+        parse_json = kwargs.pop('parse_json', True)
 
-        response = await to_asyncio_future(self.http_client.fetch(self.url + path,
-                                                                  method=method, **kwargs))
+        return_response = kwargs.pop('return_response', False)
+        raise_error = kwargs.pop('raise_error', not return_response)
+
+        try:
+            if 'timeout' in kwargs:
+                # raises;
+                # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
+                async with async_timeout.timeout(kwargs['timeout']):
+                    response = await self.http_client.request(method, self.url + path, **kwargs)
+            else:
+                response = await self.http_client.request(method, self.url + path, **kwargs)
+
+            if raise_error:
+                # this only raises if status code is >=400
+                # raises;
+                # aiohttp.HttpProcessingError
+                response.raise_for_status()
+
+        except asyncio.TimeoutError as err:
+            raise Client.TimeoutError("Timeout")
+
+        except aiohttp.HttpProcessingError as err:
+            raise Client.HTTPError(err.code, err.message)
 
         if return_response:
             return response
 
         if parse_json:
-            return json.loads(response.body)
+            return await response.json()
 
-        return response.body
+        return response.content
 
     async def get_server_info(self):
         """
@@ -157,7 +185,7 @@ class Client:
         Pings the node
         """
         response = await self.request("/ping", return_response=True, timeout=timeout)
-        if not response or response.code != 200:
+        if not response or response.status != 200:
             raise Exception("Failed to receive ping response from node")
 
         # TODO: Return ping time

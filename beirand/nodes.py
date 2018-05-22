@@ -1,14 +1,13 @@
 """
 Module for in memory node tracking object `Nodes`
 """
+import asyncio
 import logging
 
-import asyncio
-
 from beiran.models import Node
+from beiran.client import Client as BeiranClient
 
-from beiran.lib import async_fetch, async_post
-from beirand.lib import get_listen_port
+import beirand.defaults as defaults
 
 
 class Nodes(object):
@@ -152,16 +151,15 @@ class Nodes(object):
 
         """
         self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        # TODO: Use beiran client
-        # TODO: Leave this work (fetching info) to Peer class
-        # These changes will save us from hardcoded `http` here
-        resp, data = await async_fetch('http://{}:{}/info'.format(node_ip, node_port))
-        if resp.status != 200:
-            raise Exception("Cannot fetch node information")
+        url = "http://{}:{}".format(node_ip, node_port)
+        client = BeiranClient(url)
 
-        self.logger.debug("received node information %s", str(data))
-        node = Node.from_dict(data)
-        # but for us, addresses might be different than what that node thinks or herself
+        # These changes will save us from hardcoded `http` here
+        info = await client.get_node_info()
+
+        self.logger.debug("received node information %s", str(info))
+        node = Node.from_dict(info)
+        # but for us, addresses might be different than what that node thinks of herself
         node.ip_address = node_ip
         node.port = node_port
         return self.add_or_update(node)
@@ -201,17 +199,16 @@ class Nodes(object):
 
         self.logger.debug("\n\nProbe remote finished\n\n")
 
-        resp, _ = await async_post(
-            url='http://{}:{}/nodes?cmd=probe'.format(ip_address, service_port),
-            data={
-                "address": "http://{}:{}".format(
-                    self.local_node.ip_address, self.local_node.port
-                )
-            }
-        )
-        if resp.status != 200:
-            self.logger.debug("Cannot make remote node %s %s to probe local node itself",
-                              ip_address, service_port)
+        url = "http://{}:{}".format(ip_address, service_port)
+        client = BeiranClient(url)
+
+        self_url = "http://{}:{}".format(self.local_node.ip_address, self.local_node.port)
+        try:
+            probe_result = await client.probe(self_url, false)
+        except Exception as e:
+            if resp.status != 200:
+                self.logger.debug("Cannot make remote node %s %s to probe local node itself",
+                                  ip_address, service_port)
 
     async def probe_node(self, ip_address, service_port=None):
         """
@@ -224,7 +221,7 @@ class Nodes(object):
         Returns:
 
         """
-        service_port = service_port or get_listen_port()
+        service_port = service_port or defaults.LISTEN_PORT
 
         retries_left = 10
 
@@ -252,7 +249,7 @@ class Nodes(object):
         node.save()
 
         self.logger.info(
-            'Detected node became online, uuid: %s, %s:%s',
+            'Probed node, uuid: %s, %s:%s',
             node.uuid.hex, ip_address, service_port)
 
         return node

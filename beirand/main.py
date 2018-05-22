@@ -61,6 +61,9 @@ class BeiranDaemon(EventEmitter):
 
         EVENTS.emit('node.added', node)
 
+        peer = Peer(node)
+        EVENTS.emit('peer.added', peer)
+
 
     async def removed_node(self, ip_address, service_port=None):
         """
@@ -89,7 +92,7 @@ class BeiranDaemon(EventEmitter):
 
     async def on_new_node_added(self, node):
         """Placeholder for event on node removed"""
-        Peer(node)
+        pass
 
     async def get_plugin(self, plugin_type, plugin_name, config):
         """

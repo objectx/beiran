@@ -3,9 +3,10 @@ Common client for beiran project
 """
 # pylint: disable=duplicate-code
 
-import socket
+import asyncio
 import json
 import re
+import socket
 from tornado import gen
 from tornado.netutil import Resolver
 import aiohttp
@@ -67,7 +68,7 @@ class Client:
         if not matched:
             raise ValueError("URL is broken: %s" % url)
 
-        proto = matched.groups()[0]
+        # proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
         self.url = url
@@ -80,19 +81,24 @@ class Client:
             self.http_client = aiohttp.ClientSession()
 
     class Error(Exception):
+        """Base Exception class for Beiran Client operations"""
         def __init__(self, message):
             super().__init__(message)
             self.message = message
         pass
 
     class TimeoutError(Error):
+        """..."""
         pass
 
     class HTTPError(Error):
-        def __init__(self, status, message):
+        """..."""
+        def __init__(self, status, message, **kwargs):
             super().__init__(message)
             self.status = status
-        pass
+            self.headers = kwargs.pop('headers', None)
+            self.history = kwargs.pop('history', None)
+            self.request = kwargs.pop('request', None)
 
     async def request(self, path="/", **kwargs):
         """
@@ -143,8 +149,9 @@ class Client:
         except asyncio.TimeoutError as err:
             raise Client.TimeoutError("Timeout")
 
-        except aiohttp.HttpProcessingError as err:
-            raise Client.HTTPError(err.code, err.message)
+        except aiohttp.ClientResponseError as err:
+            raise Client.HTTPError(err.code, err.message, headers=err.headers,
+                                   history=err.history, request=err.request_info)
 
         if return_response:
             return response

@@ -193,8 +193,8 @@ class Nodes(object):
         Returns:
 
         """
-        self.logger.debug("\n\nBidirectional starts\n\n")
 
+        # firstly, probe remote
         await self.probe_node(ip_address, service_port)
 
         self.logger.debug("\n\nProbe remote finished\n\n")

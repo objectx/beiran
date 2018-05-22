@@ -1,3 +1,4 @@
+"""Defaults for beiran daemon"""
 
 LISTEN_PORT = 8888
 LOG_FILE = '/var/log/beirand.log'

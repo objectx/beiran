@@ -110,7 +110,6 @@ class Client:
 
         try:
             response = self.http_client.fetch(self.url + path, method=method, **kwargs)
-            # TODO: Parse JSON
         except httpclient.HTTPError as error:
             print("Error: " + str(error))
             raise error

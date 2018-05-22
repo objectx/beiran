@@ -7,12 +7,13 @@ from pyee import EventEmitter
 from beiran.log import build_logger
 from beiran.version import get_version
 from beirand.nodes import Nodes
+import beirand.defaults as defaults
 
 
 EVENTS = EventEmitter()
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
-LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', defaults.LOG_LEVEL))
+LOG_FILE = os.getenv('LOG_FILE', defaults.LOG_FILE)
 
 logger = build_logger(LOG_FILE, LOG_LEVEL)  # pylint: disable=invalid-name
 

@@ -54,6 +54,7 @@ class Node(BaseModel):
 
     @property
     def url(self):
+        """Generates node url using ip_address and port properties"""
         return "http://{}:{}".format(self.ip_address, self.port)
 
     def __repr__(self):

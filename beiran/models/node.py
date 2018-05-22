@@ -52,5 +52,9 @@ class Node(BaseModel):
             _dict.pop('status')
         return _dict
 
+    @property
+    def url(self):
+        return "http://{}:{}".format(self.ip_address, self.port)
+
     def __repr__(self):
         return self.__str__()

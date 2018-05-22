@@ -52,7 +52,7 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url, node=None, version=None):
+    def __init__(self, url=None, node=None, version=None):
         """
         Initialization method for client
         Args:
@@ -62,6 +62,8 @@ class Client:
         """
         self.node = node
         self.version = node.beiran_version if node else version
+        if not url and node:
+            url = node.url
 
         url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
         matched = url_pattern.match(url)

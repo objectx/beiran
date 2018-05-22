@@ -195,19 +195,17 @@ class Nodes(object):
         """
 
         # firstly, probe remote
-        await self.probe_node(ip_address, service_port)
+        remote_node = await self.probe_node(ip_address, service_port)
 
         self.logger.debug("\n\nProbe remote finished\n\n")
 
-        url = "http://{}:{}".format(ip_address, service_port)
-        client = BeiranClient(url)
+        client = BeiranClient(node=remote_node)
 
         try:
-            probe_result = await client.probe(self.local_node.url, false)
-        except Exception as e:
-            if resp.status != 200:
-                self.logger.debug("Cannot make remote node %s %s to probe local node itself",
-                                  ip_address, service_port)
+            probe_result = await client.probe_node(self.local_node.url, False)
+        except BeiranClient.Error:
+            self.logger.debug("Cannot make remote node %s %s to probe local node itself",
+                              ip_address, service_port)
 
     async def probe_node(self, ip_address, service_port=None):
         """

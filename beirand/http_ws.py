@@ -157,8 +157,7 @@ class NodesHandler(JsonHandler):
 
         if self.json_data.get('probe_back', None):
             await NODES.probe_node_bidirectional(ip_address=parsed.hostname,
-                                                 service_port=parsed.port,
-                                                 probe_back=False)
+                                                 service_port=parsed.port)
         else:
             await NODES.probe_node(ip_address=parsed.hostname, service_port=parsed.port)
 

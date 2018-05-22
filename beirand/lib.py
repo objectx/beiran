@@ -198,21 +198,3 @@ def collect_node_info():
         "beiran_version": get_version(),
         "beiran_service_port": get_listen_port()
     }
-
-# todo: remove redundant method after test. modified above
-# async def async_req(url, timeout=3, **kwargs):
-#     """
-#     Async http get with aiohttp
-#     Args:
-#         url (str): get url
-#         timeout (int): timeout
-#
-#     Returns:
-#         (ClientResponse, dict): resonse instance, response json
-#
-#     """
-#     async with aiohttp.ClientSession() as session:
-#         async with async_timeout.timeout(timeout):
-#             async with session.get(url, headers=kwargs) as resp:
-#                 body = await resp.read()
-#                 return resp, json.loads(body)

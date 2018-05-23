@@ -155,6 +155,14 @@ class NodesHandler(JsonHandler):
         address = self.json_data['address']
         parsed = urllib.parse.urlparse(address)
 
+        existing_node = NODES.get_node_by_ip_and_port(parsed.hostname, parsed.port, from_db=True)
+
+        if existing_node.status == 'online':
+            self.write({"status": "Node is already synchronized!"})
+            self.finish()
+
+        # remote_ip = self.request.remote_ip
+
         if self.json_data.get('probe_back', None):
             await NODES.probe_node_bidirectional(ip_address=parsed.hostname,
                                                  service_port=parsed.port)

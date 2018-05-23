@@ -99,10 +99,44 @@ class LayerDownload(web.RequestHandler):
         # how is 31536000 calculated?
         self.set_header("cache-control", "max-age=31536000")
 
+    @staticmethod
+    def prepare_tar_archive(layer_id):
+        """
+        Finds docker layer path and prepare a tar archive for `layer_id`.
+
+        Args:
+            layer_id (str): uuid str of layer
+
+        Returns:
+            (str) tar path
+
+        Raises:
+            404 if layer not found
+
+        """
+        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
+        if not layer_path:
+            raise HTTPError(status_code=404, log_message="Layer Not Found")
+
+        tar_path = "{cache_dir}/{cache_tar_name}" \
+            .format(cache_dir=Services.tar_cache_dir,
+                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id))
+
+        if not os.path.isdir(Services.tar_cache_dir):
+            os.makedirs(Services.tar_cache_dir)
+
+        if not os.path.isfile(tar_path):
+            create_tar_archive(layer_path, tar_path)
+
+        return tar_path
+
     # pylint: disable=arguments-differ
     def head(self, layer_id):
+        """Head response with actual Content-Lenght of layer"""
         self._set_headers(layer_id)
-        return self.get(layer_id)
+        tar_path = self.prepare_tar_archive(layer_id)
+        self.set_header("Content-Length", os.path.getsize(tar_path))
+        self.finish()
 
     # pylint: enable=arguments-differ
 
@@ -112,16 +146,7 @@ class LayerDownload(web.RequestHandler):
         Get layer info by given layer_id
         """
         self._set_headers(layer_id)
-        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
-
-        if not layer_path:
-            raise HTTPError(status_code=404, log_message="Layer Not Found")
-
-        tar_path = "{cache_dir}/{cache_tar_name}" \
-            .format(cache_dir=Services.tar_cache_dir,
-                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id))
-        if not os.path.isfile(tar_path):
-            create_tar_archive(layer_path, tar_path)
+        tar_path = self.prepare_tar_archive(layer_id)
 
         with open(tar_path, 'rb') as file:
             while True:

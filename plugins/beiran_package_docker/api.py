@@ -9,7 +9,9 @@ from tornado.web import HTTPError
 from peewee import SQL
 import aiodocker
 from beiran.util import create_tar_archive
+from beiran.client import Client
 from .models import DockerImage, DockerLayer
+from beiran.models import Node
 
 
 class Services:
@@ -238,24 +240,38 @@ class ImageList(web.RequestHandler):
             Pulling image in cluster
         """
         body = json.loads(self.request.body)
-        if not body['node']:
+
+        node_identifier = body['node']
+        if not node_identifier:
             raise NotImplementedError('Clusterwise image pull is not implemented yet')
 
-        if not body['image']:
+        image_identifier = body['image']
+        if not image_identifier:
             raise HTTPError(status_code=400, log_message='Image name is not given')
 
         wait = True if 'wait' in body and body['wait'] else False
+        force = True if 'force' in body and body['force'] else False
 
         if not wait:
             self.write({'started':True})
             self.finish()
 
-        # TODO: Replacing protocols should be reconsidered
-        url = '{}/docker/images/{}'.format(body['node'].replace('beiran', 'http'), body['image'])
-        Services.logger.debug("Requesting image from %s", url)
+        uuid_pattern = re.compile(r'^([a-f0-9]+)$',re.IGNORECASE)
+        Services.logger.debug("Will fetch %s from >>%s<<",
+                              image_identifier, node_identifier)
+        if uuid_pattern.match(node_identifier):
+            node = await Services.daemon.nodes.get_node_by_uuid(node_identifier)
+        else:
+            try:
+                node = await Services.daemon.nodes.get_node_by_url(node_identifier)
+            except Node.DoesNotExist:
+                if not force:
+                    raise e
+                node = await Services.daemon.nodes.fetch_node_info(node_identifier)
+
+        client = Client(node=node)
 
         chunks = asyncio.Queue()
-
         @aiohttp.streamer
         async def sender(writer, chunks):
             """ async generator data sender for aiodocker """
@@ -269,14 +285,15 @@ class ImageList(web.RequestHandler):
             docker_future = Services.aiodocker.images.import_image(data=sender(chunks))
             # pylint: enable=no-value-for-parameter,no-member
             docker_result = asyncio.ensure_future(docker_future)
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    async for data in resp.content.iter_chunked(64*1024):
-                        # Services.logger.debug("Pull: Chunk received with length: %s", len(data))
-                        chunks.put_nowait(data)
+
+            image_response = await client.stream_image(image_identifier)
+            async for data in image_response.content.iter_chunked(64*1024):
+                # Services.logger.debug("Pull: Chunk received with length: %s", len(data))
+                chunks.put_nowait(data)
+
             chunks.put_nowait(None)
             await docker_result
-        except aiohttp.ClientError as error:
+        except Client.Error as error:
             Services.logger.error(error)
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))

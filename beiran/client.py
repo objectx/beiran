@@ -278,6 +278,23 @@ class Client:
                                   timeout=600)
         return resp
 
+    async def stream_image(self, imagename):
+        """
+        Stream image from this node
+
+        Usage:
+            image_response = await client.stream_image(image_identifier)
+            async for data in image_response.content.iter_chunked(64*1024):
+                ... do something with data chunk
+        """
+
+        path = '/docker/images/{}'.format(imagename)
+
+        resp = await self.request(path,
+                                  method='GET',
+                                  return_response=True)
+        return resp
+
     async def get_layers(self, all_nodes=False, node_uuid=None):
         """
         Get Layer list from beiran API

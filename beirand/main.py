@@ -134,6 +134,9 @@ class BeiranDaemon(EventEmitter):
         from beiran.models.base import DB_PROXY
         from beiran.models import MODEL_LIST
 
+        logger = logging.getLogger('peewee')
+        logger.setLevel(logging.INFO)
+
         # check database file exists
         beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
         db_file_exists = os.path.exists(beiran_db_path)

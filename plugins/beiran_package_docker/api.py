@@ -10,8 +10,8 @@ from peewee import SQL
 import aiodocker
 from beiran.util import create_tar_archive
 from beiran.client import Client
-from .models import DockerImage, DockerLayer
 from beiran.models import Node
+from .models import DockerImage, DockerLayer
 
 
 class Services:
@@ -235,6 +235,7 @@ class ImageList(web.RequestHandler):
     def data_received(self, chunk):
         pass
 
+    # pylint: disable=too-many-locals
     async def pull(self):
         """
             Pulling image in cluster
@@ -256,7 +257,7 @@ class ImageList(web.RequestHandler):
             self.write({'started':True})
             self.finish()
 
-        uuid_pattern = re.compile(r'^([a-f0-9]+)$',re.IGNORECASE)
+        uuid_pattern = re.compile(r'^([a-f0-9]+)$', re.IGNORECASE)
         Services.logger.debug("Will fetch %s from >>%s<<",
                               image_identifier, node_identifier)
         if uuid_pattern.match(node_identifier):
@@ -264,9 +265,9 @@ class ImageList(web.RequestHandler):
         else:
             try:
                 node = await Services.daemon.nodes.get_node_by_url(node_identifier)
-            except Node.DoesNotExist:
+            except Node.DoesNotExist as err:
                 if not force:
-                    raise e
+                    raise err
                 node = await Services.daemon.nodes.fetch_node_info(node_identifier)
 
         client = Client(node=node)
@@ -300,6 +301,7 @@ class ImageList(web.RequestHandler):
         if wait:
             self.write({'finished':True})
             self.finish()
+    # pylint: enable=too-many-locals
 
     # pylint: disable=arguments-differ
     @web.asynchronous

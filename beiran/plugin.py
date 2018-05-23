@@ -88,8 +88,8 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
 
     def emit(self, event, *args, **kwargs):
         if event != 'new_listener':
-            # self.log.debug('[' + self.__plugin_type
-            # + ':' + self.__plugin_name + ':event] ' + event)
+            # self.log.debug('[' + self.plugin_type
+            # + ':' + self.plugin_name + ':event] ' + event)
             self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name, event)
         super().emit(event, *args, **kwargs)
 
@@ -109,7 +109,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         if 'logger' in config:
             self.log = config.pop('logger')
         else:
-            self.log = logging.getLogger(self.__plugin_name)
+            self.log = logging.getLogger('beiran.plugin.' + self.plugin_name)
             if 'log_handler' in config:
                 self.log.addHandler(config.pop('log_handler'))
             else:

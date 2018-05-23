@@ -91,7 +91,10 @@ class JsonHandler(web.RequestHandler):
             else:
                 kwargs['message'] = 'Unknown error.'
 
-        self.response = kwargs
+        payload = {}
+        for key, value in kwargs.items():
+            payload[key] = str(value)
+        self.response = payload
         self.write_json()
 
     def write_json(self):

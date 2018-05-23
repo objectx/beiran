@@ -20,6 +20,7 @@ class Services:
     docker_util = None
     tar_cache_dir = "tar_cache"
     loop = None
+    daemon = None
 
 
 class ImagesTarHandler(web.RequestHandler):

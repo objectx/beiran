@@ -40,6 +40,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         ApiDependencies.docker_util = self.util
         ApiDependencies.local_node = self.node
         ApiDependencies.loop = self.loop
+        ApiDependencies.daemon = self.daemon
 
     async def start(self):
         self.log.debug("starting docker plugin")

@@ -90,7 +90,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         if event != 'new_listener':
             # self.log.debug('[' + self.__plugin_type
             # + ':' + self.__plugin_name + ':event] ' + event)
-            self.log.debug('[%s:%s:event] %s', self.__plugin_type, self.__plugin_name, event)
+            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name, event)
         super().emit(event, *args, **kwargs)
 
     def __init__(self, config):
@@ -102,20 +102,21 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         self.api_routes = []
         self.model_list = []
 
-        self.__plugin_name = sys.modules[self.__module__].PLUGIN_NAME
-        self.__plugin_type = sys.modules[self.__module__].PLUGIN_TYPE
-        self.node = config['node']
+        self.plugin_name = sys.modules[self.__module__].PLUGIN_NAME
+        self.plugin_type = sys.modules[self.__module__].PLUGIN_TYPE
+        self.node = config.pop('node')
 
         if 'logger' in config:
-            self.log = config['logger']
+            self.log = config.pop('logger')
         else:
             self.log = logging.getLogger(self.__plugin_name)
             if 'log_handler' in config:
-                self.log.addHandler(config['log_handler'])
+                self.log.addHandler(config.pop('log_handler'))
             else:
                 self.log.addHandler(logging.NullHandler())
             if self.log.level == logging.NOTSET:
                 self.log.setLevel(logging.WARN)
+        self.daemon = config.pop('daemon')
         self.config = config
         self.loop = get_event_loop()
 

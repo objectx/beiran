@@ -106,6 +106,7 @@ class BeiranDaemon(EventEmitter):
         try:
             config['logger'] = build_logger('beiran.plugin.' + plugin_name)
             config['node'] = self.nodes.local_node
+            config['daemon'] = self
             module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
             Services.logger.debug("initializing plugin: %s", plugin_name)
             instance = module.Plugin(config)

@@ -164,18 +164,28 @@ class Nodes(object):
         node.port = node_port
         return self.add_or_update(node)
 
-    def get_node_by_ip_and_port(self, ip_address, service_port):
+    def get_node_by_ip_and_port(self, ip_address, service_port, from_db=False):
         """
         Returns the node specified by `ip` address.
 
         Args:
             ip_address (str): ip address
             service_port (str): port of node
+            from_db (bool): indicate search scope
 
         Returns:
             (Node) found node object
 
         """
+        if from_db:
+            try:
+                return Node.select().where(
+                    (Node.ip_address == ip_address) &
+                    (Node.beiran_service_port == service_port)
+                ).get()
+            except Node.DoesNotExist:
+                return None
+
         for _, node in self.all_nodes.items():
             if node.ip_address == ip_address and node.port == int(service_port):
                 return node

@@ -4,9 +4,10 @@ Common client for beiran project
 # pylint: disable=duplicate-code
 
 import asyncio
-import json
 import re
 import socket
+import logging
+
 from tornado import gen
 from tornado.netutil import Resolver
 import aiohttp
@@ -52,7 +53,7 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url, node=None, version=None):
+    def __init__(self, url=None, node=None, version=None):
         """
         Initialization method for client
         Args:
@@ -62,8 +63,13 @@ class Client:
         """
         self.node = node
         self.version = node.beiran_version if node else version
+        self.logger = logging.getLogger('beiran.client')
 
-        url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
+        if not url and node:
+            url = node.url
+
+        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
+                                 re.IGNORECASE)
         matched = url_pattern.match(url)
         if not matched:
             raise ValueError("URL is broken: %s" % url)
@@ -71,7 +77,12 @@ class Client:
         # proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
-        self.url = url
+        uuid = matched.groups()[3]
+        if uuid:
+            extra = len(uuid) + 1
+            self.url = url[:-extra]
+        else:
+            self.url = url
 
         if is_unix_socket:
             self.socket_path = location
@@ -80,12 +91,18 @@ class Client:
         else:
             self.http_client = aiohttp.ClientSession()
 
+    async def cleanup(self):
+        """Closes aiohttp client session"""
+        await self.http_client.close()
+
+    def __del__(self):
+        asyncio.ensure_future(self.cleanup())
+
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""
         def __init__(self, message):
             super().__init__(message)
             self.message = message
-        pass
 
     class TimeoutError(Error):
         """..."""
@@ -120,7 +137,8 @@ class Client:
 
         data = kwargs.pop('data', None)
         if data:
-            kwargs['body'] = json.dumps(data)
+            # kwargs['data'] = json.dumps(data)
+            kwargs['json'] = data
             headers['Content-Type'] = 'application/json'
 
         kwargs['headers'] = headers
@@ -131,14 +149,17 @@ class Client:
         return_response = kwargs.pop('return_response', False)
         raise_error = kwargs.pop('raise_error', not return_response)
 
+        url = self.url + path
+        self.logger.debug("Requesting %s", url)
+
         try:
             if 'timeout' in kwargs:
                 # raises;
                 # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
                 async with async_timeout.timeout(kwargs['timeout']):
-                    response = await self.http_client.request(method, self.url + path, **kwargs)
+                    response = await self.http_client.request(method, url, **kwargs)
             else:
-                response = await self.http_client.request(method, self.url + path, **kwargs)
+                response = await self.http_client.request(method, url, **kwargs)
 
             if raise_error:
                 # this only raises if status code is >=400
@@ -198,15 +219,16 @@ class Client:
         # TODO: Return ping time
         return True
 
-    async def probe_node(self, address):
+    async def probe_node(self, address, probe_back: bool = True):
         """
         Connect to a new node
         Returns:
             object: info of node if successful
         """
-        path = "/nodes"
+        path = "/nodes?cmd=probe"
         new_node = {
-            "address": address
+            "address": address,
+            "probe_back": probe_back
         }
         return await self.request(path=path, data=new_node, parse_json=True, method="POST")
 

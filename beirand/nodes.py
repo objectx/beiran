@@ -1,17 +1,26 @@
 """
 Module for in memory node tracking object `Nodes`
 """
+import asyncio
 import logging
-from beiran.models import Node
+import urllib
+import socket
 
+from beiran.models import Node
 from beiran.client import Client as BeiranClient
+
+import beiran.defaults as defaults
+
+from beirand.peer import Peer
+
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
         self.all_nodes = {}
-        self.logger = logging.getLogger(__package__)
+        self.connections = {}
+        self.logger = logging.getLogger('beiran.nodes')
         self.local_node = None
 
     @staticmethod
@@ -55,16 +64,13 @@ class Nodes(object):
             (dict): serialized node object
 
         """
+        if uuid is None:
+            uuid = self.local_node.uuid.hex
+
         if not from_db:
             return self.all_nodes.get(uuid, None)
 
-        elif uuid is not None:
-            return self.get_node_by_uuid_from_db(uuid=uuid)
-
-        else:
-            node = self.get_node_by_uuid_from_db(uuid=uuid)
-
-        return node
+        return self.get_node_by_uuid_from_db(uuid=uuid)
 
     def set_online(self, node):
         """Append node to online nodes collection
@@ -74,7 +80,10 @@ class Nodes(object):
     def set_offline(self, node):
         """Remove node from online nodes collection
         """
+        node.set_status('offline')
+        node.save()
         del self.all_nodes[node.uuid.hex]
+        del self.connections[node.uuid.hex]
 
     def add_or_update(self, node):
         """
@@ -110,9 +119,7 @@ class Nodes(object):
             (bool): true if node removed, else false
 
         """
-
-        removed = self.all_nodes.pop(node.uuid.hex, None)
-        return bool(removed)
+        self.set_offline(node)
 
     def list_of_nodes(self, from_db=True):
         """
@@ -135,7 +142,28 @@ class Nodes(object):
         # todo: will be implemented
         pass
 
-    async def add_or_update_new_remote_node(self, node_ip, node_port):
+    async def fetch_node_info(self, url):
+        """Fetches node information using url"""
+        self.logger.debug("getting remote node info: %s", url)
+
+        client = BeiranClient(url)
+        info = await client.get_node_info()
+
+        # self.logger.debug("received node information %s", str(info))
+        node_ = Node.from_dict(info)
+        try:
+            node = Node.get(Node.uuid == node_.uuid)
+            node.update_using_obj(node_)
+        except Node.DoesNotExist:
+            node = node_
+
+        # but for us, addresses might be different than what that node thinks of herself
+        parsed = urllib.parse.urlparse(url)
+        node.ip_address = socket.gethostbyname(parsed.hostname)
+        node.port = parsed.port or defaults.LISTEN_PORT
+        return node
+
+    async def add_or_update_new_remote_node(self, url):
         """
         Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
 
@@ -146,34 +174,114 @@ class Nodes(object):
         Returns:
 
         """
-        self.logger.debug("getting remote node info: %s %s", node_ip, node_port)
-        url = "http://{}:{}".format(node_ip, node_port)
-        client = BeiranClient(url)
+        node = await self.fetch_node_info(url)
 
-        # These changes will save us from hardcoded `http` here
-        info = await client.get_node_info()
-
-        self.logger.debug("received node information %s", str(info))
-        node = Node.from_dict(info)
-        # but for us, addresses might be different than what that node thinks of herself
-        node.ip_address = node_ip
-        node.port = node_port
         return self.add_or_update(node)
 
-    def get_node_by_ip_and_port(self, ip_address, service_port):
+    async def get_node_by_ip_and_port(self, ip_address, service_port, from_db=False):
         """
         Returns the node specified by `ip` address.
 
         Args:
             ip_address (str): ip address
             service_port (str): port of node
+            from_db (bool): indicate search scope
 
         Returns:
             (Node) found node object
 
         """
+        if from_db:
+            try:
+                return Node.select().where(
+                    (Node.ip_address == ip_address) &
+                    (Node.beiran_service_port == service_port)
+                ).get()
+            except Node.DoesNotExist:
+                return None
+
         for _, node in self.all_nodes.items():
             if node.ip_address == ip_address and node.port == int(service_port):
                 return node
 
         return None
+
+    async def get_node_by_url(self, url, from_db=False):
+        """..."""
+        parsed = urllib.parse.urlparse(url)
+        if parsed.fragment:
+            return await self.get_node_by_uuid(parsed.fragment, from_db)
+
+        return await self.get_node_by_ip_and_port(parsed.hostname, parsed.port, from_db)
+
+    async def probe_node_bidirectional(self, url):
+        """
+        Probe remote node at `ip_address`:`port` and ask probe back local node
+
+        Args:
+            url (str): beiran node url to be probed
+
+        Returns:
+
+        """
+
+        # first, we probe remote
+        remote_node = await self.probe_node(url)
+        try:
+            await self.request_probe_from(node=remote_node)
+        except BeiranClient.Error:
+            self.logger.error("Cannot make remote node %s probe us", url)
+
+    async def request_probe_from(self, url=None, node=None):
+        """Request probe from a remote node"""
+        if not url and not node:
+            raise Exception("url or node must be provided")
+        client = BeiranClient(url=url, node=node)
+        return await client.probe_node(self.local_node.url)
+
+    async def probe_node(self, url):
+        """
+        Probe remote node, get info and save.
+
+        Args:
+            url (str): beiran node url to be probed
+
+        Returns:
+
+        """
+
+        # check if we had prior communication with this node
+        node = await self.get_node_by_url(url)
+        if node:
+            # fetch up-to-date information and mark the node as online
+            node = await self.add_or_update_new_remote_node(url)
+
+        # FIXME! For some reason, this first pass above always fails
+
+        # first time we met with this node, wait for information to be fetched
+        # or we couldn't fetch node information at first try
+        retries_left = 3
+        while retries_left and not node:
+            # TODO: Try alternative addresses of node here
+            # TODO: Implement altervative addresses for nodes
+            self.logger.info(
+                'Detected not is not accesible, trying again: %s', url)
+            await asyncio.sleep(3)  # no need to rush, take your time!
+            node = await self.add_or_update_new_remote_node(url)
+            retries_left -= 1
+
+        if not node:
+            self.logger.warning('Cannot fetch node information, %s', url)
+            return
+
+        node.status = 'connecting'
+        node.save()
+
+        self.logger.info(
+            'Probed node, uuid: %s, %s:%s',
+            node.uuid.hex, node.ip_address, node.port)
+
+        peer = Peer(node)
+        self.connections.update({node.uuid.hex: peer})
+
+        return node

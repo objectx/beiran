@@ -12,7 +12,7 @@ import netifaces
 from beiran.log import build_logger
 from beiran.version import get_version
 
-import beirand.defaults as defaults
+import beiran.defaults as defaults
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
@@ -35,7 +35,8 @@ def local_node_uuid():
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
 
-    uuid_conf_path = "/".join([os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER), 'uuid.conf'])
+    config_folder = os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER)
+    uuid_conf_path = "/".join([config_folder, 'uuid.conf'])
     try:
         uuid_file = open(uuid_conf_path)
         uuid_hex = uuid_file.read()

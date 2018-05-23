@@ -229,8 +229,7 @@ class Nodes(object):
         try:
             await self.request_probe_from(node=remote_node)
         except BeiranClient.Error as err:
-            self.logger.error("Cannot make remote node %s probe us",
-                              url, err)
+            self.logger.error("Cannot make remote node %s probe us", url)
 
     async def request_probe_from(self, url=None, node=None):
         """Request probe from a remote node"""
@@ -249,7 +248,6 @@ class Nodes(object):
         Returns:
 
         """
-        parsed_url = urllib.parse.urlparse(url)
 
         # check if we had prior communication with this node
         node = await self.get_node_by_url(url)
@@ -283,6 +281,6 @@ class Nodes(object):
             node.uuid.hex, node.ip_address, node.port)
 
         peer = Peer(node)
-        self.connections.update({ node.uuid.hex: peer })
+        self.connections.update({node.uuid.hex: peer})
 
         return node

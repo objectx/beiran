@@ -4,11 +4,9 @@ Common client for beiran project
 # pylint: disable=duplicate-code
 
 import asyncio
-import json
 import re
 import socket
 import logging
-import urllib
 
 from tornado import gen
 from tornado.netutil import Resolver
@@ -70,7 +68,8 @@ class Client:
         if not url and node:
             url = node.url
 
-        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$', re.IGNORECASE)
+        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
+                                 re.IGNORECASE)
         matched = url_pattern.match(url)
         if not matched:
             raise ValueError("URL is broken: %s" % url)
@@ -93,6 +92,7 @@ class Client:
             self.http_client = aiohttp.ClientSession()
 
     async def cleanup(self):
+        """Closes aiohttp client session"""
         await self.http_client.close()
 
     def __del__(self):

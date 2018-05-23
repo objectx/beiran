@@ -20,17 +20,14 @@ from pyee import EventEmitter
 from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
-from beirand.common import CONFIG_FOLDER
 
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
-from beirand.peer import Peer
 from beirand.http_ws import ROUTES
 
 from beiran.models import Node
 from beiran.log import build_logger
-import beiran.defaults as defaults
 
 AsyncIOMainLoop().install()
 
@@ -54,7 +51,8 @@ class BeiranDaemon(EventEmitter):
         """
         service_port = service_port or get_listen_port()
 
-        Services.logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
+        Services.logger.info('New node detected, reached: %s:%s, waiting info',
+                             ip_address, service_port)
         url = "beiran://{}:{}".format(ip_address, service_port)
         node = await self.nodes.probe_node(url=url)
 
@@ -75,7 +73,8 @@ class BeiranDaemon(EventEmitter):
         service_port = service_port or get_listen_port()
         node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
         if not node:
-            Services.logger.warning('Cannot find node at %s:%d for removing', ip_address, service_port)
+            Services.logger.warning('Cannot find node at %s:%d for removing',
+                                    ip_address, service_port)
             return
 
         Services.logger.info('Node is about to be removed %s', str(node))
@@ -251,7 +250,8 @@ class BeiranDaemon(EventEmitter):
         server.add_socket(socket)
 
         # Also Listen on TCP
-        Services.logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
+        Services.logger.info("Listening on tcp socket: %s:%s",
+                             options.listen_address, options.listen_port)
         server.listen(options.listen_port, address=options.listen_address)
 
         # Register daemon events

@@ -61,7 +61,7 @@
 - test:
   - name: "Layer Download"
   - headers: {accept: 'application/json'}
-  - url: {template: "/layers/$test_docker_layer"}
+  - url: {template: "/docker/layers/$test_docker_layer"}
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/octet-stream'}
@@ -72,7 +72,7 @@
 - test:
   - name: "Layer Download HEAD"
   - headers: {accept: 'application/json'}
-  - url: {template: "/layers/$test_docker_layer"}
+  - url: {template: "/docker/layers/$test_docker_layer"}
   - method: "HEAD"
   - expected_status: [200]
   - validators:

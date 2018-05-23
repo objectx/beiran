@@ -206,12 +206,13 @@ class Nodes(object):
 
         return None
 
-    async def get_node_by_url(self, url):
+    async def get_node_by_url(self, url, from_db=False):
+        """..."""
         parsed = urllib.parse.urlparse(url)
         if parsed.fragment:
-            return self.get_node_by_uuid(parsed.fragment)
+            return await self.get_node_by_uuid(parsed.fragment, from_db)
 
-        return await self.get_node_by_ip_and_port(parsed.hostname, parsed.port)
+        return await self.get_node_by_ip_and_port(parsed.hostname, parsed.port, from_db)
 
     async def probe_node_bidirectional(self, url):
         """

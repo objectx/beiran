@@ -26,7 +26,7 @@
 - test:
   - name: "List Images"
   - headers: {accept: 'application/json'}
-  - url: "/images"
+  - url: "/docker/images"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
@@ -35,7 +35,7 @@
 - test:
   - name: "List All Images"
   - headers: {accept: 'application/json'}
-  - url: "/images?all=true"
+  - url: "/docker/images?all=true"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
@@ -44,7 +44,7 @@
 - test:
   - name: "List Layers"
   - headers: {accept: 'application/json'}
-  - url: "/layers"
+  - url: "/docker/layers"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
@@ -53,7 +53,7 @@
 - test:
   - name: "List All Layers"
   - headers: {accept: 'application/json'}
-  - url: "/layers?all=true"
+  - url: "/docker/layers?all=true"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}

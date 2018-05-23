@@ -64,16 +64,13 @@ class Nodes(object):
             (dict): serialized node object
 
         """
+        if uuid is None:
+            uuid = self.local_node.uuid.hex
+
         if not from_db:
             return self.all_nodes.get(uuid, None)
 
-        elif uuid is not None:
-            return self.get_node_by_uuid_from_db(uuid=uuid)
-
-        else:
-            node = self.get_node_by_uuid_from_db(uuid=uuid)
-
-        return node
+        return self.get_node_by_uuid_from_db(uuid=uuid)
 
     def set_online(self, node):
         """Append node to online nodes collection

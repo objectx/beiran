@@ -7,6 +7,7 @@ import asyncio
 import json
 import re
 import socket
+import logging
 from tornado import gen
 from tornado.netutil import Resolver
 import aiohttp
@@ -62,6 +63,8 @@ class Client:
         """
         self.node = node
         self.version = node.beiran_version if node else version
+        self.logger = logging.getLogger('beiran.client')
+
         if not url and node:
             url = node.url
 
@@ -133,14 +136,17 @@ class Client:
         return_response = kwargs.pop('return_response', False)
         raise_error = kwargs.pop('raise_error', not return_response)
 
+        url = self.url + path
+        self.logger.debug("Requesting %s", url)
+
         try:
             if 'timeout' in kwargs:
                 # raises;
                 # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
                 async with async_timeout.timeout(kwargs['timeout']):
-                    response = await self.http_client.request(method, self.url + path, **kwargs)
+                    response = await self.http_client.request(method, url, **kwargs)
             else:
-                response = await self.http_client.request(method, self.url + path, **kwargs)
+                response = await self.http_client.request(method, url, **kwargs)
 
             if raise_error:
                 # this only raises if status code is >=400

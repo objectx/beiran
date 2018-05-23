@@ -229,7 +229,7 @@ class Nodes(object):
         remote_node = await self.probe_node(url)
         try:
             await self.request_probe_from(node=remote_node)
-        except BeiranClient.Error as err:
+        except BeiranClient.Error:
             self.logger.error("Cannot make remote node %s probe us", url)
 
     async def request_probe_from(self, url=None, node=None):

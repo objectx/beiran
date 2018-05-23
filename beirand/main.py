@@ -25,6 +25,7 @@ from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
 from beirand.http_ws import ROUTES
+from beirand.version import __version__
 
 from beiran.models import Node
 from beiran.log import build_logger
@@ -34,6 +35,7 @@ AsyncIOMainLoop().install()
 
 class BeiranDaemon(EventEmitter):
     """Beiran Daemon"""
+    version = __version__
 
     def __init__(self, loop=None):
         super().__init__()

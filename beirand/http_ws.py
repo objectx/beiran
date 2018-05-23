@@ -163,7 +163,8 @@ class NodesHandler(JsonHandler):
             if parsed.fragment:
                 existing_node = await Services.daemon.nodes.get_node_by_uuid(parsed.fragment)
             else:
-                existing_node = await Services.daemon.nodes.get_node_by_ip_and_port(parsed.hostname, parsed.port)
+                existing_node = await Services.daemon.nodes.get_node_by_ip_and_port(
+                    parsed.hostname, parsed.port)
         except Node.DoesNotExist:
             existing_node = None
 

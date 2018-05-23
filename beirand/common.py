@@ -18,6 +18,7 @@ LOG_FILE = os.getenv('LOG_FILE', defaults.LOG_FILE)
 VERSION = get_version('short', 'daemon')
 
 class Services:
+    """Conventional class for keeping references to global objects"""
     daemon = None
     plugins = {}
     logger = build_logger(LOG_FILE, LOG_LEVEL)

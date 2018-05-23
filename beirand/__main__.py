@@ -1,5 +1,6 @@
 """Main script for beiran daemon"""
 from .main import BeiranDaemon
+from .common import Services
 
-THE_DAEMON = BeiranDaemon()
-THE_DAEMON.run()
+Services.daemon = BeiranDaemon()
+Services.daemon.run()

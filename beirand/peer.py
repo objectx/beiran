@@ -6,9 +6,10 @@
 """
 
 import asyncio
+import logging
 from pyee import EventEmitter
 
-from beirand.common import logger, PLUGINS
+from beirand.common import Services
 
 from beiran.client import Client
 
@@ -20,6 +21,7 @@ class Peer(EventEmitter):
         super().__init__()
         self.node = node
         self.loop = loop if loop else asyncio.get_event_loop()
+        self.logger = logging.getLogger('beiran.peer')
         self.start_loop()
 
         url = "http://{}:{}".format(self.node.ip_address, self.node.port)
@@ -32,13 +34,13 @@ class Peer(EventEmitter):
 
     async def peerloop(self):
         """lifecycle of a beiran-node connection"""
-        logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
-                    self.node.ip_address, self.node.port)
+        self.logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
+                         self.node.ip_address, self.node.port)
         self.node.status = 'syncing'
         self.node.save()
 
         sync_futures = []
-        for _, plugin in PLUGINS.items():
+        for _, plugin in Services.plugins.items():
             sync_futures.append(plugin.sync(self))
 
         await asyncio.gather(*sync_futures)
@@ -46,10 +48,10 @@ class Peer(EventEmitter):
         self.node.status = 'online'
         self.node.save()
 
-        logger.info("node(%s) synced on %s at port %s",
-                    self.node.uuid.hex,
-                    self.node.ip_address,
-                    self.node.port)
+        self.logger.info("node(%s) synced on %s at port %s",
+                         self.node.uuid.hex,
+                         self.node.ip_address,
+                         self.node.port)
 
         # In future this part will be replaced with a websocket or gRPC connection
         # Check node availability every x second, drop online status if it fails
@@ -67,14 +69,14 @@ class Peer(EventEmitter):
                 fails = 0
                 check_interval = 15
             except Exception as err:  # pylint: disable=unused-variable,broad-except
-                logger.debug("pinging node failed, because %s", str(err))
+                self.logger.debug("pinging node failed, because %s", str(err))
                 check_interval = retry_interval
                 fails += 1
                 if fails >= 2:
                     break
 
-        logger.info("lost connection to node %s(%s:%d)",
-                    self.node.uuid.hex, self.node.ip_address, self.node.port)
+        self.logger.info("lost connection to node %s(%s:%d)",
+                         self.node.uuid.hex, self.node.ip_address, self.node.port)
         self.node.status = 'lost'
         self.node.save()
         # TODO: Communicate this to the discovery plugin

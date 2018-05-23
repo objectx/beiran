@@ -7,8 +7,9 @@ from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from beirand.common import logger, VERSION, NODES
 from beiran.models import Node
+
+from beirand.common import Services
 from beirand.lib import get_listen_address, get_listen_port
 
 
@@ -44,7 +45,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def open(self, *args, **kwargs):
         """ Monitor if websocket is opened
         """
-        logger.info("WebSocket opened")
+        Services.logger.info("WebSocket opened")
 
     def on_message(self, message):
         """ Received message from websocket
@@ -54,7 +55,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def on_close(self):
         """ Monitor if websocket is closed
         """
-        logger.info("WebSocket closed")
+        Services.logger.info("WebSocket closed")
 
 
 class JsonHandler(web.RequestHandler):
@@ -106,7 +107,7 @@ class ApiRootHandler(web.RequestHandler):
 
     def get(self, *args, **kwargs):
         self.set_header("Content-Type", "application/json")
-        self.write('{"version":"' + VERSION + '"}')
+        self.write('{"version":"' + Services.daemon.version + '"}')
         self.finish()
 
 
@@ -126,9 +127,9 @@ class NodeInfo(web.RequestHandler):
         """Retrieve info of the node by `uuid` or the local node"""
 
         if not uuid:
-            node = NODES.local_node
+            node = Services.daemon.nodes.local_node
         else:
-            node = await NODES.get_node_by_uuid(uuid)
+            node = await Services.daemon.nodes.get_node_by_uuid(uuid)
 
         if not node:
             raise HTTPError(status_code=404, log_message="Node Not Found")
@@ -157,9 +158,9 @@ class NodesHandler(JsonHandler):
         parsed = urllib.parse.urlparse(node_url)
         try:
             if parsed.fragment:
-                existing_node = await NODES.get_node_by_uuid(parsed.fragment)
+                existing_node = await Services.daemon.nodes.get_node_by_uuid(parsed.fragment)
             else:
-                existing_node = await NODES.get_node_by_ip_and_port(parsed.hostname, parsed.port)
+                existing_node = await Services.daemon.nodes.get_node_by_ip_and_port(parsed.hostname, parsed.port)
         except Node.DoesNotExist:
             existing_node = None
 
@@ -172,9 +173,9 @@ class NodesHandler(JsonHandler):
         # remote_ip = self.request.remote_ip
 
         if self.json_data.get('probe_back', None):
-            await NODES.probe_node_bidirectional(url=node_url)
+            await Services.daemon.nodes.probe_node_bidirectional(url=node_url)
         else:
-            await NODES.probe_node(url=node_url)
+            await Services.daemon.nodes.probe_node(url=node_url)
 
         self.write({"status": "OK"})
         self.finish()
@@ -188,7 +189,7 @@ class NodesHandler(JsonHandler):
 
         cmd = self.get_argument('cmd')
         if cmd:
-            logger.debug("Node endpoint is invoked with command `%s`", cmd)
+            Services.logger.debug("Node endpoint is invoked with command `%s`", cmd)
             try:
                 method = getattr(self, cmd)
             except AttributeError:
@@ -210,7 +211,7 @@ class NodesHandler(JsonHandler):
         """
         all_nodes = self.get_argument('all', False) == 'true'
 
-        node_list = NODES.list_of_nodes(
+        node_list = Services.daemon.nodes.list_of_nodes(
             from_db=all_nodes
         )
 

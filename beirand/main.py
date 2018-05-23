@@ -7,6 +7,7 @@ import sys
 import asyncio
 import importlib
 import signal
+import logging
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -17,11 +18,11 @@ from tornado import httpserver
 from pyee import EventEmitter
 
 from beirand.common import VERSION
-from beirand.common import logger
-from beirand.common import NODES
 from beirand.common import EVENTS
-from beirand.common import PLUGINS
+from beirand.common import Services
+from beirand.common import CONFIG_FOLDER
 
+from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
 from beirand.peer import Peer
@@ -29,6 +30,7 @@ from beirand.http_ws import ROUTES
 
 from beiran.models import Node
 from beiran.log import build_logger
+import beiran.defaults as defaults
 
 AsyncIOMainLoop().install()
 
@@ -39,6 +41,7 @@ class BeiranDaemon(EventEmitter):
     def __init__(self, loop=None):
         super().__init__()
         self.loop = loop if loop else asyncio.get_event_loop()
+        self.nodes = Nodes()
         self.available_plugins = []
         self.search_plugins()
 
@@ -51,10 +54,9 @@ class BeiranDaemon(EventEmitter):
         """
         service_port = service_port or get_listen_port()
 
-        logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
-
+        Services.logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
         url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await NODES.probe_node(url=url)
+        node = await self.nodes.probe_node(url=url)
 
         if not node:
             EVENTS.emit('node.error', ip_address, service_port)
@@ -71,19 +73,19 @@ class BeiranDaemon(EventEmitter):
         """
 
         service_port = service_port or get_listen_port()
-        node = NODES.get_node_by_ip_and_port(ip_address, service_port)
+        node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
         if not node:
-            logger.warning('Cannot find node at %s:%d for removing', ip_address, service_port)
+            Services.logger.warning('Cannot find node at %s:%d for removing', ip_address, service_port)
             return
 
-        logger.info('Node is about to be removed %s', str(node))
-        NODES.remove_node(node)
+        Services.logger.info('Node is about to be removed %s', str(node))
+        self.nodes.remove_node(node)
 
         EVENTS.emit('node.removed', node)
 
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""
-        logger.info("new event: an existing node removed %s", node.uuid)
+        Services.logger.info("new event: an existing node removed %s", node.uuid)
 
     async def on_new_node_added(self, node):
         """Placeholder for event on node removed"""
@@ -101,17 +103,17 @@ class BeiranDaemon(EventEmitter):
 
         """
         try:
-            config['logger'] = build_logger('plugin:' + plugin_name)
-            config['node'] = NODES.local_node
+            config['logger'] = build_logger('beiran.plugin.' + plugin_name)
+            config['node'] = self.nodes.local_node
             module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
-            logger.debug("initializing plugin: %s", plugin_name)
+            Services.logger.debug("initializing plugin: %s", plugin_name)
             instance = module.Plugin(config)
             await instance.init()
-            logger.info("plugin initialisation done: %s", plugin_name)
+            Services.logger.info("plugin initialisation done: %s", plugin_name)
             return instance
         except ModuleNotFoundError as error:  # pylint: disable=undefined-variable
-            logger.error(error)
-            logger.error("Cannot find plugin : %s", plugin_name)
+            Services.logger.error(error)
+            Services.logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
 
     def search_plugins(self):
@@ -137,7 +139,7 @@ class BeiranDaemon(EventEmitter):
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:
-            logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
+            Services.logger.info("sqlite file does not exist, creating file %s!..", beiran_db_path)
             open(beiran_db_path, 'a').close()
 
         # init database object
@@ -145,19 +147,19 @@ class BeiranDaemon(EventEmitter):
         DB_PROXY.initialize(database)
 
         if append_new:
-            logger.info("append new tables %s into existing database", append_new)
+            Services.logger.info("append new tables %s into existing database", append_new)
             from beiran.models import create_tables
 
             create_tables(database, model_list=append_new)
             return
 
-        logger.debug("Checking tables")
+        Services.logger.debug("Checking tables")
         for model in list(MODEL_LIST):
-            logger.debug("Checking a model")
+            Services.logger.debug("Checking a model")
             try:
                 model.select().limit(0).get()
             except OperationalError as err:
-                logger.info("Database schema is not up-to-date, destroying")
+                Services.logger.info("Database schema is not up-to-date, destroying")
                 # database is somewhat broken (old)
                 # purge it so it can be created again
                 database.close()
@@ -170,12 +172,12 @@ class BeiranDaemon(EventEmitter):
                 # not a problem
                 continue
             except Exception as err:  # pylint: disable=broad-except
-                logger.error("Checking a table failed")
+                Services.logger.error("Checking a table failed")
                 print(err)
-        logger.debug("Checking tables done")
+        Services.logger.debug("Checking tables done")
 
         if not db_file_exists:
-            logger.info("db hasn't initialized yet, creating tables!..")
+            Services.logger.info("db hasn't initialized yet, creating tables!..")
             from beiran.models import create_tables
 
             create_tables(database)
@@ -185,7 +187,7 @@ class BeiranDaemon(EventEmitter):
 
         # Initialize discovery
         discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
-        logger.debug("Discovery method is %s", discovery_mode)
+        Services.logger.debug("Discovery method is %s", discovery_mode)
         discovery = await self.get_plugin('discovery', discovery_mode, {
             "address": get_advertise_address(),
             "port": get_listen_port(),
@@ -194,7 +196,7 @@ class BeiranDaemon(EventEmitter):
         })
 
         # Only one discovery plugin at a time is supported (for now)
-        PLUGINS['discovery'] = discovery
+        Services.plugins['discovery'] = discovery
 
         # Initialize package plugins
         package_plugins_enabled = ['docker']
@@ -205,26 +207,26 @@ class BeiranDaemon(EventEmitter):
                 "url": None, # default
                 "events": EVENTS
             })
-            PLUGINS['package:' + _plugin] = _plugin_obj
+            Services.plugins['package:' + _plugin] = _plugin_obj
 
     async def main(self):
         """ Main function """
 
         # set database
-        logger.info("Initializing database...")
+        Services.logger.info("Initializing database...")
         await self.init_db()
 
         # collect node info and create node object
-        NODES.local_node = Node.from_dict(collect_node_info())
-        NODES.add_or_update(NODES.local_node)
+        self.nodes.local_node = Node.from_dict(collect_node_info())
+        self.nodes.add_or_update(self.nodes.local_node)
         self.set_status('init')
-        logger.info("local node added, known nodes are: %s", NODES.all_nodes)
+        Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
 
         # initialize plugins
         await self.init_plugins()
 
         # initialize plugin models
-        for name, plugin in PLUGINS.items():
+        for name, plugin in Services.plugins.items():
             if not plugin.model_list:
                 continue
             await self.init_db(append_new=plugin.model_list)
@@ -232,21 +234,21 @@ class BeiranDaemon(EventEmitter):
         # PREPARE ROUTES
         api_app = web.Application(ROUTES)
 
-        for name, plugin in PLUGINS.items():
+        for name, plugin in Services.plugins.items():
             if not plugin.api_routes:
                 continue
-            logger.info("inserting %s routes...", name)
+            Services.logger.info("inserting %s routes...", name)
             api_app.add_handlers(r".*", plugin.api_routes)
 
         # HTTP Daemon. Listen on Unix Socket
-        logger.info("Starting Daemon HTTP Server...")
+        Services.logger.info("Starting Daemon HTTP Server...")
         server = httpserver.HTTPServer(api_app)
-        logger.info("Listening on unix socket: %s", options.unix_socket)
+        Services.logger.info("Listening on unix socket: %s", options.unix_socket)
         socket = bind_unix_socket(options.unix_socket)
         server.add_socket(socket)
 
         # Also Listen on TCP
-        logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
+        Services.logger.info("Listening on tcp socket: %s:%s", options.listen_address, options.listen_port)
         server.listen(options.listen_port, address=options.listen_address)
 
         # Register daemon events
@@ -256,17 +258,17 @@ class BeiranDaemon(EventEmitter):
         EVENTS.on('probe', self.new_node) # TEMP
 
         # Start plugins
-        for name, plugin in PLUGINS.items():
-            if plugin == PLUGINS['discovery']:
+        for name, plugin in Services.plugins.items():
+            if plugin == Services.plugins['discovery']:
                 continue
-            logger.info("starting plugin: %s", name)
+            Services.logger.info("starting plugin: %s", name)
             await plugin.start()
 
         # Start discovery last
-        PLUGINS['discovery'].on('discovered', self.new_node)
-        PLUGINS['discovery'].on('undiscovered', self.removed_node)
+        Services.plugins['discovery'].on('discovered', self.new_node)
+        Services.plugins['discovery'].on('undiscovered', self.removed_node)
 
-        await PLUGINS['discovery'].start()
+        await Services.plugins['discovery'].start()
 
         # Ready
         self.set_status('ready')
@@ -278,23 +280,23 @@ class BeiranDaemon(EventEmitter):
             new_status (str): status
 
         """
-        NODES.local_node.status = new_status
-        NODES.local_node.save()
-        EVENTS.emit('node.status', NODES.local_node, new_status)
+        self.nodes.local_node.status = new_status
+        self.nodes.local_node.save()
+        EVENTS.emit('node.status', self.nodes.local_node, new_status)
 
     async def shutdown(self):
         """Graceful shutdown"""
         self.set_status('closing')
 
-        logger.info("stopping discovery")
-        await PLUGINS['discovery'].stop()
-        del PLUGINS['discovery']
+        Services.logger.info("stopping discovery")
+        await Services.plugins['discovery'].stop()
+        del Services.plugins['discovery']
 
-        for name, plugin in PLUGINS.items():
-            logger.info("stopping %s", name)
+        for name, plugin in Services.plugins.items():
+            Services.logger.info("stopping %s", name)
             await plugin.stop()
 
-        logger.info("exiting")
+        Services.logger.info("exiting")
         sys.exit(0)
 
     def schedule_shutdown(self, signum, frame): # pylint: disable=unused-argument
@@ -313,12 +315,12 @@ class BeiranDaemon(EventEmitter):
         try:
             self.loop.run_forever()
         except KeyboardInterrupt:
-            logger.info("Received interrupt, shutting down gracefully")
+            Services.logger.info("Received interrupt, shutting down gracefully")
 
         try:
             self.loop.run_until_complete(self.shutdown())
         except KeyboardInterrupt:
-            logger.warning("Received interrupt while shutting down, exiting")
+            Services.logger.warning("Received interrupt while shutting down, exiting")
             sys.exit(1)
 
         self.loop.close()

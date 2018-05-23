@@ -71,9 +71,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         for image in images:
             try:
-                # TODO: Remove if block after releasing 0.0.6
-                if 'id' in image:
-                    del image['id']
                 image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
                 image_.set_available_at(peer.node.uuid.hex)
                 image_.save()
@@ -91,9 +88,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.log.debug("received layer list from peer")
 
         for layer in layers:
-            # TODO: Remove if block after releasing 0.0.6
-            if 'id' in layer:
-                del layer['id']
             try:
                 layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
                 layer_.set_available_at(peer.node.uuid.hex)

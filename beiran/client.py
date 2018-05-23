@@ -254,10 +254,7 @@ class Client:
         if node_uuid and all_nodes:
             raise Exception("node_uuid and all_nodes cannot be defined at the same time")
 
-        if self.version == '0.0.5':
-            path = '/images'
-        else:
-            path = '/docker/images'
+        path = '/docker/images'
 
         if node_uuid:
             path = path + '?node={}'.format(node_uuid)
@@ -273,7 +270,7 @@ class Client:
         Returns:
             result: Pulling process result
         """
-        path = '/images?cmd=pull'
+        path = '/docker/images?cmd=pull'
         payload = {'image': imagename, 'node': node, 'wait': wait}
         resp = await self.request(path,
                                   data=payload,
@@ -290,10 +287,7 @@ class Client:
         if node_uuid and all_nodes:
             raise Exception("node_uuid and all_nodes cannot be defined at the same time")
 
-        if self.version == '0.0.5':
-            path = '/layers'
-        else:
-            path = '/docker/layers'
+        path = '/docker/layers'
 
         if node_uuid:
             path = path + '?node={}'.format(node_uuid)

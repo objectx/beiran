@@ -205,7 +205,7 @@ class Client:
         Returns:
             result: Pulling process result
         """
-        path = '/images?cmd=pull'
+        path = '/docker/images?cmd=pull'
 
         resp = self.request(path,
                             data={'image': imagename, 'node': node, 'wait': wait},

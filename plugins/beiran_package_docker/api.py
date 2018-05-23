@@ -250,7 +250,7 @@ class ImageList(web.RequestHandler):
             self.finish()
 
         # TODO: Replacing protocols should be reconsidered
-        url = '{}/images/{}'.format(body['node'].replace('beiran', 'http'), body['image'])
+        url = '{}/docker/images/{}'.format(body['node'].replace('beiran', 'http'), body['image'])
         Services.logger.debug("Requesting image from %s", url)
 
         chunks = asyncio.Queue()
@@ -391,13 +391,6 @@ class LayerList(web.RequestHandler):
 
 
 ROUTES = [
-    # 0.0.5 compat (TODO: delete at 0.0.6 release)
-    (r'/images', ImageList),
-    (r'/layers', LayerList),
-    (r'/images/(.*)', ImagesTarHandler),
-    (r'/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
-    # 0.0.6+
     (r'/docker/images', ImageList),
     (r'/docker/layers', LayerList),
     (r'/docker/images/(.*)', ImagesTarHandler),

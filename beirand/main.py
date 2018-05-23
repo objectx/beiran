@@ -53,17 +53,14 @@ class BeiranDaemon(EventEmitter):
 
         logger.info('New node detected, reached: %s:%s, waiting info', ip_address, service_port)
 
-        node = await NODES.probe_node(ip_address, service_port)
+        url = "beiran://{}:{}".format(ip_address, service_port)
+        node = await NODES.probe_node(url=url)
 
         if not node:
             EVENTS.emit('node.error', ip_address, service_port)
             return
 
         EVENTS.emit('node.added', node)
-
-        peer = Peer(node)
-        EVENTS.emit('peer.added', peer)
-
 
     async def removed_node(self, ip_address, service_port=None):
         """
@@ -80,11 +77,9 @@ class BeiranDaemon(EventEmitter):
             return
 
         logger.info('Node is about to be removed %s', str(node))
-        removed = NODES.remove_node(node)
-        logger.debug('Removed? %s', removed)
+        NODES.remove_node(node)
 
-        if removed:
-            EVENTS.emit('node.removed', node)
+        EVENTS.emit('node.removed', node)
 
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""

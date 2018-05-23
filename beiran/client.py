@@ -8,6 +8,8 @@ import json
 import re
 import socket
 import logging
+import urllib
+
 from tornado import gen
 from tornado.netutil import Resolver
 import aiohttp
@@ -68,7 +70,7 @@ class Client:
         if not url and node:
             url = node.url
 
-        url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
+        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$', re.IGNORECASE)
         matched = url_pattern.match(url)
         if not matched:
             raise ValueError("URL is broken: %s" % url)
@@ -76,7 +78,12 @@ class Client:
         # proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
-        self.url = url
+        uuid = matched.groups()[3]
+        if uuid:
+            extra = len(uuid) + 1
+            self.url = url[:-extra]
+        else:
+            self.url = url
 
         if is_unix_socket:
             self.socket_path = location

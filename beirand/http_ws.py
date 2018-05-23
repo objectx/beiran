@@ -8,6 +8,7 @@ from tornado.options import options, define
 from tornado.web import HTTPError
 
 from beirand.common import logger, VERSION, NODES
+from beiran.models import Node
 from beirand.lib import get_listen_address, get_listen_port
 
 
@@ -152,22 +153,28 @@ class NodesHandler(JsonHandler):
             http response
 
         """
-        address = self.json_data['address']
-        parsed = urllib.parse.urlparse(address)
+        node_url = self.json_data['address']
+        parsed = urllib.parse.urlparse(node_url)
+        try:
+            if parsed.fragment:
+                existing_node = await NODES.get_node_by_uuid(parsed.fragment)
+            else:
+                existing_node = await NODES.get_node_by_ip_and_port(parsed.hostname, parsed.port)
+        except Node.DoesNotExist:
+            existing_node = None
 
-        existing_node = NODES.get_node_by_ip_and_port(parsed.hostname, parsed.port, from_db=True)
-
-        if existing_node.status == 'online':
+        if existing_node and existing_node.status != 'offline':
+            self.set_status(409)
             self.write({"status": "Node is already synchronized!"})
             self.finish()
+            return
 
         # remote_ip = self.request.remote_ip
 
         if self.json_data.get('probe_back', None):
-            await NODES.probe_node_bidirectional(ip_address=parsed.hostname,
-                                                 service_port=parsed.port)
+            await NODES.probe_node_bidirectional(url=node_url)
         else:
-            await NODES.probe_node(ip_address=parsed.hostname, service_port=parsed.port)
+            await NODES.probe_node(url=node_url)
 
         self.write({"status": "OK"})
         self.finish()

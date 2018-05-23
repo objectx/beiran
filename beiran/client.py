@@ -121,7 +121,8 @@ class Client:
 
         data = kwargs.pop('data', None)
         if data:
-            kwargs['body'] = json.dumps(data)
+            # kwargs['data'] = json.dumps(data)
+            kwargs['json'] = data
             headers['Content-Type'] = 'application/json'
 
         kwargs['headers'] = headers

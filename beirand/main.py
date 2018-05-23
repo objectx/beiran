@@ -191,16 +191,17 @@ class BeiranDaemon(EventEmitter):
 
         # Initialize discovery
         discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
-        Services.logger.debug("Discovery method is %s", discovery_mode)
-        discovery = await self.get_plugin('discovery', discovery_mode, {
-            "address": get_advertise_address(),
-            "port": get_listen_port(),
-            "version": VERSION,
-            "events": EVENTS
-        })
+        if discovery_mode != "none":
+            Services.logger.debug("Discovery method is %s", discovery_mode)
+            discovery = await self.get_plugin('discovery', discovery_mode, {
+                "address": get_advertise_address(),
+                "port": get_listen_port(),
+                "version": VERSION,
+                "events": EVENTS
+            })
 
-        # Only one discovery plugin at a time is supported (for now)
-        Services.plugins['discovery'] = discovery
+            # Only one discovery plugin at a time is supported (for now)
+            Services.plugins['discovery'] = discovery
 
         # Initialize package plugins
         package_plugins_enabled = ['docker']
@@ -260,20 +261,19 @@ class BeiranDaemon(EventEmitter):
         EVENTS.on('node.added', self.on_new_node_added)
         EVENTS.on('node.removed', self.on_node_removed)
 
-        EVENTS.on('probe', self.new_node) # TEMP
-
         # Start plugins
         for name, plugin in Services.plugins.items():
-            if plugin == Services.plugins['discovery']:
+            if 'discovery' in Services.plugins and plugin == Services.plugins['discovery']:
                 continue
             Services.logger.info("starting plugin: %s", name)
             await plugin.start()
 
         # Start discovery last
-        Services.plugins['discovery'].on('discovered', self.new_node)
-        Services.plugins['discovery'].on('undiscovered', self.removed_node)
+        if 'discovery' in Services.plugins:
+            Services.plugins['discovery'].on('discovered', self.new_node)
+            Services.plugins['discovery'].on('undiscovered', self.removed_node)
 
-        await Services.plugins['discovery'].start()
+            await Services.plugins['discovery'].start()
 
         # Ready
         self.set_status('ready')

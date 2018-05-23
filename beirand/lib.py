@@ -12,7 +12,7 @@ import netifaces
 from beiran.log import build_logger
 from beiran.version import get_version
 
-import beirand.defaults as defaults
+import beiran.defaults as defaults
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None

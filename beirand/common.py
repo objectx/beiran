@@ -4,10 +4,10 @@ import os
 
 from pyee import EventEmitter
 
+import beiran.defaults as defaults
 from beiran.log import build_logger
 from beiran.version import get_version
 from beirand.nodes import Nodes
-import beirand.defaults as defaults
 
 
 EVENTS = EventEmitter()

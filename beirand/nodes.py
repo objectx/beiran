@@ -7,7 +7,7 @@ import logging
 from beiran.models import Node
 from beiran.client import Client as BeiranClient
 
-import beirand.defaults as defaults
+import beiran.defaults as defaults
 
 
 class Nodes(object):

@@ -92,6 +92,12 @@ class Client:
         else:
             self.http_client = aiohttp.ClientSession()
 
+    async def cleanup(self):
+        await self.http_client.close()
+
+    def __del__(self):
+        asyncio.ensure_future(self.cleanup())
+
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""
         def __init__(self, message):

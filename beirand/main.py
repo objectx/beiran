@@ -293,9 +293,10 @@ class BeiranDaemon(EventEmitter):
         """Graceful shutdown"""
         self.set_status('closing')
 
-        Services.logger.info("stopping discovery")
-        await Services.plugins['discovery'].stop()
-        del Services.plugins['discovery']
+        if 'discovery' in Services.plugins:
+            Services.logger.info("stopping discovery")
+            await Services.plugins['discovery'].stop()
+            del Services.plugins['discovery']
 
         for name, plugin in Services.plugins.items():
             Services.logger.info("stopping %s", name)

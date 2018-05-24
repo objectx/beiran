@@ -1,5 +1,6 @@
 """Docker API endpoints"""
 import os
+import random
 import re
 import json
 import asyncio
@@ -12,6 +13,7 @@ from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
 from .models import DockerImage, DockerLayer
+from .util import DockerUtil
 
 
 class Services:
@@ -267,13 +269,18 @@ class ImageList(web.RequestHandler):
         """
         body = json.loads(self.request.body)
 
-        node_identifier = body['node']
-        if not node_identifier:
-            raise NotImplementedError('Clusterwise image pull is not implemented yet')
-
         image_identifier = body['image']
         if not image_identifier:
             raise HTTPError(status_code=400, log_message='Image name is not given')
+
+        node_identifier = body['node']
+        if not node_identifier:
+            available_nodes = await DockerUtil.find_available_nodes_of_image(image_identifier)
+            if available_nodes:
+                node_identifier = random.choice(available_nodes)
+
+        if not node_identifier:
+            raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
         wait = True if 'wait' in body and body['wait'] else False
         force = True if 'force' in body and body['force'] else False

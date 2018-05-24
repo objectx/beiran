@@ -198,6 +198,5 @@ def collect_node_info():
         "os_type": platform.system(),
         "os_version": platform.version(),
         "architecture": platform.machine(),
-        "version": get_version(),
-        "beiran_service_port": get_listen_port()
+        "version": get_version()
     }

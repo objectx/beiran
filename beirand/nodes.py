@@ -195,7 +195,7 @@ class Nodes(object):
             try:
                 return Node.select().where(
                     (Node.ip_address == ip_address) &
-                    (Node.beiran_service_port == service_port)
+                    (Node.port == service_port)
                 ).get()
             except Node.DoesNotExist:
                 return None

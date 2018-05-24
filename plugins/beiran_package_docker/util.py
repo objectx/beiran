@@ -383,3 +383,24 @@ class DockerUtil:
         manifest['hashid'] = resp.headers['Docker-Content-Digest']
 
         DockerImage.from_dict(manifest, dialect="manifest").save()
+
+    @staticmethod
+    async def find_available_nodes_of_image(image_tag):
+        """
+
+        Args:
+            image_tag: image tag
+
+        Returns:
+            (list) list of available nodes of image object
+
+        """
+
+        # todo: parse image_tag, append latest if necessary
+
+        try:
+            image = DockerImage.select().where(
+                SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
+            return image.available_at
+        except DockerImage.DoesNotExist:
+            pass

@@ -64,7 +64,7 @@ services:
     command:  [ "-D" ]
     volumes_from:
       - pod3
-    network_mode: "service:pod1"
+    network_mode: "service:pod3"
   beiran3:
     image: dkr.rsnc.io/poc/beiran/daemon:dev
     volumes_from:

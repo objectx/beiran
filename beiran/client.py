@@ -62,7 +62,7 @@ class Client:
             version: string (optional)
         """
         self.node = node
-        self.version = node.beiran_version if node else version
+        self.version = node.version if node else version
         self.logger = logging.getLogger('beiran.client')
 
         if not url and node:

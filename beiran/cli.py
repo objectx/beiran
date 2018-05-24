@@ -105,7 +105,7 @@ class Cli:
             table.append([
                 node_['uuid'],
                 node_['ip_address'] + ':' + str(node_['port']),
-                node_['beiran_version'],
+                node_['version'],
                 docker_version,
                 node_['status'] if 'status' in node_ else 'unknown'
             ])

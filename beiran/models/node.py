@@ -29,7 +29,7 @@ class Node(BaseModel):
     os_type = CharField(max_length=20)  # linux, win,
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
-    beiran_version = CharField(max_length=10)  # beiran daemon version of node
+    version = CharField(max_length=10)  # beiran daemon version of node
     beiran_service_port = IntegerField()
     status = CharField(max_length=32, default='new')
 

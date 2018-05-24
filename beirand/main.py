@@ -8,6 +8,7 @@ import asyncio
 import importlib
 import signal
 import logging
+from uuid import UUID
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -20,6 +21,7 @@ from pyee import EventEmitter
 from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
+from beirand.common import CONFIG_FOLDER
 
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
@@ -29,6 +31,7 @@ from beirand.version import __version__
 
 from beiran.models import Node
 from beiran.log import build_logger
+import beiran.defaults as defaults
 
 AsyncIOMainLoop().install()
 
@@ -215,15 +218,81 @@ class BeiranDaemon(EventEmitter):
             })
             Services.plugins['package:' + _plugin] = _plugin_obj
 
+    async def init_keys(self):
+        """"""
+        cert_file_path   = "/".join([CONFIG_FOLDER, "beiran.crt"])
+        key_file_path    = "/".join([CONFIG_FOLDER, "beiran.key"])
+        pubkey_file_path = "/".join([CONFIG_FOLDER, "beiran.pub"])
+        uuid_conf_path   = "/".join([CONFIG_FOLDER, 'uuid.conf'])
+
+        def create_keys_and_cert():
+            from OpenSSL import crypto, SSL
+            from socket import gethostname
+            from pprint import pprint
+            from time import gmtime, mktime
+
+            # create a key pair
+            k = crypto.PKey()
+            k.generate_key(crypto.TYPE_RSA, 4096)
+
+            # create a self-signed cert
+            cert = crypto.X509()
+            cert.get_subject().C = "JP"
+            cert.get_subject().ST = "Tokyo"
+            cert.get_subject().L = "Tokyo"
+            cert.get_subject().O = "Beiran Team"
+            cert.get_subject().OU = "Package Distribution"
+            cert.get_subject().CN = "beirand"
+            cert.set_serial_number(1000)
+            cert.gmtime_adj_notBefore(0)
+            cert.gmtime_adj_notAfter(10*365*24*60*60)
+            cert.set_issuer(cert.get_subject())
+            cert.set_pubkey(k)
+            cert.sign(k, 'sha1')
+
+            with open(cert_file_path, "wt") as file:
+                file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode("ascii"))
+            with open(key_file_path, "wt") as file:
+                file.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k).decode("ascii"))
+            with open(pubkey_file_path, "wt") as file:
+                file.write(crypto.dump_publickey(crypto.FILETYPE_PEM, k).decode("ascii"))
+
+            sha1_fingerprint = cert.digest("sha1").decode("ascii")
+            print("FP:", sha1_fingerprint)
+
+            uuid_hex = sha1_fingerprint.replace(':', '').lower()[-32:]
+            print("uuid:", uuid_hex)
+
+            with open(uuid_conf_path, "wt") as file:
+                file.write(uuid_hex)
+
+            self.uuid = UUID(uuid_hex)
+
+        # with open(key_file_path, 'rt').read() as key_file:
+        #     self.private_key = c.load_privatekey(c.FILETYPE_PEM, key_file)
+
+        try:
+            print("reading uuid from:", uuid_conf_path)
+            with open(uuid_conf_path) as uuid_file:
+                uuid_hex = uuid_file.read()
+            if len(uuid_hex) != 32:
+                raise ValueError("32 bytes expected, found %d bytes" % len(uuid_hex))
+            self.uuid = UUID(uuid_hex)
+        except (FileNotFoundError, ValueError):
+            Services.logger.info("Generating private key and uuid")
+            create_keys_and_cert()
+
     async def main(self):
         """ Main function """
 
         # set database
         Services.logger.info("Initializing database...")
         await self.init_db()
+        await self.init_keys()
 
         # collect node info and create node object
         self.nodes.local_node = Node.from_dict(collect_node_info())
+        self.nodes.local_node.uuid = self.uuid
         self.nodes.add_or_update(self.nodes.local_node)
         self.set_status('init')
         Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
@@ -257,6 +326,13 @@ class BeiranDaemon(EventEmitter):
         Services.logger.info("Listening on tcp socket: %s:%s",
                              options.listen_address, options.listen_port)
         server.listen(options.listen_port, address=options.listen_address)
+
+        # # Secure server
+        # secure_server = httpserver.HTTPServer(api_app, ssl_options={
+        #     "certfile": "/".join([CONFIG_FOLDER, "beiran.crt"]),
+        #     "keyfile" : "/".join([CONFIG_FOLDER, "beiran.key"]),
+        # })
+        # secure_server.listen(8883)
 
         # Register daemon events
         EVENTS.on('node.added', self.on_new_node_added)

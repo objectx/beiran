@@ -15,46 +15,6 @@ from beiran.version import get_version
 import beiran.defaults as defaults
 
 LOGGER = build_logger()
-LOCAL_NODE_UUID_CACHED = None
-
-
-def local_node_uuid():
-    """
-    Get UUID from config file if it exists, else return a new one and write it to config file
-
-    Returns:
-        (UUID): uuid in hex
-
-    TODO:
-     - Group this function and similar functionality in a class
-       that will allow eliminate the global usage
-
-    """
-    global LOCAL_NODE_UUID_CACHED  # pylint: disable=global-statement
-
-    if LOCAL_NODE_UUID_CACHED:
-        return LOCAL_NODE_UUID_CACHED
-
-    config_folder = os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER)
-    uuid_conf_path = "/".join([config_folder, 'uuid.conf'])
-    try:
-        uuid_file = open(uuid_conf_path)
-        uuid_hex = uuid_file.read()
-        uuid = UUID(uuid_hex)
-        uuid_file.close()
-        if len(uuid_hex) != 32:
-            raise ValueError
-    except (FileNotFoundError, ValueError):
-        LOGGER.info("uuid.conf file does not exist yet or is invalid, creating a new one here: %s",
-                    uuid_conf_path)
-        uuid = uuid4()
-        uuid_file = open(uuid_conf_path, 'w')
-        uuid_file.write(uuid.hex)
-        uuid_file.close()
-
-    LOGGER.info("local nodes UUID is: %s", uuid.hex)
-    LOCAL_NODE_UUID_CACHED = uuid
-    return uuid
 
 
 def get_default_gateway_interface():
@@ -181,7 +141,7 @@ def get_plugin_list():
     }
 
 
-def collect_node_info():
+def collect_node_info(uuid=None):
     """
     Collect and return Node info
 
@@ -190,7 +150,7 @@ def collect_node_info():
 
     """
     return {
-        "uuid": local_node_uuid().hex,
+        "uuid": uuid or uuid4().hex,
         "hostname": get_hostname(),
         "ip_address": get_advertise_address(),
         "port": get_listen_port(),

@@ -4,3 +4,4 @@ aiohttp==3.0.6
 aiofiles==0.3.2
 netifaces==0.10.6
 peewee==3.1.2
+pyopenssl==18.0.0

@@ -20,6 +20,9 @@ services:
     volumes_from:
       - pod1
     network_mode: "service:pod1"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
 
 
   pod2:
@@ -42,6 +45,9 @@ services:
     volumes_from:
       - pod2
     network_mode: "service:pod2"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
 
 
   pod3:
@@ -64,6 +70,9 @@ services:
     volumes_from:
       - pod3
     network_mode: "service:pod3"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
 
 networks:
   test:

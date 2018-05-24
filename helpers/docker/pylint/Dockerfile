@@ -1,13 +1,8 @@
-FROM python:3.6-alpine
-
-RUN apk add --no-cache \
-    git \
-    openssh-client \
-    python-dev \
-    gcc \
-    g++ \
-    linux-headers \
-    musl-dev
+FROM python:3.6-jessie
+LABEL maintainer="info@beiran.io"
+RUN apt-get update && apt-get -y install \
+	--no-install-recommends \
+	python3-pip git curl make libsqlite3-dev
 
 RUN pip install flake8 flake8-docstrings pylint
 

@@ -5,7 +5,7 @@ import os
 import ipaddress
 import platform
 import socket
-from uuid import uuid4, UUID
+from uuid import uuid4
 
 import netifaces
 

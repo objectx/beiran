@@ -31,7 +31,6 @@ from beirand.version import __version__
 
 from beiran.models import Node
 from beiran.log import build_logger
-import beiran.defaults as defaults
 
 AsyncIOMainLoop().install()
 
@@ -46,6 +45,7 @@ class BeiranDaemon(EventEmitter):
         self.nodes = Nodes()
         self.available_plugins = []
         self.search_plugins()
+        self.uuid = None
 
     async def new_node(self, ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
         """
@@ -219,17 +219,18 @@ class BeiranDaemon(EventEmitter):
             Services.plugins['package:' + _plugin] = _plugin_obj
 
     async def init_keys(self):
-        """"""
+        """Initialize key pair, self-signed certificate and UUID"""
+
+        # pylint: disable=bad-whitespace
         cert_file_path   = "/".join([CONFIG_FOLDER, "beiran.crt"])
         key_file_path    = "/".join([CONFIG_FOLDER, "beiran.key"])
         pubkey_file_path = "/".join([CONFIG_FOLDER, "beiran.pub"])
         uuid_conf_path   = "/".join([CONFIG_FOLDER, 'uuid.conf'])
+        # pylint: enable=bad-whitespace
 
         def create_keys_and_cert():
-            from OpenSSL import crypto, SSL
-            from socket import gethostname
-            from pprint import pprint
-            from time import gmtime, mktime
+            """..."""
+            from OpenSSL import crypto
 
             # create a key pair
             k = crypto.PKey()

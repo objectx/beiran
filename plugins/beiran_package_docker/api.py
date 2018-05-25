@@ -275,6 +275,10 @@ class ImageList(web.RequestHandler):
         node_identifier = body['node']
         if not node_identifier:
             available_nodes = await DockerImage.get_available_nodes_by_tag(image_identifier)
+            online_nodes = Services.daemon.nodes.all_nodes.keys()
+            online_availables = [n for n in available_nodes if n in online_nodes]
+            if online_availables:
+                node_identifier = random.choice(online_availables)
 
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')

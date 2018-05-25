@@ -89,13 +89,16 @@ class Client:
             self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
         else:
             self.client_connector = None
+        self.http_client = None
 
     async def create_client(self):
         self.http_client = aiohttp.ClientSession(connector=self.client_connector)
 
     async def cleanup(self):
         """Closes aiohttp client session"""
-        await self.http_client.close()
+        if self.http_client:
+            await self.http_client.close()
+            self.http_client = None
 
     def __del__(self):
         loop = asyncio.get_event_loop()

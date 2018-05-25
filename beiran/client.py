@@ -86,17 +86,23 @@ class Client:
 
         if is_unix_socket:
             self.socket_path = location
-            conn = aiohttp.UnixConnector(path=self.socket_path)
-            self.http_client = aiohttp.ClientSession(connector=conn)
+            self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
         else:
-            self.http_client = aiohttp.ClientSession()
+            self.client_connector = None
+
+    async def create_client(self):
+        self.http_client = aiohttp.ClientSession(connector=self.client_connector)
 
     async def cleanup(self):
         """Closes aiohttp client session"""
         await self.http_client.close()
 
     def __del__(self):
-        asyncio.ensure_future(self.cleanup())
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(self.cleanup())
+        else:
+            loop.run_until_complete(self.cleanup())
 
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""
@@ -153,6 +159,9 @@ class Client:
         self.logger.debug("Requesting %s", url)
 
         try:
+            if not self.http_client:
+                self.create_client()
+
             if 'timeout' in kwargs:
                 # raises;
                 # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError

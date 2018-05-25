@@ -3,7 +3,7 @@
 """
 Module for DockerLayer and DockerImage Model
 """
-from peewee import IntegerField, CharField, BooleanField
+from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 
 
@@ -80,6 +80,33 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             del _dict['has_unknown_layers']
 
         return _dict
+
+    @classmethod
+    async def get_available_nodes_by_tag(cls, image_name):
+        """
+
+        Args:
+            image_name: image name
+
+        Returns:
+            (list) list of available nodes of image object
+
+        """
+
+        # image must have a tag, default is latest
+        try:
+            image_name, tag = image_name.split(":")
+        except ValueError:
+            tag = "latest"
+
+        image_tag = "{image_name}:{tag}".format(image_name=image_name, tag=tag)
+
+        try:
+            image = cls.select().where(
+                SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
+            return image.available_at
+        except DockerImage.DoesNotExist:
+            pass
 
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):

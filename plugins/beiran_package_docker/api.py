@@ -13,7 +13,6 @@ from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
 from .models import DockerImage, DockerLayer
-from .util import DockerUtil
 
 
 class Services:
@@ -275,9 +274,7 @@ class ImageList(web.RequestHandler):
 
         node_identifier = body['node']
         if not node_identifier:
-            available_nodes = await DockerUtil.find_available_nodes_of_image(image_identifier)
-            if available_nodes:
-                node_identifier = random.choice(available_nodes)
+            available_nodes = await DockerImage.get_available_nodes_by_tag(image_identifier)
 
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')

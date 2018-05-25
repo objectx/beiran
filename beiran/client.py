@@ -91,12 +91,8 @@ class Client:
         else:
             self.http_client = aiohttp.ClientSession()
 
-    async def cleanup(self):
-        """Closes aiohttp client session"""
-        await self.http_client.close()
-
     def __del__(self):
-        asyncio.ensure_future(self.cleanup())
+        self.http_client.close()
 
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""

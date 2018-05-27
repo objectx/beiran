@@ -34,6 +34,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.probe_task = None
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST
+        self.events = self.config['events']
 
         ApiDependencies.aiodocker = self.aiodocker
         ApiDependencies.logger = self.log
@@ -53,6 +54,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         # Do not block on this
         self.probe_task = self.loop.create_task(self.listen_daemon_events())
+        self.events.on('docker_daemon.new_image', self.new_image)
 
     async def stop(self):
         if self.probe_task:
@@ -170,6 +172,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 if not image_data['RepoTags']:
                     continue
 
+                self.log.debug("existing image..%s", image_data)
+
                 image = DockerImage.from_dict(image_data, dialect="docker")
                 image_exists_in_db = False
                 try:
@@ -213,6 +217,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         If docker daemon is unavailable calls deamon_lost method
         to emit the lost event.
         """
+
+        NEW_IMAGE_EVENTS = ['pull', 'load', 'tag']
+
+
         try:
             # await until docker is unavailable
             self.log.debug("subscribing to docker events for further changes")
@@ -222,12 +230,29 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 if event is None:
                     break
 
-                if 'id' in event:
-                    self.log.debug("docker event: %s[%s] %s", event['Action'],
-                                   event['Type'], event['id'])
-                else:
-                    self.log.debug("docker event: %s[%s]", event['Action'], event['Type'])
+                # log the event
+                self.log.debug("docker event: %s[%s] %s",
+                               event['Action'], event['Type'], event.get('id', 'event has no id'))
+
+                # emit related events
+                if event['Type'] is 'image' and event['Action'] in NEW_IMAGE_EVENTS:
+                    self.events.emit('docker_daemon.new_image', event)
 
             await self.daemon_lost()
         except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(err)
+
+    async def new_image(self, image):
+        self.log.debug("docker daemon image: %s[%s] %s", image['Action'],
+                       image['Type'], image['id'])
+        self.log.debug("registering new image...: %s[%s] %s", image['Action'],
+                       image['Type'], image['id'])
+
+        image_data = await self.aiodocker.images.get(name=image['id'])
+        image_obj = DockerImage.from_dict(image_data, dialect="docker")
+        try:
+            # save image to db.
+            image_obj.save()
+
+        except Exception as e:
+            self.log.error("can not be saved", e)

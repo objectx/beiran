@@ -55,6 +55,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # Do not block on this
         self.probe_task = self.loop.create_task(self.listen_daemon_events())
         self.events.on('docker_daemon.new_image', self.new_image)
+        self.events.on('docker_daemon.del_image', self.del_image)
 
     async def stop(self):
         if self.probe_task:
@@ -173,35 +174,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                     continue
 
                 self.log.debug("existing image..%s", image_data)
-
-                image = DockerImage.from_dict(image_data, dialect="docker")
-                image_exists_in_db = False
-                try:
-                    image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
-                    old_available_at = image_.available_at
-                    image_.update_using_obj(image)
-                    image = image_
-                    image.available_at = old_available_at
-                    image_exists_in_db = True
-
-                except DockerImage.DoesNotExist:
-                    pass
-
-                try:
-                    image_details = await self.aiodocker.images.get(name=image_data['Id'])
-
-                    layers = await self.util.get_image_layers(image_details['RootFS']['Layers'])
-                except DockerUtil.CannotFindLayerMappingError as err:
-                    continue
-
-                image.layers = [layer.digest for layer in layers]
-
-                for layer in layers:
-                    layer.set_available_at(self.node.uuid.hex)
-                    layer.save()
-
-                image.set_available_at(self.node.uuid.hex)
-                image.save(force_insert=not image_exists_in_db)
+                await self.save_image_to_beiran(image_data['Id'])
 
             # This will be converted to something like
             #   daemon.plugins['docker'].setReady(true)
@@ -219,7 +192,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         """
 
         NEW_IMAGE_EVENTS = ['pull', 'load', 'tag']
-
+        REMOVE_IMAGE_EVENTS = ['delete', 'untag']
 
         try:
             # await until docker is unavailable
@@ -235,24 +208,80 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                                event['Action'], event['Type'], event.get('id', 'event has no id'))
 
                 # emit related events
-                if event['Type'] is 'image' and event['Action'] in NEW_IMAGE_EVENTS:
-                    self.events.emit('docker_daemon.new_image', event)
+                if event['Type'] == 'image' and event['Action'] in NEW_IMAGE_EVENTS:
+                    self.log.debug("docker daemon report a new image %s", event.get('id'))
+                    self.events.emit('docker_daemon.new_image', event.get('id'))
+
+                # emit related events
+                if event['Type'] == 'image' and event['Action'] in REMOVE_IMAGE_EVENTS:
+                    self.log.debug("docker daemon report an existing image was removed %s",
+                                   event.get('id'))
+                    self.events.emit('docker_daemon.del_image', event)
 
             await self.daemon_lost()
         except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(err)
 
-    async def new_image(self, image):
-        self.log.debug("docker daemon image: %s[%s] %s", image['Action'],
-                       image['Type'], image['id'])
-        self.log.debug("registering new image...: %s[%s] %s", image['Action'],
+    async def new_image(self, image_id):
+        self.log.debug("registering new image...: %s", image_id)
+        await self.save_image_to_beiran(image_id)
+
+    async def del_image(self, image):
+        self.log.debug("deleting image...: %s[%s] %s", image['Action'],
                        image['Type'], image['id'])
 
-        image_data = await self.aiodocker.images.get(name=image['id'])
-        image_obj = DockerImage.from_dict(image_data, dialect="docker")
+        image_obj = DockerImage.get(DockerImage.hash_id == image['id'])
         try:
-            # save image to db.
-            image_obj.save()
-
+            image_obj.delete()
         except Exception as e:
             self.log.error("can not be saved", e)
+
+    async def save_image_to_beiran(self, image_id):
+        """
+        Save existing image and layers identified by image_id to database.
+
+        Args:
+            image_id (dict): image identifier
+
+        """
+
+        image_data = await self.aiodocker.images.get(name=image_id)
+        self.log.debug("get docker image data by id %s \n\n %s\n\n", image_id, image_data)
+
+        image = DockerImage.from_dict(image_data, dialect="docker")
+        image_exists_in_db = False
+
+        self.log.debug("image object %s \n\n ", image.to_dict(dialect="docker"))
+
+
+        try:
+            image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+            old_available_at = image_.available_at
+            image_.update_using_obj(image)
+            image = image_
+            image.available_at = old_available_at
+            image_exists_in_db = True
+            self.log.debug("image record updated.. %s \n\n", image.to_dict(dialect="docker"))
+
+        except DockerImage.DoesNotExist:
+            self.log.debug("not an existing one, creating a new record..")
+
+        try:
+            layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
+            image.layers = [layer.digest for layer in layers]
+
+            for layer in layers:
+                layer.set_available_at(self.node.uuid.hex)
+                layer.save()
+                self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
+
+
+        except DockerUtil.CannotFindLayerMappingError as err:
+            self.log.debug("Unexpected error, layers of image %s could not found..",
+                           image_data['Id'])
+
+        self.log.debug("set availability and save image %s \n %s \n\n",
+                       self.node.uuid.hex, image.to_dict(dialect="docker"))
+
+        image.set_available_at(self.node.uuid.hex)
+        image.save(force_insert=not image_exists_in_db)

@@ -219,7 +219,8 @@ class DockerUtil:
                 # handle DockerUtil.CannotFindLayerMappingError?
                 layers.append(layer)
             except FileNotFoundError:
-                self.logger.error("attempted to access to a non-existent layer by diff id: %s", diffid)
+                self.logger.error("attempted to access to a non-existent layer by diff id: %s",
+                                  diffid)
         return layers
 
     async def get_layer_by_diffid(self, diffid, idx):

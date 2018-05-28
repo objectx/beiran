@@ -190,8 +190,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         to emit the lost event.
         """
 
-        NEW_IMAGE_EVENTS = ['pull', 'load', 'tag']
-        REMOVE_IMAGE_EVENTS = ['untag']
+        new_image_events = ['pull', 'load', 'tag']
+        remove_image_events = ['untag']
 
         try:
             # await until docker is unavailable
@@ -207,11 +207,11 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                                event['Action'], event['Type'], event.get('id', 'event has no id'))
 
                 # handle new image events
-                if event['Type'] == 'image' and event['Action'] in NEW_IMAGE_EVENTS:
+                if event['Type'] == 'image' and event['Action'] in new_image_events:
                     await self.save_image(event['id'])
 
                 # handle delete existing image events
-                if event['Type'] == 'image' and event['Action'] in REMOVE_IMAGE_EVENTS:
+                if event['Type'] == 'image' and event['Action'] in remove_image_events:
                     await self.delete_image(event['id'])
 
             await self.daemon_lost()
@@ -219,9 +219,11 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             await self.daemon_error(str(err))
 
     async def new_image_saved(self, image_id):
+        """placeholder method for new_image_saved event"""
         self.log.debug("a new image reported by docker deamon registered...: %s", image_id)
 
     async def existing_image_deleted(self, image_id):
+        """placeholder method for existing_image_deleted event"""
         self.log.debug("an existing image and its layers deleted...: %s", image_id)
 
     async def delete_image(self, image_id):
@@ -249,7 +251,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                     layer.save()
                 else:
                     layer.delete()
-        except DockerUtil.CannotFindLayerMappingError as err:
+        except DockerUtil.CannotFindLayerMappingError:
             self.log.debug("Unexpected error, layers of image %s could not found..",
                            image_data['Id'])
 
@@ -289,7 +291,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 layer.save()
                 self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
 
-        except DockerUtil.CannotFindLayerMappingError as err:
+        except DockerUtil.CannotFindLayerMappingError:
             self.log.debug("Unexpected error, layers of image %s could not found..",
                            image_data['Id'])
 

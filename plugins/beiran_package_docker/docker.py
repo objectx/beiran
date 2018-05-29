@@ -228,7 +228,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def delete_image(self, image_id):
         """
-        Unset available image and layers, delete them if no node remains
+        Unset available image, delete it if no node remains
 
         Args:
             image_id (str): image identifier
@@ -242,18 +242,22 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         else:
             image.delete()
 
-        try:
-            self.log.debug("Layer list: %s", image_data['RootFS']['Layers'])
-            layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
-            for layer in layers:
-                layer.unset_available_at(self.node.uuid.hex)
-                if layer.available_at:
-                    layer.save()
-                else:
-                    layer.delete()
-        except DockerUtil.CannotFindLayerMappingError:
-            self.log.debug("Unexpected error, layers of image %s could not found..",
-                           image_data['Id'])
+        # we do not handle deleting layers yet, not sure if they are
+        # shared and needed by other images
+        # code remains here for further interests. see PR #114 of rsnc
+        #
+        # try:
+        #     self.log.debug("Layer list: %s", image_data['RootFS']['Layers'])
+        #     layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
+        #     for layer in layers:
+        #         layer.unset_available_at(self.node.uuid.hex)
+        #         if layer.available_at:
+        #             layer.save()
+        #         else:
+        #             layer.delete()
+        # except DockerUtil.CannotFindLayerMappingError:
+        #     self.log.debug("Unexpected error, layers of image %s could not found..",
+        #                    image_data['Id'])
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 

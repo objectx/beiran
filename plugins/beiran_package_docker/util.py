@@ -214,9 +214,13 @@ class DockerUtil:
 
         layers = []
         for idx, diffid in enumerate(diffid_list):
-            layer = await self.get_layer_by_diffid(diffid, idx)
-            # handle DockerUtil.CannotFindLayerMappingError?
-            layers.append(layer)
+            try:
+                layer = await self.get_layer_by_diffid(diffid, idx)
+                # handle DockerUtil.CannotFindLayerMappingError?
+                layers.append(layer)
+            except FileNotFoundError:
+                self.logger.error("attempted to access to a non-existent layer by diff id: %s",
+                                  diffid)
         return layers
 
     async def get_layer_by_diffid(self, diffid, idx):

@@ -3,6 +3,7 @@
 """
 Module for DockerLayer and DockerImage Model
 """
+from datetime import datetime
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 
@@ -46,9 +47,20 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         if 'dialect' in kwargs and kwargs['dialect'] == "docker":
             new_dict = {}
 
+            # be sure it is timestamp
+            # aiodocker images.list returns timestamp,
+            # since images.get returns something like iso 8601 with 8 digits of microseconds,
+            # unfortunately python supports only 6 digits.
+            if not isinstance(_dict['Created'], int):
+                time_parts = _dict['Created'].split('.')
+                created = datetime.strptime(
+                    "{}.{}Z".format(time_parts[0], time_parts[1][:6]), "%Y-%m-%dT%H:%M:%S.%fZ")
+                _dict['Created'] = int(created.timestamp())
+
             new_dict['created_at'] = _dict['Created']
             new_dict['hash_id'] = _dict['Id']
-            new_dict['parent_hash_id'] = _dict['ParentId'] if _dict['ParentId'] != '' else None
+            # aiodocker images.list returns ParentId, since images.get returns Parent
+            new_dict['parent_hash_id'] = _dict.get('ParentId') or _dict.get('Parent') or None
             new_dict['tags'] = _dict['RepoTags']
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)

@@ -92,6 +92,7 @@ class Client:
         self.http_client = None
 
     async def create_client(self):
+        """Create aiohttp client session"""
         self.http_client = aiohttp.ClientSession(connector=self.client_connector)
 
     async def cleanup(self):

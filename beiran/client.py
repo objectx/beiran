@@ -164,7 +164,7 @@ class Client:
 
         try:
             if not self.http_client:
-                self.create_client()
+                await self.create_client()
 
             if 'timeout' in kwargs:
                 # raises;

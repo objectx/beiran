@@ -199,7 +199,7 @@ class Client:
         resp = self.request(path=path)
         return resp.get('images', [])
 
-    def pull_image(self, imagename, node=None, wait=False):
+    def pull_image(self, imagename, node=None, wait=False, force=False):
         """
         Pull image accross cluster with spesific node support
         Returns:
@@ -208,7 +208,7 @@ class Client:
         path = '/docker/images?cmd=pull'
 
         resp = self.request(path,
-                            data={'image': imagename, 'node': node, 'wait': wait},
+                            data={'image': imagename, 'node': node, 'wait': wait, 'force': force},
                             method='POST',
                             timeout=600)
         return resp

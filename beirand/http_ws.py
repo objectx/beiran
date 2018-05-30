@@ -250,8 +250,16 @@ class StatusHandler(web.RequestHandler):
     def get(self):
         status_response = {
             "status": "ok",
-            "sync_state_version": Services.daemon.sync_state_version
+            "sync_state_version": Services.daemon.sync_state_version,
+            "plugins": {}
         }
+        for name, plugin in Services.plugins.items():
+            status_response['plugins'][name] = {
+                "id": name,
+                "name": plugin.plugin_name,
+                "type": plugin.plugin_type,
+                "status": plugin.status
+            }
 
         self.write(status_response)
         self.finish()

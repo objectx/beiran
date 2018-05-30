@@ -178,7 +178,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             # This will be converted to something like
             #   daemon.plugins['docker'].setReady(true)
             # in the future; will we in docker plugin code.
-            self.emit('ready')
+            self.status = 'ready'
 
         except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(err)

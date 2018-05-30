@@ -119,6 +119,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         self.daemon = config.pop('daemon')
         self.config = config
         self.loop = get_event_loop()
+        self.status = 'init'
 
     def set_log_level(self, level: int):
         """

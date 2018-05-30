@@ -192,19 +192,16 @@ class Nodes(object):
 
         """
         if from_db:
-            try:
-                return Node.select().where(
-                    (Node.ip_address == ip_address) &
-                    (Node.port == service_port)
-                ).get()
-            except Node.DoesNotExist:
-                return None
+            return Node.select().where(
+                (Node.ip_address == ip_address) &
+                (Node.port == service_port)
+            ).get()
 
         for _, node in self.all_nodes.items():
             if node.ip_address == ip_address and node.port == int(service_port):
                 return node
 
-        return None
+        raise Node.DoesNotExist()
 
     async def get_node_by_url(self, url, from_db=False):
         """..."""
@@ -251,10 +248,12 @@ class Nodes(object):
         """
 
         # check if we had prior communication with this node
-        node = await self.get_node_by_url(url)
-        if node:
+        try:
+            node = await self.get_node_by_url(url)
             # fetch up-to-date information and mark the node as online
             node = await self.add_or_update_new_remote_node(url)
+        except Node.DoesNotExist:
+            node = None
 
         # FIXME! For some reason, this first pass above always fails
 

@@ -73,8 +73,9 @@ class BeiranDaemon(EventEmitter):
         """
 
         service_port = service_port or get_listen_port()
-        node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
-        if not node:
+        try:
+            node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
+        except Node.DoesNotExist as err:
             Services.logger.warning('Cannot find node at %s:%d for removing',
                                     ip_address, service_port)
             return

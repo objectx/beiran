@@ -221,6 +221,15 @@ class Client:
         path = "/info" if not uuid else "/info/{}".format(uuid)
         return await self.request(path=path, parse_json=True, **kwargs)
 
+    async def get_status(self, plugin=None, **kwargs):
+        """
+        Retrieve status information about node or one of it's plugins
+        Returns:
+            object: status of node or plugin
+        """
+        path = "/status" if not plugin else "/status/{}".format(plugin)
+        return await self.request(path=path, parse_json=True, **kwargs)
+
     async def ping(self, timeout=10, **kwargs):
         """
         Pings the node

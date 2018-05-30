@@ -102,6 +102,7 @@ class JsonHandler(web.RequestHandler):
         output = json.dumps(self.response)
         self.write(output)
 
+
 class ApiRootHandler(web.RequestHandler):
     """ API Root endpoint `/` handling"""
 
@@ -242,9 +243,25 @@ class Ping(web.RequestHandler):
         self.finish()
     # pylint: enable=arguments-differ
 
+
+class StatusHandler(web.RequestHandler):
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        status_response = {
+            "status": "ok",
+            "sync_state_version": Services.daemon.sync_state_version
+        }
+
+        self.write(status_response)
+        self.finish()
+    # pylint: enable=arguments-differ
+
+
 ROUTES = [
     (r'/', ApiRootHandler),
     (r'/info(?:/([0-9a-fsh:]+))?', NodeInfo),
+    (r'/status', StatusHandler),
     (r'/nodes', NodesHandler),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),

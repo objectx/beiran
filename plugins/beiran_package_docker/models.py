@@ -53,8 +53,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             # unfortunately python supports only 6 digits.
             if not isinstance(_dict['Created'], int):
                 time_parts = _dict['Created'].split('.')
-                created = datetime.strptime(
-                    "{}.{}Z".format(time_parts[0], time_parts[1][:6]), "%Y-%m-%dT%H:%M:%S.%fZ")
+                created = datetime.strptime(time_parts[0], "%Y-%m-%dT%H:%M:%S")
                 _dict['Created'] = int(created.timestamp())
 
             new_dict['created_at'] = _dict['Created']

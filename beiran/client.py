@@ -94,8 +94,7 @@ class Client:
     async def create_client(self):
         """Create aiohttp client session"""
         self.http_client = aiohttp.ClientSession(connector=self.client_connector)
-        # yield
-        
+
     async def cleanup(self):
         """Closes aiohttp client session"""
         if self.http_client:
@@ -278,7 +277,7 @@ class Client:
         resp = await self.request(path=path)
         return resp.get('images', [])
 
-
+    #pylint: disable-msg=too-many-arguments
     async def pull_image(self, imagename, node=None, wait=False, force=False, progress=False):
         """
         Pull image accross cluster with spesific node support
@@ -287,13 +286,15 @@ class Client:
         """
         path = '/docker/images?cmd=pull'
 
-        payload = {'image': imagename, 'node': node, 'wait': wait, 'force': force, 'progress': progress}
+        payload = {'image': imagename, 'node': node, 'wait': wait, 'force': force,
+                   'progress': progress}
         resp = await self.request(path,
                                   data=payload,
                                   method='POST',
                                   return_response=True,
                                   timeout=600)
         return resp
+    #pylint: enable-msg=too-many-arguments
 
     async def stream_image(self, imagename):
         """

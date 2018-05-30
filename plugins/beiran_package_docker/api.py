@@ -14,7 +14,6 @@ from beiran.client import Client
 from beiran.models import Node
 from .models import DockerImage, DockerLayer
 
-from time import sleep
 class Services:
     """These needs to be injected from the plugin init code"""
     local_node = None
@@ -258,10 +257,15 @@ class ImagePullHandler(web.RequestHandler):
 class ImageList(web.RequestHandler):
     """List images"""
 
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.real_size = 0
+
     def data_received(self, chunk):
         pass
 
     # pylint: disable=too-many-locals
+    # pylint: disable=too-many-branches
     async def pull(self):
         """
             Pulling image in cluster
@@ -320,15 +324,14 @@ class ImageList(web.RequestHandler):
                 node = await Services.daemon.nodes.fetch_node_info(node_identifier)
 
         client = Client(node=node)
-        self.real_size = 0
 
         chunks = asyncio.Queue()
         @aiohttp.streamer
         async def sender(writer, chunks):
+            """ async generator data sender for aiodocker """
             progress = 0.0
             last_progress = 0.0
 
-            """ async generator data sender for aiodocker """
             chunk = await chunks.get()
             while chunk:
                 await writer.write(chunk)
@@ -337,11 +340,11 @@ class ImageList(web.RequestHandler):
                 if chunk:
                     self.real_size += len(chunk)
                     if show_progress and self.real_size/float(image.size) - last_progress > 0.05:
-                        sleep(0.1)
                         progress = self.real_size/float(image.size)
-                        self.write('{"progress": %.2f, "done": false},' % progress)                
+                        self.write('{"progress": %.2f, "done": false},' % progress)
                         self.flush()
                         last_progress = progress
+
 
         try:
             # pylint: disable=no-value-for-parameter,no-member
@@ -357,14 +360,17 @@ class ImageList(web.RequestHandler):
             chunks.put_nowait(None)
 
             if show_progress:
-                self.write('{"progress": %.2f, "done": true}' % (self.real_size / float(image.size)))
+                self.write('{"progress": %.2f, "done": true}' %
+                           (self.real_size / float(image.size)))
                 self.write(']}')
                 self.finish()
 
                 # FIXME!
                 if self.real_size != image.size:
-                    Services.logger.debug("WARNING! The size of the image isn't equal to the sum of chuncks length. [%d, %d]" 
-                                            % (self.real_size, image.size))
+                    Services.logger.debug("WARNING: size of image != " +
+                                          "sum of chuncks length. [%d, %d]",
+                                          self.real_size, image.size)
+
 
             await docker_result
         except Client.Error as error:
@@ -375,6 +381,7 @@ class ImageList(web.RequestHandler):
             self.write({'finished':True})
             self.finish()
     # pylint: enable=too-many-locals
+    # pylint: enable=too-many-branches
 
     # pylint: disable=arguments-differ
     @web.asynchronous

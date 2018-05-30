@@ -4,6 +4,8 @@
 import os
 import sys
 import logging
+import asyncio
+import json
 import click
 from tabulate import tabulate
 from beiran.util import exit_print
@@ -11,6 +13,7 @@ from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.sync_client import Client
 from beiran.log import build_logger
+from beiran.client import Client as AsyncClient
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
 # LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
@@ -64,6 +67,7 @@ class Cli:
         # self.beiran_client = beiran.Client(self.beiran_url,
         #     client_key = client_key, client_cert = client_cert)
         self.beiran_client = Client(self.beiran_url)
+        self.async_beiran_client = AsyncClient(self.beiran_url)
 
     @click.command('version')
     @click.pass_obj
@@ -156,16 +160,56 @@ class Cli:
                   help='Waits result of pulling image')
     @click.option('--force', 'force', default=False, is_flag=True,
                   help='Forces download of image even if the node is not recognised')
+    @click.option('--progress', 'progress', default=False, is_flag=True,
+                  help='Show image transfer progress')
     @click.argument('imagename')
     @click.pass_obj
-    def image_pull(self, node, wait, force, imagename):
+    #pylint: disable-msg=too-many-arguments
+    def image_pull(self, node, wait, force, progress, imagename):
         """Pull a container image from cluster or repository"""
         click.echo('Pulling image %s from %s!' % (imagename, node))
-        result = self.beiran_client.pull_image(imagename, node, wait, force)
-        if "started" in result:
-            click.echo("Process is started")
-        if "finished" in result:
-            click.echo("Process is finished")
+
+        if progress:
+            progbar = click.progressbar(length=1)
+
+            # We should use decent JSON stream parser.
+            # This is a temporary solution.
+            async def json_streamer(stream, subpath="*"):
+                """Parse a stream of JSON chunks"""
+                if subpath:
+                    pass
+                while not stream.at_eof():
+                    data = await stream.readchunk()
+                    try:
+                        json_str = data[0].decode("utf-8")[:-1]
+                        json_dir = json.loads(json_str)
+                        yield json_dir
+                    except json.decoder.JSONDecodeError:
+                        pass
+
+            async def pulling(progress):
+                """Pull image with async client"""
+                resp = await self.async_beiran_client.pull_image(imagename, node, wait, force,
+                                                                 progress)
+                before = 0
+                async for update in json_streamer(resp.content, 'progress.*'):
+                    progbar.update(update['progress'] - before)
+                    before = update['progress']
+
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(pulling(progress))
+
+            progbar.render_finish()
+            click.echo('done!')
+
+        else:
+            result = self.beiran_client.pull_image(imagename, node, wait, force, progress)
+
+            if "started" in result:
+                click.echo("Process is started")
+            if "finished" in result:
+                click.echo("Process is finished")
+    #pylint: enable-msg=too-many-arguments
 
     image.add_command(image_pull)
 

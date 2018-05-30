@@ -208,14 +208,26 @@ class Client:
         resp = self.request(path=path, **kwargs)
         return resp.get('images', [])
 
-    def pull_image(self, imagename, node=None, wait=False, force=False, **kwargs):
+    def pull_image(self, imagename, **kwargs):
         """
         Pull image accross cluster with spesific node support
         Returns:
             result: Pulling process result
         """
+
+        progress = kwargs.pop('progress', False)
+        force = kwargs.pop('force', False)
+        wait = kwargs.pop('wait', False)
+        node = kwargs.pop('node', None)
+
         path = '/docker/images?cmd=pull'
-        data = {'image': imagename, 'node': node, 'wait': wait, 'force': force}
+        data = {
+            'image': imagename,
+            'node': node,
+            'wait': wait,
+            'force': force,
+            'progress':progress
+        }
 
         resp = self.request(path,
                             data=data,
@@ -223,6 +235,7 @@ class Client:
                             timeout=600,
                             **kwargs)
         return resp
+    #pylint: enable-msg=too-many-arguments
 
     def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
         """

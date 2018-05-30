@@ -74,7 +74,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("update existing image %s, now available on new node: %s",
                            image.hash_id, node.uuid.hex)
         except DockerImage.DoesNotExist:
-            image.available_at = [ node.uuid.hex ]
+            image.available_at = [node.uuid.hex]
             image.save(force_insert=True)
             self.log.debug("new image from remote %s", str(image))
 
@@ -87,7 +87,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
-            layer.available_at = [ node.uuid.hex ]
+            layer.available_at = [node.uuid.hex]
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
 

@@ -252,7 +252,11 @@ class Client:
             "address": address,
             "probe_back": probe_back
         }
-        return await self.request(path=path, data=new_node, parse_json=True, method="POST", **kwargs)
+        return await self.request(path=path,
+                                  data=new_node,
+                                  parse_json=True,
+                                  method="POST",
+                                  **kwargs)
 
     async def get_nodes(self, all_nodes=False, **kwargs):
         """

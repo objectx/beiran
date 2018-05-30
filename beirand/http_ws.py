@@ -245,6 +245,10 @@ class Ping(web.RequestHandler):
 
 
 class StatusHandler(web.RequestHandler):
+    """Status endpoint"""
+
+    def data_received(self, chunk):
+        pass
 
     # pylint: disable=arguments-differ
     def get(self):
@@ -270,6 +274,10 @@ class StatusHandler(web.RequestHandler):
 
 
 class PluginStatusHandler(web.RequestHandler):
+    """Status endpoint for plugins"""
+
+    def data_received(self, chunk):
+        pass
 
     # pylint: disable=arguments-differ
     def get(self, plugin_id):

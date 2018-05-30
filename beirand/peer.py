@@ -21,6 +21,7 @@ class Peer(EventEmitter):
     def __init__(self, node, loop=None):
         super().__init__()
         self.node = node
+        self.ping = -1
         self.loop = loop if loop else asyncio.get_event_loop()
         self.logger = logging.getLogger('beiran.peer')
         self.start_loop()
@@ -34,7 +35,8 @@ class Peer(EventEmitter):
         # TODO: Figure out handling errors when scheduling like this
         self.loop.create_task(self.peerloop())
 
-    async def sync(self, remote_status = None):
+    async def sync(self, remote_status=None):
+        """Sync plugin states with other peers"""
         if not remote_status:
             remote_status = await self.client.get_status(timeout=10)
         sync_version = remote_status['sync_state_version']

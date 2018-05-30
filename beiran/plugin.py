@@ -193,6 +193,7 @@ class BasePackagePlugin(BasePlugin):
 
 
 class History(EventEmitter):
+    """Class for keeping update/sync history (of anything)"""
 
     def __init__(self):
         super().__init__()
@@ -201,6 +202,7 @@ class History(EventEmitter):
         self.updates = []
 
     def update(self, msg=None):
+        """Append update to history and increment the version"""
         self.version += 1
         new_update = {
             "time": time.time(),
@@ -211,14 +213,17 @@ class History(EventEmitter):
         self.updates.append(new_update)
         self.emit('update', new_update)
 
-    def updates_since(self, time):
-        return [ u for u in self.updates if u['time'] >= time ]
+    def updates_since(self, since_time):
+        """Return updates since `time`"""
+        return [u for u in self.updates if u['time'] >= since_time]
 
-    def delete_before(self, time):
-        self.updates = [ u for u in self.updates if u['time'] < time ]
+    def delete_before(self, before_time):
+        """Delete updates before `time`"""
+        self.updates = [u for u in self.updates if u['time'] < before_time]
 
     @property
     def latest(self):
-        if len(self.updates) == 0:
+        """Latest update or None"""
+        if not self.updates:
             return None
         return self.updates[-1]

@@ -14,7 +14,7 @@ from beiran.client import Client
 from beiran.models import Node
 from .models import DockerImage, DockerLayer
 
-
+from time import sleep
 class Services:
     """These needs to be injected from the plugin init code"""
     local_node = None
@@ -285,8 +285,24 @@ class ImageList(web.RequestHandler):
 
         wait = True if 'wait' in body and body['wait'] else False
         force = True if 'force' in body and body['force'] else False
+        show_progress = True if 'progress' in body and body['progress'] else False
 
-        if not wait:
+        image_name = body['image']
+
+        if not ":" in image_name:
+            image_name += ":latest"
+        query = DockerImage.select()
+        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
+        image = query.first()
+
+        if not image:
+            raise HTTPError(status_code=404, log_message="Image Not Found")
+
+        if show_progress:
+            self.write('{"image":"%s","progress":[' % image_name)
+            self.flush()
+
+        if not wait and not show_progress:
             self.write({'started':True})
             self.finish()
 
@@ -304,15 +320,28 @@ class ImageList(web.RequestHandler):
                 node = await Services.daemon.nodes.fetch_node_info(node_identifier)
 
         client = Client(node=node)
+        self.real_size = 0
 
         chunks = asyncio.Queue()
         @aiohttp.streamer
         async def sender(writer, chunks):
+            progress = 0.0
+            last_progress = 0.0
+
             """ async generator data sender for aiodocker """
             chunk = await chunks.get()
             while chunk:
                 await writer.write(chunk)
                 chunk = await chunks.get()
+
+                if chunk:
+                    self.real_size += len(chunk)
+                    if show_progress and self.real_size/float(image.size) - last_progress > 0.05:
+                        sleep(0.1)
+                        progress = self.real_size/float(image.size)
+                        self.write('{"progress": %.2f, "done": false},' % progress)                
+                        self.flush()
+                        last_progress = progress
 
         try:
             # pylint: disable=no-value-for-parameter,no-member
@@ -326,6 +355,17 @@ class ImageList(web.RequestHandler):
                 chunks.put_nowait(data)
 
             chunks.put_nowait(None)
+
+            if show_progress:
+                self.write('{"progress": %.2f, "done": true}' % (self.real_size / float(image.size)))
+                self.write(']}')
+                self.finish()
+
+                # FIXME!
+                if self.real_size != image.size:
+                    Services.logger.debug("WARNING! The size of the image isn't equal to the sum of chuncks length. [%d, %d]" 
+                                            % (self.real_size, image.size))
+
             await docker_result
         except Client.Error as error:
             Services.logger.error(error)

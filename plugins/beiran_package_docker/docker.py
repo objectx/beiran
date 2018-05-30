@@ -6,7 +6,7 @@ import asyncio
 import docker
 from aiodocker import Docker
 
-from beiran.plugin import BasePackagePlugin
+from beiran.plugin import BasePackagePlugin, History
 
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
@@ -34,6 +34,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.probe_task = None
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST
+        self.history = History()
 
         ApiDependencies.aiodocker = self.aiodocker
         ApiDependencies.logger = self.log
@@ -45,9 +46,9 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
     async def start(self):
         self.log.debug("starting docker plugin")
 
-        # # this is async but we will let it run in
-        # # background, we have no rush and it will run
-        # # forever anyway
+        # this is async but we will let it run in
+        # background, we have no rush and it will run
+        # forever anyway
         self.probe_task = self.loop.create_task(self.probe_daemon())
         await self.probe_task
 
@@ -66,23 +67,43 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         await self.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
 
+    async def save_image_at_node(self, image, node):
+        """Save an image from a node into db"""
+        try:
+            image_ = DockerImage.get(DockerImage.hash_id == image.hash_id)
+            image_.set_available_at(node.uuid.hex)
+            image_.save()
+            self.log.debug("update existing image %s, now available on new node: %s",
+                           image.hash_id, node.uuid.hex)
+        except DockerImage.DoesNotExist:
+            image.available_at = [ node.uuid.hex ]
+            image.save(force_insert=True)
+            self.log.debug("new image from remote %s", str(image))
+
+    async def save_layer_at_node(self, layer, node):
+        """Save a layer from a node into db"""
+        try:
+            layer_ = DockerLayer.get(DockerLayer.digest == layer.digest)
+            layer_.set_available_at(node.uuid.hex)
+            layer_.save()
+            self.log.debug("update existing layer %s, now available on new node: %s",
+                           layer.digest, node.uuid.hex)
+        except DockerLayer.DoesNotExist:
+            layer.available_at = [ node.uuid.hex ]
+            layer.save(force_insert=True)
+            self.log.debug("new layer from remote %s", str(layer))
+
     async def fetch_images_from_peer(self, peer):
         """fetch image list from the node and update local db"""
 
         images = await peer.client.get_images()
         self.log.debug("received image list from peer")
 
-        for image in images:
-            try:
-                image_ = DockerImage.get(DockerImage.hash_id == image['hash_id'])
-                image_.set_available_at(peer.node.uuid.hex)
-                image_.save()
-                self.log.debug("update existing image %s, now available on new node: %s",
-                               image['hash_id'], peer.node.uuid.hex)
-            except DockerImage.DoesNotExist:
-                new_image = DockerImage.from_dict(image)
-                new_image.save(force_insert=True)
-                self.log.debug("new image from remote %s", str(image))
+        for image_data in images:
+            # discard `id` sent from remote
+            image_data.pop('id', None)
+            image = DockerImage.from_dict(image_data)
+            await self.save_image_at_node(image, peer.node)
 
     async def fetch_layers_from_peer(self, peer):
         """fetch layer list from the node and update local db"""
@@ -90,17 +111,11 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         layers = await peer.client.get_layers()
         self.log.debug("received layer list from peer")
 
-        for layer in layers:
-            try:
-                layer_ = DockerLayer.get(DockerLayer.digest == layer['digest'])
-                layer_.set_available_at(peer.node.uuid.hex)
-                layer_.save()
-                self.log.debug("update existing layer %s, now available on new node: %s",
-                               layer['digest'], peer.node.uuid.hex)
-            except DockerLayer.DoesNotExist:
-                new_layer = DockerLayer.from_dict(layer)
-                new_layer.save(force_insert=True)
-                self.log.debug("new layer from remote %s", str(layer))
+        for layer_data in layers:
+            # discard `id` sent from remote
+            layer_data.pop('id', None)
+            layer = DockerLayer.from_dict(layer_data)
+            await self.save_layer_at_node(layer, peer.node)
 
     async def daemon_error(self, error):
         """
@@ -173,11 +188,12 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                     continue
 
                 self.log.debug("existing image..%s", image_data)
-                await self.save_image(image_data['Id'])
+                await self.save_image(image_data['Id'], skip_updates=True)
 
             # This will be converted to something like
             #   daemon.plugins['docker'].setReady(true)
             # in the future; will we in docker plugin code.
+            self.history.update('init')
             self.status = 'ready'
 
         except Exception as err:  # pylint: disable=broad-except
@@ -261,7 +277,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def save_image(self, image_id):
+    async def save_image(self, image_id, skip_updates=False):
         """
         Save existing image and layers identified by image_id to database.
 
@@ -305,4 +321,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         image.set_available_at(self.node.uuid.hex)
         image.save(force_insert=not image_exists_in_db)
 
+        if not skip_updates:
+            self.history.update('new_image={}'.format(image.hash_id))
         self.emit('docker_daemon.new_image_saved', image.hash_id)

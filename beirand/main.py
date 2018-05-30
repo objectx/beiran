@@ -8,6 +8,7 @@ import asyncio
 import importlib
 import signal
 import logging
+from functools import partial
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -43,6 +44,7 @@ class BeiranDaemon(EventEmitter):
         self.nodes = Nodes()
         self.available_plugins = []
         self.search_plugins()
+        self.sync_state_version = 0
 
     async def new_node(self, ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
         """
@@ -93,6 +95,19 @@ class BeiranDaemon(EventEmitter):
         """Placeholder for event on node removed"""
         pass
 
+    async def on_plugin_state_update(self, plugin, update):
+        """
+        Track updates on (syncable) plugin states
+
+        This will be used for checking if nodes are in sync or not
+        """
+
+        # TODO: Implement 1~3 seconds pull-back before updating
+        # daemon sync version
+        self.sync_state_version += 1
+        Services.logger.info("sync version up: %d", self.sync_state_version)
+        EVENTS.emit('state.update', update, plugin)
+
     async def get_plugin(self, plugin_type, plugin_name, config):
         """
         Load and initiate plugin
@@ -108,16 +123,22 @@ class BeiranDaemon(EventEmitter):
             config['logger'] = build_logger('beiran.plugin.' + plugin_name)
             config['node'] = self.nodes.local_node
             config['daemon'] = self
+            config['events'] = EVENTS
             module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
             Services.logger.debug("initializing plugin: %s", plugin_name)
             instance = module.Plugin(config)
             await instance.init()
             Services.logger.info("plugin initialisation done: %s", plugin_name)
-            return instance
         except ModuleNotFoundError as error:  # pylint: disable=undefined-variable
             Services.logger.error(error)
             Services.logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
+
+        # Subscribe to plugin state updates
+        if instance.history:
+            instance.history.on('update', partial(self.on_plugin_state_update, instance))
+
+        return instance
 
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""
@@ -198,8 +219,7 @@ class BeiranDaemon(EventEmitter):
             discovery = await self.get_plugin('discovery', discovery_mode, {
                 "address": get_advertise_address(),
                 "port": get_listen_port(),
-                "version": VERSION,
-                "events": EVENTS
+                "version": VERSION
             })
 
             # Only one discovery plugin at a time is supported (for now)
@@ -211,8 +231,7 @@ class BeiranDaemon(EventEmitter):
         for _plugin in package_plugins_enabled:
             _plugin_obj = await self.get_plugin('package', _plugin, {
                 "storage": "/var/lib/docker",
-                "url": None, # default
-                "events": EVENTS
+                "url": None # default
             })
             Services.plugins['package:' + _plugin] = _plugin_obj
 
@@ -263,12 +282,8 @@ class BeiranDaemon(EventEmitter):
         EVENTS.on('node.added', self.on_new_node_added)
         EVENTS.on('node.removed', self.on_node_removed)
 
-        # Start plugins
-        for name, plugin in Services.plugins.items():
-            if 'discovery' in Services.plugins and plugin == Services.plugins['discovery']:
-                continue
-            Services.logger.info("starting plugin: %s", name)
-            await plugin.start()
+        # Ready
+        self.set_status('ready')
 
         # Start discovery last
         if 'discovery' in Services.plugins:
@@ -277,8 +292,12 @@ class BeiranDaemon(EventEmitter):
 
             await Services.plugins['discovery'].start()
 
-        # Ready
-        self.set_status('ready')
+        # Start plugins
+        for name, plugin in Services.plugins.items():
+            if 'discovery' in Services.plugins and plugin == Services.plugins['discovery']:
+                continue
+            Services.logger.info("starting plugin: %s", name)
+            await plugin.start()
 
     def set_status(self, new_status):
         """

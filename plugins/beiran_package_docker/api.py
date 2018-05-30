@@ -377,7 +377,7 @@ class ImageList(web.RequestHandler):
             Services.logger.error(error)
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
-        if wait:
+        if wait and not show_progress:
             self.write({'finished':True})
             self.finish()
     # pylint: enable=too-many-locals

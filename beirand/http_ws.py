@@ -303,7 +303,7 @@ ROUTES = [
     (r'/', ApiRootHandler),
     (r'/info(?:/([0-9a-fsh:]+))?', NodeInfo),
     (r'/status', StatusHandler),
-    (r'/status/([0-9a-z]+(?::[0-9a-z]+))', PluginStatusHandler),
+    (r'/status/plugins/([0-9a-z]+(?::[0-9a-z]+))', PluginStatusHandler),
     (r'/nodes', NodesHandler),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),

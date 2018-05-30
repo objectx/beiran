@@ -227,7 +227,7 @@ class Client:
         Returns:
             object: status of node or plugin
         """
-        path = "/status" if not plugin else "/status/{}".format(plugin)
+        path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
         return await self.request(path=path, parse_json=True, **kwargs)
 
     async def ping(self, timeout=10, **kwargs):

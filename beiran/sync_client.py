@@ -160,7 +160,7 @@ class Client:
         Returns:
             object: status of node or plugin
         """
-        path = "/status" if not plugin else "/status/{}".format(plugin)
+        path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
         return self.request(path=path, parse_json=True, **kwargs)
 
     def probe_node(self, address, **kwargs):

@@ -128,33 +128,33 @@ class Client:
 
         return response.body
 
-    def get_server_info(self):
+    def get_server_info(self, **kwargs):
         """
         Gets root path from daemon for server information
         Returns:
             object: parsed from JSON
 
         """
-        return self.request(path="/", parse_json=True)
+        return self.request(path="/", parse_json=True, **kwargs)
 
-    def get_server_version(self):
+    def get_server_version(self, **kwargs):
         """
         Daemon version retrieve
         Returns:
             str: semantic version
         """
-        return self.get_server_info()['version']
+        return self.get_server_info(**kwargs)['version']
 
-    def get_node_info(self, uuid=None):
+    def get_node_info(self, uuid=None, **kwargs):
         """
         Retrieve information about node
         Returns:
             object: info of node
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
-        return self.request(path=path, parse_json=True)
+        return self.request(path=path, parse_json=True, **kwargs)
 
-    def probe_node(self, address):
+    def probe_node(self, address, **kwargs):
         """
         Connect to a new node
         Returns:
@@ -165,9 +165,9 @@ class Client:
             "address": address,
             "probe_back": True
         }
-        return self.request(path=path, data=new_node, parse_json=True, method="POST")
+        return self.request(path=path, data=new_node, parse_json=True, method="POST", **kwargs)
 
-    def get_nodes(self, all_nodes=False):
+    def get_nodes(self, all_nodes=False, **kwargs):
         """
         Daemon get nodes
         Returns:
@@ -175,11 +175,11 @@ class Client:
         """
         path = '/nodes{}'.format('?all=true' if all_nodes else '')
 
-        resp = self.request(path=path)
+        resp = self.request(path=path, **kwargs)
 
         return resp.get('nodes', [])
 
-    def get_images(self, all_nodes=False, node_uuid=None):
+    def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Image list from beiran API
         Returns:
@@ -196,24 +196,26 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = self.request(path=path)
+        resp = self.request(path=path, **kwargs)
         return resp.get('images', [])
 
-    def pull_image(self, imagename, node=None, wait=False, force=False):
+    def pull_image(self, imagename, node=None, wait=False, force=False, **kwargs):
         """
         Pull image accross cluster with spesific node support
         Returns:
             result: Pulling process result
         """
         path = '/docker/images?cmd=pull'
+        data = {'image': imagename, 'node': node, 'wait': wait, 'force': force}
 
         resp = self.request(path,
-                            data={'image': imagename, 'node': node, 'wait': wait, 'force': force},
+                            data=data,
                             method='POST',
-                            timeout=600)
+                            timeout=600,
+                            **kwargs)
         return resp
 
-    def get_layers(self, all_nodes=False, node_uuid=None):
+    def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Layer list from beiran API
         Returns:
@@ -229,6 +231,6 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = self.request(path=path)
+        resp = self.request(path=path, **kwargs)
 
         return resp.get('layers', [])

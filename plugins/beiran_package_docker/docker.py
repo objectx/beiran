@@ -35,6 +35,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST
         self.history = History()
+        self.last_error = None
 
         ApiDependencies.aiodocker = self.aiodocker
         ApiDependencies.logger = self.log
@@ -50,10 +51,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # background, we have no rush and it will run
         # forever anyway
         self.probe_task = self.loop.create_task(self.probe_daemon())
-        await self.probe_task
 
-        # Do not block on this
-        self.probe_task = self.loop.create_task(self.listen_daemon_events())
         self.on('docker_daemon.new_image', self.new_image_saved)
         self.on('docker_daemon.existing_image_deleted', self.existing_image_deleted)
 
@@ -128,12 +126,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         #   daemon.plugins['docker'].setReady(false)
         # in the future; will we in docker plugin code.
         self.log.error("docker connection error: %s", error, exc_info=True)
-        self.emit('error', error)
-        self.emit('down')
+        self.last_error = error
+        self.status = 'error'
 
         # re-schedule
-        await asyncio.sleep(30)
+        self.log.debug("sleeping 10 seconds before retrying")
+        await asyncio.sleep(10)
         self.probe_task = self.loop.create_task(self.probe_daemon())
+        self.log.debug("re-scheduled probe_daemon")
 
     async def daemon_lost(self):
         """
@@ -195,6 +195,9 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             # in the future; will we in docker plugin code.
             self.history.update('init')
             self.status = 'ready'
+
+            # Do not block on this
+            self.probe_task = self.loop.create_task(self.listen_daemon_events())
 
         except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(err)

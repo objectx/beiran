@@ -102,6 +102,7 @@ class JsonHandler(web.RequestHandler):
         output = json.dumps(self.response)
         self.write(output)
 
+
 class ApiRootHandler(web.RequestHandler):
     """ API Root endpoint `/` handling"""
 
@@ -242,9 +243,67 @@ class Ping(web.RequestHandler):
         self.finish()
     # pylint: enable=arguments-differ
 
+
+class StatusHandler(web.RequestHandler):
+    """Status endpoint"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self):
+        status_response = {
+            "status": "ok",
+            "sync_state_version": Services.daemon.sync_state_version,
+            "plugins": {}
+        }
+        for name, plugin in Services.plugins.items():
+            status_response['plugins'][name] = {
+                "id": name,
+                "name": plugin.plugin_name,
+                "type": plugin.plugin_type,
+                "status": plugin.status
+            }
+            if plugin.history:
+                status_response['plugins'][name]["@v"] = plugin.history.version
+                status_response['plugins'][name]["@state"] = plugin.history.latest
+
+        self.write(status_response)
+        self.finish()
+    # pylint: enable=arguments-differ
+
+
+class PluginStatusHandler(web.RequestHandler):
+    """Status endpoint for plugins"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    def get(self, plugin_id):
+        if not plugin_id in Services.plugins:
+            raise HTTPError(status_code=404, log_message="Plugin Not Found")
+
+        plugin = Services.plugins[plugin_id]
+        status_response = {
+            "id": plugin_id,
+            "name": plugin.plugin_name,
+            "type": plugin.plugin_type,
+            "status": plugin.status
+        }
+        if hasattr(plugin, 'history'):
+            status_response["@v"] = plugin.history.version
+            status_response["@state"] = plugin.history.latest
+
+        self.write(status_response)
+        self.finish()
+    # pylint: enable=arguments-differ
+
 ROUTES = [
     (r'/', ApiRootHandler),
     (r'/info(?:/([0-9a-fsh:]+))?', NodeInfo),
+    (r'/status', StatusHandler),
+    (r'/status/plugins/([0-9a-z]+(?::[0-9a-z]+))', PluginStatusHandler),
     (r'/nodes', NodesHandler),
     (r'/ping', Ping),
     # (r'/layers', LayersHandler),

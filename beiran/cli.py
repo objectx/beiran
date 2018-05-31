@@ -189,8 +189,11 @@ class Cli:
 
             async def pulling(progress):
                 """Pull image with async client"""
-                resp = await self.async_beiran_client.pull_image(imagename, node, wait, force,
-                                                                 progress)
+                resp = await self.async_beiran_client.pull_image(imagename,
+                                                                 node=node,
+                                                                 wait=wait,
+                                                                 force=force,
+                                                                 progress=progress)
                 before = 0
                 async for update in json_streamer(resp.content, 'progress.*'):
                     progbar.update(update['progress'] - before)
@@ -203,7 +206,11 @@ class Cli:
             click.echo('done!')
 
         else:
-            result = self.beiran_client.pull_image(imagename, node, wait, force, progress)
+            result = self.beiran_client.pull_image(imagename,
+                                                   node=node,
+                                                   wait=wait,
+                                                   force=force,
+                                                   progress=progress)
 
             if "started" in result:
                 click.echo("Process is started")

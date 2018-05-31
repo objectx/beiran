@@ -195,44 +195,53 @@ class Client:
 
         return response.content
 
-    async def get_server_info(self):
+    async def get_server_info(self, **kwargs):
         """
         Gets root path from daemon for server information
         Returns:
             object: parsed from JSON
 
         """
-        return await self.request(path="/", parse_json=True)
+        return await self.request(path="/", parse_json=True, **kwargs)
 
-    async def get_server_version(self):
+    async def get_server_version(self, **kwargs):
         """
         Daemon version retrieve
         Returns:
             str: semantic version
         """
-        return await self.get_server_info()['version']
+        return await self.get_server_info(**kwargs)['version']
 
-    async def get_node_info(self, uuid=None):
+    async def get_node_info(self, uuid=None, **kwargs):
         """
         Retrieve information about node
         Returns:
             object: info of node
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
-        return await self.request(path=path, parse_json=True)
+        return await self.request(path=path, parse_json=True, **kwargs)
 
-    async def ping(self, timeout=10):
+    async def get_status(self, plugin=None, **kwargs):
+        """
+        Retrieve status information about node or one of it's plugins
+        Returns:
+            object: status of node or plugin
+        """
+        path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
+        return await self.request(path=path, parse_json=True, **kwargs)
+
+    async def ping(self, timeout=10, **kwargs):
         """
         Pings the node
         """
-        response = await self.request("/ping", return_response=True, timeout=timeout)
+        response = await self.request("/ping", return_response=True, timeout=timeout, **kwargs)
         if not response or response.status != 200:
             raise Exception("Failed to receive ping response from node")
 
         # TODO: Return ping time
         return True
 
-    async def probe_node(self, address, probe_back: bool = True):
+    async def probe_node(self, address, probe_back: bool = True, **kwargs):
         """
         Connect to a new node
         Returns:
@@ -243,9 +252,13 @@ class Client:
             "address": address,
             "probe_back": probe_back
         }
-        return await self.request(path=path, data=new_node, parse_json=True, method="POST")
+        return await self.request(path=path,
+                                  data=new_node,
+                                  parse_json=True,
+                                  method="POST",
+                                  **kwargs)
 
-    async def get_nodes(self, all_nodes=False):
+    async def get_nodes(self, all_nodes=False, **kwargs):
         """
         Daemon get nodes
         Returns:
@@ -253,11 +266,11 @@ class Client:
         """
         path = '/nodes{}'.format('?all=true' if all_nodes else '')
 
-        resp = await self.request(path=path)
+        resp = await self.request(path=path, **kwargs)
 
         return resp.get('nodes', [])
 
-    async def get_images(self, all_nodes=False, node_uuid=None):
+    async def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Image list from beiran API
         Returns:
@@ -274,29 +287,41 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path)
+        resp = await self.request(path=path, **kwargs)
         return resp.get('images', [])
 
     #pylint: disable-msg=too-many-arguments
-    async def pull_image(self, imagename, node=None, wait=False, force=False, progress=False):
+    async def pull_image(self, imagename, **kwargs):
         """
         Pull image accross cluster with spesific node support
         Returns:
             result: Pulling process result
         """
-        path = '/docker/images?cmd=pull'
 
-        payload = {'image': imagename, 'node': node, 'wait': wait, 'force': force,
-                   'progress': progress}
+        progress = kwargs.pop('progress', False)
+        force = kwargs.pop('force', False)
+        wait = kwargs.pop('wait', False)
+        node = kwargs.pop('node', None)
+
+        path = '/docker/images?cmd=pull'
+        data = {
+            'image': imagename,
+            'node': node,
+            'wait': wait,
+            'force': force,
+            'progress': progress
+        }
+
         resp = await self.request(path,
-                                  data=payload,
+                                  data=data,
                                   method='POST',
                                   return_response=True,
-                                  timeout=600)
+                                  timeout=600,
+                                  **kwargs)
         return resp
     #pylint: enable-msg=too-many-arguments
 
-    async def stream_image(self, imagename):
+    async def stream_image(self, imagename, **kwargs):
         """
         Stream image from this node
 
@@ -310,10 +335,11 @@ class Client:
 
         resp = await self.request(path,
                                   method='GET',
-                                  return_response=True)
+                                  return_response=True,
+                                  **kwargs)
         return resp
 
-    async def get_layers(self, all_nodes=False, node_uuid=None):
+    async def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Layer list from beiran API
         Returns:
@@ -329,6 +355,6 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path)
+        resp = await self.request(path=path, **kwargs)
 
         return resp.get('layers', [])

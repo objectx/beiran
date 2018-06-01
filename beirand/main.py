@@ -93,28 +93,30 @@ class BeiranDaemon(EventEmitter):
 
         known_nodes = os.getenv("KNOWN_NODES")
 
-        if known_nodes:
-            knowns = known_nodes.split(',')
+        if not known_nodes:
+            return
 
-            while True:
-                for node_url in knowns:
-                    status = None
+        knowns = known_nodes.split(',')
+
+        while True:
+            for node_url in knowns:
+                status = None
+                try:
+                    node = await self.nodes.get_node_by_url(node_url)
+                    status = node.to_dict()['status']
+                except Node.DoesNotExist:
+                    pass
+
+                Services.logger.debug("Node %s is %s", node_url, status)
+
+                if status != 'online':
                     try:
-                        node = await self.nodes.get_node_by_url(node_url)
-                        status = node.to_dict()['status']
-                    except Node.DoesNotExist:
-                        pass
-
-                    Services.logger.debug("Node %s is %s", node_url, status)
-
-                    if status != 'online':
-                        try:
-                            await self.nodes.probe_node(url=node_url)
-                        except ConnectionRefusedError:
-                            Services.logger.debug("Node not found: %s", node_url)
-                        except aiohttp.client_exceptions.ClientConnectorError:
-                            Services.logger.debug("Node not found: %s", node_url)
-                await asyncio.sleep(30)
+                        await self.nodes.probe_node(url=node_url)
+                    except ConnectionRefusedError:
+                        Services.logger.debug("Node not found: %s", node_url)
+                    except aiohttp.client_exceptions.ClientConnectorError:
+                        Services.logger.debug("Node not found: %s", node_url)
+            await asyncio.sleep(30)
 
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""

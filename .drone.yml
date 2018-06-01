@@ -93,7 +93,7 @@ pipeline:
       - |
         echo "waiting until beirand is accessible"
         times=0
-        until $(curl --output /dev/null --silent --fail http://beirand:8888); do
+        until $(curl --output /dev/null --silent --fail http://beirand1:8888); do
             printf '.'
             sleep 3
             times=$(( $times + 1 ))
@@ -102,7 +102,7 @@ pipeline:
               exit 1
             fi
         done
-      - pyresttest --url http://beirand:8888 --test test/rest_api/beirand.yaml
+      - pyresttest --url http://beirand1:8888 --test test/rest_api/beirand.yaml
 
   publish:
     image: docker
@@ -142,6 +142,8 @@ pipeline:
      - /tmp/beiran-build-vols:/tmp/beiran-build-vols
     commands:
      - echo "Cleaning up docker storage"
+     - find /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}
+     - du -ch -d1 /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}
      - rm -rf /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}
     when:
       status: [ success, failure ]

@@ -12,6 +12,7 @@ from beiran.models import Node
 from beirand.common import Services
 from beirand.lib import get_listen_address, get_listen_port
 
+from .request_handler import CmdRequestHandler, cmd
 
 define('listen_address',
        group='webserver',
@@ -58,51 +59,6 @@ class EchoWebSocket(websocket.WebSocketHandler):
         Services.logger.info("WebSocket closed")
 
 
-class JsonHandler(web.RequestHandler):
-    """Request handler where requests and responses speak JSON."""
-
-    def __init__(self, application, request, **kwargs):
-        super().__init__(application, request, **kwargs)
-        self.json_data = dict()
-        self.response = dict()
-
-    def data_received(self, chunk):
-        pass
-
-    def prepare(self):
-        # Incorporate request JSON into arguments dictionary.
-        if self.request.body:
-            try:
-                self.json_data = json.loads(self.request.body)
-            except ValueError:
-                message = 'Unable to parse JSON.'
-                self.send_error(400, message=message) # Bad Request
-
-        # Set up response dictionary.
-        self.response = dict()
-
-    def set_default_headers(self):
-        self.set_header('Content-Type', 'application/json')
-
-    def write_error(self, status_code, **kwargs):
-        if 'message' not in kwargs:
-            if status_code == 405:
-                kwargs['message'] = 'Invalid HTTP method.'
-            else:
-                kwargs['message'] = 'Unknown error.'
-
-        payload = {}
-        for key, value in kwargs.items():
-            payload[key] = str(value)
-        self.response = payload
-        self.write_json()
-
-    def write_json(self):
-        """Write json output"""
-        output = json.dumps(self.response)
-        self.write(output)
-
-
 class ApiRootHandler(web.RequestHandler):
     """ API Root endpoint `/` handling"""
 
@@ -144,12 +100,13 @@ class NodeInfo(web.RequestHandler):
 
 
 
-class NodesHandler(JsonHandler):
+class NodesHandler(CmdRequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
     def data_received(self, chunk):
         pass
 
+    @cmd
     async def probe(self):
         """
         Probe the node on `address` specified in request body.
@@ -186,23 +143,6 @@ class NodesHandler(JsonHandler):
         self.finish()
 
     # pylint: disable=arguments-differ
-    @web.asynchronous
-    async def post(self):
-
-        if 'address' not in self.json_data:
-            raise Exception("Unacceptable data")
-
-        cmd = self.get_argument('cmd')
-        if cmd:
-            Services.logger.debug("Node endpoint is invoked with command `%s`", cmd)
-            try:
-                method = getattr(self, cmd)
-            except AttributeError:
-                raise NotImplementedError("Endpoint `/node` does not implement `{}`"
-                                          .format(cmd))
-
-            return await method()
-        raise NotImplementedError()
 
     def get(self):
         """

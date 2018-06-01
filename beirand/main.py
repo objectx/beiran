@@ -8,6 +8,7 @@ import asyncio
 import importlib
 import signal
 import logging
+import aiohttp
 from functools import partial
 
 from tornado import web
@@ -86,6 +87,37 @@ class BeiranDaemon(EventEmitter):
         self.nodes.remove_node(node)
 
         EVENTS.emit('node.removed', node)
+
+    async def probe_known_node(self):
+        """Bootstrap peers without discovery"""
+
+        known_nodes = os.getenv("KNOWN_NODES")
+
+        if known_nodes:
+            knowns = known_nodes.split(',')
+            
+            while True:
+                nodes = Services.daemon.nodes.list_of_nodes(
+                    from_db=True
+                )
+                for node_url in knowns:
+                    status = None
+                    try:
+                        node = await self.nodes.get_node_by_url(node_url)
+                        status = node.to_dict()['status']
+                    except Node.DoesNotExist:
+                        pass
+                    
+                    Services.logger.debug("Node %s is %s", node_url, status)
+
+                    if status != 'online':
+                        try:
+                            await self.nodes.probe_node(url=node_url)
+                        except ConnectionRefusedError:
+                            Services.logger.debug("Node not found: %s", node_url)
+                        except aiohttp.client_exceptions.ClientConnectorError:
+                            Services.logger.debug("Node not found: %s", node_url)
+                await asyncio.sleep(30)
 
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""
@@ -298,6 +330,9 @@ class BeiranDaemon(EventEmitter):
                 continue
             Services.logger.info("starting plugin: %s", name)
             await plugin.start()
+
+        # Bootstrapping peer without discovery
+        self.loop.create_task(self.probe_known_node())
 
     def set_status(self, new_status):
         """

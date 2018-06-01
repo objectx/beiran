@@ -8,8 +8,8 @@ import asyncio
 import importlib
 import signal
 import logging
-import aiohttp
 from functools import partial
+import aiohttp
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -95,11 +95,8 @@ class BeiranDaemon(EventEmitter):
 
         if known_nodes:
             knowns = known_nodes.split(',')
-            
+
             while True:
-                nodes = Services.daemon.nodes.list_of_nodes(
-                    from_db=True
-                )
                 for node_url in knowns:
                     status = None
                     try:
@@ -107,7 +104,7 @@ class BeiranDaemon(EventEmitter):
                         status = node.to_dict()['status']
                     except Node.DoesNotExist:
                         pass
-                    
+
                     Services.logger.debug("Node %s is %s", node_url, status)
 
                     if status != 'online':

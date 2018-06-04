@@ -145,8 +145,9 @@ pipeline:
      - /tmp/beiran-build-vols:/tmp/beiran-build-vols
     commands:
      - echo "Cleaning up docker storage"
-     - find /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}
-     - du -ch -d1 /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}
-     - rm -rf /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}
+     - export B_DIR=/tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER} 
+     - if [ ! -d $B_DIR ]; then exit 0; fi
+     - du -ch -d1 $B_DIR
+     - rm -rf $B_DIR
     when:
       status: [ success, failure ]

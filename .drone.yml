@@ -15,27 +15,36 @@ pipeline:
     environment:
       - DOCKER_HOST=unix:///var/run/host.sock
     commands:
-      - docker build -t dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER} -f helpers/docker/pylint/Dockerfile .
+      - docker build -t dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER} -f 
+helpers/docker/checks/Dockerfile .
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
   lint-daemon:
-    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
-    group: lint
+    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    group: checks
     commands:
       - pylint beirand
 
   lint-client:
-    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
-    group: lint
+    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    group: checks
     commands:
       - pylint beiran
 
   lint-plugins:
-    image: dkr.rsnc.io/poc/beiran/pylint:drone-build-${DRONE_BUILD_NUMBER}
-    group: lint
+    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    group: checks
     commands:
       - pylint plugins
+
+  security:
+    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    grop: checks
+    commands:
+      - bandit -r beiran
+      - bandit -r beirand
+      - bandit -r plugins
 
   dockerd1:
     image: docker:18.03.0-ce-dind

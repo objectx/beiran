@@ -9,7 +9,7 @@ RUN apk add --no-cache \
     linux-headers \
     musl-dev
 
-RUN pip install flake8 flake8-docstrings pylint
+RUN pip install flake8 flake8-docstrings pylint bandit
 
 ADD beiran/requirements.txt /root/r-lib.txt
 RUN pip3 install -r /root/r-lib.txt

@@ -20,21 +20,21 @@ pipeline:
       - /var/run/docker.sock:/var/run/host.sock:ro
 
   check-daemon:
-    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
       - pylint beirand
       - bandit -r beirand
 
   check-client:
-    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
       - pylint beiran
       - bandit -r beiran
 
   check-plugins:
-    image: dkr.rsnc.io/poc/beiran/tests:drone-build-${DRONE_BUILD_NUMBER}
+    image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
       - pylint plugins

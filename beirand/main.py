@@ -268,7 +268,7 @@ class BeiranDaemon(EventEmitter):
         if known_nodes:
             known_urls = known_nodes.split(',')
             for known_url in known_urls:
-                self.loop.create_task(self.probe_specific_node(known_url, 3))
+                self.loop.create_task(self.probe_specific_node(known_url, 30))
 
         # Probe DB Nodes
         db_nodes = Services.daemon.nodes.list_of_nodes(
@@ -282,11 +282,11 @@ class BeiranDaemon(EventEmitter):
 
             if not known_nodes:
                 if db_node_url != local_node_url:
-                    self.loop.create_task(self.probe_specific_node(db_node_url, 10))
+                    self.loop.create_task(self.probe_specific_node(db_node_url, 60))
             else:
                 for known_url in known_urls:
                     if db_node_url != known_url and db_node_url != local_node_url:
-                        self.loop.create_task(self.probe_specific_node(db_node_url, 10))
+                        self.loop.create_task(self.probe_specific_node(db_node_url, 60))
 
     async def main(self):
         """ Main function """

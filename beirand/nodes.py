@@ -282,7 +282,12 @@ class Nodes(object):
             'Probed node, uuid: %s, %s:%s',
             node.uuid.hex, node.ip_address, node.port)
 
-        peer = Peer(node)
-        self.connections.update({node.uuid.hex: peer})
+        if node.uuid.hex in self.connections:
+            # Inconsistency error, but we can handle
+            self.logger.error("Inconsistency error, already connected node is being added AGAIN")
+            return self.connections[node.uuid.hex].node
+        else:
+            peer = Peer(node)
+            self.connections.update({node.uuid.hex: peer})
 
         return node

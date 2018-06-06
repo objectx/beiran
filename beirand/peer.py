@@ -65,6 +65,12 @@ class Peer(EventEmitter):
                          self.node.port)
         self.emit('sync')
 
+    # TODO: reconnect
+    # async def reconnect(self):
+    #     # ..
+    #     # node.status = 'reconnecting'
+    #     pass
+
     async def peerloop(self):
         """lifecycle of a beiran-node connection"""
         self.logger.info("getting new nodes' images and layers from %s at port %s\n\n ",

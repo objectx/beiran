@@ -95,6 +95,9 @@ class BeiranDaemon(EventEmitter):
             status = None
             try:
                 node = await self.nodes.get_node_by_url(url)
+                if node.uuid.hex in self.nodes.connections:
+                    # TODO: What to do if status == "lost"
+                    return node
                 status = node.status
             except Node.DoesNotExist:
                 pass
@@ -102,13 +105,13 @@ class BeiranDaemon(EventEmitter):
             if status:
                 Services.logger.debug("Node %s is %s", url, status)
 
-            if status != 'online':
-                try:
-                    await self.nodes.probe_node(url=url)
-                except ConnectionRefusedError:
-                    Services.logger.debug("Node not found: %s", url)
-                except aiohttp.client_exceptions.ClientConnectorError:
-                    Services.logger.debug("Node not found: %s", url)
+            try:
+                await self.nodes.probe_node(url=url)
+            except ConnectionRefusedError:
+                Services.logger.debug("Node not found: %s", url)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                Services.logger.debug("Node not found: %s", url)
+
             await asyncio.sleep(sleep_time)
 
     async def on_node_removed(self, node):

@@ -252,6 +252,14 @@ class Nodes(object):
         # check if we had prior communication with this node
         try:
             node = await self.get_node_by_url(url)
+            if node.uuid.hex in self.connections:
+                # TODO: If node status is "lost", then trigger reconnect here
+                # self.connections[node.uuid.hex].reconnect()
+
+                # Inconsistency error, but we can handle
+                self.logger.error("Inconsistency error, already connected node is being added AGAIN")
+                return self.connections[node.uuid.hex].node
+
             # fetch up-to-date information and mark the node as online
             node = await self.add_or_update_new_remote_node(url)
         except Node.DoesNotExist:
@@ -275,17 +283,11 @@ class Nodes(object):
             self.logger.warning('Cannot fetch node information, %s', url)
             return
 
-        if node.uuid.hex in self.connections:
-            # TODO: If node status is "lost", then trigger reconnect here
-            # Inconsistency error, but we can handle
-            self.logger.error("Inconsistency error, already connected node is being added AGAIN")
-            return self.connections[node.uuid.hex].node
-        else:
-            peer = Peer(node)
-            self.connections.update({node.uuid.hex: peer})
-
         node.status = 'connecting'
         node.save()
+
+        peer = Peer(node)
+        self.connections.update({node.uuid.hex: peer})
 
         self.logger.info(
             'Probed node, uuid: %s, %s:%s',

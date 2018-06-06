@@ -293,6 +293,9 @@ class BeiranDaemon(EventEmitter):
         Services.logger.info("Initializing database...")
         await self.init_db()
 
+        # Set 'offline' to all node status
+        self.clean_database()
+
         # collect node info and create node object
         self.nodes.local_node = Node.from_dict(collect_node_info())
         self.nodes.add_or_update(self.nodes.local_node)
@@ -332,9 +335,6 @@ class BeiranDaemon(EventEmitter):
         # Register daemon events
         EVENTS.on('node.added', self.on_new_node_added)
         EVENTS.on('node.removed', self.on_node_removed)
-
-        # Set 'offline' to all node status
-        self.clean_database()
 
         # Ready
         self.set_status('ready')

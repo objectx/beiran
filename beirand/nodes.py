@@ -80,10 +80,12 @@ class Nodes(object):
     def set_offline(self, node):
         """Remove node from online nodes collection
         """
-        node.set_status('offline')
+        node.status = 'offline'
         node.save()
-        del self.all_nodes[node.uuid.hex]
-        del self.connections[node.uuid.hex]
+        if node.uuid.hex in self.all_nodes:
+            del self.all_nodes[node.uuid.hex]
+        if node.uuid.hex in self.connections:
+            del self.connections[node.uuid.hex]
 
     def add_or_update(self, node):
         """

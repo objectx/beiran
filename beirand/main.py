@@ -88,35 +88,28 @@ class BeiranDaemon(EventEmitter):
 
         EVENTS.emit('node.removed', node)
 
-    async def probe_known_node(self):
-        """Bootstrap peers without discovery"""
-
-        known_nodes = os.getenv("KNOWN_NODES")
-
-        if not known_nodes:
-            return
-
-        knowns = known_nodes.split(',')
+    async def probe_specific_node(self, url, sleep_time):
+        """Repeat probing peers"""
 
         while True:
-            for node_url in knowns:
-                status = None
+            status = None
+            try:
+                node = await self.nodes.get_node_by_url(url)
+                status = node.status
+            except Node.DoesNotExist:
+                pass
+
+            if status:
+                Services.logger.debug("Node %s is %s", url, status)
+
+            if status != 'online':
                 try:
-                    node = await self.nodes.get_node_by_url(node_url)
-                    status = node.to_dict()['status']
-                except Node.DoesNotExist:
-                    pass
-
-                Services.logger.debug("Node %s is %s", node_url, status)
-
-                if status != 'online':
-                    try:
-                        await self.nodes.probe_node(url=node_url)
-                    except ConnectionRefusedError:
-                        Services.logger.debug("Node not found: %s", node_url)
-                    except aiohttp.client_exceptions.ClientConnectorError:
-                        Services.logger.debug("Node not found: %s", node_url)
-            await asyncio.sleep(30)
+                    await self.nodes.probe_node(url=url)
+                except ConnectionRefusedError:
+                    Services.logger.debug("Node not found: %s", url)
+                except aiohttp.client_exceptions.ClientConnectorError:
+                    Services.logger.debug("Node not found: %s", url)
+            await asyncio.sleep(sleep_time)
 
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""
@@ -266,6 +259,35 @@ class BeiranDaemon(EventEmitter):
             })
             Services.plugins['package:' + _plugin] = _plugin_obj
 
+    async def probe_without_discovery(self):
+        """Bootstrapping peer without discovery"""
+        # Probe Known Nodes
+        known_nodes = os.getenv("KNOWN_NODES")
+        known_urls = None
+
+        if known_nodes:
+            known_urls = known_nodes.split(',')
+            for known_url in known_urls:
+                self.loop.create_task(self.probe_specific_node(known_url, 3))
+
+        # Probe DB Nodes
+        db_nodes = Services.daemon.nodes.list_of_nodes(
+            from_db=True
+        )
+        local_node_url = "beiran://" + self.nodes.local_node.ip_address + ":" \
+                         + str(self.nodes.local_node.port)
+
+        for db_node in db_nodes:
+            db_node_url = "beiran://" + db_node.ip_address + ":" + str(db_node.port)
+
+            if not known_nodes:
+                if db_node_url != local_node_url:
+                    self.loop.create_task(self.probe_specific_node(db_node_url, 10))
+            else:
+                for known_url in known_urls:
+                    if db_node_url != known_url and db_node_url != local_node_url:
+                        self.loop.create_task(self.probe_specific_node(db_node_url, 10))
+
     async def main(self):
         """ Main function """
 
@@ -313,6 +335,9 @@ class BeiranDaemon(EventEmitter):
         EVENTS.on('node.added', self.on_new_node_added)
         EVENTS.on('node.removed', self.on_node_removed)
 
+        # Set 'offline' to all node status
+        self.clean_database()
+
         # Ready
         self.set_status('ready')
 
@@ -331,7 +356,17 @@ class BeiranDaemon(EventEmitter):
             await plugin.start()
 
         # Bootstrapping peer without discovery
-        self.loop.create_task(self.probe_known_node())
+        await self.probe_without_discovery()
+
+    def clean_database(self):
+        """Set 'offline' to all node status
+        """
+        nodes = Services.daemon.nodes.list_of_nodes(
+            from_db=True
+        )
+        for node in nodes:
+            Services.daemon.nodes.set_offline(node)
+
 
     def set_status(self, new_status):
         """
@@ -346,6 +381,7 @@ class BeiranDaemon(EventEmitter):
 
     async def shutdown(self):
         """Graceful shutdown"""
+        self.clean_database()
         self.set_status('closing')
 
         if 'discovery' in Services.plugins:
@@ -356,6 +392,8 @@ class BeiranDaemon(EventEmitter):
         for name, plugin in Services.plugins.items():
             Services.logger.info("stopping %s", name)
             await plugin.stop()
+
+        self.nodes.connections = {}
 
         Services.logger.info("exiting")
         sys.exit(0)

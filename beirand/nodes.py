@@ -22,6 +22,7 @@ class Nodes(object):
         self.connections = {}
         self.logger = logging.getLogger('beiran.nodes')
         self.local_node = None
+        self.__probe_lock = asyncio.Lock()
 
     @staticmethod
     def get_from_db():
@@ -248,49 +249,50 @@ class Nodes(object):
         Returns:
 
         """
+        async with self.__probe_lock:
 
-        # check if we had prior communication with this node
-        try:
-            node = await self.get_node_by_url(url)
-            if node.uuid.hex in self.connections:
-                # TODO: If node status is "lost", then trigger reconnect here
-                # self.connections[node.uuid.hex].reconnect()
+            # check if we had prior communication with this node
+            try:
+                node = await self.get_node_by_url(url)
+                if node.uuid.hex in self.connections:
+                    # TODO: If node status is "lost", then trigger reconnect here
+                    # self.connections[node.uuid.hex].reconnect()
 
-                # Inconsistency error, but we can handle
-                self.logger.error("Inconsistency error, already connected node is being added AGAIN")
-                return self.connections[node.uuid.hex].node
+                    # Inconsistency error, but we can handle
+                    self.logger.error("Inconsistency error, already connected node is being added AGAIN")
+                    return self.connections[node.uuid.hex].node
 
-            # fetch up-to-date information and mark the node as online
-            node = await self.add_or_update_new_remote_node(url)
-        except Node.DoesNotExist:
-            node = None
+                # fetch up-to-date information and mark the node as online
+                node = await self.add_or_update_new_remote_node(url)
+            except Node.DoesNotExist:
+                node = None
 
-        # FIXME! For some reason, this first pass above always fails
+            # FIXME! For some reason, this first pass above always fails
 
-        # first time we met with this node, wait for information to be fetched
-        # or we couldn't fetch node information at first try
-        retries_left = 3
-        while retries_left and not node:
-            # TODO: Try alternative addresses of node here
-            # TODO: Implement altervative addresses for nodes
+            # first time we met with this node, wait for information to be fetched
+            # or we couldn't fetch node information at first try
+            retries_left = 3
+            while retries_left and not node:
+                # TODO: Try alternative addresses of node here
+                # TODO: Implement altervative addresses for nodes
+                self.logger.info(
+                    'Detected not is not accesible, trying again: %s', url)
+                await asyncio.sleep(3)  # no need to rush, take your time!
+                node = await self.add_or_update_new_remote_node(url)
+                retries_left -= 1
+
+            if not node:
+                self.logger.warning('Cannot fetch node information, %s', url)
+                return
+
+            node.status = 'connecting'
+            node.save()
+
+            peer = Peer(node)
+            self.connections.update({node.uuid.hex: peer})
+
             self.logger.info(
-                'Detected not is not accesible, trying again: %s', url)
-            await asyncio.sleep(3)  # no need to rush, take your time!
-            node = await self.add_or_update_new_remote_node(url)
-            retries_left -= 1
+                'Probed node, uuid: %s, %s:%s',
+                node.uuid.hex, node.ip_address, node.port)
 
-        if not node:
-            self.logger.warning('Cannot fetch node information, %s', url)
-            return
-
-        node.status = 'connecting'
-        node.save()
-
-        peer = Peer(node)
-        self.connections.update({node.uuid.hex: peer})
-
-        self.logger.info(
-            'Probed node, uuid: %s, %s:%s',
-            node.uuid.hex, node.ip_address, node.port)
-
-        return node
+            return node

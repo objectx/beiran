@@ -275,19 +275,20 @@ class Nodes(object):
             self.logger.warning('Cannot fetch node information, %s', url)
             return
 
-        node.status = 'connecting'
-        node.save()
-
-        self.logger.info(
-            'Probed node, uuid: %s, %s:%s',
-            node.uuid.hex, node.ip_address, node.port)
-
         if node.uuid.hex in self.connections:
+            # TODO: If node status is "lost", then trigger reconnect here
             # Inconsistency error, but we can handle
             self.logger.error("Inconsistency error, already connected node is being added AGAIN")
             return self.connections[node.uuid.hex].node
         else:
             peer = Peer(node)
             self.connections.update({node.uuid.hex: peer})
+
+        node.status = 'connecting'
+        node.save()
+
+        self.logger.info(
+            'Probed node, uuid: %s, %s:%s',
+            node.uuid.hex, node.ip_address, node.port)
 
         return node

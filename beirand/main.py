@@ -22,6 +22,7 @@ from pyee import EventEmitter
 from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
+from beirand.common import DATA_FOLDER
 
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
@@ -193,7 +194,7 @@ class BeiranDaemon(EventEmitter):
         logger.setLevel(logging.INFO)
 
         # check database file exists
-        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(DATA_FOLDER))
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:

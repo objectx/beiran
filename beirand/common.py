@@ -8,6 +8,7 @@ import beiran.defaults as defaults
 from beiran.log import build_logger
 from beiran.version import get_version
 
+DATA_FOLDER = os.getenv("DATA_FOLDER_PATH", defaults.DATA_FOLDER)
 CONFIG_FOLDER = os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER)
 
 EVENTS = EventEmitter()

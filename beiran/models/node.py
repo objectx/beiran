@@ -56,5 +56,10 @@ class Node(BaseModel):
         """Generates node advertise url using ip_address, port and uuid properties"""
         return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
 
+    @property
+    def url_without_uuid(self):
+        """Generates node advertise url using ip_address, port properties"""
+        return "http://{}:{}".format(self.ip_address, self.port)
+
     def __repr__(self):
         return self.__str__()

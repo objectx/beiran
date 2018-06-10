@@ -12,6 +12,7 @@ import aiodocker
 from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
+from beiran.cmd_req_handler import CmdRequestHandler, cmd
 from .models import DockerImage, DockerLayer
 
 class Services:
@@ -254,7 +255,7 @@ class ImagePullHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class ImageList(web.RequestHandler):
+class ImageList(CmdRequestHandler):
     """List images"""
 
     def __init__(self, application, request, **kwargs):
@@ -264,9 +265,8 @@ class ImageList(web.RequestHandler):
     def data_received(self, chunk):
         pass
 
-    # pylint: disable=too-many-locals
-    # pylint: disable=too-many-branches
-    async def pull(self):
+    @cmd
+    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches
         """
             Pulling image in cluster
         """
@@ -382,22 +382,6 @@ class ImageList(web.RequestHandler):
             self.finish()
     # pylint: enable=too-many-locals
     # pylint: enable=too-many-branches
-
-    # pylint: disable=arguments-differ
-    @web.asynchronous
-    async def post(self):
-        cmd = self.get_argument('cmd')
-        if cmd:
-            Services.logger.debug("Image endpoint is invoked with command `%s`", cmd)
-            method = None
-            try:
-                method = getattr(self, cmd)
-            except AttributeError:
-                raise NotImplementedError("Endpoint `/images` does not implement `{}`"
-                                          .format(cmd))
-
-            return await method()
-        raise NotImplementedError()
 
     def get(self):
         """

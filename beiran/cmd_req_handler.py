@@ -1,8 +1,11 @@
 """HTTP and WS API implementation of beiran daemon"""
 import json
+import logging
 from tornado import web
 from tornado.web import MissingArgumentError, HTTPError
-from beirand.common import Services
+
+
+logger = logging.getLogger('beiran.cmd_req_handler')
 
 
 def cmd(func):
@@ -84,18 +87,18 @@ class CmdRequestHandler(BaseCmdRequestHandler, JsonHandler):
     @web.asynchronous
     async def post(self):
 
-        if 'address' not in self.json_data:
-            raise HTTPError(400, "Unacceptable data")
+        command = self.get_argument('cmd')
 
-        cmd = self.get_argument('cmd')
-
-        if not cmd:
+        if not command:
             raise MissingArgumentError('cmd')
 
-        if cmd not in self.public_methods:
-            raise HTTPError(400, "This endpoint does not implement `{}`. `cmd may be one of those {}"
-                                          .format(cmd, ', '.join(self.public_methods)))
+        if command not in self.public_methods:
+            raise HTTPError(
+                400,
+                "This endpoint does not implement `{}`. `cmd may be one of those {}".format(
+                    command, ', '.join(self.public_methods))
+            )
 
-        Services.logger.debug("Node endpoint is invoked with command `%s`", cmd)
-        method = getattr(self, cmd)
+        logger.debug("Node endpoint is invoked with command `%s`", command)
+        method = getattr(self, command)
         return await method()

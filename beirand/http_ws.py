@@ -1,6 +1,5 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import json
 import urllib
 
 from tornado import websocket, web
@@ -8,11 +7,11 @@ from tornado.options import options, define
 from tornado.web import HTTPError
 
 from beiran.models import Node
+from beiran.cmd_req_handler import CmdRequestHandler, cmd
 
 from beirand.common import Services
 from beirand.lib import get_listen_address, get_listen_port
 
-from .request_handler import CmdRequestHandler, cmd
 
 define('listen_address',
        group='webserver',
@@ -26,6 +25,7 @@ define('unix_socket',
        group='webserver',
        default="/var/run/beirand.sock",
        help='Path to unix socket to bind')
+
 
 if 'BEIRAN_SOCK' in os.environ:
     options.unix_socket = os.environ['BEIRAN_SOCK']
@@ -99,7 +99,6 @@ class NodeInfo(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-
 class NodesHandler(CmdRequestHandler):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
@@ -115,6 +114,9 @@ class NodesHandler(CmdRequestHandler):
             http response
 
         """
+        if 'address' not in self.json_data:
+            raise HTTPError(400, "Unacceptable data")
+
         node_url = self.json_data['address']
         parsed = urllib.parse.urlparse(node_url)
         try:

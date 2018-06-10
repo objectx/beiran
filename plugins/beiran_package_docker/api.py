@@ -380,10 +380,8 @@ class ImageList(CmdRequestHandler):
         if wait and not show_progress:
             self.write({'finished':True})
             self.finish()
-    # pylint: enable=too-many-locals
-    # pylint: enable=too-many-branches
 
-    def get(self):
+    def get(self):  # pylint: disable=arguments-differ
         """
         Return list of nodes, if specified `all`from database or discovered ones from memory.
 
@@ -422,7 +420,6 @@ class ImageList(CmdRequestHandler):
 
         self.write(']}')
         self.finish()
-    # pylint: enable=arguments-differ
 
 
 class LayerList(web.RequestHandler):

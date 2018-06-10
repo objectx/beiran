@@ -5,7 +5,7 @@ from tornado import web
 from tornado.web import MissingArgumentError, HTTPError
 
 
-logger = logging.getLogger('beiran.cmd_req_handler')
+LOGGER = logging.getLogger('beiran.cmd_req_handler')
 
 
 def cmd(func):
@@ -22,8 +22,9 @@ def cmd(func):
 
 
 class CMDMeta(type):
-    def __new__(cls, name, bases, dct):
-        klass = super().__new__(cls, name, bases, dct)
+    """Metaclass which marks public methods and append them into `public_methods` attr while init"""
+    def __new__(mcs, name, bases, dct):
+        klass = super().__new__(mcs, name, bases, dct)
         klass.public_methods = list()
 
         for obj_name, obj in dct.items():
@@ -79,13 +80,27 @@ class JsonHandler(web.RequestHandler):
 
 
 class BaseCmdRequestHandler(metaclass=CMDMeta):
+    """Base Command Request Handler to be extended"""
     pass
 
 
+# pylint: disable=no-member
 class CmdRequestHandler(BaseCmdRequestHandler, JsonHandler):
+    """
+    Command Request Handler, overrides Tornado's post method which dispatches cli commands
+    to appropriate methods.
+    """
     # pylint: disable=arguments-differ
     @web.asynchronous
     async def post(self):
+        """
+        Requires `cmd` arguments and checks if it is in available public method list.
+
+        Raises:
+            MissingArgumentError: if `cmd` argument is not provided
+            HTTPError: if `cmd` is not in allowed methods.
+
+        """
 
         command = self.get_argument('cmd')
 
@@ -99,6 +114,7 @@ class CmdRequestHandler(BaseCmdRequestHandler, JsonHandler):
                     command, ', '.join(self.public_methods))
             )
 
-        logger.debug("Node endpoint is invoked with command `%s`", command)
+        LOGGER.debug("Node endpoint is invoked with command `%s`", command)
         method = getattr(self, command)
         return await method()
+# pylint: enable=no-member

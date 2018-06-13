@@ -3,19 +3,20 @@ Module for Node Data Model
 """
 import uuid
 from peewee import IntegerField, CharField, UUIDField
-from beiran.models.base import BaseModel
+from beiran.models.base import BaseModel, JSONStringField
+
 
 # Proposed new model for replacing address and port info in Node model
 # This will fix discovering same node over several networks, etc.
 # This will also allow us to track manually added nodes
-#
-# class PeerConnection(BaseModel):
-#     uuid = UUIDField(null=True)
-#     transport = CharField(max_length=15)
-#     address = CharField(max_length=255)
-#     last_seen_at = IntegerField()
-#     discovery_method = CharField(32)
-#     config = JSONStringField()  # { "auto-connect": true } ?
+class PeerConnection(BaseModel):
+    """Data model for connection details of Nodes"""
+    uuid = UUIDField(null=True)
+    transport = CharField(max_length=15)
+    address = CharField(max_length=255)
+    last_seen_at = IntegerField()
+    discovery_method = CharField(32)
+    config = JSONStringField()  # { "auto-connect": true } ?
 
 
 class Node(BaseModel):

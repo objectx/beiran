@@ -63,5 +63,15 @@ class Node(BaseModel):
         """Generates node advertise url using ip_address, port properties"""
         return "http://{}:{}".format(self.ip_address, self.port)
 
+    def get_connections(self):
+        """Get a list of connection details of node ordered by last seen time"""
+        return [
+            conn for conn in PeerConnection.select().order_by(
+                PeerConnection.last_seen_at.desc()
+            ).where(
+                PeerConnection.uuid == self.uuid
+            )
+        ]
+
     def __repr__(self):
         return self.__str__()

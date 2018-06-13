@@ -182,18 +182,15 @@ async def update_sync_version_file(version):
 
     try:
         if not os.path.exists(path):
-            LOGGER.warning('Cannot find SYNC_VERSION_FILE ({}). Create new file {}'.format(path, path))
-        with open(path, 'w') as f:
-            f.write(str(version))
+            LOGGER.warning('Cannot find sync_version_file. Create new file')
+        with open(path, 'w') as file:
+            file.write(str(version))
     except Exception as err:
         raise err
 
 def get_sync_version():
-    """ 
+    """
     Gets last sync version from local file.
-
-    First read the file set in `SYNC_VERSION_FILE`. 
-    If it is not set, read `/var/lib/beiran/sync_version`.
 
     Returns
         int: sync version.
@@ -203,19 +200,19 @@ def get_sync_version():
     sync_version = 0
 
     try:
-        with open(path, 'r') as f:
-            sync_version = f.read()
+        with open(path, 'r') as file:
+            sync_version = file.read()
     except FileNotFoundError:
-        LOGGER.warning('Cannot find SYNC_VERSION_FILE ({}). Create new file {}'.format(path, path))
-        with open(path, 'w') as f:
-            f.write(str(sync_version))
+        LOGGER.warning('Cannot find sync_version_file. Create new file')
+        with open(path, 'w') as file:
+            file.write(str(sync_version))
     except Exception as err:
         raise err
 
     try:
         return int(sync_version)
     except ValueError:
-        raise ValueError("Sync version must be an integer! " + 
+        raise ValueError("Sync version must be an integer! " +
                          "Check your SYNC_VERSION_FILE ({})".format(path))
 
 def get_plugin_list():

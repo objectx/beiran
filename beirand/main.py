@@ -27,13 +27,12 @@ from beirand.common import DATA_FOLDER
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
-from beirand.lib import update_sync_version_file, sync_version_file_path
+from beirand.lib import update_sync_version_file
 from beirand.http_ws import ROUTES
 from beirand.version import __version__
 
 from beiran.models import Node
 from beiran.log import build_logger
-import beiran.defaults as defaults
 
 AsyncIOMainLoop().install()
 
@@ -135,12 +134,12 @@ class BeiranDaemon(EventEmitter):
 
         # TODO: Implement 1~3 seconds pull-back before updating
         # daemon sync version
-        
+
         self.sync_state_version += 1
         await update_sync_version_file(self.sync_state_version)
         self.nodes.local_node.last_sync_version = self.sync_state_version
         self.nodes.local_node.save()
-        
+
         # Services.logger.info("sync version up: %d", self.sync_state_version)
         Services.logger.info("sync version up: %d", self.nodes.local_node.last_sync_version)
         EVENTS.emit('state.update', update, plugin)

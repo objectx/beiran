@@ -13,6 +13,7 @@ from beiran.log import build_logger
 from beiran.version import get_version
 
 import beiran.defaults as defaults
+import beirand.common as common
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
@@ -169,6 +170,53 @@ def get_hostname():
         return os.environ['HOSTNAME']
     return socket.gethostname()
 
+def sync_version_file_path():
+    """Return sync_version file path"""
+    path = common.DATA_FOLDER + "/sync_version"
+    return path
+
+async def update_sync_version_file(version):
+    """Write new sync_version to the SYNC_VERSION_FILE"""
+
+    path = sync_version_file_path()
+
+    try:
+        if not os.path.exists(path):
+            LOGGER.warning('Cannot find SYNC_VERSION_FILE ({}). Create new file {}'.format(path, path))
+        with open(path, 'w') as f:
+            f.write(str(version))
+    except Exception as err:
+        raise err
+
+def get_sync_version():
+    """ 
+    Gets last sync version from local file.
+
+    First read the file set in `SYNC_VERSION_FILE`. 
+    If it is not set, read `/var/lib/beiran/sync_version`.
+
+    Returns
+        int: sync version.
+    """
+
+    path = sync_version_file_path()
+    sync_version = 0
+
+    try:
+        with open(path, 'r') as f:
+            sync_version = f.read()
+    except FileNotFoundError:
+        LOGGER.warning('Cannot find SYNC_VERSION_FILE ({}). Create new file {}'.format(path, path))
+        with open(path, 'w') as f:
+            f.write(str(sync_version))
+    except Exception as err:
+        raise err
+
+    try:
+        return int(sync_version)
+    except ValueError:
+        raise ValueError("Sync version must be an integer! " + 
+                         "Check your SYNC_VERSION_FILE ({})".format(path))
 
 def get_plugin_list():
     """Return plugin list"""
@@ -198,5 +246,6 @@ def collect_node_info():
         "os_type": platform.system(),
         "os_version": platform.version(),
         "architecture": platform.machine(),
-        "version": get_version()
+        "version": get_version(),
+        "last_sync_version": get_sync_version()
     }

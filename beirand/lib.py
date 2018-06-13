@@ -176,21 +176,18 @@ def sync_version_file_path():
     return path
 
 async def update_sync_version_file(version):
-    """Write new sync_version to the SYNC_VERSION_FILE"""
+    """Write new sync_version to the sync_version file"""
 
     path = sync_version_file_path()
 
-    try:
-        if not os.path.exists(path):
-            LOGGER.warning('Cannot find sync_version_file. Create new file')
-        with open(path, 'w') as file:
-            file.write(str(version))
-    except Exception as err:
-        raise err
+    if not os.path.exists(path):
+        LOGGER.warning('Cannot find sync_version_file. Creating new file')
+    with open(path, 'w') as file:
+        file.write(str(version))
 
 def get_sync_version():
     """
-    Gets last sync version from local file.
+    Gets last sync_version from local file.
 
     Returns
         int: sync version.
@@ -203,11 +200,9 @@ def get_sync_version():
         with open(path, 'r') as file:
             sync_version = file.read()
     except FileNotFoundError:
-        LOGGER.warning('Cannot find sync_version_file. Create new file')
+        LOGGER.warning('Cannot find sync_version_file. Creating new file')
         with open(path, 'w') as file:
             file.write(str(sync_version))
-    except Exception as err:
-        raise err
 
     try:
         return int(sync_version)

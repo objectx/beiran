@@ -259,7 +259,8 @@ class Nodes(object):
                     # self.connections[node.uuid.hex].reconnect()
 
                     # Inconsistency error, but we can handle
-                    self.logger.error("Inconsistency error, already connected node is being added AGAIN")
+                    self.logger.error("Inconsistency error, already connected " +
+                                      "node is being added AGAIN")
                     return self.connections[node.uuid.hex].node
 
                 # fetch up-to-date information and mark the node as online

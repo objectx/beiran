@@ -21,6 +21,17 @@ from beiran.models.base import BaseModel
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""
 
+    STATUS_NEW = 'new'
+    STATUS_INIT = 'init'
+    STATUS_READY = 'ready'
+    STATUS_ONLINE = 'online'
+    STATUS_OFFLINE = 'offline'
+    STATUS_CONNECTING = 'connecting'
+    STATUS_SYNCING = 'syncing'
+    STATUS_CLOSING = 'closing'
+    STATUS_LOST = 'lost'
+    STATUS_UNKNOWN = 'unknown'
+
     uuid = UUIDField(primary_key=True)
     hostname = CharField(max_length=100)
     ip_address = CharField(max_length=15)  # dotted-decimal
@@ -30,7 +41,7 @@ class Node(BaseModel):
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
     version = CharField(max_length=10)  # beiran daemon version of node
-    status = CharField(max_length=32, default='new')
+    status = CharField(max_length=32, default=STATUS_NEW)
 
     def __str__(self):
         fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"

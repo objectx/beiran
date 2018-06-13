@@ -81,7 +81,7 @@ class Nodes(object):
     def set_offline(self, node):
         """Remove node from online nodes collection
         """
-        node.status = 'offline'
+        node.status = Node.STATUS_OFFLINE
         node.save()
         if node.uuid.hex in self.all_nodes:
             del self.all_nodes[node.uuid.hex]
@@ -286,7 +286,7 @@ class Nodes(object):
                 self.logger.warning('Cannot fetch node information, %s', url)
                 return
 
-            node.status = 'connecting'
+            node.status = Node.STATUS_CONNECTING
             node.save()
 
             peer = Peer(node)

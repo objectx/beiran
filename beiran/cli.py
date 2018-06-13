@@ -111,7 +111,7 @@ class Cli:
                 node_['ip_address'] + ':' + str(node_['port']),
                 node_['version'],
                 docker_version,
-                node_['status'] if 'status' in node_ else 'unknown'
+                node_['status'] if 'status' in node_ else Node.STATUS_UNKNOWN
             ])
         print(tabulate(table, headers=["UUID", "IP:Port", "Version", "Docker Ver.", "Status?"]))
 

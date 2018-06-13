@@ -53,7 +53,7 @@ class Peer(EventEmitter):
         await asyncio.gather(*sync_futures)
 
         if self.last_sync_state_version == 0 or sync_version < self.last_sync_state_version:
-            self.node.status = 'online'
+            self.node.status = Node.STATUS_ONLINE
             self.node.save()
 
         self.last_sync_state_version = sync_version
@@ -75,7 +75,7 @@ class Peer(EventEmitter):
         """lifecycle of a beiran-node connection"""
         self.logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
                          self.node.ip_address, self.node.port)
-        self.node.status = 'syncing'
+        self.node.status = Node.STATUS_SYNCING
         self.node.save()
 
         await self.sync()
@@ -111,7 +111,7 @@ class Peer(EventEmitter):
 
         self.logger.info("lost connection to node %s(%s:%d)",
                          self.node.uuid.hex, self.node.ip_address, self.node.port)
-        self.node.status = 'lost'
+        self.node.status = Node.STATUS_LOST
         self.node.save()
         # TODO: Communicate this to the discovery plugin
         # so it can allow re-discovery of this node when found again

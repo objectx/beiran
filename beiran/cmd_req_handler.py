@@ -8,7 +8,7 @@ from tornado.web import MissingArgumentError, HTTPError
 LOGGER = logging.getLogger('beiran.cmd_req_handler')
 
 
-def cmd(func):
+def rpc(func):
     """
     Mark method as cmd
     Args:
@@ -17,24 +17,24 @@ def cmd(func):
     Returns:
 
     """
-    func.cmd = True
+    func.rpc = True
     return func
 
 
-class CMDMeta(type):
+class RPCMeta(type):
     """Metaclass which marks public methods and append them into `public_methods` attr while init"""
     def __new__(mcs, name, bases, dct):
         klass = super().__new__(mcs, name, bases, dct)
         klass.public_methods = list()
 
         for obj_name, obj in dct.items():
-            if callable(obj) and hasattr(obj, 'cmd'):
+            if callable(obj) and hasattr(obj, 'rpc'):
                 klass.public_methods.append(obj_name)
 
         return klass
 
 
-class JsonHandler(web.RequestHandler):
+class JSONEndpoint(web.RequestHandler):
     """Request handler where requests and responses speak JSON."""
 
     def __init__(self, application, request, **kwargs):
@@ -79,13 +79,13 @@ class JsonHandler(web.RequestHandler):
         self.write(output)
 
 
-class BaseCmdRequestHandler(metaclass=CMDMeta):
+class BaseRPCEndpoint(metaclass=RPCMeta):
     """Base Command Request Handler to be extended"""
     pass
 
 
 # pylint: disable=no-member
-class CmdRequestHandler(BaseCmdRequestHandler, JsonHandler):
+class RPCEndpoint(BaseRPCEndpoint, JSONEndpoint):
     """
     Command Request Handler, overrides Tornado's post method which dispatches cli commands
     to appropriate methods.

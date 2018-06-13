@@ -7,7 +7,7 @@ from tornado.options import options, define
 from tornado.web import HTTPError
 
 from beiran.models import Node
-from beiran.cmd_req_handler import CmdRequestHandler, cmd
+from beiran.cmd_req_handler import RPCEndpoint, rpc
 
 from beirand.common import Services
 from beirand.lib import get_listen_address, get_listen_port
@@ -99,13 +99,13 @@ class NodeInfo(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class NodesHandler(CmdRequestHandler):
+class NodesHandler(RPCEndpoint):
     """List nodes by arguments specified in uri all, online, offline, etc."""
 
     def data_received(self, chunk):
         pass
 
-    @cmd
+    @rpc
     async def probe(self):
         """
         Probe the node on `address` specified in request body.

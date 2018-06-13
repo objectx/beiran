@@ -12,7 +12,7 @@ import aiodocker
 from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
-from beiran.cmd_req_handler import CmdRequestHandler, cmd
+from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
 
 class Services:
@@ -255,7 +255,7 @@ class ImagePullHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class ImageList(CmdRequestHandler):
+class ImageList(RPCEndpoint):
     """List images"""
 
     def __init__(self, application, request, **kwargs):
@@ -265,7 +265,7 @@ class ImageList(CmdRequestHandler):
     def data_received(self, chunk):
         pass
 
-    @cmd
+    @rpc
     async def pull(self):  # pylint: disable=too-many-locals,too-many-branches
         """
             Pulling image in cluster

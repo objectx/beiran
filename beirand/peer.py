@@ -13,6 +13,7 @@ from pyee import EventEmitter
 from beirand.common import Services
 
 from beiran.client import Client
+from beiran.models import Node
 
 
 class Peer(EventEmitter):

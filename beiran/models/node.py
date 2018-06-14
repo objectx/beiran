@@ -31,6 +31,7 @@ class Node(BaseModel):
     architecture = CharField(max_length=20)  # x86_64
     version = CharField(max_length=10)  # beiran daemon version of node
     status = CharField(max_length=32, default='new')
+    last_sync_version = IntegerField()
 
     def __str__(self):
         fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"

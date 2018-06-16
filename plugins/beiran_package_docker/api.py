@@ -213,48 +213,6 @@ class ImagesHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class ImagePullHandler(web.RequestHandler):
-    """Docker image pull"""
-    def data_received(self, chunk):
-        pass
-
-    # pylint: disable=arguments-differ
-
-    @web.asynchronous
-    async def get(self, image):
-        """
-
-        Pull images
-
-        Args:
-            image (str): image name
-
-        Returns:
-            streams image pulling progress
-
-        """
-        self.set_header("Content-Type", "application/json")
-
-        tag = self.get_argument('tag', 'latest')
-
-        Services.logger.info("pulling image %s:%s", image, tag)
-
-        result = await Services.aiodocker.images.pull(from_image=image, tag=tag, stream=True)
-        self.write('{"statuses": [')
-
-        comma = ""
-        async for data in result:
-            data = json.dumps(data)
-            self.write("{comma}{status_data}".format(comma=comma, status_data=data))
-            comma = ", "
-            self.flush()
-
-        self.write(']}')
-        self.finish()
-
-    # pylint: enable=arguments-differ
-
-
 class ImageList(RPCEndpoint):
     """List images"""
 
@@ -476,5 +434,4 @@ ROUTES = [
     (r'/docker/layers', LayerList),
     (r'/docker/images/(.*)', ImagesTarHandler),
     (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/docker/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
 ]

@@ -27,6 +27,7 @@ from beirand.common import DATA_FOLDER
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
+from beirand.lib import update_sync_version_file
 from beirand.http_ws import ROUTES
 from beirand.version import __version__
 
@@ -115,6 +116,7 @@ class BeiranDaemon(EventEmitter):
 
             await asyncio.sleep(sleep_time)
 
+
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""
         Services.logger.info("new event: an existing node removed %s", node.uuid)
@@ -132,8 +134,14 @@ class BeiranDaemon(EventEmitter):
 
         # TODO: Implement 1~3 seconds pull-back before updating
         # daemon sync version
+
         self.sync_state_version += 1
-        Services.logger.info("sync version up: %d", self.sync_state_version)
+        await update_sync_version_file(self.sync_state_version)
+        self.nodes.local_node.last_sync_version = self.sync_state_version
+        self.nodes.local_node.save()
+
+        # Services.logger.info("sync version up: %d", self.sync_state_version)
+        Services.logger.info("sync version up: %d", self.nodes.local_node.last_sync_version)
         EVENTS.emit('state.update', update, plugin)
 
     async def get_plugin(self, plugin_type, plugin_name, config):
@@ -305,6 +313,9 @@ class BeiranDaemon(EventEmitter):
         self.nodes.add_or_update(self.nodes.local_node)
         self.set_status(Node.STATUS_INIT)
         Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
+
+        # initialize sync_state_version
+        self.sync_state_version = self.nodes.local_node.last_sync_version
 
         # initialize plugins
         await self.init_plugins()

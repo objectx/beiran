@@ -29,7 +29,7 @@ class Peer(EventEmitter):
 
         url = "http://{}:{}".format(self.node.ip_address, self.node.port)
         self.client = Client(url, node=self.node)
-        self.last_sync_state_version = 0
+        self.last_sync_state_version = 0 #self.node.last_sync_version
 
     def start_loop(self):
         """schedule handling of peer in the asyncio loop"""
@@ -53,8 +53,9 @@ class Peer(EventEmitter):
             sync_futures.append(plugin.sync(self))
         await asyncio.gather(*sync_futures)
 
-        if self.last_sync_state_version == 0 or sync_version < self.last_sync_state_version:
+        if self.last_sync_state_version == 0 or sync_version != self.last_sync_state_version:
             self.node.status = Node.STATUS_ONLINE
+            self.node.last_sync_version = sync_version
             self.node.save()
 
         self.last_sync_state_version = sync_version
@@ -97,7 +98,7 @@ class Peer(EventEmitter):
                 ping_duration = round((time.time()-timestamp)*1000)
                 self.ping = ping_duration
                 # Check if we're out of sync. resync everything if we're
-                if new_status['sync_state_version'] > self.last_sync_state_version:
+                if new_status['sync_state_version'] != self.last_sync_state_version:
                     self.logger.info("Node(%s) out-of-sync, syncing", self.node.uuid.hex)
                     await self.sync(new_status)
                 fails = 0

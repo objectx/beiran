@@ -21,34 +21,34 @@ from beiran.models.base import BaseModel
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""
 
-    # The state 'STATUS_NEW' stands for that Node is just created and any operation is not processed yet.
+    # The state stands for that Node is just created and any operation is not processed yet.
     STATUS_NEW = 'new'
 
-    # The state 'STATUS_INIT' stands for that beirand just starts the initialization.
+    # The state stands for that beirand just starts the initialization.
     STATUS_INIT = 'init'
 
-    # The state 'STATUS_READY' stands for that beirand just finished the initialization and ready to work.
+    # The state stands for that beirand just finished the initialization and ready to work.
     STATUS_READY = 'ready'
 
-    # The state 'STATUS_ONLINE' stands for that beirand finds the other beirand and can communicate with it.
+    # The state stands for that beirand finds the other beirand and can communicate with it.
     STATUS_ONLINE = 'online'
 
-    # The state 'STATUS_OFFLINE' stands for that beirand finished communicating with the other beirand.
+    # The state stands for that beirand finished communicating with the other beirand.
     STATUS_OFFLINE = 'offline'
 
-    # The state 'STATUS_CONNECTING' stands for that beirand is connecting to the other beirand.
+    # The state stands for that beirand is connecting to the other beirand.
     STATUS_CONNECTING = 'connecting'
 
-    # The state 'STATUS_SYNCING' stands for that beirand is syncing to the other beirand.
+    # The state stands for that beirand is syncing to the other beirand.
     STATUS_SYNCING = 'syncing'
 
-    # The state 'STATUS_CLOSING' stands for that beirand is about to exit.
+    # The state stands for that beirand is about to exit.
     STATUS_CLOSING = 'closing'
 
-    # The state 'STATUS_LOST' stands for that beirand becomes unable to communicate with the other beirand.
+    # The state stands for that beirand becomes unable to communicate with the other beirand.
     STATUS_LOST = 'lost'
 
-    # The state 'STATUS_UNKNOWN' stands for that Node doesn't have the parameter 'status'.
+    # The state stands for that Node doesn't have the parameter 'status'.
     STATUS_UNKNOWN = 'unknown'
 
     uuid = UUIDField(primary_key=True)

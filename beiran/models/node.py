@@ -55,23 +55,41 @@ class Node(BaseModel):
 
     @property
     def url(self):
-        """Generates node advertise url using ip_address, port and uuid properties"""
-        return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
+        latest_conn = self.get_latest_connection()
+        if latest_conn:
+            return latest_conn.address
+        raise Exception("")
 
     @property
     def url_without_uuid(self):
         """Generates node advertise url using ip_address, port properties"""
         return "http://{}:{}".format(self.ip_address, self.port)
 
-    def get_connections(self):
-        """Get a list of connection details of node ordered by last seen time"""
-        return [
-            conn for conn in PeerConnection.select().order_by(
+    # @property
+    # def url(self):
+    #     """Generates node advertise url using ip_address, port and uuid properties"""
+    #     return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
+    #
+    # @property
+    # def url_without_uuid(self):
+    #     """Generates node advertise url using ip_address, port properties"""
+    #     return "http://{}:{}".format(self.ip_address, self.port)
+    #
+    def connections(self):
+        return PeerConnection.select().order_by(
                 PeerConnection.last_seen_at.desc()
             ).where(
                 PeerConnection.uuid == self.uuid
             )
+
+    def get_connections(self):
+        """Get a list of connection details of node ordered by last seen time"""
+        return [
+            conn for conn in self.connections()
         ]
+
+    def get_latest_connection(self):
+        return self.connections().get()
 
     def __repr__(self):
         return self.__str__()

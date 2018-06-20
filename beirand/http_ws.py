@@ -132,7 +132,7 @@ class NodesHandler(RPCEndpoint):
             self.set_status(409)
             self.write({"status": "Node is already synchronized!"})
             self.finish()
-            return
+            return  # but probe_back?
 
         # remote_ip = self.request.remote_ip
 

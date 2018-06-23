@@ -15,8 +15,8 @@ class PeerConnection(BaseModel):
     transport = CharField(max_length=15)
     address = CharField(max_length=255)
     last_seen_at = IntegerField()
-    discovery_method = CharField(32)
-    config = JSONStringField()  # { "auto-connect": true } ?
+    discovery_method = CharField(max_length=32, null=True)
+    config = JSONStringField(null=True)  # { "auto-connect": true } ?
 
 
 class Node(BaseModel):

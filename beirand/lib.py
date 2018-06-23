@@ -231,6 +231,8 @@ def collect_node_info():
     """
     return {
         "uuid": local_node_uuid().hex,
+        "address": "beiran+{}://{}:{}#{}".format(
+            "http", get_advertise_address(), get_listen_port(), local_node_uuid().hex),
         "hostname": get_hostname(),
         "ip_address": get_advertise_address(),
         "port": get_listen_port(),

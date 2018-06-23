@@ -9,6 +9,7 @@ import json
 import click
 from tabulate import tabulate
 from beiran.util import exit_print
+from beiran.util import json_streamer
 from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.sync_client import Client
@@ -171,21 +172,6 @@ class Cli:
 
         if progress:
             progbar = click.progressbar(length=1)
-
-            # We should use decent JSON stream parser.
-            # This is a temporary solution.
-            async def json_streamer(stream, subpath="*"):
-                """Parse a stream of JSON chunks"""
-                if subpath:
-                    pass
-                while not stream.at_eof():
-                    data = await stream.readchunk()
-                    try:
-                        json_str = data[0].decode("utf-8")[:-1]
-                        json_dir = json.loads(json_str)
-                        yield json_dir
-                    except json.decoder.JSONDecodeError:
-                        pass
 
             async def pulling(progress):
                 """Pull image with async client"""

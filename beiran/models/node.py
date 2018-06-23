@@ -2,9 +2,10 @@
 Module for Node Data Model
 """
 import uuid
+import urllib
+from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
-
 
 # Proposed new model for replacing address and port info in Node model
 # This will fix discovering same node over several networks, etc.
@@ -60,6 +61,10 @@ class Node(BaseModel):
     status = CharField(max_length=32, default='new')
     last_sync_version = IntegerField()
 
+    def __init__(self, *args, **kwargs):
+        self._address = None
+        super().__init__(*args, **kwargs)
+
     def __str__(self):
         fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"
         return fmt.format(hostname=self.hostname,
@@ -70,42 +75,34 @@ class Node(BaseModel):
     @classmethod
     def from_dict(cls, _dict, **kwargs):
         _dict['uuid'] = uuid.UUID(_dict['uuid'])
-        return super().from_dict(_dict, **kwargs)
+        node_address = _dict.pop('address', None)
+        node = super().from_dict(_dict, **kwargs)
+        node._address = node_address
+        return node
 
     def to_dict(self, **kwargs):
         _dict = super().to_dict(**kwargs)
         _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
+        _dict['address'] = self.address
         if 'dialect' in kwargs and kwargs['dialect'] == 'api':
             _dict.pop('status')
         return _dict
 
     @property
     def url(self):
-        latest_conn = self.get_latest_connection()
-        if latest_conn:
-            return latest_conn.address
-        raise Exception("")
+        """Generates node advertise url using ip_address, port and uuid properties"""
+        return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
 
     @property
     def url_without_uuid(self):
         """Generates node advertise url using ip_address, port properties"""
         return "http://{}:{}".format(self.ip_address, self.port)
 
-    # @property
-    # def url(self):
-    #     """Generates node advertise url using ip_address, port and uuid properties"""
-    #     return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
-    #
-    # @property
-    # def url_without_uuid(self):
-    #     """Generates node advertise url using ip_address, port properties"""
-    #     return "http://{}:{}".format(self.ip_address, self.port)
-    #
     def connections(self):
         return PeerConnection.select().order_by(
                 PeerConnection.last_seen_at.desc()
             ).where(
-                PeerConnection.uuid == self.uuid
+                PeerConnection.uuid == self.uuid.hex
             )
 
     def get_connections(self):
@@ -119,3 +116,24 @@ class Node(BaseModel):
 
     def __repr__(self):
         return self.__str__()
+
+    @property
+    def address(self, force=False):
+        if self._address and not force:
+            return self._address
+        return self.get_set_address()
+
+    def get_set_address(self, address=None):
+        if address:
+            self._address = address
+        else:
+            latest_conn = self.get_latest_connection()
+            self._address = latest_conn.address
+        return self._address
+
+    def save(self, force_insert=False, only=None):
+        super().save(force_insert=force_insert, only=only)
+        PeerConnection.add_or_update(
+            uuid=self.uuid.hex,
+            address=self.address
+        )

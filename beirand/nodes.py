@@ -161,9 +161,10 @@ class Nodes(object):
             node = node_
 
         # but for us, addresses might be different than what that node thinks of herself
-        parsed = urllib.parse.urlparse(url)
-        node.ip_address = socket.gethostbyname(parsed.hostname)
-        node.port = parsed.port or defaults.LISTEN_PORT
+        # todo: remove after peerconnection implementation
+        # parsed = urllib.parse.urlparse(url)
+        # node.ip_address = socket.gethostbyname(parsed.hostname)
+        # node.port = parsed.port or defaults.LISTEN_PORT
         return node
 
     async def add_or_update_new_remote_node(self, url):

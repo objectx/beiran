@@ -18,6 +18,32 @@ class PeerConnection(BaseModel):
     discovery_method = CharField(max_length=32, null=True)
     config = JSONStringField(null=True)  # { "auto-connect": true } ?
 
+    @classmethod
+    def add_or_update(cls, uuid, address, discovery=None, config=None):
+        try:
+            _self = cls.get(PeerConnection.uuid == uuid,
+                            PeerConnection.address == address)
+        except cls.DoesNotExist:
+            _self = cls(uuid=uuid, address=address)
+
+        _self.last_seen_at = int(datetime.now().timestamp())
+        if config:
+            _self.config = config
+        if discovery:
+            _self.discovery_method = discovery
+        _self.transport, _, _, _, _ = cls.parse_address(address)
+        _self.save()
+
+    @staticmethod
+    def parse_address(address):
+        parsed = urllib.parse.urlparse(address)
+        protocol = parsed.scheme.split('+')[1]
+        transport = 'http' if protocol in ['http', 'https'] else 'tcp'
+        fragment = parsed.fragment
+        hostname = parsed.hostname
+        port = parsed.port
+        return transport, protocol, hostname, port, fragment
+
 
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""

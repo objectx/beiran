@@ -6,6 +6,8 @@ import urllib
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
+from beiran.lib import build_node_address
+
 
 # Proposed new model for replacing address and port info in Node model
 # This will fix discovering same node over several networks, etc.
@@ -44,6 +46,15 @@ class PeerConnection(BaseModel):
         hostname = parsed.hostname
         port = parsed.port
         return transport, protocol, hostname, port, fragment
+
+    @classmethod
+    def get_other_addresses(cls, host, protocol="http", port=None, uuid=None):
+        address = build_node_address(host, uuid, port, protocol)
+        try:
+            peer_conn = cls.get(PeerConnection.address == address)
+            return [p.address for p in cls.select(PeerConnection.uuid == peer_conn.uuid.hex)]
+        except cls.DoesNotExist:
+            pass
 
 
 class Node(BaseModel):

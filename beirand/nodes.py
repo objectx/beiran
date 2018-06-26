@@ -6,7 +6,7 @@ import logging
 import urllib
 import socket
 
-from beiran.models import Node
+from beiran.models import Node, PeerConnection
 from beiran.client import Client as BeiranClient
 
 import beiran.defaults as defaults
@@ -244,47 +244,91 @@ class Nodes(object):
         """
         Probe remote node, get info and save.
 
+        - if url has uuid
+            - if uuid in self.connections
+                node already connected, return
+                # todo: add address change and status
+
+            - if uuid in self.all_nodes
+                although it is not a connection, we already know the node, update address in any case
+
+            - finally try to get from db by uuid,
+                - if found update address
+
+            - if a node found then try probe with `node` which has its all peer_connection addresses
+
+        - if no node then it is a brand new one, then try with url.
+
         Args:
             url (str): beiran node url to be probed
 
         Returns:
 
         """
-        async with self.__probe_lock:
 
-            # check if we had prior communication with this node
-            try:
-                node = await self.get_node_by_url(url)
-                if node.uuid.hex in self.connections:
-                    # TODO: If node status is "lost", then trigger reconnect here
-                    # self.connections[node.uuid.hex].reconnect()
+        async def try_probe_remote_node(node=None, url=None, retries=3):
+            remote_addresses = []
+            if not (node and url):
+                self.logger.error("cannot call this method with lack of both node and url")
 
-                    # Inconsistency error, but we can handle
-                    self.logger.error(
-                        "Inconsistency error, already connected node is being added AGAIN")
-                    return self.connections[node.uuid.hex].node
+            if node:
+                remote_addresses.append(node.address)
+                remote_addresses.append(node.get_connections())
+            if url:
+                remote_addresses.append(url)
 
-                # fetch up-to-date information and mark the node as online
-                node = await self.add_or_update_new_remote_node(url)
-            except Node.DoesNotExist:
-                node = None
+            _node = None
+            counter = retries
 
-            # FIXME! For some reason, this first pass above always fails
-
-            # first time we met with this node, wait for information to be fetched
-            # or we couldn't fetch node information at first try
-            retries_left = 3
-            while retries_left and not node:
-                # TODO: Try alternative addresses of node here
-                # TODO: Implement altervative addresses for nodes
+            while counter and not _node and remote_addresses:
+                url = remote_addresses[0]
                 self.logger.info(
                     'Detected not is not accesible, trying again: %s', url)
+                _node = await self.add_or_update_new_remote_node(url)
                 await asyncio.sleep(3)  # no need to rush, take your time!
-                node = await self.add_or_update_new_remote_node(url)
-                retries_left -= 1
+
+                # decrease counter
+                counter -= 1
+                # after `retries` times, pop first element
+                # of `remote_addresses` and reset counter, so loop goes on with next url.
+                if not counter:
+                    remote_addresses.pop(0)
+                    if remote_addresses:
+                        counter = retries
+            return _node
+
+        async with self.__probe_lock:
+            transport, protocol, hostname, port, uuid = PeerConnection.parse_address(url)
+
+            if uuid:
+                if uuid in self.connections:
+                    # TODO: If node status is "lost", then trigger reconnect here
+                    # TODO: check if address is same?
+                    # self.connections[node.uuid.hex].reconnect()
+
+                    node = self.connections.get(uuid)
+                    if node.address == url:
+                        # Inconsistency error, but we can handle
+                        self.logger.error(
+                            "Inconsistency error, already connected node is being added AGAIN")
+                        return self.connections[uuid].node  # todo: self.connections[uuid]?
+
+                elif uuid in self.all_nodes:  # from memory
+                    node = self.all_nodes.get(uuid)
+                else:  # from db
+                    node = Node.get(Node.uuid==uuid)
+
+                if node:
+                    node.set_get_address(url)  # update address of uuid, it may differ
+                    node = try_probe_remote_node(node=node)
+
+            else:  # a new node, probably from discovery service
+                node = await try_probe_remote_node(url=url)
 
             if not node:
-                self.logger.warning('Cannot fetch node information, %s', url)
+                self.logger.warning(
+                    'Cannot fetch node information, %s',
+                )
                 return
 
             node.status = 'connecting'

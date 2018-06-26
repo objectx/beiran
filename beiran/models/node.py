@@ -142,9 +142,22 @@ class Node(BaseModel):
             self._address = latest_conn.address
         return self._address
 
-    def save(self, force_insert=False, only=None):
+    def save(self, save_peer_conn=True, force_insert=False, only=None):
         super().save(force_insert=force_insert, only=only)
-        PeerConnection.add_or_update(
-            uuid=self.uuid.hex,
-            address=self.address
+        if save_peer_conn:
+            PeerConnection.add_or_update(
+                uuid=self.uuid.hex,
+                address=self.address
+            )
+
+    @classmethod
+    def get_by_address(cls, address):
+
+        # todo: we may use a subquery for getting once
+        peer_uuid = PeerConnection.select(
+            PeerConnection.uuid
+        ).where(
+            PeerConnection.address == address
         )
+
+        return cls.get(cls.uuid == peer_uuid)

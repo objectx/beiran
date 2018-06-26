@@ -132,9 +132,9 @@ class Node(BaseModel):
     def address(self, force=False):
         if self._address and not force:
             return self._address
-        return self.get_set_address()
+        return self.set_get_address()
 
-    def get_set_address(self, address=None):
+    def set_get_address(self, address=None):
         if address:
             self._address = address
         else:

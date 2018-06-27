@@ -147,6 +147,11 @@ class Nodes(object):
 
     async def fetch_node_info(self, url):
         """Fetches node information using url"""
+
+        # todo: after client refactor which make it accept beiran url
+        # remove lines below
+        transport, protocol, hostname, port, uuid = PeerConnection.parse_address(url)
+        url = "{}://{}:{}".format(protocol, hostname, port)
         self.logger.debug("getting remote node info: %s", url)
 
         client = BeiranClient(url)
@@ -178,6 +183,7 @@ class Nodes(object):
         Returns:
 
         """
+
         node = await self.fetch_node_info(url)
 
         return self.add_or_update(node)

@@ -40,7 +40,11 @@ class PeerConnection(BaseModel):
     @staticmethod
     def parse_address(address):
         parsed = urllib.parse.urlparse(address)
-        protocol = parsed.scheme.split('+')[1]
+        scheme = parsed.scheme
+        try:
+            protocol = parsed.scheme.split('+')[1]
+        except IndexError:
+            protocol = scheme
         transport = 'http' if protocol in ['http', 'https'] else 'tcp'
         fragment = parsed.fragment
         hostname = parsed.hostname

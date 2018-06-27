@@ -23,11 +23,13 @@ from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
 from beirand.common import DATA_FOLDER
+from beiran.lib import build_node_address
 
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
 from beirand.lib import update_sync_version_file
+
 from beirand.http_ws import ROUTES
 from beirand.version import __version__
 
@@ -56,12 +58,13 @@ class BeiranDaemon(EventEmitter):
             ip_address (str): ip_address of new node
             service_port (str): service port of new node
         """
-        service_port = service_port or get_listen_port()
+        address = build_node_address(host=ip_address, port=service_port)
+        # service_port = service_port or get_listen_port()
 
         Services.logger.info('New node detected, reached: %s:%s, waiting info',
-                             ip_address, service_port)
-        url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await self.nodes.probe_node(url=url)
+                             address)
+        # url = "beiran://{}:{}".format(ip_address, service_port)
+        node = await self.nodes.probe_node(url=address)
 
         if not node:
             EVENTS.emit('node.error', ip_address, service_port)

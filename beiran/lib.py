@@ -27,9 +27,9 @@ async def async_req(url, timeout=3, method="GET", **kwargs):
                 return response, data
 
 
-ADDRESS_FORMAT = "beiran+{protocol}://{hostname}:{port}#{uuid}"
+ADDRESS_FORMAT = "beirans+{protocol}://{hostname}:{port}#{uuid}"
 
-def build_node_address(host, uuid=None, port=8888, protocol="http"):
+def build_node_address(host, uuid=None, port=None, protocol="http"):
     """
     Build a node address with given host, port, protocol and uuid
 
@@ -42,7 +42,8 @@ def build_node_address(host, uuid=None, port=8888, protocol="http"):
     Returns:
 
     """
-    address = ADDRESS_FORMAT.format(host=host, port=port, protocol=protocol, uuid=uuid)
+    port = port or 8888
+    address = ADDRESS_FORMAT.format(hostname=host, port=port, protocol=protocol, uuid=uuid)
     if not uuid:
         address = address.split('#')[0]
 

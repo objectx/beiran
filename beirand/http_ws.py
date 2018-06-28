@@ -74,10 +74,6 @@ class ApiRootHandler(web.RequestHandler):
 class NodeInfo(web.RequestHandler):
     """Endpoint which reports node information"""
 
-    def __init__(self, application, request, **kwargs):
-        super().__init__(application, request, **kwargs)
-        self.node_info = {}
-
     def data_received(self, chunk):
         pass
 

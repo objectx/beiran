@@ -301,6 +301,14 @@ class BeiranDaemon(EventEmitter):
     async def main(self):
         """ Main function """
 
+        # ensure the DATA_FOLDER exists
+        Services.logger.info("Checking the data folder...")
+        if not os.path.exists(DATA_FOLDER):
+            Services.logger.debug("create the folder '%s'", DATA_FOLDER)
+            os.makedirs(DATA_FOLDER)
+        elif not os.path.isdir(DATA_FOLDER):
+            raise RuntimeError("Unexpected file exists")
+
         # set database
         Services.logger.info("Initializing database...")
         await self.init_db()

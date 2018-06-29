@@ -5,11 +5,8 @@ Common client for beiran project
 
 import asyncio
 import re
-import socket
 import logging
 
-from tornado import gen
-from tornado.netutil import Resolver
 import aiohttp
 import async_timeout
 

@@ -9,13 +9,13 @@ RUN apk add --no-cache \
     linux-headers \
     musl-dev
 
-RUN pip install flake8 flake8-docstrings pylint bandit mypy
+RUN pip3 install flake8 flake8-docstrings pylint bandit mypy
 
-ADD beiran/requirements.txt /root/r-lib.txt
-RUN pip3 install -r /root/r-lib.txt
+ADD beiran/requirements.txt /opt/beiran/r-lib.txt
+RUN pip3 install -r /opt/beiran/r-lib.txt
 
-ADD beirand/requirements.txt /root/r-daemon.txt
-RUN pip3 install -r /root/r-daemon.txt
+ADD beirand/requirements.txt /opt/beiran/r-daemon.txt
+RUN pip3 install -r /opt/beiran/r-daemon.txt
 
 ADD plugins/beiran_discovery_dns/requirements.txt /opt/beiran/r-dns.txt
 RUN pip install -r /opt/beiran/r-dns.txt

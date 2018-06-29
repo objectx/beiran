@@ -25,6 +25,7 @@ pipeline:
     commands:
       - pylint beirand
       - bandit -r beirand || echo "There are security warnings"
+      - export MYPYPATH=/usr/local/lib/python3.6/site-packages
       - python helpers/mypy beirand
 
   check-client:
@@ -33,6 +34,7 @@ pipeline:
     commands:
       - pylint beiran
       - bandit -r beiran || echo "There are security warnings"
+      - export MYPYPATH=/usr/local/lib/python3.6/site-packages
       - python helpers/mypy beiran
 
   check-plugins:
@@ -41,6 +43,7 @@ pipeline:
     commands:
       - pylint plugins
       - bandit -r plugins || echo "There are security warnings"
+      - export MYPYPATH=/usr/local/lib/python3.6/site-packages
       - python helpers/mypy plugins
 
   dockerd1:

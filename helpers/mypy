@@ -1,0 +1,28 @@
+#!/bin/env python
+
+import subprocess
+import sys
+
+
+def main() -> None:
+    args = ['mypy', '--no-check-untyped-defs', sys.argv[1]]
+    ignore_paths = {
+        # Ignore errors in other's packages, we don't care
+        '/site-packages/',
+        # No library stub is not our error
+        'No library stub',
+        'Stub files are',
+    }
+    print("mypy: checking", sys.argv[1])
+    result = subprocess.run(args=args, stdout=subprocess.PIPE)
+    result_lines = result.stdout.decode().strip().split('\n')
+    error_lines = [
+        line for line in result_lines
+        if not any(path in line for path in ignore_paths)
+    ]
+    print('\n'.join(error_lines))
+    sys.exit(int(bool(error_lines)))
+
+
+if __name__ == '__main__':
+    main()

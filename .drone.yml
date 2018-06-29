@@ -25,6 +25,7 @@ pipeline:
     commands:
       - pylint beirand
       - bandit -r beirand || echo "There are security warnings"
+      - helpers/mypy beirand
 
   check-client:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
@@ -32,6 +33,7 @@ pipeline:
     commands:
       - pylint beiran
       - bandit -r beiran || echo "There are security warnings"
+      - helpers/mypy beiran
 
   check-plugins:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
@@ -39,6 +41,7 @@ pipeline:
     commands:
       - pylint plugins
       - bandit -r plugins || echo "There are security warnings"
+      - helpers/mypy plugins
 
   dockerd1:
     image: docker:18.03.0-ce-dind

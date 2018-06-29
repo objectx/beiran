@@ -23,6 +23,7 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
+      - ls -l
       - pylint beirand
       - bandit -r beirand || echo "There are security warnings"
       - helpers/mypy beirand
@@ -31,6 +32,7 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
+      - ls -l
       - pylint beiran
       - bandit -r beiran || echo "There are security warnings"
       - helpers/mypy beiran
@@ -39,6 +41,7 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
+      - ls -l
       - pylint plugins
       - bandit -r plugins || echo "There are security warnings"
       - helpers/mypy plugins

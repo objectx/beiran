@@ -12,6 +12,7 @@ from tornado import gen
 from tornado.netutil import Resolver
 import aiohttp
 import async_timeout
+from beiran.models import PeerAddress
 
 
 class UnixResolver(Resolver):
@@ -66,27 +67,18 @@ class Client:
         self.logger = logging.getLogger('beiran.client')
 
         if not url and node:
-            url = node.url
+            address = node.address
 
-        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
-                                 re.IGNORECASE)
-        matched = url_pattern.match(url)
-        if not matched:
+        else:
+            address = PeerAddress(address=url)
+
+        if not address.is_valid:
             raise ValueError("URL is broken: %s" % url)
 
-        # proto = matched.groups()[0]
-        is_unix_socket = matched.groups()[1]
-        location = matched.groups()[2]
-        uuid = matched.groups()[3]
-        if uuid:
-            extra = len(uuid) + 1
-            self.url = url[:-extra]
-        else:
-            self.url = url
+        self.url = address.location
 
-        if is_unix_socket:
-            self.socket_path = location
-            self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
+        if address.unix_socket:
+            self.client_connector = aiohttp.UnixConnector(path=address.location)
         else:
             self.client_connector = None
         self.http_client = None

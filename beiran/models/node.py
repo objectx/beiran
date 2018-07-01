@@ -3,10 +3,13 @@ Module for Node Data Model
 """
 import uuid
 import urllib
+import re
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
-from beiran.lib import build_node_address
+from beiran.log import build_logger
+
+logger = build_logger()
 
 
 # Proposed new model for replacing address and port info in Node model
@@ -22,6 +25,85 @@ class PeerAddress(BaseModel):
     discovery_method = CharField(max_length=32, null=True)
     config = JSONStringField(null=True)  # { "auto-connect": true } ?
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        addr = kwargs.pop('address', None)
+        host = kwargs.pop('host', None)
+        port = kwargs.pop('port', None)
+        protocol = kwargs.pop('protocol', None)
+        unix_socket = kwargs.pop('socket', False)
+
+        if addr:
+            if not addr.startswith("beiran+"):
+                addr = "beiran+{}".format(addr)
+            self.is_valid = self.validate_address(addr)
+            transport, protocol, host, path, port, uuid, unix_socket = self.parse_address(addr)
+
+        addr = self.build_node_address(host=host, port=port, protocol=protocol, socket=unix_socket)
+        self.transport, self.protocol, self.host, self.path, self.port, self.uuid, self.unix_socket = self.parse_address(addr)
+        self.address = addr
+
+    def to_dict(self, **kwargs):
+        _dict = super().to_dict(**kwargs)
+        # _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
+        _dict['host'] = self.host
+        _dict['port'] = self.port
+        _dict['protocol'] = self.protocol
+        _dict['unix_socket'] = self.unix_socket
+        _dict['path'] = self.path
+
+    @property
+    def location(self):
+        return "{}://{}:{}".format(self.protocol, self.host, self.port or 8888)
+
+    @staticmethod
+    def validate_address(address):
+        """
+        Validate address
+
+        Args:
+            address (str): peer address
+
+        Returns:
+            (bool): True if address matches pattern, else False
+
+        """
+        url_pattern = re.compile(r'^(beiran)\+(https?|wss?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
+                                 re.IGNORECASE)
+        matched = url_pattern.match(address)
+        if not matched:
+            logger.error("Address is broken: %s", address)
+
+        return matched
+
+    def build_node_address(self, host, uuid=None, port=None, protocol=None, socket=False):
+        """
+        Build a node address with given host, port, protocol and uuid
+
+        Args:
+            host: hostname
+            uuid: uuid of node
+            port: service port
+            protocol: protocol, default http
+            socket: is unix socket? default False
+
+        Returns:
+
+        """
+        port = port or 8888
+        protocol = protocol or 'http'
+        unix_socket = "+unix" if socket else ""
+        ADDRESS_FORMAT = "beiran+{protocol}{unix_socket}://{hostname}:{port}#{uuid}"
+        address = ADDRESS_FORMAT.format(hostname=host,
+                                             port=port,
+                                             protocol=protocol,
+                                             unix_socket=unix_socket,
+                                             uuid=uuid)
+        if not uuid:
+            address = address.split('#')[0]
+
+        return address
+
     @classmethod
     def add_or_update(cls, uuid, address, discovery=None, config=None):
         try:
@@ -35,32 +117,27 @@ class PeerAddress(BaseModel):
             _self.config = config
         if discovery:
             _self.discovery_method = discovery
-        _self.transport, _, _, _, _ = cls.parse_address(address)
+        _self.transport, _, _, _, _, _, _ = cls.parse_address(address)
         _self.save()
 
     @staticmethod
     def parse_address(address):
         parsed = urllib.parse.urlparse(address)
         scheme = parsed.scheme
+        unix_socket = False
         try:
-            protocol = parsed.scheme.split('+')[1]
+            beiran_scheme = parsed.scheme.split('+')
+            protocol = beiran_scheme[1]
+            if len(beiran_scheme) > 2 and beiran_scheme[2] == 'unix':
+                unix_socket = True
         except IndexError:
             protocol = scheme
         transport = 'http' if protocol in ['http', 'https'] else 'tcp'
         fragment = parsed.fragment
         hostname = parsed.hostname
+        path = parsed.path
         port = parsed.port
-        return transport, protocol, hostname, port, fragment
-
-    @classmethod
-    def get_other_addresses(cls, host, protocol="http", port=None, uuid=None):
-        address = build_node_address(host, uuid, port, protocol)
-        try:
-            peer_conn = cls.get(PeerConnection.address == address)
-            return [p.address for p in cls.select(PeerConnection.uuid == peer_conn.uuid.hex)]
-        except cls.DoesNotExist:
-            pass
-
+        return transport, protocol, hostname, path, port, fragment, unix_socket
 
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""

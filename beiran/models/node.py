@@ -12,8 +12,9 @@ from beiran.lib import build_node_address
 # Proposed new model for replacing address and port info in Node model
 # This will fix discovering same node over several networks, etc.
 # This will also allow us to track manually added nodes
-class PeerConnection(BaseModel):
+class PeerAddress(BaseModel):
     """Data model for connection details of Nodes"""
+
     uuid = UUIDField(null=True)
     transport = CharField(max_length=15)
     address = CharField(max_length=255)
@@ -24,8 +25,8 @@ class PeerConnection(BaseModel):
     @classmethod
     def add_or_update(cls, uuid, address, discovery=None, config=None):
         try:
-            _self = cls.get(PeerConnection.uuid == uuid,
-                            PeerConnection.address == address)
+            _self = cls.get(PeerAddress.uuid == uuid,
+                            PeerAddress.address == address)
         except cls.DoesNotExist:
             _self = cls(uuid=uuid, address=address)
 
@@ -114,10 +115,10 @@ class Node(BaseModel):
         return "http://{}:{}".format(self.ip_address, self.port)
 
     def connections(self):
-        return PeerConnection.select().order_by(
-                PeerConnection.last_seen_at.desc()
+        return PeerAddress.select().order_by(
+                PeerAddress.last_seen_at.desc()
             ).where(
-                PeerConnection.uuid == self.uuid.hex
+                PeerAddress.uuid == self.uuid.hex
             )
 
     def get_connections(self):
@@ -143,13 +144,13 @@ class Node(BaseModel):
             self._address = address
         else:
             latest_conn = self.get_latest_connection()
-            self._address = latest_conn.address
+            self._address = latest_conn
         return self._address
 
     def save(self, save_peer_conn=True, force_insert=False, only=None):
         super().save(force_insert=force_insert, only=only)
         if save_peer_conn:
-            PeerConnection.add_or_update(
+            PeerAddress.add_or_update(
                 uuid=self.uuid.hex,
                 address=self.address
             )
@@ -158,10 +159,10 @@ class Node(BaseModel):
     def get_by_address(cls, address):
 
         # todo: we may use a subquery for getting once
-        peer_uuid = PeerConnection.select(
-            PeerConnection.uuid
+        peer_uuid = PeerAddress.select(
+            PeerAddress.uuid
         ).where(
-            PeerConnection.address == address
+            PeerAddress.address == address
         )
 
         return cls.get(cls.uuid == peer_uuid)

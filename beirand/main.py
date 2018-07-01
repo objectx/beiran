@@ -23,7 +23,6 @@ from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
 from beirand.common import DATA_FOLDER
-from beiran.lib import build_node_address
 
 from beirand.nodes import Nodes
 from beirand.lib import collect_node_info
@@ -51,23 +50,20 @@ class BeiranDaemon(EventEmitter):
         self.search_plugins()
         self.sync_state_version = 0
 
-    async def new_node(self, ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
+    async def new_node(self, peer_address, **kwargs):  # pylint: disable=unused-argument
         """
         Discovered new node on beiran network
         Args:
             ip_address (str): ip_address of new node
             service_port (str): service port of new node
         """
-        address = build_node_address(host=ip_address, port=service_port)
-        # service_port = service_port or get_listen_port()
-
         Services.logger.info('New node detected, reached: %s:%s, waiting info',
-                             address)
+                             peer_address.address)
         # url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await self.nodes.probe_node(url=address)
+        node = await self.nodes.probe_node(peer_address=peer_address)
 
         if not node:
-            EVENTS.emit('node.error', ip_address, service_port)
+            EVENTS.emit('node.error', peer_address.address)
             return
 
         EVENTS.emit('node.added', node)

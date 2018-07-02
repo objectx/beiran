@@ -92,15 +92,20 @@ class PeerAddress(BaseModel):
         Returns:
 
         """
-        port = port or 8888
+        port = ":{}".format(port or 8888)
         protocol = protocol or 'http'
         unix_socket = "+unix" if socket else ""
-        path = path or ''
-        ADDRESS_FORMAT = "beiran+{protocol}{unix_socket}://{hostname}{path}:{port}#{uuid}"
-        address = ADDRESS_FORMAT.format(hostname=host,
+        if unix_socket:
+            unix_socket = "+unix"
+            port = ""
+            hostname = path
+        else:
+            hostname = host
+
+        ADDRESS_FORMAT = "beiran+{protocol}{unix_socket}://{hostname}{port}#{uuid}"
+        address = ADDRESS_FORMAT.format(hostname=hostname,
                                              port=port,
                                              protocol=protocol,
-                                                path=path,
                                              unix_socket=unix_socket,
                                              uuid=uuid)
         if not uuid:

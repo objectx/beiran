@@ -10,7 +10,7 @@ import re
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
-
+from beiran.models import PeerAddress
 
 class UnixResolver(Resolver):
 
@@ -55,28 +55,19 @@ class Client:
         Args:
             url: beirand url
         """
-        url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
-        matched = url_pattern.match(url)
-        if not matched:
-            raise ValueError("URL is broken: %s" % url)
+        address = PeerAddress(address=url)
 
-        proto = matched.groups()[0]
-        is_unix_socket = matched.groups()[1]
-        location = matched.groups()[2]
-
-        if is_unix_socket:
-            self.socket_path = location
-
-            resolver = UnixResolver(self.socket_path)
+        if address.unix_socket:
+            resolver = UnixResolver(address.path)
             # AsyncHTTPClient.configure(None, resolver=resolver)
             # self.http_client = httpclient.HTTPClient()
             self.http_client = httpclient.HTTPClient(force_instance=True,
                                                      async_client_class=AsyncHTTPClient,
                                                      resolver=resolver)
-            self.url = proto + "://unixsocket"
+            self.url = address.protocol + "://unixsocket"
         else:
             self.http_client = httpclient.HTTPClient(force_instance=True)
-            self.url = url
+            self.url = address.location
 
     def request(self, path="/", **kwargs):
         """

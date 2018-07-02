@@ -29,6 +29,7 @@ class PeerAddress(BaseModel):
         super().__init__(*args, **kwargs)
         addr = kwargs.pop('address', None)
         host = kwargs.pop('host', None)
+        path = kwargs.pop('path', None)
         port = kwargs.pop('port', None)
         protocol = kwargs.pop('protocol', None)
         unix_socket = kwargs.pop('socket', False)
@@ -39,7 +40,7 @@ class PeerAddress(BaseModel):
             self.is_valid = self.validate_address(addr)
             transport, protocol, host, path, port, uuid, unix_socket = self.parse_address(addr)
 
-        addr = self.build_node_address(host=host, port=port, protocol=protocol, socket=unix_socket)
+        addr = self.build_node_address(host=host, port=port, path=path, protocol=protocol, socket=unix_socket)
         self.transport, self.protocol, self.host, self.path, self.port, self.uuid, self.unix_socket = self.parse_address(addr)
         self.address = addr
 
@@ -76,13 +77,14 @@ class PeerAddress(BaseModel):
 
         return matched
 
-    def build_node_address(self, host, uuid=None, port=None, protocol=None, socket=False):
+    def build_node_address(self, host, path=None, uuid=None, port=None, protocol=None, socket=False):
         """
         Build a node address with given host, port, protocol and uuid
 
         Args:
             host: hostname
             uuid: uuid of node
+            path: address path
             port: service port
             protocol: protocol, default http
             socket: is unix socket? default False
@@ -93,10 +95,12 @@ class PeerAddress(BaseModel):
         port = port or 8888
         protocol = protocol or 'http'
         unix_socket = "+unix" if socket else ""
-        ADDRESS_FORMAT = "beiran+{protocol}{unix_socket}://{hostname}:{port}#{uuid}"
+        path = path or ''
+        ADDRESS_FORMAT = "beiran+{protocol}{unix_socket}://{hostname}{path}:{port}#{uuid}"
         address = ADDRESS_FORMAT.format(hostname=host,
                                              port=port,
                                              protocol=protocol,
+                                                path=path,
                                              unix_socket=unix_socket,
                                              uuid=uuid)
         if not uuid:

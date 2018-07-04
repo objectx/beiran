@@ -14,25 +14,66 @@ from beirand.common import Services
 
 from beiran.client import Client
 
+from beiran.models import PeerAddress
 
-class Peer(EventEmitter):
+PEER_REGISTRY = dict()
+
+logger = logging.getLogger('beiran.peer')
+class PeerMeta(type):
+    def __new__(mcs, name, bases, dct):
+        klass = super().__new__(mcs, name, bases, dct)
+        klass.peers = PEER_REGISTRY
+        return klass
+
+    def __iter__(cls):
+        return iter(cls.peers.items())
+
+
+class Peer(EventEmitter, metaclass=PeerMeta):
     """Peer class"""
+    def __new__(cls, node=None, url=None, loop=None, local=False):
+        if node:
+            cls.node = node
+            cls.uuid = node.uuid.hex
+            try:
+                return cls.peers[node.uuid]
+            except KeyError:
+                new_obj = object.__new__(cls)
+                cls.peers[node.uuid] = new_obj
+                return cls
 
-    def __init__(self, node, loop=None):
-        super().__init__()
-        self.node = node
+    def __init__(self, node=None, url=None, loop=None, local=False):
+        """
+
+        Args:
+            node:
+            url:
+            loop:
+            local:
+        """
+        super().__init__(loop=loop)
         self.ping = -1
-        self.loop = loop if loop else asyncio.get_event_loop()
+        self.last_sync_state_version = 0  # self.node.last_sync_version
         self.logger = logging.getLogger('beiran.peer')
-        self.start_loop()
-
-        url = "http://{}:{}".format(self.node.ip_address, self.node.port)
-        self.client = Client(url, node=self.node)
-        self.last_sync_state_version = 0 #self.node.last_sync_version
+        self.__probe_lock = asyncio.Lock()
+        if not node and url and not isinstance(url, PeerAddress):
+            self.peer_address = PeerAddress(address=url)
+        else:
+            self.peer_address = node.address
+        if not local:
+            self.client = Client(url=self.node.url)
+            self.loop = loop if loop else asyncio.get_event_loop()
+            self.start_loop()
 
     def start_loop(self):
         """schedule handling of peer in the asyncio loop"""
         # TODO: Figure out handling errors when scheduling like this
+        while not self.node:
+            self.node = self.probe_node(self.peer_address)
+
+        if not self.node:
+            return
+
         self.loop.create_task(self.peerloop())
 
     async def sync(self, remote_status=None):
@@ -76,7 +117,9 @@ class Peer(EventEmitter):
     #     # node.status = 'reconnecting'
     #     pass
 
+
     async def peerloop(self):
+
         """lifecycle of a beiran-node connection"""
         self.logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
                          self.node.ip_address, self.node.port)
@@ -120,3 +163,79 @@ class Peer(EventEmitter):
         self.node.save()
         # TODO: Communicate this to the discovery plugin
         # so it can allow re-discovery of this node when found again
+
+
+    async def probe_node(self, peer_address):
+        async def try_probe_remote_node(node=None, peer_address=None, retries=3):
+            remote_addresses = []
+            if not (node or peer_address):
+                self.logger.error("cannot call this method with lack of both node and url")
+
+            if node:
+                remote_addresses.append(node.address)
+                remote_addresses.append(node.get_connections())
+            if peer_address:
+                remote_addresses.append(peer_address)
+
+            _node = None
+            counter = retries
+
+            while counter and not _node and remote_addresses:
+                url = remote_addresses[0]
+                self.logger.info(
+                    'Detected not is not accesible, trying again: %s', url)
+                _node = await self.fetch_node_info(url)
+                await asyncio.sleep(3)  # no need to rush, take your time!
+
+                # decrease counter
+                counter -= 1
+                # after `retries` times, pop first element
+                # of `remote_addresses` and reset counter, so loop goes on with next url.
+                if not counter:
+                    remote_addresses.pop(0)
+                    if remote_addresses:
+                        counter = retries
+            self.logger.info("found: %s", _node)
+            return _node
+
+        async with self.__probe_lock:
+
+            if not peer_address.uuid:  # a new node, probably from discovery service
+                node = await try_probe_remote_node(peer_address=peer_address)
+            else:
+                node = None
+
+            uuid = node.uuid if node else peer_address.uuid
+
+            if not uuid:
+                self.logger.warning(
+                    'Cannot fetch node information, %s', peer_address.address
+                )
+                return
+
+            if uuid in self.peers:
+                # TODO: If node status is "lost", then trigger reconnect here
+                # self.connections[node.uuid.hex].reconnect()
+                self.logger.error(
+                    "Inconsistency error, already connected node is being added AGAIN")
+                return self.peers[uuid]  # todo: self.connections[uuid]?
+
+            if node:
+                node.set_get_address(peer_address.address)  # update address of uuid, it may differ
+                self.add_or_update(node)
+
+                node.status = 'connecting'
+                node.save()
+
+                self.peers.update({node.uuid.hex: Peer(node=node, loop=self.loop)})
+
+                self.logger.info(
+                    'Probed node, uuid: %s, %s:%s',
+                    node.uuid.hex, node.ip_address, node.port)
+
+                return node
+            else:
+                self.logger.info(
+                    'Can not probed given info: %s', peer_address)
+
+

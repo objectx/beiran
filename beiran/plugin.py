@@ -94,8 +94,8 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         if event != 'new_listener':
             # self.log.debug('[' + self.plugin_type
             # + ':' + self.plugin_name + ':event] ' + event)
-            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name,
-                           event) # type: ignore
+            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name, # type: ignore
+                           event)
         super().emit(event, *args, **kwargs)
 
     def __init__(self, config: dict) -> None:

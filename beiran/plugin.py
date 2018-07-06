@@ -57,53 +57,12 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
     """BeiranPlugin with EventEmmiter
     """
 
-    async def init(self):
-        pass
-
-    async def start(self):
-        pass
-
-    async def stop(self):
-        pass
-
-    async def sync(self, peer):
-        pass
-
-    def is_available(self):
-        pass
-
-    @property
-    def status(self) -> str:
-        """Return plugin status"""
-        return self.__status # type: ignore
-
-    @status.setter
-    def status(self, value: str) -> str:
-        if value == self.__status: # type: ignore
-            return self.__status # type: ignore
-        self.__status = value
-        self.emit('status', value)
-        return self.__status
-
-    # todo: remove if we do not need anymore!
-    # def get_status(self):
-    #     """Get plugin status"""
-    #     return self.__status
-
-    def emit(self, event: str, *args, **kwargs):
-        if event != 'new_listener':
-            # self.log.debug('[' + self.plugin_type
-            # + ':' + self.plugin_name + ':event] ' + event)
-            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name, # type: ignore
-                           event)
-        super().emit(event, *args, **kwargs)
-
     def __init__(self, config: dict) -> None:
         """
         Initialization of plugin class with async loop
         """
         super().__init__()
-        self.__status = None # type: ignore
+        self.__status = None # type: Optional[str]
         self.api_routes = [] # type: list
         self.model_list = [] # type: list
         self.history = None
@@ -126,6 +85,47 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         self.config = config
         self.loop = get_event_loop()
         self.status = 'init'
+
+    async def init(self):
+        pass
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
+
+    async def sync(self, peer):
+        pass
+
+    def is_available(self):
+        pass
+
+    @property
+    def status(self) -> Optional[str]:
+        """Return plugin status"""
+        return self.__status
+
+    @status.setter
+    def status(self, value: str) -> str:
+        if value == self.__status:
+            return self.__status
+        self.__status = value
+        self.emit('status', value)
+        return self.__status
+
+    # todo: remove if we do not need anymore!
+    # def get_status(self):
+    #     """Get plugin status"""
+    #     return self.__status
+
+    def emit(self, event: str, *args, **kwargs):
+        if event != 'new_listener':
+            # self.log.debug('[' + self.plugin_type
+            # + ':' + self.plugin_name + ':event] ' + event)
+            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name,
+                           event)
+        super().emit(event, *args, **kwargs)
 
     def set_log_level(self, level: int):
         """
@@ -202,7 +202,7 @@ class History(EventEmitter):
     def __init__(self) -> None:
         super().__init__()
         self.version = 0
-        self.updated_at = None
+        self.updated_at = None # type: Union[float, str, None]
         self.updates = [] # type: list
 
     def update(self, msg: str = None):
@@ -213,7 +213,7 @@ class History(EventEmitter):
             "msg": msg,
             "v": self.version
         }
-        self.updated_at = new_update['time'] # type: ignore
+        self.updated_at = new_update['time']
         self.updates.append(new_update)
         self.emit('update', new_update)
 

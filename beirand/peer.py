@@ -57,7 +57,7 @@ class Peer(EventEmitter):
         await asyncio.gather(*sync_futures)
 
         if self.last_sync_state_version == 0 or sync_version != self.last_sync_state_version:
-            self.node.status = Node.STATUS_ONLINE # type: ignore
+            self.node.status = Node.STATUS_ONLINE
             self.node.last_sync_version = sync_version
             self.node.save()
 

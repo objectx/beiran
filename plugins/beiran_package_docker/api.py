@@ -138,7 +138,7 @@ class LayerDownload(web.RequestHandler):
         """Head response with actual Content-Lenght of layer"""
         self._set_headers(layer_id)
         tar_path = self.prepare_tar_archive(layer_id)
-        self.set_header("Content-Length", os.path.getsize(tar_path)) # type: ignore
+        self.set_header("Content-Length", str(os.path.getsize(tar_path)))
         self.finish()
 
     # pylint: enable=arguments-differ

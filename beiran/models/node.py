@@ -2,6 +2,9 @@
 Module for Node Data Model
 """
 import uuid
+
+from typing import Union # pylint: disable=unused-import
+
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel
 
@@ -60,7 +63,7 @@ class Node(BaseModel):
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
     version = CharField(max_length=10)  # beiran daemon version of node
-    status = CharField(max_length=32, default=STATUS_NEW)
+    status = CharField(max_length=32, default=STATUS_NEW) # type: Union[CharField, str]
     last_sync_version = IntegerField()
 
     def __str__(self):

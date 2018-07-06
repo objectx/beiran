@@ -40,11 +40,11 @@ class Nodes(object):
         return {n.uuid.hex: n for n in nodes_query}
 
     @staticmethod
-    def get_node_by_uuid_from_db(uuid: str) -> Node:
+    def get_node_by_uuid_from_db(uuid: Optional[str]) -> Node:
         """
         Get node from database
         Args:
-            uuid (str): node uuid
+            uuid (Optional[str]): node uuid
 
         Returns:
             node (Node): node object
@@ -73,7 +73,7 @@ class Nodes(object):
         if not from_db:
             return self.all_nodes.get(uuid, None)
 
-        return self.get_node_by_uuid_from_db(uuid=uuid) # type: ignore
+        return self.get_node_by_uuid_from_db(uuid=uuid)
 
     def set_online(self, node: Node):
         """Append node to online nodes collection
@@ -83,7 +83,7 @@ class Nodes(object):
     def set_offline(self, node: Node):
         """Remove node from online nodes collection
         """
-        node.status = Node.STATUS_OFFLINE # type: ignore
+        node.status = Node.STATUS_OFFLINE
         node.save()
         if node.uuid.hex in self.all_nodes: # type: ignore
             del self.all_nodes[node.uuid.hex] # type: ignore

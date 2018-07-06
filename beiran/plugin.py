@@ -8,7 +8,7 @@ import socket
 import sys
 import time
 
-from typing import Optional
+from typing import Optional, Union # pylint: disable=unused-import
 
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta

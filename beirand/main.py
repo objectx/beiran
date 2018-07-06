@@ -170,7 +170,7 @@ class BeiranDaemon(EventEmitter):
             await instance.init()
             Services.logger.info("plugin initialisation done: %s", plugin_name)
         except ModuleNotFoundError as error:  # pylint: disable=undefined-variable
-            Services.logger.error(error) # type: ignore
+            Services.logger.error(str(error))
             Services.logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
 

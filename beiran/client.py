@@ -7,7 +7,7 @@ import asyncio
 import re
 import logging
 
-from typing import Any
+from typing import Any, Optional # pylint: disable=unused-import
 
 import aiohttp
 import async_timeout
@@ -51,9 +51,11 @@ class Client:
 
         if is_unix_socket:
             self.socket_path = location
-            self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
+            self.client_connector = aiohttp.UnixConnector(
+                path=self.socket_path
+                ) # type: Optional[aiohttp.UnixConnector]
         else:
-            self.client_connector = None #type: ignore
+            self.client_connector = None
         self.http_client = None
 
     async def create_client(self):
@@ -177,7 +179,7 @@ class Client:
         Returns:
             str: semantic version
         """
-        return await self.get_server_info(**kwargs)['version'] # type: ignore
+        return (await self.get_server_info(**kwargs))['version'] # type: ignore
 
     async def get_node_info(self, uuid: str = None, **kwargs) -> dict:
         """

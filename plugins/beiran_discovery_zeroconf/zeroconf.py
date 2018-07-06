@@ -95,9 +95,9 @@ class ZeroconfListener(object):
     """Listener instance for zeroconf discovery to monitor changes
     """
 
-    def __init__(self, discovery: "ZeroconfDiscovery" = None) -> None:
+    def __init__(self, discovery: "ZeroconfDiscovery") -> None:
         self.discovery = discovery
-        self.log = discovery.log # type: ignore
+        self.log = discovery.log
         self.services = {} # type: dict
 
     def remove_service(self, zeroconf: Zeroconf, typeos: str, name: str):
@@ -132,8 +132,8 @@ class ZeroconfListener(object):
 
         is_itself = all(
             [
-                socket.inet_ntoa(service_info.address) == self.discovery.address, # type: ignore
-                service_info.port == self.discovery.port # type: ignore
+                socket.inet_ntoa(service_info.address) == self.discovery.address,
+                service_info.port == self.discovery.port
             ]
         )
         if is_itself:
@@ -147,7 +147,7 @@ class ZeroconfListener(object):
             self.log.debug("  Weight: %d, priority: %d" %
                            (service_info.weight, service_info.priority))
             self.log.debug("  Server: %s" % service_info.server)
-            self.discovery.emit('discovered', # type: ignore
+            self.discovery.emit('discovered',
                                 ip_address=socket.inet_ntoa(service_info.address),
                                 service_port=service_info.port)
             if service_info.properties:
@@ -179,7 +179,7 @@ class ZeroconfListener(object):
             return
 
         self.log.debug("Service is removed. Name: %s", name)
-        self.discovery.emit('undiscovered', # type: ignore
+        self.discovery.emit('undiscovered',
                             ip_address=socket.inet_ntoa(self.services[name].address),
                             service_port=self.services[name].port)
         del self.services[name]

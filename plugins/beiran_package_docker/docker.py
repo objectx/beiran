@@ -29,14 +29,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(self.config["storage"], self.aiodocker)
+        self.util = DockerUtil(self.aiodocker, self.config["storage"])
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.tar_cache_dir = "tar_cache"
         self.probe_task = None
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST
-        self.history = History()
+        self.history = History() # type: History
         self.last_error = None
 
         ApiDependencies.aiodocker = self.aiodocker
@@ -327,5 +327,5 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         image.save(force_insert=not image_exists_in_db)
 
         if not skip_updates:
-            self.history.update('new_image={}'.format(image.hash_id)) # type: ignore
+            self.history.update('new_image={}'.format(image.hash_id))
         self.emit('docker_daemon.new_image_saved', image.hash_id)

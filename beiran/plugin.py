@@ -7,6 +7,9 @@ import logging
 import socket
 import sys
 import time
+
+from typing import Optional
+
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
@@ -70,14 +73,14 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         pass
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Return plugin status"""
-        return self.__status
+        return self.__status # type: ignore
 
     @status.setter
-    def status(self, value):
-        if value == self.__status:
-            return self.__status
+    def status(self, value: str) -> str:
+        if value == self.__status: # type: ignore
+            return self.__status # type: ignore
         self.__status = value
         self.emit('status', value)
         return self.__status
@@ -87,25 +90,26 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
     #     """Get plugin status"""
     #     return self.__status
 
-    def emit(self, event, *args, **kwargs):
+    def emit(self, event: str, *args, **kwargs):
         if event != 'new_listener':
             # self.log.debug('[' + self.plugin_type
             # + ':' + self.plugin_name + ':event] ' + event)
-            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name, event)
+            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name,
+                           event) # type: ignore
         super().emit(event, *args, **kwargs)
 
-    def __init__(self, config):
+    def __init__(self, config: dict) -> None:
         """
         Initialization of plugin class with async loop
         """
         super().__init__()
-        self.__status = None
-        self.api_routes = []
-        self.model_list = []
+        self.__status = None # type: ignore
+        self.api_routes = [] # type: list
+        self.model_list = [] # type: list
         self.history = None
 
-        self.plugin_name = sys.modules[self.__module__].PLUGIN_NAME
-        self.plugin_type = sys.modules[self.__module__].PLUGIN_TYPE
+        self.plugin_name = sys.modules[self.__module__].PLUGIN_NAME # type: ignore
+        self.plugin_type = sys.modules[self.__module__].PLUGIN_TYPE # type: ignore
         self.node = config.pop('node')
 
         if 'logger' in config:
@@ -138,21 +142,21 @@ class BaseDiscoveryPlugin(BasePlugin):
 
     class DiscoveredNode(object):
         """Beiran node information class"""
-        def __init__(self, hostname=None, ip_address=None, port=None):
+        def __init__(self, hostname: str = None, ip_address: str = None, port: int = None) -> None:
             self.hostname = hostname
             self.ip_address = ip_address
             self.port = port
 
-        def __str__(self):
+        def __str__(self) -> str:
             return 'Node: {} Address: {} Port: {}'.format(self.hostname,
                                                           self.ip_address,
                                                           str(self.port))
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             return self.__str__()
 
     @property
-    def network_interface(self):
+    def network_interface(self) -> str:
         """ Gets listen interface for daemon
         """
         if 'interface' in self.config:
@@ -161,24 +165,24 @@ class BaseDiscoveryPlugin(BasePlugin):
         return netifaces.gateways()['default'][2][1]
 
     @property
-    def port(self):
+    def port(self) -> int:
         """..."""
         if 'port' in self.config:
             return self.config['port']
         return 8888
 
     @property
-    def address(self):
+    def address(self) -> str:
         """ Gets listen address for daemon
         """
         if 'address' in self.config:
             return self.config['address']
 
-        interface = self.get_network_interface()  # todo: fix, no such method pylint: disable=no-member
+        interface = self.network_interface
         return netifaces.ifaddresses(interface)[2][0]['addr']
 
     @property
-    def hostname(self):
+    def hostname(self) -> str:
         """ Gets hostname for discovery
         """
         if 'hostname' in self.config:
@@ -195,13 +199,13 @@ class BasePackagePlugin(BasePlugin):
 class History(EventEmitter):
     """Class for keeping update/sync history (of anything)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.version = 0
         self.updated_at = None
-        self.updates = []
+        self.updates = [] # type: list
 
-    def update(self, msg=None):
+    def update(self, msg: str = None):
         """Append update to history and increment the version"""
         self.version += 1
         new_update = {
@@ -209,20 +213,20 @@ class History(EventEmitter):
             "msg": msg,
             "v": self.version
         }
-        self.updated_at = new_update['time']
+        self.updated_at = new_update['time'] # type: ignore
         self.updates.append(new_update)
         self.emit('update', new_update)
 
-    def updates_since(self, since_time):
+    def updates_since(self, since_time: float):
         """Return updates since `time`"""
         return [u for u in self.updates if u['time'] >= since_time]
 
-    def delete_before(self, before_time):
+    def delete_before(self, before_time: float):
         """Delete updates before `time`"""
         self.updates = [u for u in self.updates if u['time'] < before_time]
 
     @property
-    def latest(self):
+    def latest(self) -> Optional[dict]:
         """Latest update or None"""
         if not self.updates:
             return None

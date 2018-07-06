@@ -7,14 +7,18 @@ import asyncio
 import re
 import logging
 
+from typing import Any
+
 import aiohttp
 import async_timeout
+
+from beiran.models import Node
 
 
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url=None, node=None, version=None):
+    def __init__(self, url: str = None, node: Node = None, version: str = None) -> None:
         """
         Initialization method for client
         Args:
@@ -31,7 +35,7 @@ class Client:
 
         url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
                                  re.IGNORECASE)
-        matched = url_pattern.match(url)
+        matched = url_pattern.match(url) #type: ignore
         if not matched:
             raise ValueError("URL is broken: %s" % url)
 
@@ -41,7 +45,7 @@ class Client:
         uuid = matched.groups()[3]
         if uuid:
             extra = len(uuid) + 1
-            self.url = url[:-extra]
+            self.url = url[:-extra] #type: ignore
         else:
             self.url = url
 
@@ -49,7 +53,7 @@ class Client:
             self.socket_path = location
             self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
         else:
-            self.client_connector = None
+            self.client_connector = None #type: ignore
         self.http_client = None
 
     async def create_client(self):
@@ -71,7 +75,7 @@ class Client:
 
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""
-        def __init__(self, message):
+        def __init__(self, message: str) -> None:
             super().__init__(message)
             self.message = message
 
@@ -81,22 +85,24 @@ class Client:
 
     class HTTPError(Error):
         """..."""
-        def __init__(self, status, message, **kwargs):
+        def __init__(self, status: int, message: str, **kwargs) -> None:
             super().__init__(message)
             self.status = status
             self.headers = kwargs.pop('headers', None)
             self.history = kwargs.pop('history', None)
             self.request = kwargs.pop('request', None)
 
-    async def request(self, path="/", **kwargs):
+    async def request(self, path: str = "/", **kwargs) -> Any:
         """
         Request call to daemon
 
         Args:
             path: http path to request from daemon
-            parse_json: if return value is JSON from daemon,
+            parse_json (bool): if return value is JSON from daemon,
             return_response (bool): determine if the response returns or not
             data (dict): request payload
+            timeout (int): timeout
+            raise_error (bool): raising error
             method (str): request method
             it returns parsed JSON
 
@@ -131,9 +137,9 @@ class Client:
                 # raises;
                 # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
                 async with async_timeout.timeout(kwargs['timeout']):
-                    response = await self.http_client.request(method, url, **kwargs)
+                    response = await self.http_client.request(method, url, **kwargs) #type: ignore
             else:
-                response = await self.http_client.request(method, url, **kwargs)
+                response = await self.http_client.request(method, url, **kwargs) #type: ignore
 
             if raise_error:
                 # this only raises if status code is >=400
@@ -156,7 +162,7 @@ class Client:
 
         return response.content
 
-    async def get_server_info(self, **kwargs):
+    async def get_server_info(self, **kwargs) -> dict:
         """
         Gets root path from daemon for server information
         Returns:
@@ -165,15 +171,15 @@ class Client:
         """
         return await self.request(path="/", parse_json=True, **kwargs)
 
-    async def get_server_version(self, **kwargs):
+    async def get_server_version(self, **kwargs) -> str:
         """
         Daemon version retrieve
         Returns:
             str: semantic version
         """
-        return await self.get_server_info(**kwargs)['version']
+        return await self.get_server_info(**kwargs)['version'] # type: ignore
 
-    async def get_node_info(self, uuid=None, **kwargs):
+    async def get_node_info(self, uuid: str = None, **kwargs) -> dict:
         """
         Retrieve information about node
         Returns:
@@ -182,7 +188,7 @@ class Client:
         path = "/info" if not uuid else "/info/{}".format(uuid)
         return await self.request(path=path, parse_json=True, **kwargs)
 
-    async def get_status(self, plugin=None, **kwargs):
+    async def get_status(self, plugin: str = None, **kwargs) -> dict:
         """
         Retrieve status information about node or one of it's plugins
         Returns:
@@ -191,7 +197,7 @@ class Client:
         path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
         return await self.request(path=path, parse_json=True, **kwargs)
 
-    async def ping(self, timeout=10, **kwargs):
+    async def ping(self, timeout: int = 10, **kwargs) -> bool:
         """
         Pings the node
         """
@@ -202,7 +208,7 @@ class Client:
         # TODO: Return ping time
         return True
 
-    async def probe_node(self, address, probe_back: bool = True, **kwargs):
+    async def probe_node(self, address: str, probe_back: bool = True, **kwargs) -> dict:
         """
         Connect to a new node
         Returns:
@@ -219,7 +225,7 @@ class Client:
                                   method="POST",
                                   **kwargs)
 
-    async def get_nodes(self, all_nodes=False, **kwargs):
+    async def get_nodes(self, all_nodes: bool = False, **kwargs) -> list:
         """
         Daemon get nodes
         Returns:
@@ -231,7 +237,7 @@ class Client:
 
         return resp.get('nodes', [])
 
-    async def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
+    async def get_images(self, all_nodes: bool = False, node_uuid: str = None, **kwargs) -> list:
         """
         Get Image list from beiran API
         Returns:
@@ -252,7 +258,7 @@ class Client:
         return resp.get('images', [])
 
     #pylint: disable-msg=too-many-arguments
-    async def pull_image(self, imagename, **kwargs):
+    async def pull_image(self, imagename: str, **kwargs) -> aiohttp.client_reqrep.ClientResponse:
         """
         Pull image accross cluster with spesific node support
         Returns:
@@ -282,7 +288,7 @@ class Client:
         return resp
     #pylint: enable-msg=too-many-arguments
 
-    async def stream_image(self, imagename, **kwargs):
+    async def stream_image(self, imagename: str, **kwargs) -> aiohttp.client_reqrep.ClientResponse:
         """
         Stream image from this node
 
@@ -300,7 +306,7 @@ class Client:
                                   **kwargs)
         return resp
 
-    async def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
+    async def get_layers(self, all_nodes: bool = False, node_uuid: str = None, **kwargs) -> list:
         """
         Get Layer list from beiran API
         Returns:

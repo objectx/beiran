@@ -6,8 +6,11 @@
 """
 
 import asyncio
+import asyncio.unix_events as unix_events
+
 import logging
 import time
+
 from pyee import EventEmitter
 
 from beirand.common import Services
@@ -19,7 +22,7 @@ from beiran.models import Node
 class Peer(EventEmitter):
     """Peer class"""
 
-    def __init__(self, node, loop=None):
+    def __init__(self, node: Node, loop: unix_events._UnixSelectorEventLoop = None) -> None: # pylint: disable=W0212
         super().__init__()
         self.node = node
         self.ping = -1
@@ -36,7 +39,7 @@ class Peer(EventEmitter):
         # TODO: Figure out handling errors when scheduling like this
         self.loop.create_task(self.peerloop())
 
-    async def sync(self, remote_status=None):
+    async def sync(self, remote_status: dict = None):
         """Sync plugin states with other peers"""
         if not remote_status:
             remote_status = await self.client.get_status(timeout=10)
@@ -54,14 +57,14 @@ class Peer(EventEmitter):
         await asyncio.gather(*sync_futures)
 
         if self.last_sync_state_version == 0 or sync_version != self.last_sync_state_version:
-            self.node.status = Node.STATUS_ONLINE
+            self.node.status = Node.STATUS_ONLINE # type: ignore
             self.node.last_sync_version = sync_version
             self.node.save()
 
         self.last_sync_state_version = sync_version
 
         self.logger.info("node(%s) synced(v:%d) on %s at port %s",
-                         self.node.uuid.hex,
+                         self.node.uuid.hex, # type: ignore
                          sync_version,
                          self.node.ip_address,
                          self.node.port)

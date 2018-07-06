@@ -5,12 +5,14 @@ Utilities for beiran project
 import sys
 import tarfile
 
+import io
+from typing import Any
 
 class Unbuffered(object):
     """
     Unbuffered stream write class
     """
-    def __init__(self, stream):
+    def __init__(self, stream: io.TextIOWrapper) -> None:
         """
         Initialization unbuffered with stream.
         Args:
@@ -18,7 +20,7 @@ class Unbuffered(object):
         """
         self.stream = stream
 
-    def write(self, data):
+    def write(self, data: str):
         """
         Write data to stream and flush
         Args:
@@ -27,7 +29,7 @@ class Unbuffered(object):
         self.stream.write(data)
         self.stream.flush()
 
-    def writelines(self, lines):
+    def writelines(self, lines: list):
         """ Write as lines
 
         Args:
@@ -37,7 +39,7 @@ class Unbuffered(object):
         self.stream.writelines(lines)
         self.stream.flush()
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         """
         Get a named attribute from an object
         Returns:
@@ -56,7 +58,7 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def exit_print(exit_code, *args, **kwargs):
+def exit_print(exit_code: int, *args, **kwargs):
     """
     Printing exit code
     Args:
@@ -68,7 +70,7 @@ def exit_print(exit_code, *args, **kwargs):
     sys.exit(exit_code)
 
 
-def create_tar_archive(dir_path, output_file_path):
+def create_tar_archive(dir_path: str, output_file_path: str):
     """
     create a tar archive from given path
 

@@ -16,16 +16,15 @@ from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.models import Node
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING')) # type: ignore
 # LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
-logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
+logger = build_logger(None, LOG_LEVEL) # type: ignore # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'library')
 
-sys.stdout = Unbuffered(sys.stdout)
+sys.stdout = Unbuffered(sys.stdout) # type: ignore
 
-
-def sizeof_fmt(num, suffix='B'):
+def sizeof_fmt(num: float, suffix: str = 'B') -> str:
     """Human readable format for sizes
     source: https://stackoverflow.com/a/1094933
     """
@@ -39,7 +38,7 @@ def sizeof_fmt(num, suffix='B'):
 @click.group()
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
 @click.pass_context
-def main(ctx=None, debug=False):
+def main(ctx=None, debug: bool = False):
     """main method for click(lib) entry, injects the singleton
     instance of Cli class into click context"""
     if debug:
@@ -51,7 +50,7 @@ class Cli:
     ctx = None
     singleton = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         Cli.singleton = self
         self.beiran_url = "http+unix:///var/run/beirand.sock"
         if 'BEIRAN_URL' in os.environ:
@@ -98,7 +97,7 @@ class Cli:
     @click.option('--all', 'all_nodes', default=False, is_flag=True,
                   help='List all known nodes (including offline ones)')
     @click.pass_obj
-    def node_list(self, all_nodes):
+    def node_list(self, all_nodes: bool):
         """List known beiran nodes"""
         nodes = self.beiran_client.get_nodes(all_nodes=all_nodes)
         table = []
@@ -121,7 +120,7 @@ class Cli:
     @click.command('info')
     @click.argument('uuid', required=False)
     @click.pass_obj
-    def node_info(self, uuid):
+    def node_info(self, uuid: str):
         """Show information about node"""
         info = self.beiran_client.get_node_info(uuid)
         table = []
@@ -137,7 +136,7 @@ class Cli:
     @click.command('probe')
     @click.argument('address', required=False)
     @click.pass_obj
-    def node_probe(self, address):
+    def node_probe(self, address: str):
         """Probe a non-discovered node"""
         info = self.beiran_client.probe_node(address)
         print(info)
@@ -166,7 +165,7 @@ class Cli:
     @click.argument('imagename')
     @click.pass_obj
     #pylint: disable-msg=too-many-arguments
-    def image_pull(self, node, wait, force, progress, imagename):
+    def image_pull(self, node: str, wait: bool, force: bool, progress: bool, imagename: str):
         """Pull a container image from cluster or repository"""
         click.echo('Pulling image %s from %s!' % (imagename, node))
 
@@ -227,7 +226,7 @@ class Cli:
     @click.option('--node', default=None,
                   help='List images from specific node')
     @click.pass_obj
-    def image_list(self, all_nodes, node):
+    def image_list(self, all_nodes: bool, node: str):
         """List container images across the cluster"""
         images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
 
@@ -255,7 +254,7 @@ class Cli:
     @click.option('--node', default=None,
                   help='List layers from specific node')
     @click.pass_obj
-    def layer_list(self, all_nodes, node):
+    def layer_list(self, all_nodes: bool, node: str):
         """List container layers across the cluster"""
         layers = self.beiran_client.get_layers(all_nodes=all_nodes, node_uuid=node)
         table = [

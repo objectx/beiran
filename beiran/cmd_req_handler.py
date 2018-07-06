@@ -1,6 +1,10 @@
 """HTTP and WS API implementation of beiran daemon"""
 import json
 import logging
+
+from typing import Callable
+from tornado import httputil
+
 from tornado import web
 from tornado.web import MissingArgumentError, HTTPError
 
@@ -8,7 +12,7 @@ from tornado.web import MissingArgumentError, HTTPError
 LOGGER = logging.getLogger('beiran.cmd_req_handler')
 
 
-def rpc(func):
+def rpc(func: Callable) -> Callable:
     """
     Mark method as cmd
     Args:
@@ -17,30 +21,31 @@ def rpc(func):
     Returns:
 
     """
-    func.rpc = True
+    func.rpc = True # type: ignore
     return func
 
 
 class RPCMeta(type):
     """Metaclass which marks public methods and append them into `public_methods` attr while init"""
-    def __new__(mcs, name, bases, dct):
+    def __new__(mcs: type, name: str, bases: tuple, dct: dict) -> "RPCMeta":
         klass = super().__new__(mcs, name, bases, dct)
-        klass.public_methods = list()
+        klass.public_methods = list() # type: ignore
 
         for obj_name, obj in dct.items():
             if callable(obj) and hasattr(obj, 'rpc'):
-                klass.public_methods.append(obj_name)
+                klass.public_methods.append(obj_name) # type: ignore
 
-        return klass
+        return klass # type: ignore
 
 
 class JSONEndpoint(web.RequestHandler):
     """Request handler where requests and responses speak JSON."""
 
-    def __init__(self, application, request, **kwargs):
+    def __init__(self, application: web.Application, request: httputil.HTTPServerRequest,
+                 **kwargs) -> None:
         super().__init__(application, request, **kwargs)
-        self.json_data = dict()
-        self.response = dict()
+        self.json_data = dict() # type: dict
+        self.response = dict() # type: dict
 
     def data_received(self, chunk):
         pass
@@ -60,7 +65,7 @@ class JSONEndpoint(web.RequestHandler):
     def set_default_headers(self):
         self.set_header('Content-Type', 'application/json')
 
-    def write_error(self, status_code, **kwargs):
+    def write_error(self, status_code: int, **kwargs):
         if 'message' not in kwargs:
             if status_code == 405:
                 kwargs['message'] = 'Invalid HTTP method.'

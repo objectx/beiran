@@ -4,6 +4,8 @@ Current beiran version constant plus version pretty-print method.
 from subprocess import Popen, PIPE
 from os.path import abspath, dirname
 
+from typing import Union
+
 COMPONENTS = {
     'daemon': (0, 0, 6, 'final', 0),
     'library': (0, 0, 6, 'final', 0)
@@ -30,7 +32,7 @@ def git_sha():
         return None
 
 
-def get_version(form='short', component='daemon'):
+def get_version(form: str = 'short', component: str = 'daemon') -> Union[dict, str]:
     """
     Return a version string for this package, based on `version`.
 

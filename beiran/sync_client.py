@@ -7,6 +7,9 @@ Common client for beiran project
 import socket
 import json
 import re
+
+from typing import Any
+
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
@@ -17,7 +20,7 @@ class UnixResolver(Resolver):
     """
     Resolver for unix socket implementation
     """
-    def initialize(self, socket_path=None): #pylint: disable=arguments-differ
+    def initialize(self, socket_path: str = None): #pylint: disable=arguments-differ
         """
         Class initialization method
         Args:
@@ -31,7 +34,7 @@ class UnixResolver(Resolver):
         self.close()
 
     @gen.coroutine
-    def resolve(self, host, port, family=socket.AF_UNSPEC, callback=None):
+    def resolve(self, host: str, port: int, family: int = socket.AF_UNSPEC, callback=None):
         """
         Unix Socket resolve
         Args:
@@ -49,7 +52,7 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url):
+    def __init__(self, url: str) -> None:
         """
         Initialization method for client
         Args:
@@ -78,7 +81,7 @@ class Client:
             self.http_client = httpclient.HTTPClient(force_instance=True)
             self.url = url
 
-    def request(self, path="/", **kwargs):
+    def request(self, path: str = "/", **kwargs) -> Any:
         """
         Request call to daemon
         Args:
@@ -128,7 +131,7 @@ class Client:
 
         return response.body
 
-    def get_server_info(self, **kwargs):
+    def get_server_info(self, **kwargs) -> dict:
         """
         Gets root path from daemon for server information
         Returns:
@@ -137,7 +140,7 @@ class Client:
         """
         return self.request(path="/", parse_json=True, **kwargs)
 
-    def get_server_version(self, **kwargs):
+    def get_server_version(self, **kwargs) -> str:
         """
         Daemon version retrieve
         Returns:
@@ -145,7 +148,7 @@ class Client:
         """
         return self.get_server_info(**kwargs)['version']
 
-    def get_node_info(self, uuid=None, **kwargs):
+    def get_node_info(self, uuid: str = None, **kwargs) -> dict:
         """
         Retrieve information about node
         Returns:
@@ -154,7 +157,7 @@ class Client:
         path = "/info" if not uuid else "/info/{}".format(uuid)
         return self.request(path=path, parse_json=True, **kwargs)
 
-    def get_status(self, plugin=None, **kwargs):
+    def get_status(self, plugin: str = None, **kwargs) -> dict:
         """
         Retrieve status information about node or one of it's plugins
         Returns:
@@ -163,7 +166,7 @@ class Client:
         path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
         return self.request(path=path, parse_json=True, **kwargs)
 
-    def probe_node(self, address, **kwargs):
+    def probe_node(self, address: str, **kwargs) -> dict:
         """
         Connect to a new node
         Returns:
@@ -176,7 +179,7 @@ class Client:
         }
         return self.request(path=path, data=new_node, parse_json=True, method="POST", **kwargs)
 
-    def get_nodes(self, all_nodes=False, **kwargs):
+    def get_nodes(self, all_nodes: bool = False, **kwargs) -> list:
         """
         Daemon get nodes
         Returns:
@@ -188,7 +191,7 @@ class Client:
 
         return resp.get('nodes', [])
 
-    def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
+    def get_images(self, all_nodes: bool = False, node_uuid: str = None, **kwargs) -> list:
         """
         Get Image list from beiran API
         Returns:
@@ -208,7 +211,7 @@ class Client:
         resp = self.request(path=path, **kwargs)
         return resp.get('images', [])
 
-    def pull_image(self, imagename, **kwargs):
+    def pull_image(self, imagename: str, **kwargs) -> dict:
         """
         Pull image accross cluster with spesific node support
         Returns:
@@ -237,7 +240,7 @@ class Client:
         return resp
     #pylint: enable-msg=too-many-arguments
 
-    def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
+    def get_layers(self, all_nodes: bool = False, node_uuid: str = None, **kwargs) -> list:
         """
         Get Layer list from beiran API
         Returns:

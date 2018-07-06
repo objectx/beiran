@@ -1,6 +1,8 @@
 """
 Import all data models to make import statements clear.
 """
+from peewee import SqliteDatabase
+
 from beiran.log import build_logger
 from .base import BaseModel
 from .node import Node
@@ -11,7 +13,7 @@ LOGGER = build_logger()
 MODEL_LIST = [Node, ] # DockerImage, DockerLayer]
 
 
-def create_tables(database, model_list=None):
+def create_tables(database: SqliteDatabase, model_list: list = None):
     """
     We need to create tables for first time. This method can be called by an
     init script or manually while development.

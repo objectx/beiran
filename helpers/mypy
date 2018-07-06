@@ -9,6 +9,7 @@ def main() -> None:
     ignore_paths = {
         # Ignore errors in other's packages, we don't care
         '/site-packages/',
+        'env/src/',
         # No library stub is not our error
         'No library stub',
         'Stub files are',

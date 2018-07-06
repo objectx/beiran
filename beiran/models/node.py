@@ -71,24 +71,24 @@ class Node(BaseModel):
                           uuid=self.uuid)
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs) -> "Node":
         _dict['uuid'] = uuid.UUID(_dict['uuid'])
         return super().from_dict(_dict, **kwargs)
 
-    def to_dict(self, **kwargs):
+    def to_dict(self, **kwargs) -> dict:
         _dict = super().to_dict(**kwargs)
-        _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
+        _dict['uuid'] = self.uuid.hex # type: ignore # pylint: disable=no-member
         if 'dialect' in kwargs and kwargs['dialect'] == 'api':
             _dict.pop('status')
         return _dict
 
     @property
-    def url(self):
+    def url(self) -> str:
         """Generates node advertise url using ip_address, port and uuid properties"""
-        return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
+        return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # type: ignore # pylint: disable=no-member
 
     @property
-    def url_without_uuid(self):
+    def url_without_uuid(self) -> str:
         """Generates node advertise url using ip_address, port properties"""
         return "http://{}:{}".format(self.ip_address, self.port)
 

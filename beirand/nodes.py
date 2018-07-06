@@ -6,6 +6,8 @@ import logging
 import urllib
 import socket
 
+from typing import Optional
+
 from beiran.models import Node
 from beiran.client import Client as BeiranClient
 
@@ -25,7 +27,7 @@ class Nodes(object):
         self.__probe_lock = asyncio.Lock()
 
     @staticmethod
-    def get_from_db():
+    def get_from_db() -> dict:
         """
         Get all nodes with docker information from database and dumps them into a dict.
 
@@ -38,19 +40,19 @@ class Nodes(object):
         return {n.uuid.hex: n for n in nodes_query}
 
     @staticmethod
-    def get_node_by_uuid_from_db(uuid):
+    def get_node_by_uuid_from_db(uuid: str) -> Node:
         """
         Get node from database
         Args:
             uuid (str): node uuid
 
         Returns:
-            (dict): serialized node object
+            node (Node): node object
 
         """
         return Node.get(uuid == uuid)
 
-    async def get_node_by_uuid(self, uuid=None, from_db=False):
+    async def get_node_by_uuid(self, uuid: str = None, from_db: bool = False) -> Node:
         """
         Unless from_db is True, get node dict from self.all_nodes memory
         object, if available.
@@ -62,7 +64,7 @@ class Nodes(object):
             from_db (bool): ask for db if True, else get from memory if available
 
         Returns:
-            (dict): serialized node object
+            node (Node): node object
 
         """
         if uuid is None:
@@ -71,30 +73,32 @@ class Nodes(object):
         if not from_db:
             return self.all_nodes.get(uuid, None)
 
-        return self.get_node_by_uuid_from_db(uuid=uuid)
+        return self.get_node_by_uuid_from_db(uuid=uuid) # type: ignore
 
-    def set_online(self, node):
+    def set_online(self, node: Node):
         """Append node to online nodes collection
         """
-        self.all_nodes.update({node.uuid.hex: node})
+        self.all_nodes.update({node.uuid.hex: node}) # type: ignore
 
-    def set_offline(self, node):
+    def set_offline(self, node: Node):
         """Remove node from online nodes collection
         """
-        node.status = Node.STATUS_OFFLINE
+        node.status = Node.STATUS_OFFLINE # type: ignore
         node.save()
-        if node.uuid.hex in self.all_nodes:
-            del self.all_nodes[node.uuid.hex]
-        if node.uuid.hex in self.connections:
-            del self.connections[node.uuid.hex]
+        if node.uuid.hex in self.all_nodes: # type: ignore
+            del self.all_nodes[node.uuid.hex] # type: ignore
+        if node.uuid.hex in self.connections: # type: ignore
+            del self.connections[node.uuid.hex] # type: ignore
 
-    def add_or_update(self, node):
+    def add_or_update(self, node: Node) -> Node:
         """
         Appends the new node into nodes dict or updates if exists
 
         Args:
             node (Node): node object
 
+        Returns:
+            node (Node): node object
         """
 
         try:
@@ -111,7 +115,7 @@ class Nodes(object):
 
         return node
 
-    def remove_node(self, node):
+    def remove_node(self, node: Node):
         """
         Remove node from nodes dict
 
@@ -119,12 +123,11 @@ class Nodes(object):
             node (Node): node model object
 
         Returns:
-            (bool): true if node removed, else false
 
         """
         self.set_offline(node)
 
-    def list_of_nodes(self, from_db=True):
+    def list_of_nodes(self, from_db: bool = True) -> list:
         """
         List all nodes from database or nodes dict
 
@@ -145,10 +148,9 @@ class Nodes(object):
         # todo: will be implemented
         pass
 
-    async def fetch_node_info(self, url):
+    async def fetch_node_info(self, url: str) -> Node:
         """Fetches node information using url"""
         self.logger.debug("getting remote node info: %s", url)
-
         client = BeiranClient(url)
         info = await client.get_node_info()
 
@@ -166,28 +168,29 @@ class Nodes(object):
         node.port = parsed.port or defaults.LISTEN_PORT
         return node
 
-    async def add_or_update_new_remote_node(self, url):
+    async def add_or_update_new_remote_node(self, url: str) -> Node:
         """
-        Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
+        Fetches the new node and appends it into nodes dict or updates if exists.
 
         Args:
-            node_ip (str): node ipv4 address
-            node_port (str): node port
+            url (str): node url
 
         Returns:
+            node (Node): node object
 
         """
         node = await self.fetch_node_info(url)
 
         return self.add_or_update(node)
 
-    async def get_node_by_ip_and_port(self, ip_address, service_port, from_db=False):
+    async def get_node_by_ip_and_port(self, ip_address: str, service_port: int,
+                                      from_db: bool = False) -> Node:
         """
         Returns the node specified by `ip` address.
 
         Args:
             ip_address (str): ip address
-            service_port (str): port of node
+            service_port (int): port of node
             from_db (bool): indicate search scope
 
         Returns:
@@ -206,7 +209,7 @@ class Nodes(object):
 
         raise Node.DoesNotExist()
 
-    async def get_node_by_url(self, url, from_db=False):
+    async def get_node_by_url(self, url: str, from_db: bool = False) -> Node:
         """..."""
         parsed = urllib.parse.urlparse(url)
         if parsed.fragment:
@@ -214,9 +217,9 @@ class Nodes(object):
 
         return await self.get_node_by_ip_and_port(parsed.hostname, parsed.port, from_db)
 
-    async def probe_node_bidirectional(self, url):
+    async def probe_node_bidirectional(self, url: str):
         """
-        Probe remote node at `ip_address`:`port` and ask probe back local node
+        Probe remote node with url and ask probe back local node
 
         Args:
             url (str): beiran node url to be probed
@@ -224,7 +227,6 @@ class Nodes(object):
         Returns:
 
         """
-
         # first, we probe remote
         remote_node = await self.probe_node(url)
         try:
@@ -232,14 +234,14 @@ class Nodes(object):
         except BeiranClient.Error:
             self.logger.error("Cannot make remote node %s probe us", url)
 
-    async def request_probe_from(self, url=None, node=None):
+    async def request_probe_from(self, url: str = None, node: Node = None):
         """Request probe from a remote node"""
         if not url and not node:
             raise Exception("url or node must be provided")
         client = BeiranClient(url=url, node=node)
-        return await client.probe_node(self.local_node.url)
+        await client.probe_node(self.local_node.url)
 
-    async def probe_node(self, url):
+    async def probe_node(self, url: str) -> Optional[Node]:
         """
         Probe remote node, get info and save.
 
@@ -247,21 +249,21 @@ class Nodes(object):
             url (str): beiran node url to be probed
 
         Returns:
-
+            node (Node): node model object
         """
         async with self.__probe_lock:
 
             # check if we had prior communication with this node
             try:
-                node = await self.get_node_by_url(url)
-                if node.uuid.hex in self.connections:
+                node = await self.get_node_by_url(url) # type: Optional[Node]
+                if node.uuid.hex in self.connections: # type: ignore
                     # TODO: If node status is "lost", then trigger reconnect here
                     # self.connections[node.uuid.hex].reconnect()
 
                     # Inconsistency error, but we can handle
                     self.logger.error(
                         "Inconsistency error, already connected node is being added AGAIN")
-                    return self.connections[node.uuid.hex].node
+                    return self.connections[node.uuid.hex].node # type: ignore
 
                 # fetch up-to-date information and mark the node as online
                 node = await self.add_or_update_new_remote_node(url)
@@ -284,16 +286,16 @@ class Nodes(object):
 
             if not node:
                 self.logger.warning('Cannot fetch node information, %s', url)
-                return
+                return None
 
-            node.status = Node.STATUS_CONNECTING
+            node.status = Node.STATUS_CONNECTING # type: ignore
             node.save()
 
             peer = Peer(node)
-            self.connections.update({node.uuid.hex: peer})
+            self.connections.update({node.uuid.hex: peer}) # type: ignore
 
             self.logger.info(
                 'Probed node, uuid: %s, %s:%s',
-                node.uuid.hex, node.ip_address, node.port)
+                node.uuid.hex, node.ip_address, node.port) # type: ignore
 
             return node

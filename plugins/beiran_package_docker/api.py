@@ -7,6 +7,8 @@ import asyncio
 import aiohttp
 from tornado import web
 from tornado.web import HTTPError
+from tornado.web import Application
+from tornado.httputil import HTTPServerRequest
 from peewee import SQL
 import aiodocker
 from beiran.util import create_tar_archive
@@ -33,13 +35,13 @@ class ImagesTarHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    async def get(self, image_id_or_sha):
+    async def get(self, image_id_or_sha: str): # type: ignore
         """
             Get image as a tarball
         """
         try:
             # pylint: disable=no-member
-            content = await Services.aiodocker.images.export_image(image_id_or_sha)
+            content = await Services.aiodocker.images.export_image(image_id_or_sha) # type: ignore
             # pylint: enable=no-member
             self.set_header("Content-Type", "application/x-tar")
 
@@ -53,10 +55,10 @@ class ImagesTarHandler(web.RequestHandler):
         except aiodocker.exceptions.DockerError as error:
             raise HTTPError(status_code=404, log_message=error.message)
         except Exception as error:
-            Services.logger.error("Image Stream failed: %s", str(error))
+            Services.logger.error("Image Stream failed: %s", str(error)) # type: ignore
             raise HTTPError(status_code=500, log_message=str(error))
 
-    async def head(self, image_id_or_sha):
+    async def head(self, image_id_or_sha: str): # type: ignore
         """
             HEAD endpoint
         """
@@ -88,7 +90,7 @@ class LayerDownload(web.RequestHandler):
     def data_received(self, chunk):
         pass
 
-    def _set_headers(self, layer_id):
+    def _set_headers(self, layer_id: str):
         # modify headers to pretend like docker registry if we decide to be proxy
         self.set_header("Content-Type", "application/octet-stream")
         self.set_header("Docker-Content-Digest", layer_id)
@@ -101,7 +103,7 @@ class LayerDownload(web.RequestHandler):
         self.set_header("cache-control", "max-age=31536000")
 
     @staticmethod
-    def prepare_tar_archive(layer_id):
+    def prepare_tar_archive(layer_id: str) -> str:
         """
         Finds docker layer path and prepare a tar archive for `layer_id`.
 
@@ -115,13 +117,13 @@ class LayerDownload(web.RequestHandler):
             404 if layer not found
 
         """
-        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id)
+        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id) # type: ignore
         if not layer_path:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         tar_path = "{cache_dir}/{cache_tar_name}" \
             .format(cache_dir=Services.tar_cache_dir,
-                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id))
+                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id)) # type: ignore
 
         if not os.path.isdir(Services.tar_cache_dir):
             os.makedirs(Services.tar_cache_dir)
@@ -132,11 +134,11 @@ class LayerDownload(web.RequestHandler):
         return tar_path
 
     # pylint: disable=arguments-differ
-    def head(self, layer_id):
+    def head(self, layer_id: str): # type: ignore
         """Head response with actual Content-Lenght of layer"""
         self._set_headers(layer_id)
         tar_path = self.prepare_tar_archive(layer_id)
-        self.set_header("Content-Length", os.path.getsize(tar_path))
+        self.set_header("Content-Length", os.path.getsize(tar_path)) # type: ignore
         self.finish()
 
     # pylint: enable=arguments-differ
@@ -161,62 +163,62 @@ class LayerDownload(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-@web.stream_request_body
-class ImagesHandler(web.RequestHandler):
-    """Endpoint to list docker images"""
+# @web.stream_request_body
+# class ImagesHandler(web.RequestHandler):
+#     """Endpoint to list docker images"""
 
-    def __init__(self, application, request, **kwargs):
-        super().__init__(application, request, **kwargs)
-        self.chunks = None
-        self.future_response = None
+#     def __init__(self, application, request, **kwargs):
+#         super().__init__(application, request, **kwargs)
+#         self.chunks = None
+#         self.future_response = None
 
-    def prepare(self):
-        if self.request.method != 'POST':
-            return
+#     def prepare(self):
+#         if self.request.method != 'POST':
+#             return
 
-        Services.logger.debug("image: preparing for receiving upload")
-        self.chunks = asyncio.Queue()
+#         Services.logger.debug("image: preparing for receiving upload")
+#         self.chunks = asyncio.Queue()
 
-        @aiohttp.streamer
-        async def sender(writer, chunks):
-            """ async generator data sender for aiodocker """
-            chunk = await chunks.get()
-            while chunk:
-                await writer.write(chunk)
-                chunk = await chunks.get()
+#         @aiohttp.streamer
+#         async def sender(writer, chunks):
+#             """ async generator data sender for aiodocker """
+#             chunk = await chunks.get()
+#             while chunk:
+#                 await writer.write(chunk)
+#                 chunk = await chunks.get()
 
-        # pylint: disable=no-value-for-parameter,no-member
-        self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
-        # pylint: enable=no-value-for-parameter,no-member
+#         # pylint: disable=no-value-for-parameter,no-member
+#         self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
+#         # pylint: enable=no-value-for-parameter,no-member
 
-    # pylint: disable=arguments-differ
-    async def data_received(self, chunk):
-        self.chunks.put_nowait(chunk)
+#     # pylint: disable=arguments-differ
+#     async def data_received(self, chunk):
+#         self.chunks.put_nowait(chunk)
 
-    async def post(self):
-        """
-            Loads tarball to docker
-        """
-        Services.logger.debug("image: upload done")
-        try:
-            await self.chunks.put(None)
-            response = await self.future_response
-            for state in response:
-                if 'error' in state:
-                    if 'archive/tar' in state['error']:
-                        raise HTTPError(status_code=400, log_message=state['error'])
-                    raise HTTPError(status_code=500, log_message=state['error'])
-            self.write("OK")
-            self.finish()
-        except aiodocker.exceptions.DockerError as error:
-            raise HTTPError(status_code=404, log_message=error.message)
-    # pylint: enable=arguments-differ
+#     async def post(self):
+#         """
+#             Loads tarball to docker
+#         """
+#         Services.logger.debug("image: upload done")
+#         try:
+#             await self.chunks.put(None)
+#             response = await self.future_response
+#             for state in response:
+#                 if 'error' in state:
+#                     if 'archive/tar' in state['error']:
+#                         raise HTTPError(status_code=400, log_message=state['error'])
+#                     raise HTTPError(status_code=500, log_message=state['error'])
+#             self.write("OK")
+#             self.finish()
+#         except aiodocker.exceptions.DockerError as error:
+#             raise HTTPError(status_code=404, log_message=error.message)
+#     # pylint: enable=arguments-differ
 
 
 class ImageList(RPCEndpoint):
     """List images"""
 
-    def __init__(self, application, request, **kwargs):
+    def __init__(self, application: Application, request: HTTPServerRequest, **kwargs) -> None:
         super().__init__(application, request, **kwargs)
         self.real_size = 0
 

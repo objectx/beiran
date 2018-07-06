@@ -19,7 +19,7 @@ LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
 
 
-def local_node_uuid():
+def local_node_uuid() -> UUID:
     """
     Get UUID from config file if it exists, else return a new one and write it to config file
 
@@ -55,10 +55,11 @@ def local_node_uuid():
 
     LOGGER.info("local nodes UUID is: %s", uuid.hex)
     LOCAL_NODE_UUID_CACHED = uuid
+
     return uuid
 
 
-def get_default_gateway_interface():
+def get_default_gateway_interface() -> tuple:
     """
     Get default gateway's ip and interface info.
 
@@ -69,7 +70,7 @@ def get_default_gateway_interface():
     return netifaces.gateways()['default'][netifaces.AF_INET]
 
 
-def get_listen_address():
+def get_listen_address() -> str:
     """
 
     Returns:
@@ -93,11 +94,11 @@ def get_listen_address():
             it must be a valid IP4 address. `{}` is not a valid one!""".format(env_addr))
 
 
-def get_listen_port():
+def get_listen_port() -> int:
     """
     Get listen port from env or default 8888
     Returns:
-        str: listen port
+        int: listen port
 
     """
     try:
@@ -106,7 +107,7 @@ def get_listen_port():
         raise ValueError('LISTEN_PORT must be a valid port number!')
 
 
-def get_listen_interface():
+def get_listen_interface() -> str:
     """
     Seek for listen interface in order described below and return it.
 
@@ -135,7 +136,7 @@ def get_listen_interface():
     return interface
 
 
-def get_advertise_address():
+def get_advertise_address() -> str:
     """
     First try environment variable `ADVERTISE_ADDR`. If it is not set,
     return the listen address unless it is `0.0.0.0`.
@@ -163,19 +164,19 @@ def get_advertise_address():
     return netifaces.ifaddresses(default_interface)[netifaces.AF_INET][0]['addr']
 
 
-def get_hostname():
+def get_hostname() -> str:
     """ Gets hostname for discovery
     """
     if 'HOSTNAME' in os.environ:
         return os.environ['HOSTNAME']
     return socket.gethostname()
 
-def sync_version_file_path():
+def sync_version_file_path() -> str:
     """Return sync_version file path"""
     path = common.DATA_FOLDER + "/sync_version"
     return path
 
-async def update_sync_version_file(version):
+async def update_sync_version_file(version: int):
     """Write new sync_version to the sync_version file"""
 
     path = sync_version_file_path()
@@ -185,7 +186,7 @@ async def update_sync_version_file(version):
     with open(path, 'w') as file:
         file.write(str(version))
 
-def get_sync_version():
+def get_sync_version() -> int:
     """
     Gets last sync_version from local file.
 
@@ -198,19 +199,18 @@ def get_sync_version():
 
     try:
         with open(path, 'r') as file:
-            sync_version = file.read()
+            sync_version = int(file.read())
     except FileNotFoundError:
         LOGGER.warning('Cannot find sync_version_file. Creating new file')
         with open(path, 'w') as file:
             file.write(str(sync_version))
-
-    try:
-        return int(sync_version)
     except ValueError:
         raise ValueError("Sync version must be an integer! " +
                          "Check your SYNC_VERSION_FILE ({})".format(path))
 
-def get_plugin_list():
+    return sync_version
+
+def get_plugin_list() -> dict:
     """Return plugin list"""
 
     # docker only for poc
@@ -221,7 +221,7 @@ def get_plugin_list():
     }
 
 
-def collect_node_info():
+def collect_node_info() -> dict:
     """
     Collect and return Node info
 

@@ -4,6 +4,9 @@
 Module for DockerLayer and DockerImage Model
 """
 from datetime import datetime
+
+from typing import Optional
+
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 
@@ -13,17 +16,17 @@ class CommonDockerObjectFunctions:
 
     available_at = JSONStringField(default=list)
 
-    def set_available_at(self, uuid_hex):
+    def set_available_at(self, uuid_hex: str):
         """add uuid of node to available_at list"""
-        if uuid_hex in self.available_at:
+        if uuid_hex in self.available_at: # type: ignore
             return
-        self.available_at.append(uuid_hex)
+        self.available_at.append(uuid_hex) # type: ignore
 
-    def unset_available_at(self, uuid_hex):
+    def unset_available_at(self, uuid_hex: str):
         """remove uuid of node from available_at list"""
-        if uuid_hex not in self.available_at:
+        if uuid_hex not in self.available_at: # type: ignore
             return
-        self.available_at = [n for n in self.available_at if n != uuid_hex]
+        self.available_at = [n for n in self.available_at if n != uuid_hex] # type: ignore
 
 
 class DockerImage(BaseModel, CommonDockerObjectFunctions):
@@ -43,7 +46,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     has_unknown_layers = BooleanField(default=False)
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs) -> "DockerImage":
         if 'dialect' in kwargs and kwargs['dialect'] == "docker":
             new_dict = {}
 
@@ -93,7 +96,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         return _dict
 
     @classmethod
-    async def get_available_nodes_by_tag(cls, image_name):
+    async def get_available_nodes_by_tag(cls, image_name: str) -> Optional[list]:
         """
 
         Args:
@@ -119,6 +122,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         except DockerImage.DoesNotExist:
             pass
 
+        return None
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     """DockerLayer"""

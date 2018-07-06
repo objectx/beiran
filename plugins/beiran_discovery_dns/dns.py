@@ -20,14 +20,14 @@ class DNSDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of DNS Service Discovery
     """
 
-    def __init__(self, config):
+    def __init__(self, config: dict) -> None:
         """ Creates an instance of Dns Discovery Service
         """
         super().__init__(config)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
-        self.nodes = set()
+        self.nodes = set() # type: set
 
-    async def query(self, name, query_type):
+    async def query(self, name: str, query_type: str):
         """ Dns query coroutine
         Args:
             name: address to look for

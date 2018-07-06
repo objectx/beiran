@@ -17,7 +17,7 @@ class BaseModel(Model):
         """Set database metaclass attribute to DB object"""
         database = DB_PROXY
 
-    def to_dict(self, **kwargs):
+    def to_dict(self, **kwargs) -> dict:
         """
         Serialize model to python dict
 
@@ -32,7 +32,7 @@ class BaseModel(Model):
         return model_to_dict(self, **kwargs)
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs) -> "BaseModel":
         """
         Deserialize model from python dict
         Args:
@@ -45,7 +45,7 @@ class BaseModel(Model):
         kwargs.pop('dialect', None)
         return dict_to_model(cls, _dict, **kwargs)
 
-    def update_using_obj(self, obj):
+    def update_using_obj(self, obj: "BaseModel"):
         """
         Update model object with given obj
 
@@ -65,11 +65,11 @@ class JSONStringField(TextField):
     """A basic JSON Field based on text field"""
 
     # pylint: disable=arguments-differ
-    def db_value(self, val):
+    def db_value(self, val: dict) -> str:
         """dict to string"""
         return json.dumps(val)
 
-    def python_value(self, val):
+    def python_value(self, val: str) -> dict:
         """string to python dict"""
         return val if val is None else json.loads(val)
     # pylint: enable=arguments-differ

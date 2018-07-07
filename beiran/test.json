@@ -1,0 +1,4 @@
+{
+    "fruits":["apple","banana", "cherry", { "name": "pusht" }],
+    "calories":[100,200,50]
+}

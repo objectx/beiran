@@ -116,16 +116,22 @@ async def input_reader(stream, **kwargs):
 
     raise Exception("Unsupported stream")
 
+
+def parse_subpath(subpath):
+    """
+    parse subpath:
+        This function returns the parsed subpath object.
+        subpath object is just a list.
+    """
+    pass
+
 async def json_streamer(stream, subpath="*"):
     """Parse a stream of JSON chunks"""
     from jsonstreamer import JSONStreamer
 
-    decode_queue = []
-    def _catch_all(event_name, *args):
-        decode_queue.append({
-            'e': event_name,
-            'a': args
-        })
+    queue = []
+    def _catch_all(event, *args):
+        decode_queue.append((event, args))
 
     streamer = JSONStreamer()
     streamer.add_catch_all_listener(_catch_all)
@@ -140,11 +146,11 @@ async def json_streamer(stream, subpath="*"):
 
     async for data in input_reader(stream):
         streamer.consume(data.decode("utf-8"))
-        while decode_queue:
-            item = decode_queue.pop(0)
-            event_name = item['e']
-            args = item['a']
+
+        while queue:
+            event, args = decode_queue.pop(0)
             current_type = type_path[-1] if type_path else None
+
             if current_type == 'object':
                 key = last_key
             elif current_type == 'array':
@@ -249,6 +255,56 @@ async def test_json():
     # client = aiohttp.ClientSession()
     # response = await client.request("GET", url)
     # stream = response.content
+
+    assert parse_subpath('$') == [
+            { 'type': 'root' }
+            ]
+
+    assert parse_subpath('$.key') == [
+            { 'type': 'root' },
+            { 'type': 'key', 'args': 'key'
+            ]
+
+    assert parse_subpath('$.*') == [
+            { 'type': 'root' },
+            { 'type': 'key', 'args': None }
+            ]
+
+    assert parse_subpath('$[:]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': { 'start': 0, 'end': None, 'step': 1 } }
+            ]
+
+    assert parse_subpath('$[:5]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': { 'start': 0, 'end': 5, 'step': 1 } }
+            ]
+
+    assert parse_subpath('$[1:]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': { 'start': 1, 'end': None, 'step': 1 } }
+            ]
+
+    assert parse_subpath('$[3:5]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': { 'start': 3, 'end': 5, 'step': 1 } }
+            ]
+
+    assert parse_subpath('$[3:11:2]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': { 'start': 3, 'end': 11, 'step': 2 } }
+            ]
+
+    assert parse_subpath('$[3,5,6]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': [3, 5, 6] }
+            ]
+
+    assert parse_subpath('$[5,3,6]') == [
+            { 'type': 'root' },
+            { 'type': 'range', 'args': [3, 5, 6] }
+            ]
+
     with open("test.json", "rb") as stream:
         async for path, obj in json_streamer(stream, "images[*]"):
             print("- Path:", path, " Type:", type(obj), " Obj:", obj)

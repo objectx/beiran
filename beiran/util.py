@@ -201,7 +201,6 @@ async def json_streamer(stream, subpath="$"):
     """Parse a stream of JSON chunks"""
     from jsonstreamer import JSONStreamer
 
-
     queue = []
     def _catch_all(event, *args):
         queue.append((event, args))
@@ -210,47 +209,85 @@ async def json_streamer(stream, subpath="$"):
     streamer.add_catch_all_listener(_catch_all)
     rules = parse_subpath(subpath)
 
-    keys = []
+    keys = [None]
     values = []
+    depth = 0
+
+
+    def _judge(key, rule):
+        print(key, rule)
+        if rule['type'] == 'root':
+            return True
+        if rule['type'] == 'key':
+            if rule['args'] is None:
+                return True
+            if rule['args'] == key:
+                return True
+        if rule['type'] == 'range':
+            if type(rule['args']) is list:
+                if key in rule['args']:
+                    return True
+            if type(rule['args']) is dict:
+                args = rule['args']
+                if args['start'] <= key:
+                    if args['end'] is None or key < args['end']:
+                        if key - args['start'] % args['step'] == 0:
+                            return True
+        return False
 
     async for data in input_reader(stream):
         streamer.consume(data.decode("utf-8"))
         while queue:
-            objflag = False
             event, args = queue.pop(0)
+            pop_flag = False
 
             if event in ['doc_start', 'doc_end']:
                 pass
 
-            if event in ['object_start', 'array_start']:
-                if event == 'object_start':
-                    values.append({})
-                else:
-                    values.append([])
-
-            if event in ['object_end', 'array_end']:
-                objflag = True
+            if event == 'object_start':
+                depth += 1
+                values.append({})
                 
+            if event == 'array_start':
+                depth += 1
+                values.append([])
+                keys.append(0)
+
+            if event == 'object_end':
+                pop_flag = True
+                
+            if event == 'array_end':
+                keys.pop()
+                pop_flag = True
 
             if event == 'key':
                 keys.append(args[0])
 
-            if event in ['value', 'element']:
+            if event == 'value':
+                depth += 1
                 values.append(args[0])
-                objflag = True
+                pop_flag = True
 
-            if objflag:
-                flag = len(rules) == len(values)
+            if event == 'element':
+                depth += 1
+                values.append(args[0])
+                pop_flag = True
+
+            if pop_flag:
+                flag = len(rules) == depth
                 val = values.pop()
 
                 if flag:
-                    yield val
-                if values:
-                    if type(values[-1]) is dict:
-                        key = keys.pop()
-                        values[-1][key] = val
-                    elif type(values[-1]) is list:
-                        values[-1].append(val)
+                    if all(_judge(*elem) for elem in zip(keys, rules)):
+                        yield val
+
+                if values and type(values[-1]) is dict:
+                    key = keys.pop()
+                    values[-1][key] = val
+                elif values and type(values[-1]) is list:
+                    values[-1].append(val)
+                
+                depth -= 1
                 
     stream.close()
 
@@ -317,10 +354,16 @@ def test_json():
     async def _main():
         import io
 
+        print('- vacant dict')
         assert await _wrapper('{}', '$') == [{}]
+        print('- vacant list')
         assert await _wrapper('[]', '$') == [[]]
+        print('- dict + no subpath')
         assert await _wrapper('{"key": 123}', '$') == [{"key": 123}]
+        print('- array + no subpath')
         assert await _wrapper('[1, 2, 3]', '$') == [[1, 2, 3]]
+        print('- array + simple subpath')
+        assert await _wrapper('{"key_a": 123, "key_b": 456}', '$.key_a') == [123]
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(_main())

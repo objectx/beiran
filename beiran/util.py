@@ -234,22 +234,8 @@ async def json_streamer(stream, subpath="$"):
 
     stream.close()
 
-import aiohttp
 
-async def test_json():
-    # stream = """
-    # {
-    #     "fruits":["apple","banana", "cherry", { "name": "pusht" }],
-    #     "calories":[100,200,50]
-    # }
-    # """
-    # url = 'https://gist.githubusercontent.com/hrp/900964/raw/2bbee4c296e6b54877b537144be89f19beff75f4/twitter.json'
-    # client = aiohttp.ClientSession()
-    # response = await client.request("GET", url)
-    # stream = response.content
-
-    # await client.close()
-
+def test_parser():
     assert parse_subpath('$') == [
             { 'type': 'root', 'args': None }
             ]
@@ -299,20 +285,21 @@ async def test_json():
             { 'type': 'range', 'args': [3, 5, 6] }
             ]
 
-    import io
 
-    stream = io.BytesIO(b"{}")
-    assert [val async for val in json_streamer(stream, "$")] == [
-            {}
-            ]
-
-    stream = io.BytesIO(b"[]")
-    assert [val async for val in json_streamer(stream, "$")] == [
-            []
-            ]
-
-
-if __name__ == '__main__':
+def test_json():
     import asyncio
+    import io
+    
+    async def _wrapper(json, subpath):
+        stream = io.BytesIO(json.encode('utf-8'))
+        return [v async for v in json_streamer(stream, subpath)]
+
+    async def _main():
+        import io
+
+        assert await _wrapper('{}', '$') == [{}]
+        assert await _wrapper('[]', '$') == [[]]
+
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(test_json())
+    loop.run_until_complete(_main())
+

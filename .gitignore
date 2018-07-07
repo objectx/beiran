@@ -8,3 +8,4 @@ run
 *.db
 uuid.conf
 env
+**/.pytest_cache/

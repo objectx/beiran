@@ -215,7 +215,6 @@ async def json_streamer(stream, subpath="$"):
 
 
     def _judge(key, rule):
-        print(key, rule)
         if rule['type'] == 'root':
             return True
         if rule['type'] == 'key':
@@ -231,7 +230,7 @@ async def json_streamer(stream, subpath="$"):
                 args = rule['args']
                 if args['start'] <= key:
                     if args['end'] is None or key < args['end']:
-                        if key - args['start'] % args['step'] == 0:
+                        if (key - args['start']) % args['step'] == 0:
                             return True
         return False
 
@@ -277,15 +276,16 @@ async def json_streamer(stream, subpath="$"):
                 flag = len(rules) == depth
                 val = values.pop()
 
-                if flag:
-                    if all(_judge(*elem) for elem in zip(keys, rules)):
-                        yield val
+                if flag and all(_judge(*elem) for elem in zip(keys, rules)):
+                    yield val
 
                 if values and type(values[-1]) is dict:
                     key = keys.pop()
                     values[-1][key] = val
                 elif values and type(values[-1]) is list:
+                    key = keys.pop()
                     values[-1].append(val)
+                    keys.append(key + 1)
                 
                 depth -= 1
                 
@@ -358,12 +358,30 @@ def test_json():
         assert await _wrapper('{}', '$') == [{}]
         print('- vacant list')
         assert await _wrapper('[]', '$') == [[]]
+
         print('- dict + no subpath')
         assert await _wrapper('{"key": 123}', '$') == [{"key": 123}]
         print('- array + no subpath')
         assert await _wrapper('[1, 2, 3]', '$') == [[1, 2, 3]]
-        print('- array + simple subpath')
+
+        print('- dict + asterisk')
+        assert await _wrapper('{"key_a": 123, "key_b": 456}', '$.*') == [123, 456]
+
+        print('- array + slice(all) part1')
+        assert await _wrapper('[1, 2, 3]', '$[:]') == [1, 2, 3]
+        print('- array + slice(all) part2')
+        assert await _wrapper('[1, 2, 3]', '$[::]') == [1, 2, 3]
+
+        print('- dict + simple subpath')
         assert await _wrapper('{"key_a": 123, "key_b": 456}', '$.key_a') == [123]
+        print('- array + slice part1')
+        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[2:]') == [3, 4, 5, 6]
+        print('- array + slice part2')
+        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[1:3]') == [2, 3]
+        print('- array + slice part3')
+        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[:4]') == [1, 2, 3, 4]
+        print('- array + slice part4')
+        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[::2]') == [1, 3, 5]
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(_main())

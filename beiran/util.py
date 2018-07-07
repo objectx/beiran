@@ -201,8 +201,6 @@ async def json_streamer(stream, subpath="$"):
     """Parse a stream of JSON chunks"""
     from jsonstreamer import JSONStreamer
 
-    rule = parse_subpath(subpath)
-    rp = 0
 
     queue = []
     def _catch_all(event, *args):
@@ -210,6 +208,7 @@ async def json_streamer(stream, subpath="$"):
 
     streamer = JSONStreamer()
     streamer.add_catch_all_listener(_catch_all)
+    rules = parse_subpath(subpath)
 
     keys = []
     values = []
@@ -217,21 +216,42 @@ async def json_streamer(stream, subpath="$"):
     async for data in input_reader(stream):
         streamer.consume(data.decode("utf-8"))
         while queue:
+            objflag = False
             event, args = queue.pop(0)
 
-            if event == 'doc_start':
+            if event in ['doc_start', 'doc_end']:
                 pass
 
-            if event == 'object_start':
-                values.append({})
-            if event == 'array_start':
-                values.append([])
+            if event in ['object_start', 'array_start']:
+                if event == 'object_start':
+                    values.append({})
+                else:
+                    values.append([])
 
-            if event == 'object_end':
-                yield values.pop()
-            if event == 'array_end':
-                yield values.pop()
+            if event in ['object_end', 'array_end']:
+                objflag = True
+                
 
+            if event == 'key':
+                keys.append(args[0])
+
+            if event in ['value', 'element']:
+                values.append(args[0])
+                objflag = True
+
+            if objflag:
+                flag = len(rules) == len(values)
+                val = values.pop()
+
+                if flag:
+                    yield val
+                if values:
+                    if type(values[-1]) is dict:
+                        key = keys.pop()
+                        values[-1][key] = val
+                    elif type(values[-1]) is list:
+                        values[-1].append(val)
+                
     stream.close()
 
 
@@ -299,6 +319,8 @@ def test_json():
 
         assert await _wrapper('{}', '$') == [{}]
         assert await _wrapper('[]', '$') == [[]]
+        assert await _wrapper('{"key": 123}', '$') == [{"key": 123}]
+        assert await _wrapper('[1, 2, 3]', '$') == [[1, 2, 3]]
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(_main())

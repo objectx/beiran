@@ -122,8 +122,80 @@ def parse_subpath(subpath):
     parse subpath:
         This function returns the parsed subpath object.
         subpath object is just a list.
+
+    the regular expression of subpath:
+        /\$(\.([\w]+|\*)|\[\d*:\d*:\d*\])*/
+
+    the grammer of subpath:
+        subpath        ::= "$" selecter*
+        selecter       ::= key_selecter | range_selecter
+        key_selecter   ::= "." key_body
+        key_body       ::= word* | "*"
+        range_selecter ::= "[" range_body "]"
+        range_body     ::= int? ":" int? ":" int?
+
+        word           ::= "a" | ... | "z" | "A" | ... | "Z" | digit | "_"
+        digit          ::= "0" | ... | "9"
+
+    ref: http://goessner.net/articles/JsonPath
     """
-    pass
+    def _helper(t, a):
+        return { 'type': t, 'args': a }
+
+    def _ext_str(l, e):
+        s = ""
+        while l and not l[0] in e:
+            s += l.pop(0)
+        return s
+
+    result = []
+    chars = [c for c in subpath]
+
+    if chars.pop(0) != '$':
+        raise RuntimeError('subpath is corrupt')
+    result.append(_helper('root', None))
+
+    while chars:
+        c = chars.pop(0)
+        if c == '.':
+            if chars[0] == '*':
+                chars.pop(0)
+                result.append(_helper('key', None))
+            else:
+                result.append(_helper('key', _ext_str(chars, ".[")))
+        elif c == '[':
+            t = _ext_str(chars, ":,")
+            if chars[0] == ':':
+                start = int(t) if t else 0
+                chars.pop(0)
+
+                t = _ext_str(chars, ":]")
+                end = int(t) if t else None
+
+                if chars.pop(0) == ':':
+                    t = _ext_str(chars, "]")
+                    step = int(t) if t else 1
+                    chars.pop(0)
+                else:
+                    step = 1
+
+                result.append(_helper('range', {
+                        'start': start,
+                        'end': end,
+                        'step': step
+                    }))
+            elif chars[0] == ',':
+                l = [int(t)]
+                while chars.pop(0) != ']':
+                    l.append(int(_ext_str(chars, ',]')))
+                result.append(_helper('range', sorted(l)))
+            else:
+                raise RuntimeError('subpath is corrupt')
+        else:
+            raise RuntimeError('subpath is corrupt')
+
+    return result
+
 
 async def json_streamer(stream, subpath="*"):
     """Parse a stream of JSON chunks"""
@@ -257,51 +329,51 @@ async def test_json():
     # stream = response.content
 
     assert parse_subpath('$') == [
-            { 'type': 'root' }
+            { 'type': 'root', 'args': None }
             ]
 
     assert parse_subpath('$.key') == [
-            { 'type': 'root' },
-            { 'type': 'key', 'args': 'key'
+            { 'type': 'root', 'args': None },
+            { 'type': 'key', 'args': 'key' }
             ]
 
     assert parse_subpath('$.*') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'key', 'args': None }
             ]
 
     assert parse_subpath('$[:]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': { 'start': 0, 'end': None, 'step': 1 } }
             ]
 
     assert parse_subpath('$[:5]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': { 'start': 0, 'end': 5, 'step': 1 } }
             ]
 
     assert parse_subpath('$[1:]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': { 'start': 1, 'end': None, 'step': 1 } }
             ]
 
     assert parse_subpath('$[3:5]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': { 'start': 3, 'end': 5, 'step': 1 } }
             ]
 
     assert parse_subpath('$[3:11:2]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': { 'start': 3, 'end': 11, 'step': 2 } }
             ]
 
     assert parse_subpath('$[3,5,6]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': [3, 5, 6] }
             ]
 
     assert parse_subpath('$[5,3,6]') == [
-            { 'type': 'root' },
+            { 'type': 'root', 'args': None },
             { 'type': 'range', 'args': [3, 5, 6] }
             ]
 

@@ -34,6 +34,7 @@ from beirand.version import __version__
 
 from beiran.models import Node
 from beiran.log import build_logger
+from beirand.peer import Peer
 
 AsyncIOMainLoop().install()
 
@@ -49,6 +50,7 @@ class BeiranDaemon(EventEmitter):
         self.available_plugins = []
         self.search_plugins()
         self.sync_state_version = 0
+        self.peer = None
 
     async def new_node(self, peer_address, **kwargs):  # pylint: disable=unused-argument
         """
@@ -60,7 +62,7 @@ class BeiranDaemon(EventEmitter):
         Services.logger.info('New node detected, reached: %s:%s, waiting info',
                              peer_address.address)
         # url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await self.nodes.probe_node(peer_address=peer_address)
+        node = await self.peer.probe_node(peer_address=peer_address)
 
         if not node:
             EVENTS.emit('node.error', peer_address.address)
@@ -107,7 +109,7 @@ class BeiranDaemon(EventEmitter):
                 Services.logger.debug("Node %s is %s", url, status)
 
             try:
-                await self.nodes.probe_node(url=url)
+                await self.peer.probe_node(url=url)
             except ConnectionRefusedError:
                 Services.logger.debug("Node not found: %s", url)
             except aiohttp.client_exceptions.ClientConnectorError:
@@ -312,6 +314,8 @@ class BeiranDaemon(EventEmitter):
         self.nodes.add_or_update(self.nodes.local_node)
         self.set_status('init')
         Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
+
+        self.peer = Peer(node=self.nodes.local_node, nodes=self.nodes, loop=self.loop, local=True)
 
         # initialize sync_state_version
         self.sync_state_version = self.nodes.local_node.last_sync_version

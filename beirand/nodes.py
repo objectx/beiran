@@ -4,22 +4,14 @@ Module for in memory node tracking object `Nodes`
 import asyncio
 import logging
 import urllib
-import socket
 
-from beiran.models import Node, PeerAddress
-from beiran.client import Client as BeiranClient
-
-import beiran.defaults as defaults
-
-from beirand.peer import Peer
-
+from beiran.models import Node
 
 class Nodes(object):
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
         self.all_nodes = {}
-        self.connections = {}
         self.logger = logging.getLogger('beiran.nodes')
         self.local_node = None
         self.__probe_lock = asyncio.Lock()
@@ -73,7 +65,7 @@ class Nodes(object):
 
         return self.get_node_by_uuid_from_db(uuid=uuid)
 
-    def set_online(self, node):
+    def update_node(self, node):
         """Append node to online nodes collection
         """
         self.all_nodes.update({node.uuid.hex: node})
@@ -83,10 +75,12 @@ class Nodes(object):
         """
         node.status = 'offline'
         node.save()
+
+        # why should we delete node from both all_nodes and connections?
         if node.uuid.hex in self.all_nodes:
             del self.all_nodes[node.uuid.hex]
-        if node.uuid.hex in self.connections:
-            del self.connections[node.uuid.hex]
+        # if node.uuid.hex in self.connections:
+        #     del self.connections[node.uuid.hex]
 
     def add_or_update(self, node):
         """
@@ -96,19 +90,8 @@ class Nodes(object):
             node (Node): node object
 
         """
-
-        try:
-            node_ = Node.get(Node.uuid == node.uuid)
-            node_.update_using_obj(node)
-            node_.save()
-
-        except Node.DoesNotExist:
-            node_ = node
-            # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
-            node_.save(force_insert=True)
-
-        self.set_online(node)
-
+        node = Node.add_or_update(node)
+        self.update_node(node)
         return node
 
     def remove_node(self, node):
@@ -139,50 +122,6 @@ class Nodes(object):
             return [*self.get_from_db().values()]
 
         return [*self.all_nodes.values()]
-
-    def list_all_by_ip4(self):
-        """List nodes by IP v4 Address"""
-        # todo: will be implemented
-        pass
-
-    async def fetch_node_info(self, peer_address):
-        """Fetches node information using url"""
-
-        self.logger.debug("getting remote node info: %s", peer_address.location)
-
-        client = BeiranClient(peer_address.location)
-        info = await client.get_node_info()
-
-        # self.logger.debug("received node information %s", str(info))
-        node_ = Node.from_dict(info)
-        try:
-            node = Node.get(Node.uuid == node_.uuid)
-            node.update_using_obj(node_)
-        except Node.DoesNotExist:
-            node = node_
-
-        # but for us, addresses might be different than what that node thinks of herself
-        # todo: remove after peerconnection implementation
-        # parsed = urllib.parse.urlparse(url)
-        # node.ip_address = socket.gethostbyname(parsed.hostname)
-        # node.port = parsed.port or defaults.LISTEN_PORT
-        return node
-
-    async def add_or_update_new_remote_node(self, url):
-        """
-        Get information of the node on IP `node_ip` at port `node_port` via info endpoint.
-
-        Args:
-            node_ip (str): node ipv4 address
-            node_port (str): node port
-
-        Returns:
-
-        """
-
-        node = await self.fetch_node_info(url)
-
-        return self.add_or_update(node)
 
     async def get_node_by_ip_and_port(self, ip_address, service_port, from_db=False):
         """
@@ -216,127 +155,3 @@ class Nodes(object):
             return await self.get_node_by_uuid(parsed.fragment, from_db)
 
         return await self.get_node_by_ip_and_port(parsed.hostname, parsed.port, from_db)
-
-    async def probe_node_bidirectional(self, url):
-        """
-        Probe remote node at `ip_address`:`port` and ask probe back local node
-
-        Args:
-            url (str): beiran node url to be probed
-
-        Returns:
-
-        """
-
-        # first, we probe remote
-        remote_node = await self.probe_node(url)
-        try:
-            await self.request_probe_from(node=remote_node)
-        except BeiranClient.Error:
-            self.logger.error("Cannot make remote node %s probe us", url)
-
-    async def request_probe_from(self, url=None, node=None):
-        """Request probe from a remote node"""
-        if not url and not node:
-            raise Exception("url or node must be provided")
-        client = BeiranClient(url=url, node=node)
-        return await client.probe_node(self.local_node.url)
-
-    async def probe_node(self, peer_address):
-        """
-        Probe remote node, get info and save.
-
-        - if url has uuid
-            - if uuid in self.connections
-                node already connected, return
-                # todo: add address change and status
-
-            - if uuid in self.all_nodes
-                although it is not a connection, we already know the node, update address in any case
-
-            - finally try to get from db by uuid,
-                - if found update address
-
-            - if a node found then try probe with `node` which has its all peer_connection addresses
-
-        - if no node then it is a brand new one, then try with url.
-
-        Args:
-            url (str): beiran node url to be probed
-
-        Returns:
-
-        """
-
-        async def try_probe_remote_node(node=None, peer_address=None, retries=3):
-            remote_addresses = []
-            if not (node or peer_address):
-                self.logger.error("cannot call this method with lack of both node and url")
-
-            if node:
-                remote_addresses.append(node.address)
-                remote_addresses.append(node.get_connections())
-            if peer_address:
-                remote_addresses.append(peer_address)
-
-            _node = None
-            counter = retries
-
-            while counter and not _node and remote_addresses:
-                url = remote_addresses[0]
-                self.logger.info(
-                    'Detected not is not accesible, trying again: %s', url)
-                _node = await self.fetch_node_info(url)
-                await asyncio.sleep(3)  # no need to rush, take your time!
-
-                # decrease counter
-                counter -= 1
-                # after `retries` times, pop first element
-                # of `remote_addresses` and reset counter, so loop goes on with next url.
-                if not counter:
-                    remote_addresses.pop(0)
-                    if remote_addresses:
-                        counter = retries
-            self.logger.info("found: %s", _node)
-            return _node
-
-        async with self.__probe_lock:
-
-            if not peer_address.uuid:  # a new node, probably from discovery service
-                node = await try_probe_remote_node(peer_address=peer_address)
-            else:
-                node = None
-
-            uuid = node.uuid if node else peer_address.uuid
-
-            if not uuid:
-                self.logger.warning(
-                    'Cannot fetch node information, %s', peer_address.address
-                )
-                return
-
-            if uuid in self.connections:
-                # TODO: If node status is "lost", then trigger reconnect here
-                # self.connections[node.uuid.hex].reconnect()
-                self.logger.error(
-                    "Inconsistency error, already connected node is being added AGAIN")
-                return self.connections[uuid].node  # todo: self.connections[uuid]?
-
-            if node:
-                node.set_get_address(peer_address.address)  # update address of uuid, it may differ
-                self.add_or_update(node)
-
-                node.status = 'connecting'
-                node.save()
-
-                peer = Peer(node)
-                self.connections.update({node.uuid.hex: peer})
-
-                self.logger.info(
-                    'Probed node, uuid: %s, %s:%s',
-                    node.uuid.hex, node.ip_address, node.port)
-
-                return node
-            else:
-                self.logger.info(
-                    'Can not probed given info: %s', peer_address)

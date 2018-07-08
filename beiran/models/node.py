@@ -1,7 +1,7 @@
 """
 Module for Node Data Model
 """
-import uuid
+from uuid import UUID
 import urllib
 import re
 from datetime import datetime
@@ -19,14 +19,19 @@ class PeerAddress(BaseModel):
     """Data model for connection details of Nodes"""
 
     uuid = UUIDField(null=True)
-    transport = CharField(max_length=15)
+    transport = CharField(max_length=15, default="http")
     address = CharField(max_length=255)
-    last_seen_at = IntegerField()
+    last_seen_at = IntegerField(default=datetime.now().timestamp())
     discovery_method = CharField(max_length=32, null=True)
     config = JSONStringField(null=True)  # { "auto-connect": true } ?
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        uuid = kwargs.pop('uuid', None)
+
+        if uuid and isinstance(uuid, UUID):
+            uuid = uuid.hex
+
         addr = kwargs.pop('address', None)
         host = kwargs.pop('host', None)
         path = kwargs.pop('path', None)
@@ -38,24 +43,37 @@ class PeerAddress(BaseModel):
             if not addr.startswith("beiran+"):
                 addr = "beiran+{}".format(addr)
             self.is_valid = self.validate_address(addr)
-            transport, protocol, host, path, port, uuid, unix_socket = self.parse_address(addr)
+            transport, protocol, host, path, port, _uuid, unix_socket = self.parse_address(addr)
 
-        addr = self.build_node_address(host=host, port=port, path=path, protocol=protocol, socket=unix_socket)
-        self.transport, self.protocol, self.host, self.path, self.port, self.uuid, self.unix_socket = self.parse_address(addr)
+        addr = self.build_node_address(host=host, port=port, uuid=uuid, path=path, protocol=protocol, socket=unix_socket)
+        self.transport, self.protocol, self.host, self.path, self.port, _uuid, self.unix_socket = self.parse_address(addr)
+
+        if _uuid:
+            self.uuid = UUID(_uuid)
+
         self.address = addr
 
     def to_dict(self, **kwargs):
         _dict = super().to_dict(**kwargs)
-        # _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
+        _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
         _dict['host'] = self.host
         _dict['port'] = self.port
         _dict['protocol'] = self.protocol
         _dict['unix_socket'] = self.unix_socket
         _dict['path'] = self.path
+        return _dict
+
+    def from_dict(cls, _dict, **kwargs):
+        _dict['uuid'] = UUID(_dict['uuid'])
+        obj = super().from_dict(_dict, **kwargs)
+        return obj
 
     @property
     def location(self):
-        return "{}://{}:{}".format(self.protocol, self.host, self.port or 8888)
+        if not self.unix_socket:
+            return "{}://{}:{}".format(self.protocol, self.host, self.port)
+        else:
+            return "{}+unix://{}".format(self.protocol, self.path)
 
     @staticmethod
     def validate_address(address):
@@ -176,7 +194,7 @@ class Node(BaseModel):
 
     @classmethod
     def from_dict(cls, _dict, **kwargs):
-        _dict['uuid'] = uuid.UUID(_dict['uuid'])
+        _dict['uuid'] = UUID(_dict['uuid'])
         node_address = _dict.pop('address', None)
         node = super().from_dict(_dict, **kwargs)
         node._address = node_address
@@ -201,6 +219,12 @@ class Node(BaseModel):
         return "http://{}:{}".format(self.ip_address, self.port)
 
     def connections(self):
+        """
+        Query for all node connections ordered by last seen time
+        Returns:
+            query object.
+
+        """
         return PeerAddress.select().order_by(
                 PeerAddress.last_seen_at.desc()
             ).where(
@@ -208,12 +232,23 @@ class Node(BaseModel):
             )
 
     def get_connections(self):
-        """Get a list of connection details of node ordered by last seen time"""
+        """
+        Get a list of connection details of node ordered by last seen time
+        Returns:
+            (list) list of PeerAddress of node
+
+        """
         return [
             conn for conn in self.connections()
         ]
 
     def get_latest_connection(self):
+        """
+        Get the latest PeerAddress of node
+        Returns:
+            (PeerAddress) connection object
+
+        """
         return self.connections().get()
 
     def __repr__(self):
@@ -221,6 +256,18 @@ class Node(BaseModel):
 
     @property
     def address(self, force=False):
+        """
+        Returns peer address of node in beiran address format.
+
+        If `force` is True, it gets from db.
+
+        Args:
+            force (bool): from db or not
+
+        Returns:
+            (str): peer address string
+
+        """
         if self._address and not force:
             return self._address
         return self.set_get_address()
@@ -230,25 +277,36 @@ class Node(BaseModel):
             self._address = address
         else:
             latest_conn = self.get_latest_connection()
-            self._address = latest_conn
+            self._address = latest_conn.address
         return self._address
 
     def save(self, save_peer_conn=True, force_insert=False, only=None):
         super().save(force_insert=force_insert, only=only)
         if save_peer_conn:
             PeerAddress.add_or_update(
-                uuid=self.uuid.hex,
+                uuid=self.uuid,
                 address=self.address
             )
 
     @classmethod
-    def get_by_address(cls, address):
+    def add_or_update(cls, node):
+        """
+        Update with or create a new node object from provided `node` object.
+        Args:
+            node (Node): node object
 
-        # todo: we may use a subquery for getting once
-        peer_uuid = PeerAddress.select(
-            PeerAddress.uuid
-        ).where(
-            PeerAddress.address == address
-        )
+        Returns:
+            (Node): node object
 
-        return cls.get(cls.uuid == peer_uuid)
+        """
+        try:
+            node_ = Node.get(Node.uuid == node.uuid)
+            node_.update_using_obj(node)
+            node_.save()
+
+        except Node.DoesNotExist:
+            node_ = node
+            # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
+            node_.save(force_insert=True)
+
+        return node_

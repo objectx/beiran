@@ -54,26 +54,22 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url=None, node=None, version=None):
+    def __init__(self, peer_address=None, node=None, version=None):
         """
         Initialization method for client
         Args:
-            url: beirand url
-            node: Node (optional)
-            version: string (optional)
+            peer_address (PeerAddress): beirand url
+            node (Node): Node (optional)
+            version (str): string (optional)
         """
         self.node = node
         self.version = node.version if node else version
         self.logger = logging.getLogger('beiran.client')
 
-        if not url and node:
-            address = node.address
+        if not (peer_address or node):
+            raise ValueError("Both node and peer_address can not be None")
 
-        else:
-            address = PeerAddress(address=url)
-
-        if not address.is_valid:
-            raise ValueError("URL is broken: %s" % url)
+        address = peer_address or node.get_latest_connection()
 
         self.url = address.location
 

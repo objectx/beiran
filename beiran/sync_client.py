@@ -49,13 +49,18 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url):
+    def __init__(self, peer_address):
         """
         Initialization method for client
+
         Args:
-            url: beirand url
+            peer_address (PeerAddress, str): beirand address
         """
-        address = PeerAddress(address=url)
+
+        if not isinstance(peer_address, PeerAddress):
+            address = PeerAddress(address=peer_address)
+        else:
+            address = peer_address
 
         if address.unix_socket:
             resolver = UnixResolver(address.path)

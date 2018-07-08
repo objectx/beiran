@@ -6,7 +6,6 @@ Common client for beiran project
 
 import socket
 import json
-import re
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver

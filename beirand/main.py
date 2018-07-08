@@ -9,7 +9,6 @@ import importlib
 import signal
 import logging
 from functools import partial
-import aiohttp
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -25,6 +24,8 @@ from beirand.common import Services
 from beirand.common import DATA_FOLDER
 
 from beirand.nodes import Nodes
+from beirand.peer import Peer
+
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
 from beirand.lib import update_sync_version_file
@@ -34,7 +35,6 @@ from beirand.version import __version__
 
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
-from beirand.peer import Peer
 
 AsyncIOMainLoop().install()
 

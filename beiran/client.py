@@ -4,7 +4,6 @@ Common client for beiran project
 # pylint: disable=duplicate-code
 
 import asyncio
-import re
 import socket
 import logging
 
@@ -12,7 +11,6 @@ from tornado import gen
 from tornado.netutil import Resolver
 import aiohttp
 import async_timeout
-from beiran.models import PeerAddress
 
 
 class UnixResolver(Resolver):

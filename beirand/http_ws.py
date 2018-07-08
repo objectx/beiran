@@ -1,6 +1,5 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import urllib
 
 from tornado import websocket, web
 from tornado.options import options, define
@@ -121,7 +120,6 @@ class NodesHandler(RPCEndpoint):
         probe_back = self.json_data.get('probe_back', None)
         peer_address = PeerAddress(address=node_url)
 
-        parsed = urllib.parse.urlparse(node_url)
         try:
             if peer_address.uuid:
                 existing_node = await Services.daemon.nodes.get_node_by_uuid(peer_address.uuid)

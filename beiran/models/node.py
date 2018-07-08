@@ -9,13 +9,10 @@ from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
 from beiran.log import build_logger
 
-logger = build_logger()
+LOGGER = build_logger('beiran.models.node')
 
 
-# Proposed new model for replacing address and port info in Node model
-# This will fix discovering same node over several networks, etc.
-# This will also allow us to track manually added nodes
-class PeerAddress(BaseModel):
+class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
     """Data model for connection details of Nodes"""
 
     uuid = UUIDField(null=True)
@@ -43,10 +40,13 @@ class PeerAddress(BaseModel):
             if not addr.startswith("beiran+"):
                 addr = "beiran+{}".format(addr)
             self.is_valid = self.validate_address(addr)
-            transport, protocol, host, path, port, _uuid, unix_socket = self.parse_address(addr)
+            _, protocol, host, path, port, _uuid, unix_socket = self.parse_address(addr)
 
-        addr = self.build_node_address(host=host, port=port, uuid=uuid, path=path, protocol=protocol, socket=unix_socket)
-        self.transport, self.protocol, self.host, self.path, self.port, _uuid, self.unix_socket = self.parse_address(addr)
+        addr = self.build_node_address(host=host, port=port, uuid=uuid, path=path,
+                                       protocol=protocol, socket=unix_socket)
+
+        self.transport, self.protocol, self.host, self.path, \
+        self.port, _uuid, self.unix_socket = self.parse_address(addr)
 
         if _uuid:
             self.uuid = UUID(_uuid)
@@ -63,6 +63,7 @@ class PeerAddress(BaseModel):
         _dict['path'] = self.path
         return _dict
 
+    @classmethod
     def from_dict(cls, _dict, **kwargs):
         _dict['uuid'] = UUID(_dict['uuid'])
         obj = super().from_dict(_dict, **kwargs)
@@ -70,10 +71,17 @@ class PeerAddress(BaseModel):
 
     @property
     def location(self):
+        """
+        Location string which is used by clients.
+
+        Returns:
+            (str): network location string
+
+        """
         if not self.unix_socket:
             return "{}://{}:{}".format(self.protocol, self.host, self.port)
-        else:
-            return "{}+unix://{}".format(self.protocol, self.path)
+
+        return "{}+unix://{}".format(self.protocol, self.path)
 
     @staticmethod
     def validate_address(address):
@@ -91,11 +99,13 @@ class PeerAddress(BaseModel):
                                  re.IGNORECASE)
         matched = url_pattern.match(address)
         if not matched:
-            logger.error("Address is broken: %s", address)
+            LOGGER.error("Address is broken: %s", address)
 
         return matched
 
-    def build_node_address(self, host, path=None, uuid=None, port=None, protocol=None, socket=False):
+    # pylint: disable=too-many-arguments
+    def build_node_address(self, host, path=None,
+                           uuid=None, port=None, protocol=None, socket=False):
         """
         Build a node address with given host, port, protocol and uuid
 
@@ -120,12 +130,14 @@ class PeerAddress(BaseModel):
         else:
             hostname = host
 
-        ADDRESS_FORMAT = "beiran+{protocol}{unix_socket}://{hostname}{port}#{uuid}"
-        address = ADDRESS_FORMAT.format(hostname=hostname,
-                                             port=port,
-                                             protocol=protocol,
-                                             unix_socket=unix_socket,
-                                             uuid=uuid)
+        address_format = "beiran+{protocol}{unix_socket}://{hostname}{port}#{uuid}"
+        address = address_format.format(
+            hostname=hostname,
+            port=port,
+            protocol=protocol,
+            unix_socket=unix_socket,
+            uuid=uuid
+        )
         if not uuid:
             address = address.split('#')[0]
 
@@ -133,6 +145,18 @@ class PeerAddress(BaseModel):
 
     @classmethod
     def add_or_update(cls, uuid, address, discovery=None, config=None):
+        """
+        Update with or create a new peer_address object from provided information.
+
+        Args:
+            uuid (str): uuid
+            address: address
+            discovery: discovery channel
+            config: config dict
+
+        Returns:
+
+        """
         try:
             _self = cls.get(PeerAddress.uuid == uuid,
                             PeerAddress.address == address)
@@ -144,11 +168,20 @@ class PeerAddress(BaseModel):
             _self.config = config
         if discovery:
             _self.discovery_method = discovery
-        _self.transport, _, _, _, _, _, _ = cls.parse_address(address)
         _self.save()
 
     @staticmethod
     def parse_address(address):
+        """
+        Parse beiran address
+
+        Args:
+            address (str): beiran address
+
+        Returns:
+            (tuple): address details
+
+        """
         parsed = urllib.parse.urlparse(address)
         scheme = parsed.scheme
         unix_socket = False
@@ -197,7 +230,7 @@ class Node(BaseModel):
         _dict['uuid'] = UUID(_dict['uuid'])
         node_address = _dict.pop('address', None)
         node = super().from_dict(_dict, **kwargs)
-        node._address = node_address
+        node.set_get_address(node_address)
         return node
 
     def to_dict(self, **kwargs):
@@ -226,10 +259,10 @@ class Node(BaseModel):
 
         """
         return PeerAddress.select().order_by(
-                PeerAddress.last_seen_at.desc()
-            ).where(
-                PeerAddress.uuid == self.uuid.hex
-            )
+            PeerAddress.last_seen_at.desc()
+        ).where(
+            PeerAddress.uuid == self.uuid.hex  # pylint: disable=no-member
+        )
 
     def get_connections(self):
         """
@@ -273,6 +306,16 @@ class Node(BaseModel):
         return self.set_get_address()
 
     def set_get_address(self, address=None):
+        """
+        Set or get address of node
+
+        Args:
+            address (str): beiran address string
+
+        Returns:
+            (str): beiran address string
+
+        """
         if address:
             self._address = address
         else:
@@ -280,7 +323,7 @@ class Node(BaseModel):
             self._address = latest_conn.address
         return self._address
 
-    def save(self, save_peer_conn=True, force_insert=False, only=None):
+    def save(self, save_peer_conn=True, force_insert=False, only=None):  # pylint: disable=arguments-differ
         super().save(force_insert=force_insert, only=only)
         if save_peer_conn:
             PeerAddress.add_or_update(

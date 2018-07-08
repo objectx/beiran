@@ -25,4 +25,3 @@ async def async_req(url, timeout=3, method="GET", **kwargs):
                                        data=data, headers=headers) as resp:
                 response, data = resp, await resp.json(content_type=None)
                 return response, data
-

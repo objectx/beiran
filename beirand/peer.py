@@ -15,14 +15,15 @@ from beirand.common import Services
 
 from beiran.client import Client
 
-from beiran.models import PeerAddress, Node
+from beiran.models import Node
 
 PEER_REGISTRY = dict()
 
-logger = logging.getLogger('beiran.peer')
-
 
 class PeerMeta(type):
+    """
+    Metaclass which attaches a dict for peer registry and custom iterator.
+    """
     def __new__(mcs, name, bases, dct):
         klass = super().__new__(mcs, name, bases, dct)
         klass.peers = PEER_REGISTRY
@@ -32,6 +33,7 @@ class PeerMeta(type):
         return iter(cls.peers.items())
 
 
+# pylint: disable=too-many-instance-attributes
 class Peer(EventEmitter, metaclass=PeerMeta):
     """Peer class"""
     def __new__(cls, node=None, nodes=None, loop=None, local=False):
@@ -40,18 +42,19 @@ class Peer(EventEmitter, metaclass=PeerMeta):
             cls.node = node
             cls.uuid = node.uuid.hex
             try:
-                return cls.peers[node.uuid]
+                return cls.peers[node.uuid]  # pylint: disable=no-member
             except KeyError:
                 new_obj = object.__new__(cls)
-                cls.peers[node.uuid] = new_obj
+                cls.peers[node.uuid] = new_obj  # pylint: disable=no-member
 
         new_obj = new_obj or object.__new__(cls)
         new_obj.logger = logging.getLogger('beiran.peer')
         new_obj.loop = loop if loop else asyncio.get_event_loop()
         new_obj.nodes = nodes
+        new_obj.local = local
         return new_obj
 
-    def __init__(self, node=None, nodes=None, loop=None, local=False):
+    def __init__(self, node=None, nodes=None, loop=None, local=False):  # pylint: disable=unused-argument
         """
 
         Args:
@@ -65,7 +68,7 @@ class Peer(EventEmitter, metaclass=PeerMeta):
         self.last_sync_state_version = 0  # self.node.last_sync_version
         self.__probe_lock = asyncio.Lock()
         self.peer_address = node.get_latest_connection()
-        if not local:
+        if not self.local:
             self.client = Client(peer_address=self.peer_address)
             self.start_loop()
 
@@ -117,6 +120,7 @@ class Peer(EventEmitter, metaclass=PeerMeta):
     #     pass
 
     async def peerloop(self):
+        """lifecycle of a beiran-node connection"""
 
         while not self.node:
             self.node = await self.probe_node(self.peer_address)
@@ -124,7 +128,6 @@ class Peer(EventEmitter, metaclass=PeerMeta):
         if not self.node:
             return
 
-        """lifecycle of a beiran-node connection"""
         self.logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
                          self.node.ip_address, self.node.port)
         self.node.status = 'syncing'
@@ -277,12 +280,12 @@ class Peer(EventEmitter, metaclass=PeerMeta):
                 )
                 return
 
-            if uuid in self.peers:
+            if uuid in self.peers:  # pylint: disable=no-member
                 # TODO: If node status is "lost", then trigger reconnect here
                 # self.connections[node.uuid.hex].reconnect()
                 self.logger.error(
                     "Inconsistency error, already connected node is being added AGAIN")
-                return self.peers[uuid].node  # todo: self.connections[uuid]?
+                return self.peers[uuid].node  # pylint: disable=no-member
 
             if node:
                 node.set_get_address(peer_address.address)  # update address of uuid, it may differ
@@ -332,5 +335,3 @@ class Peer(EventEmitter, metaclass=PeerMeta):
             node = node_
 
         return node
-
-

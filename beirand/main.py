@@ -32,7 +32,7 @@ from beirand.lib import update_sync_version_file
 from beirand.http_ws import ROUTES
 from beirand.version import __version__
 
-from beiran.models import Node
+from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
 from beirand.peer import Peer
 
@@ -59,7 +59,7 @@ class BeiranDaemon(EventEmitter):
             ip_address (str): ip_address of new node
             service_port (str): service port of new node
         """
-        Services.logger.info('New node detected, reached: %s:%s, waiting info',
+        Services.logger.info('New node detected, reached: %s, waiting info',
                              peer_address.address)
         # url = "beiran://{}:{}".format(ip_address, service_port)
         node = await self.peer.probe_node(peer_address=peer_address)
@@ -90,33 +90,6 @@ class BeiranDaemon(EventEmitter):
         self.nodes.remove_node(node)
 
         EVENTS.emit('node.removed', node)
-
-    async def probe_specific_node(self, url, sleep_time):
-        """Repeat probing peers"""
-
-        while True:
-            status = None
-            try:
-                node = await self.nodes.get_node_by_url(url)
-                if node.uuid.hex in self.nodes.connections:
-                    # TODO: What to do if status == "lost"
-                    return node
-                status = node.status
-            except Node.DoesNotExist:
-                pass
-
-            if status:
-                Services.logger.debug("Node %s is %s", url, status)
-
-            try:
-                await self.peer.probe_node(url=url)
-            except ConnectionRefusedError:
-                Services.logger.debug("Node not found: %s", url)
-            except aiohttp.client_exceptions.ClientConnectorError:
-                Services.logger.debug("Node not found: %s", url)
-
-            await asyncio.sleep(sleep_time)
-
 
     async def on_node_removed(self, node):
         """Placeholder for event on node removed"""
@@ -274,30 +247,32 @@ class BeiranDaemon(EventEmitter):
 
     async def probe_without_discovery(self):
         """Bootstrapping peer without discovery"""
-        # Probe Known Nodes
-        known_nodes = os.getenv("KNOWN_NODES")
-        known_urls = None
-
-        known_urls = known_nodes.split(',') if known_nodes else []
-
-        for known_url in known_urls:
-            self.loop.create_task(self.probe_specific_node(known_url, 30))
 
         # Probe DB Nodes
+        probed_locations = set()
         db_nodes = Services.daemon.nodes.list_of_nodes(
             from_db=True
         )
-        local_node_url = self.nodes.local_node.url_without_uuid
 
         for db_node in db_nodes:
-            db_node_url = db_node.url_without_uuid
-            if db_node_url in known_urls:
+            if db_node.uuid.hex == self.nodes.local_node.uuid.hex:
                 continue
+            probed_locations.update({conn.location for conn in db_node.get_connections()})
+            self.loop.create_task(self.peer.probe_node(peer_address=db_node.address, retries=60))
 
-            if db_node_url == local_node_url:
-                continue
+        # Probe Known Nodes
+        known_nodes = os.getenv("KNOWN_NODES")
+        known_urls = known_nodes.split(',') if known_nodes else []
+        Services.logger.info("KNOWN_NODES are: %s", known_urls)
 
-            self.loop.create_task(self.probe_specific_node(db_node_url, 60))
+        for known_url in known_urls:
+            peer_address = PeerAddress(address=known_url)
+            Services.logger.info("trying to probe : %s", peer_address.address)
+            if not peer_address.location in probed_locations:
+                # try forever
+                self.loop.create_task(self.peer.probe_node(peer_address=peer_address, retries=-1))
+                # todo: does not iterate until the task above is not finished
+
 
     async def main(self):
         """ Main function """

@@ -8,6 +8,7 @@
 import asyncio
 import logging
 import time
+from aiohttp import ClientConnectorError
 from pyee import EventEmitter
 
 from beirand.common import Services
@@ -205,18 +206,19 @@ class Peer(EventEmitter, metaclass=PeerMeta):
         return await client.probe_node(address=self.peer_address.location,
                                        probe_back=probe_back)
 
-    async def probe_node(self, peer_address, extra_addr=None):
+    async def probe_node(self, peer_address, extra_addr=None, retries=3):
         """
 
         Args:
             peer_address (PeerAddress): address of peer which will be probed
             extra_addr (list): additional addresses we should check
+            retries (int): retry number, -1 means forever until node found
 
         Returns:
             (Node): probed node
 
         """
-        async def try_probe_remote_node(node=None, peer_address=None, retries=3):
+        async def try_probe_remote_node(node=None, peer_address=None, retries=retries):
             """
 
             Args:
@@ -314,7 +316,12 @@ class Peer(EventEmitter, metaclass=PeerMeta):
         self.logger.debug("getting remote node info: %s", peer_address.location)
 
         client = Client(peer_address)
-        info = await client.get_node_info()
+        try:
+            info = await client.get_node_info()
+        except ClientConnectorError:
+            self.logger.error("can not create client, remote node is not available: %s",
+                              peer_address.location)
+            return None
 
         # self.logger.debug("received node information %s", str(info))
         node_ = Node.from_dict(info)

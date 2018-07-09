@@ -202,6 +202,36 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""
 
+    # The state stands for that Node is just created and any operation is not processed yet.
+    STATUS_NEW = 'new'
+
+    # The state stands for that beirand just starts the initialization.
+    STATUS_INIT = 'init'
+
+    # The state stands for that beirand just finished the initialization and ready to work.
+    STATUS_READY = 'ready'
+
+    # The state stands for that beirand finds the other beirand and can communicate with it.
+    STATUS_ONLINE = 'online'
+
+    # The state stands for that beirand finished communicating with the other beirand.
+    STATUS_OFFLINE = 'offline'
+
+    # The state stands for that beirand is connecting to the other beirand.
+    STATUS_CONNECTING = 'connecting'
+
+    # The state stands for that beirand is syncing to the other beirand.
+    STATUS_SYNCING = 'syncing'
+
+    # The state stands for that beirand is about to exit.
+    STATUS_CLOSING = 'closing'
+
+    # The state stands for that beirand becomes unable to communicate with the other beirand.
+    STATUS_LOST = 'lost'
+
+    # The state stands for that Node doesn't have the parameter 'status'.
+    STATUS_UNKNOWN = 'unknown'
+
     uuid = UUIDField(primary_key=True)
     hostname = CharField(max_length=100)
     ip_address = CharField(max_length=15)  # dotted-decimal
@@ -211,7 +241,7 @@ class Node(BaseModel):
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
     version = CharField(max_length=10)  # beiran daemon version of node
-    status = CharField(max_length=32, default='new')
+    status = CharField(max_length=32, default=STATUS_NEW)
     last_sync_version = IntegerField()
 
     def __init__(self, *args, **kwargs):

@@ -4,49 +4,9 @@ Common client for beiran project
 # pylint: disable=duplicate-code
 
 import asyncio
-import socket
 import logging
-
-from tornado import gen
-from tornado.netutil import Resolver
 import aiohttp
 import async_timeout
-
-
-class UnixResolver(Resolver):
-
-    """
-    Resolver for unix socket implementation
-    """
-    def initialize(self, socket_path=None):  # pylint: disable=arguments-differ
-        """
-        Class initialization method
-
-        Args:
-            socket_path: Path for unix socket
-        """
-
-        self.socket_path = socket_path  # pylint: disable=attribute-defined-outside-init
-        Resolver.initialize(self)
-
-    def close(self):
-        """Closing resolver"""
-        self.close()
-
-    @gen.coroutine
-    def resolve(self, host, port, family=socket.AF_UNSPEC, callback=None):
-        """
-        Unix Socket resolve
-        Args:
-            host: host ip
-            port: host port
-            family: socket family default socket.AF_UNSPEC
-            callback: function to call after resolve
-        """
-        if host == 'unixsocket':
-            raise gen.Return([(socket.AF_UNIX, self.socket_path)])
-        result = yield self.resolve(host, port, family, callback)
-        raise gen.Return(result)
 
 
 class Client:

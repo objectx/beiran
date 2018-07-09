@@ -73,7 +73,7 @@ class Nodes(object):
     def set_offline(self, node):
         """Remove node from online nodes collection
         """
-        node.status = 'offline'
+        node.status = Node.STATUS_OFFLINE
         node.save()
 
         # why should we delete node from both all_nodes and connections?

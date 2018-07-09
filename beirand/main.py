@@ -277,6 +277,14 @@ class BeiranDaemon(EventEmitter):
     async def main(self):
         """ Main function """
 
+        # ensure the DATA_FOLDER exists
+        Services.logger.info("Checking the data folder...")
+        if not os.path.exists(DATA_FOLDER):
+            Services.logger.debug("create the folder '%s'", DATA_FOLDER)
+            os.makedirs(DATA_FOLDER)
+        elif not os.path.isdir(DATA_FOLDER):
+            raise RuntimeError("Unexpected file exists")
+
         # set database
         Services.logger.info("Initializing database...")
         await self.init_db()
@@ -287,7 +295,7 @@ class BeiranDaemon(EventEmitter):
         # collect node info and create node object
         self.nodes.local_node = Node.from_dict(collect_node_info())
         self.nodes.add_or_update(self.nodes.local_node)
-        self.set_status('init')
+        self.set_status(Node.STATUS_INIT)
         Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
 
         self.peer = Peer(node=self.nodes.local_node, nodes=self.nodes, loop=self.loop, local=True)
@@ -330,7 +338,7 @@ class BeiranDaemon(EventEmitter):
         EVENTS.on('node.removed', self.on_node_removed)
 
         # Ready
-        self.set_status('ready')
+        self.set_status(Node.STATUS_READY)
 
         # Start discovery last
         if 'discovery' in Services.plugins:
@@ -373,7 +381,7 @@ class BeiranDaemon(EventEmitter):
     async def shutdown(self):
         """Graceful shutdown"""
         self.clean_database()
-        self.set_status('closing')
+        self.set_status(Node.STATUS_CLOSING)
 
         if 'discovery' in Services.plugins:
             Services.logger.info("stopping discovery")

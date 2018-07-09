@@ -14,7 +14,6 @@ from pyee import EventEmitter
 from beirand.common import Services
 
 from beiran.client import Client
-
 from beiran.models import Node
 
 PEER_REGISTRY = dict()
@@ -95,12 +94,8 @@ class Peer(EventEmitter, metaclass=PeerMeta):
             sync_futures.append(plugin.sync(self))
         await asyncio.gather(*sync_futures)
 
-        # if self.last_sync_state_version == 0 or sync_version < self.last_sync_state_version:
-        #     self.node.status = 'online'
-        #     self.node.save()
-
         if self.last_sync_state_version == 0 or sync_version != self.last_sync_state_version:
-            self.node.status = 'online'
+            self.node.status = Node.STATUS_ONLINE
             self.node.last_sync_version = sync_version
             self.node.save()
 
@@ -130,7 +125,7 @@ class Peer(EventEmitter, metaclass=PeerMeta):
 
         self.logger.info("getting new nodes' images and layers from %s at port %s\n\n ",
                          self.node.ip_address, self.node.port)
-        self.node.status = 'syncing'
+        self.node.status = Node.STATUS_SYNCING
         self.node.save()
 
         await self.sync()
@@ -166,7 +161,7 @@ class Peer(EventEmitter, metaclass=PeerMeta):
 
         self.logger.info("lost connection to node %s(%s:%d)",
                          self.node.uuid.hex, self.node.ip_address, self.node.port)
-        self.node.status = 'lost'
+        self.node.status = Node.STATUS_LOST
         self.node.save()
         # TODO: Communicate this to the discovery plugin
         # so it can allow re-discovery of this node when found again
@@ -291,7 +286,7 @@ class Peer(EventEmitter, metaclass=PeerMeta):
                 node.set_get_address(peer_address.address)  # update address of uuid, it may differ
                 node = Node.add_or_update(node)
 
-                node.status = 'connecting'
+                node.status = Node.STATUS_CONNECTING
                 node.save()
                 Peer(node=node, loop=self.loop)
                 self.nodes.update_node(node)

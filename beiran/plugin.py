@@ -192,6 +192,11 @@ class BasePackagePlugin(BasePlugin):
     pass
 
 
+class BaseInterfacePlugin(BasePlugin):
+    """Base class for interface plugins"""
+    pass
+
+
 class History(EventEmitter):
     """Class for keeping update/sync history (of anything)"""
 

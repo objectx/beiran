@@ -139,8 +139,8 @@ def parse_subpath(subpath):
 
     ref: http://goessner.net/articles/JsonPath
     """
-    def _helper(t, a):
-        return { 'type': t, 'args': a }
+    def _helper(t, p):
+        return { 'type': t, 'params': p }
 
     def _ext_str(l, e):
         s = ""
@@ -215,22 +215,23 @@ async def json_streamer(stream, subpath="$"):
 
 
     def _judge(key, rule):
-        if rule['type'] == 'root':
+        rtype, rparams = rule['type'], rule['params']
+
+        if rtype == 'root':
             return True
-        if rule['type'] == 'key':
-            if rule['args'] is None:
+        if rtype == 'key':
+            if rparams is None:
                 return True
-            if rule['args'] == key:
+            if rparams == key:
                 return True
-        if rule['type'] == 'range':
-            if type(rule['args']) is list:
-                if key in rule['args']:
+        if rtype == 'range':
+            if type(rparams) is list:
+                if key in rparams:
                     return True
-            if type(rule['args']) is dict:
-                args = rule['args']
-                if args['start'] <= key:
-                    if args['end'] is None or key < args['end']:
-                        if (key - args['start']) % args['step'] == 0:
+            if type(rparams) is dict:
+                if rparams['start'] <= key:
+                    if rparams['end'] is None or key < rparams['end']:
+                        if (key - rparams['start']) % rparams['step'] == 0:
                             return True
         return False
 
@@ -290,99 +291,3 @@ async def json_streamer(stream, subpath="$"):
                 depth -= 1
                 
     stream.close()
-
-
-def test_parser():
-    assert parse_subpath('$') == [
-            { 'type': 'root', 'args': None }
-            ]
-
-    assert parse_subpath('$.key') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'key', 'args': 'key' }
-            ]
-
-    assert parse_subpath('$.*') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'key', 'args': None }
-            ]
-
-    assert parse_subpath('$[:]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': { 'start': 0, 'end': None, 'step': 1 } }
-            ]
-
-    assert parse_subpath('$[:5]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': { 'start': 0, 'end': 5, 'step': 1 } }
-            ]
-
-    assert parse_subpath('$[1:]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': { 'start': 1, 'end': None, 'step': 1 } }
-            ]
-
-    assert parse_subpath('$[3:5]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': { 'start': 3, 'end': 5, 'step': 1 } }
-            ]
-
-    assert parse_subpath('$[3:11:2]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': { 'start': 3, 'end': 11, 'step': 2 } }
-            ]
-
-    assert parse_subpath('$[3,5,6]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': [3, 5, 6] }
-            ]
-
-    assert parse_subpath('$[5,3,6]') == [
-            { 'type': 'root', 'args': None },
-            { 'type': 'range', 'args': [3, 5, 6] }
-            ]
-
-
-def test_json():
-    import asyncio
-    import io
-    
-    async def _wrapper(json, subpath):
-        stream = io.BytesIO(json.encode('utf-8'))
-        return [v async for v in json_streamer(stream, subpath)]
-
-    async def _main():
-        import io
-
-        print('- vacant dict')
-        assert await _wrapper('{}', '$') == [{}]
-        print('- vacant list')
-        assert await _wrapper('[]', '$') == [[]]
-
-        print('- dict + no subpath')
-        assert await _wrapper('{"key": 123}', '$') == [{"key": 123}]
-        print('- array + no subpath')
-        assert await _wrapper('[1, 2, 3]', '$') == [[1, 2, 3]]
-
-        print('- dict + asterisk')
-        assert await _wrapper('{"key_a": 123, "key_b": 456}', '$.*') == [123, 456]
-
-        print('- array + slice(all) part1')
-        assert await _wrapper('[1, 2, 3]', '$[:]') == [1, 2, 3]
-        print('- array + slice(all) part2')
-        assert await _wrapper('[1, 2, 3]', '$[::]') == [1, 2, 3]
-
-        print('- dict + simple subpath')
-        assert await _wrapper('{"key_a": 123, "key_b": 456}', '$.key_a') == [123]
-        print('- array + slice part1')
-        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[2:]') == [3, 4, 5, 6]
-        print('- array + slice part2')
-        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[1:3]') == [2, 3]
-        print('- array + slice part3')
-        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[:4]') == [1, 2, 3, 4]
-        print('- array + slice part4')
-        assert await _wrapper('[1, 2, 3, 4, 5, 6]', '$[::2]') == [1, 3, 5]
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(_main())
-

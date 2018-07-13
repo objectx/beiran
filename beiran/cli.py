@@ -229,10 +229,16 @@ class Cli:
     @click.pass_obj
     def image_list(self, all_nodes, node):
         """List container images across the cluster"""
-        images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
 
+        def _get_availability(i):
+            if i['availability'] == 'available':
+                num = str(len(i['available_at']))
+                return i['availability'] + '(' + num + ' node(s))'
+            return i['availability']
+
+        images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
         table = [
-            [",\n".join(i['tags']), sizeof_fmt(i['size']), str(len(i['available_at'])) + ' node(s)']
+            [",\n".join(i['tags']), sizeof_fmt(i['size']), _get_availability(i)]
             for i in images
         ]
         click.echo(tabulate(table, headers=["Tags", "Size", "Availability"]))

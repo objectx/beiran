@@ -6,6 +6,7 @@ Module for DockerLayer and DockerImage Model
 from datetime import datetime
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
+from beirand.common import Services
 
 
 class CommonDockerObjectFunctions:
@@ -44,6 +45,9 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
 
     @classmethod
     def from_dict(cls, _dict, **kwargs):
+        if 'availability' in _dict:
+            del _dict['availability']
+
         if 'dialect' in kwargs and kwargs['dialect'] == "docker":
             new_dict = {}
 
@@ -89,6 +93,15 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             del _dict['data']
             del _dict['has_not_found_layers']
             del _dict['has_unknown_layers']
+
+        available_at = _dict['available_at']
+        local = Services.daemon.nodes.local_node.uuid.hex
+        if not available_at:
+            _dict['availability'] = 'unavailable'
+        elif not local in available_at:
+            _dict['availability'] = 'available'
+        else:
+            _dict['availability'] = 'local'
 
         return _dict
 

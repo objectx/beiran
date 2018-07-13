@@ -118,6 +118,7 @@ async def input_reader(stream, **kwargs):
 
 
 def parse_subpath(subpath):
+    # pylint: disable=anomalous-backslash-in-string
     """
     parse subpath:
         This function returns the parsed subpath object.
@@ -139,9 +140,12 @@ def parse_subpath(subpath):
 
     ref: http://goessner.net/articles/JsonPath
     """
-    def _helper(t, p):
-        return { 'type': t, 'params': p }
 
+    # pylint: disable=missing-docstring
+    def _helper(t, p):
+        return {'type': t, 'params': p}
+
+    # pylint: disable=missing-docstring
     def _ext_str(l, e):
         s = ""
         while l and not l[0] in e:
@@ -180,10 +184,10 @@ def parse_subpath(subpath):
                     step = 1
 
                 result.append(_helper('range', {
-                        'start': start,
-                        'end': end,
-                        'step': step
-                    }))
+                    'start': start,
+                    'end': end,
+                    'step': step
+                }))
             elif chars[0] == ',':
                 l = [int(t)]
                 while chars.pop(0) != ']':

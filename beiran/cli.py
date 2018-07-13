@@ -5,7 +5,6 @@ import os
 import sys
 import logging
 import asyncio
-import json
 import click
 from tabulate import tabulate
 from beiran.util import exit_print

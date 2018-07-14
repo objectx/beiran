@@ -86,7 +86,12 @@ def create_tar_archive(dir_path, output_file_path):
 
 
 async def input_reader(stream, **kwargs):
+    """
+    input_reder
+    """
+
     async def tornado_input_reader(stream):
+        # pylint: disable=missing-docstring
         while not stream.at_eof():
             data = await stream.readchunk()
             yield data
@@ -118,7 +123,7 @@ async def input_reader(stream, **kwargs):
 
 
 def parse_subpath(subpath):
-    # pylint: disable=anomalous-backslash-in-string
+    # pylint: disable=anomalous-backslash-in-string,too-many-branches
     """
     parse subpath:
         This function returns the parsed subpath object.
@@ -142,15 +147,15 @@ def parse_subpath(subpath):
     """
 
     # pylint: disable=missing-docstring
-    def _helper(t, p):
-        return {'type': t, 'params': p}
+    def _helper(otype, oparams):
+        return {'type': otype, 'params': oparams}
 
     # pylint: disable=missing-docstring
-    def _ext_str(l, e):
-        s = ""
-        while l and not l[0] in e:
-            s += l.pop(0)
-        return s
+    def _ext_str(olist, oend):
+        ostr = ""
+        while olist and not olist[0] in oend:
+            ostr += olist.pop(0)
+        return ostr
 
     result = []
     chars = [c for c in subpath]
@@ -160,25 +165,25 @@ def parse_subpath(subpath):
     result.append(_helper('root', None))
 
     while chars:
-        c = chars.pop(0)
-        if c == '.':
+        char = chars.pop(0)
+        if char == '.':
             if chars[0] == '*':
                 chars.pop(0)
                 result.append(_helper('key', None))
             else:
                 result.append(_helper('key', _ext_str(chars, ".[")))
-        elif c == '[':
-            t = _ext_str(chars, ":,")
+        elif char == '[':
+            string = _ext_str(chars, ":,")
             if chars[0] == ':':
-                start = int(t) if t else 0
+                start = int(string) if string else 0
                 chars.pop(0)
 
-                t = _ext_str(chars, ":]")
-                end = int(t) if t else None
+                string = _ext_str(chars, ":]")
+                end = int(string) if string else None
 
                 if chars.pop(0) == ':':
-                    t = _ext_str(chars, "]")
-                    step = int(t) if t else 1
+                    string = _ext_str(chars, "]")
+                    step = int(string) if string else 1
                     chars.pop(0)
                 else:
                     step = 1
@@ -189,10 +194,10 @@ def parse_subpath(subpath):
                     'step': step
                 }))
             elif chars[0] == ',':
-                l = [int(t)]
+                tlist = [int(string)]
                 while chars.pop(0) != ']':
-                    l.append(int(_ext_str(chars, ',]')))
-                result.append(_helper('range', sorted(l)))
+                    tlist.append(int(_ext_str(chars, ',]')))
+                result.append(_helper('range', sorted(tlist)))
             else:
                 raise RuntimeError('subpath is corrupt')
         else:
@@ -202,6 +207,7 @@ def parse_subpath(subpath):
 
 
 async def json_streamer(stream, subpath="$"):
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Parse a stream of JSON chunks"""
     from jsonstreamer import JSONStreamer
 
@@ -229,10 +235,10 @@ async def json_streamer(stream, subpath="$"):
             if rparams == key:
                 return True
         if rtype == 'range':
-            if type(rparams) is list:
+            if isinstance(rparams, list):
                 if key in rparams:
                     return True
-            if type(rparams) is dict:
+            if isinstance(rparams, dict):
                 if rparams['start'] <= key:
                     if rparams['end'] is None or key < rparams['end']:
                         if (key - rparams['start']) % rparams['step'] == 0:
@@ -251,7 +257,6 @@ async def json_streamer(stream, subpath="$"):
             if event == 'object_start':
                 depth += 1
                 values.append({})
-                
             if event == 'array_start':
                 depth += 1
                 values.append([])
@@ -259,7 +264,6 @@ async def json_streamer(stream, subpath="$"):
 
             if event == 'object_end':
                 pop_flag = True
-                
             if event == 'array_end':
                 keys.pop()
                 pop_flag = True
@@ -284,14 +288,12 @@ async def json_streamer(stream, subpath="$"):
                 if flag and all(_judge(*elem) for elem in zip(keys, rules)):
                     yield val
 
-                if values and type(values[-1]) is dict:
+                if values and isinstance(values[-1], dict):
                     key = keys.pop()
                     values[-1][key] = val
-                elif values and type(values[-1]) is list:
+                elif values and isinstance(values[-1], list):
                     key = keys.pop()
                     values[-1].append(val)
                     keys.append(key + 1)
-                
                 depth -= 1
-                
     stream.close()

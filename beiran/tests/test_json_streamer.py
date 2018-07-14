@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 import pytest
 from beiran.util import parse_subpath, json_streamer
 
@@ -16,15 +17,15 @@ from beiran.util import parse_subpath, json_streamer
     ]),
     ('$[:]', [
         {'type': 'root', 'params': None},
-        {'type': 'range', 'params': { 'start': 0, 'end': None, 'step': 1}}
+        {'type': 'range', 'params': {'start': 0, 'end': None, 'step': 1}}
     ]),
     ('$[:5]', [
         {'type': 'root', 'params': None},
-        {'type': 'range', 'params': { 'start': 0, 'end': 5, 'step': 1}}
+        {'type': 'range', 'params': {'start': 0, 'end': 5, 'step': 1}}
     ]),
     ('$[1:]', [
         {'type': 'root', 'params': None},
-        {'type': 'range', 'params': { 'start': 1, 'end': None, 'step': 1}}
+        {'type': 'range', 'params': {'start': 1, 'end': None, 'step': 1}}
     ]),
     ('$[3:5]', [
         {'type': 'root', 'params': None},
@@ -64,7 +65,6 @@ def test_parse_subpath(subpath, result):
 ])
 def test_json_streamer(string, subpath, result):
     import asyncio
-    
     async def _wrapper(string, subpath):
         import io
         stream = io.BytesIO(string.encode('utf-8'))

@@ -14,18 +14,20 @@ from google.protobuf import descriptor_pb2
 _sym_db = _symbol_database.Default()
 
 
+from github.com.gogo.protobuf.gogoproto import gogo_pb2 as github_dot_com_dot_gogo_dot_protobuf_dot_gogoproto_dot_gogo__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='api.proto',
-  package='',
+  package='runtime.v1alpha2',
   syntax='proto3',
-  serialized_pb=_b('\n\tapi.proto\"!\n\x0eVersionRequest\x12\x0f\n\x07version\x18\x01 \x01(\t\"n\n\x0fVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x14\n\x0cruntime_name\x18\x02 \x01(\t\x12\x17\n\x0fruntime_version\x18\x03 \x01(\t\x12\x1b\n\x13runtime_api_version\x18\x04 \x01(\t\"?\n\tDNSConfig\x12\x0f\n\x07servers\x18\x01 \x03(\t\x12\x10\n\x08searches\x18\x02 \x03(\t\x12\x0f\n\x07options\x18\x03 \x03(\t\"f\n\x0bPortMapping\x12\x1b\n\x08protocol\x18\x01 \x01(\x0e\x32\t.Protocol\x12\x16\n\x0e\x63ontainer_port\x18\x02 \x01(\x05\x12\x11\n\thost_port\x18\x03 \x01(\x05\x12\x0f\n\x07host_ip\x18\x04 \x01(\t\"\x85\x01\n\x05Mount\x12\x16\n\x0e\x63ontainer_path\x18\x01 \x01(\t\x12\x11\n\thost_path\x18\x02 \x01(\t\x12\x10\n\x08readonly\x18\x03 \x01(\x08\x12\x17\n\x0fselinux_relabel\x18\x04 \x01(\x08\x12&\n\x0bpropagation\x18\x05 \x01(\x0e\x32\x11.MountPropagation\"l\n\x0fNamespaceOption\x12\x1f\n\x07network\x18\x01 \x01(\x0e\x32\x0e.NamespaceMode\x12\x1b\n\x03pid\x18\x02 \x01(\x0e\x32\x0e.NamespaceMode\x12\x1b\n\x03ipc\x18\x03 \x01(\x0e\x32\x0e.NamespaceMode\"\x1b\n\nInt64Value\x12\r\n\x05value\x18\x01 \x01(\x03\"\xa0\x02\n\x1bLinuxSandboxSecurityContext\x12+\n\x11namespace_options\x18\x01 \x01(\x0b\x32\x10.NamespaceOption\x12\'\n\x0fselinux_options\x18\x02 \x01(\x0b\x32\x0e.SELinuxOption\x12 \n\x0brun_as_user\x18\x03 \x01(\x0b\x32\x0b.Int64Value\x12!\n\x0crun_as_group\x18\x08 \x01(\x0b\x32\x0b.Int64Value\x12\x17\n\x0freadonly_rootfs\x18\x04 \x01(\x08\x12\x1b\n\x13supplemental_groups\x18\x05 \x03(\x03\x12\x12\n\nprivileged\x18\x06 \x01(\x08\x12\x1c\n\x14seccomp_profile_path\x18\x07 \x01(\t\"\xcc\x01\n\x15LinuxPodSandboxConfig\x12\x15\n\rcgroup_parent\x18\x01 \x01(\t\x12\x36\n\x10security_context\x18\x02 \x01(\x0b\x32\x1c.LinuxSandboxSecurityContext\x12\x34\n\x07sysctls\x18\x03 \x03(\x0b\x32#.LinuxPodSandboxConfig.SysctlsEntry\x1a.\n\x0cSysctlsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"S\n\x12PodSandboxMetadata\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03uid\x18\x02 \x01(\t\x12\x11\n\tnamespace\x18\x03 \x01(\t\x12\x0f\n\x07\x61ttempt\x18\x04 \x01(\r\"\x99\x03\n\x10PodSandboxConfig\x12%\n\x08metadata\x18\x01 \x01(\x0b\x32\x13.PodSandboxMetadata\x12\x10\n\x08hostname\x18\x02 \x01(\t\x12\x15\n\rlog_directory\x18\x03 \x01(\t\x12\x1e\n\ndns_config\x18\x04 \x01(\x0b\x32\n.DNSConfig\x12#\n\rport_mappings\x18\x05 \x03(\x0b\x32\x0c.PortMapping\x12-\n\x06labels\x18\x06 \x03(\x0b\x32\x1d.PodSandboxConfig.LabelsEntry\x12\x37\n\x0b\x61nnotations\x18\x07 \x03(\x0b\x32\".PodSandboxConfig.AnnotationsEntry\x12%\n\x05linux\x18\x08 \x01(\x0b\x32\x16.LinuxPodSandboxConfig\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"9\n\x14RunPodSandboxRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.PodSandboxConfig\"/\n\x15RunPodSandboxResponse\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\"/\n\x15StopPodSandboxRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\"\x18\n\x16StopPodSandboxResponse\"1\n\x17RemovePodSandboxRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\"\x1a\n\x18RemovePodSandboxResponse\"B\n\x17PodSandboxStatusRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\"%\n\x17PodSandboxNetworkStatus\x12\n\n\x02ip\x18\x01 \x01(\t\".\n\tNamespace\x12!\n\x07options\x18\x02 \x01(\x0b\x32\x10.NamespaceOption\"7\n\x15LinuxPodSandboxStatus\x12\x1e\n\nnamespaces\x18\x01 \x01(\x0b\x32\n.Namespace\"\x97\x03\n\x10PodSandboxStatus\x12\n\n\x02id\x18\x01 \x01(\t\x12%\n\x08metadata\x18\x02 \x01(\x0b\x32\x13.PodSandboxMetadata\x12\x1f\n\x05state\x18\x03 \x01(\x0e\x32\x10.PodSandboxState\x12\x12\n\ncreated_at\x18\x04 \x01(\x03\x12)\n\x07network\x18\x05 \x01(\x0b\x32\x18.PodSandboxNetworkStatus\x12%\n\x05linux\x18\x06 \x01(\x0b\x32\x16.LinuxPodSandboxStatus\x12-\n\x06labels\x18\x07 \x03(\x0b\x32\x1d.PodSandboxStatus.LabelsEntry\x12\x37\n\x0b\x61nnotations\x18\x08 \x03(\x0b\x32\".PodSandboxStatus.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x9d\x01\n\x18PodSandboxStatusResponse\x12!\n\x06status\x18\x01 \x01(\x0b\x32\x11.PodSandboxStatus\x12\x31\n\x04info\x18\x02 \x03(\x0b\x32#.PodSandboxStatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"7\n\x14PodSandboxStateValue\x12\x1f\n\x05state\x18\x01 \x01(\x0e\x32\x10.PodSandboxState\"\xb8\x01\n\x10PodSandboxFilter\x12\n\n\x02id\x18\x01 \x01(\t\x12$\n\x05state\x18\x02 \x01(\x0b\x32\x15.PodSandboxStateValue\x12<\n\x0elabel_selector\x18\x03 \x03(\x0b\x32$.PodSandboxFilter.LabelSelectorEntry\x1a\x34\n\x12LabelSelectorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\":\n\x15ListPodSandboxRequest\x12!\n\x06\x66ilter\x18\x01 \x01(\x0b\x32\x11.PodSandboxFilter\"\xb3\x02\n\nPodSandbox\x12\n\n\x02id\x18\x01 \x01(\t\x12%\n\x08metadata\x18\x02 \x01(\x0b\x32\x13.PodSandboxMetadata\x12\x1f\n\x05state\x18\x03 \x01(\x0e\x32\x10.PodSandboxState\x12\x12\n\ncreated_at\x18\x04 \x01(\x03\x12\'\n\x06labels\x18\x05 \x03(\x0b\x32\x17.PodSandbox.LabelsEntry\x12\x31\n\x0b\x61nnotations\x18\x06 \x03(\x0b\x32\x1c.PodSandbox.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"4\n\x16ListPodSandboxResponse\x12\x1a\n\x05items\x18\x01 \x03(\x0b\x32\x0b.PodSandbox\"\x1a\n\tImageSpec\x12\r\n\x05image\x18\x01 \x01(\t\"&\n\x08KeyValue\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xb4\x01\n\x17LinuxContainerResources\x12\x12\n\ncpu_period\x18\x01 \x01(\x03\x12\x11\n\tcpu_quota\x18\x02 \x01(\x03\x12\x12\n\ncpu_shares\x18\x03 \x01(\x03\x12\x1d\n\x15memory_limit_in_bytes\x18\x04 \x01(\x03\x12\x15\n\room_score_adj\x18\x05 \x01(\x03\x12\x13\n\x0b\x63puset_cpus\x18\x06 \x01(\t\x12\x13\n\x0b\x63puset_mems\x18\x07 \x01(\t\"H\n\rSELinuxOption\x12\x0c\n\x04user\x18\x01 \x01(\t\x12\x0c\n\x04role\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\r\n\x05level\x18\x04 \x01(\t\"A\n\nCapability\x12\x18\n\x10\x61\x64\x64_capabilities\x18\x01 \x03(\t\x12\x19\n\x11\x64rop_capabilities\x18\x02 \x03(\t\"\x8e\x03\n\x1dLinuxContainerSecurityContext\x12!\n\x0c\x63\x61pabilities\x18\x01 \x01(\x0b\x32\x0b.Capability\x12\x12\n\nprivileged\x18\x02 \x01(\x08\x12+\n\x11namespace_options\x18\x03 \x01(\x0b\x32\x10.NamespaceOption\x12\'\n\x0fselinux_options\x18\x04 \x01(\x0b\x32\x0e.SELinuxOption\x12 \n\x0brun_as_user\x18\x05 \x01(\x0b\x32\x0b.Int64Value\x12!\n\x0crun_as_group\x18\x0c \x01(\x0b\x32\x0b.Int64Value\x12\x17\n\x0frun_as_username\x18\x06 \x01(\t\x12\x17\n\x0freadonly_rootfs\x18\x07 \x01(\x08\x12\x1b\n\x13supplemental_groups\x18\x08 \x03(\x03\x12\x18\n\x10\x61pparmor_profile\x18\t \x01(\t\x12\x1c\n\x14seccomp_profile_path\x18\n \x01(\t\x12\x14\n\x0cno_new_privs\x18\x0b \x01(\x08\"}\n\x14LinuxContainerConfig\x12+\n\tresources\x18\x01 \x01(\x0b\x32\x18.LinuxContainerResources\x12\x38\n\x10security_context\x18\x02 \x01(\x0b\x32\x1e.LinuxContainerSecurityContext\":\n\x1fWindowsContainerSecurityContext\x12\x17\n\x0frun_as_username\x18\x01 \x01(\t\"\x83\x01\n\x16WindowsContainerConfig\x12-\n\tresources\x18\x01 \x01(\x0b\x32\x1a.WindowsContainerResources\x12:\n\x10security_context\x18\x02 \x01(\x0b\x32 .WindowsContainerSecurityContext\"v\n\x19WindowsContainerResources\x12\x12\n\ncpu_shares\x18\x01 \x01(\x03\x12\x11\n\tcpu_count\x18\x02 \x01(\x03\x12\x13\n\x0b\x63pu_maximum\x18\x03 \x01(\x03\x12\x1d\n\x15memory_limit_in_bytes\x18\x04 \x01(\x03\"2\n\x11\x43ontainerMetadata\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x61ttempt\x18\x02 \x01(\r\"H\n\x06\x44\x65vice\x12\x16\n\x0e\x63ontainer_path\x18\x01 \x01(\t\x12\x11\n\thost_path\x18\x02 \x01(\t\x12\x13\n\x0bpermissions\x18\x03 \x01(\t\"\xac\x04\n\x0f\x43ontainerConfig\x12$\n\x08metadata\x18\x01 \x01(\x0b\x32\x12.ContainerMetadata\x12\x19\n\x05image\x18\x02 \x01(\x0b\x32\n.ImageSpec\x12\x0f\n\x07\x63ommand\x18\x03 \x03(\t\x12\x0c\n\x04\x61rgs\x18\x04 \x03(\t\x12\x13\n\x0bworking_dir\x18\x05 \x01(\t\x12\x17\n\x04\x65nvs\x18\x06 \x03(\x0b\x32\t.KeyValue\x12\x16\n\x06mounts\x18\x07 \x03(\x0b\x32\x06.Mount\x12\x18\n\x07\x64\x65vices\x18\x08 \x03(\x0b\x32\x07.Device\x12,\n\x06labels\x18\t \x03(\x0b\x32\x1c.ContainerConfig.LabelsEntry\x12\x36\n\x0b\x61nnotations\x18\n \x03(\x0b\x32!.ContainerConfig.AnnotationsEntry\x12\x10\n\x08log_path\x18\x0b \x01(\t\x12\r\n\x05stdin\x18\x0c \x01(\x08\x12\x12\n\nstdin_once\x18\r \x01(\x08\x12\x0b\n\x03tty\x18\x0e \x01(\x08\x12$\n\x05linux\x18\x0f \x01(\x0b\x32\x15.LinuxContainerConfig\x12(\n\x07windows\x18\x10 \x01(\x0b\x32\x17.WindowsContainerConfig\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"}\n\x16\x43reateContainerRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\x12 \n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x10.ContainerConfig\x12)\n\x0esandbox_config\x18\x03 \x01(\x0b\x32\x11.PodSandboxConfig\"/\n\x17\x43reateContainerResponse\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"-\n\x15StartContainerRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"\x18\n\x16StartContainerResponse\"=\n\x14StopContainerRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0f\n\x07timeout\x18\x02 \x01(\x03\"\x17\n\x15StopContainerResponse\".\n\x16RemoveContainerRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"\x19\n\x17RemoveContainerResponse\"5\n\x13\x43ontainerStateValue\x12\x1e\n\x05state\x18\x01 \x01(\x0e\x32\x0f.ContainerState\"\xcd\x01\n\x0f\x43ontainerFilter\x12\n\n\x02id\x18\x01 \x01(\t\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.ContainerStateValue\x12\x16\n\x0epod_sandbox_id\x18\x03 \x01(\t\x12;\n\x0elabel_selector\x18\x04 \x03(\x0b\x32#.ContainerFilter.LabelSelectorEntry\x1a\x34\n\x12LabelSelectorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"9\n\x15ListContainersRequest\x12 \n\x06\x66ilter\x18\x01 \x01(\x0b\x32\x10.ContainerFilter\"\xf4\x02\n\tContainer\x12\n\n\x02id\x18\x01 \x01(\t\x12\x16\n\x0epod_sandbox_id\x18\x02 \x01(\t\x12$\n\x08metadata\x18\x03 \x01(\x0b\x32\x12.ContainerMetadata\x12\x19\n\x05image\x18\x04 \x01(\x0b\x32\n.ImageSpec\x12\x11\n\timage_ref\x18\x05 \x01(\t\x12\x1e\n\x05state\x18\x06 \x01(\x0e\x32\x0f.ContainerState\x12\x12\n\ncreated_at\x18\x07 \x01(\x03\x12&\n\x06labels\x18\x08 \x03(\x0b\x32\x16.Container.LabelsEntry\x12\x30\n\x0b\x61nnotations\x18\t \x03(\x0b\x32\x1b.Container.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"8\n\x16ListContainersResponse\x12\x1e\n\ncontainers\x18\x01 \x03(\x0b\x32\n.Container\"?\n\x16\x43ontainerStatusRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\"\xf5\x03\n\x0f\x43ontainerStatus\x12\n\n\x02id\x18\x01 \x01(\t\x12$\n\x08metadata\x18\x02 \x01(\x0b\x32\x12.ContainerMetadata\x12\x1e\n\x05state\x18\x03 \x01(\x0e\x32\x0f.ContainerState\x12\x12\n\ncreated_at\x18\x04 \x01(\x03\x12\x12\n\nstarted_at\x18\x05 \x01(\x03\x12\x13\n\x0b\x66inished_at\x18\x06 \x01(\x03\x12\x11\n\texit_code\x18\x07 \x01(\x05\x12\x19\n\x05image\x18\x08 \x01(\x0b\x32\n.ImageSpec\x12\x11\n\timage_ref\x18\t \x01(\t\x12\x0e\n\x06reason\x18\n \x01(\t\x12\x0f\n\x07message\x18\x0b \x01(\t\x12,\n\x06labels\x18\x0c \x03(\x0b\x32\x1c.ContainerStatus.LabelsEntry\x12\x36\n\x0b\x61nnotations\x18\r \x03(\x0b\x32!.ContainerStatus.AnnotationsEntry\x12\x16\n\x06mounts\x18\x0e \x03(\x0b\x32\x06.Mount\x12\x10\n\x08log_path\x18\x0f \x01(\t\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x9a\x01\n\x17\x43ontainerStatusResponse\x12 \n\x06status\x18\x01 \x01(\x0b\x32\x10.ContainerStatus\x12\x30\n\x04info\x18\x02 \x03(\x0b\x32\".ContainerStatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"`\n\x1fUpdateContainerResourcesRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\'\n\x05linux\x18\x02 \x01(\x0b\x32\x18.LinuxContainerResources\"\"\n UpdateContainerResourcesResponse\"E\n\x0f\x45xecSyncRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0b\n\x03\x63md\x18\x02 \x03(\t\x12\x0f\n\x07timeout\x18\x03 \x01(\x03\"E\n\x10\x45xecSyncResponse\x12\x0e\n\x06stdout\x18\x01 \x01(\x0c\x12\x0e\n\x06stderr\x18\x02 \x01(\x0c\x12\x11\n\texit_code\x18\x03 \x01(\x05\"l\n\x0b\x45xecRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0b\n\x03\x63md\x18\x02 \x03(\t\x12\x0b\n\x03tty\x18\x03 \x01(\x08\x12\r\n\x05stdin\x18\x04 \x01(\x08\x12\x0e\n\x06stdout\x18\x05 \x01(\x08\x12\x0e\n\x06stderr\x18\x06 \x01(\x08\"\x1b\n\x0c\x45xecResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"a\n\rAttachRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\r\n\x05stdin\x18\x02 \x01(\x08\x12\x0b\n\x03tty\x18\x03 \x01(\x08\x12\x0e\n\x06stdout\x18\x04 \x01(\x08\x12\x0e\n\x06stderr\x18\x05 \x01(\x08\"\x1d\n\x0e\x41ttachResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\":\n\x12PortForwardRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x03(\x05\"\"\n\x13PortForwardResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"(\n\x0bImageFilter\x12\x19\n\x05image\x18\x01 \x01(\x0b\x32\n.ImageSpec\"1\n\x11ListImagesRequest\x12\x1c\n\x06\x66ilter\x18\x01 \x01(\x0b\x32\x0c.ImageFilter\"v\n\x05Image\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\trepo_tags\x18\x02 \x03(\t\x12\x14\n\x0crepo_digests\x18\x03 \x03(\t\x12\x0c\n\x04size\x18\x04 \x01(\x04\x12\x18\n\x03uid\x18\x05 \x01(\x0b\x32\x0b.Int64Value\x12\x10\n\x08username\x18\x06 \x01(\t\",\n\x12ListImagesResponse\x12\x16\n\x06images\x18\x01 \x03(\x0b\x32\x06.Image\"@\n\x12ImageStatusRequest\x12\x19\n\x05image\x18\x01 \x01(\x0b\x32\n.ImageSpec\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\"\x87\x01\n\x13ImageStatusResponse\x12\x15\n\x05image\x18\x01 \x01(\x0b\x32\x06.Image\x12,\n\x04info\x18\x02 \x03(\x0b\x32\x1e.ImageStatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x86\x01\n\nAuthConfig\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0c\n\x04\x61uth\x18\x03 \x01(\t\x12\x16\n\x0eserver_address\x18\x04 \x01(\t\x12\x16\n\x0eidentity_token\x18\x05 \x01(\t\x12\x16\n\x0eregistry_token\x18\x06 \x01(\t\"s\n\x10PullImageRequest\x12\x19\n\x05image\x18\x01 \x01(\x0b\x32\n.ImageSpec\x12\x19\n\x04\x61uth\x18\x02 \x01(\x0b\x32\x0b.AuthConfig\x12)\n\x0esandbox_config\x18\x03 \x01(\x0b\x32\x11.PodSandboxConfig\"&\n\x11PullImageResponse\x12\x11\n\timage_ref\x18\x01 \x01(\t\"/\n\x12RemoveImageRequest\x12\x19\n\x05image\x18\x01 \x01(\x0b\x32\n.ImageSpec\"\x15\n\x13RemoveImageResponse\"!\n\rNetworkConfig\x12\x10\n\x08pod_cidr\x18\x01 \x01(\t\"7\n\rRuntimeConfig\x12&\n\x0enetwork_config\x18\x01 \x01(\x0b\x32\x0e.NetworkConfig\"D\n\x1aUpdateRuntimeConfigRequest\x12&\n\x0eruntime_config\x18\x01 \x01(\x0b\x32\x0e.RuntimeConfig\"\x1d\n\x1bUpdateRuntimeConfigResponse\"Q\n\x10RuntimeCondition\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"6\n\rRuntimeStatus\x12%\n\nconditions\x18\x01 \x03(\x0b\x32\x11.RuntimeCondition\" \n\rStatusRequest\x12\x0f\n\x07verbose\x18\x01 \x01(\x08\"\x86\x01\n\x0eStatusResponse\x12\x1e\n\x06status\x18\x01 \x01(\x0b\x32\x0e.RuntimeStatus\x12\'\n\x04info\x18\x02 \x03(\x0b\x32\x19.StatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x14\n\x12ImageFsInfoRequest\"\x1c\n\x0bUInt64Value\x12\r\n\x05value\x18\x01 \x01(\x04\"*\n\x14\x46ilesystemIdentifier\x12\x12\n\nmountpoint\x18\x01 \x01(\t\"\x8f\x01\n\x0f\x46ilesystemUsage\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12$\n\x05\x66s_id\x18\x02 \x01(\x0b\x32\x15.FilesystemIdentifier\x12 \n\nused_bytes\x18\x03 \x01(\x0b\x32\x0c.UInt64Value\x12!\n\x0binodes_used\x18\x04 \x01(\x0b\x32\x0c.UInt64Value\"B\n\x13ImageFsInfoResponse\x12+\n\x11image_filesystems\x18\x01 \x03(\x0b\x32\x10.FilesystemUsage\"-\n\x15\x43ontainerStatsRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"8\n\x16\x43ontainerStatsResponse\x12\x1e\n\x05stats\x18\x01 \x01(\x0b\x32\x0f.ContainerStats\"B\n\x19ListContainerStatsRequest\x12%\n\x06\x66ilter\x18\x01 \x01(\x0b\x32\x15.ContainerStatsFilter\"\xb2\x01\n\x14\x43ontainerStatsFilter\x12\n\n\x02id\x18\x01 \x01(\t\x12\x16\n\x0epod_sandbox_id\x18\x02 \x01(\t\x12@\n\x0elabel_selector\x18\x03 \x03(\x0b\x32(.ContainerStatsFilter.LabelSelectorEntry\x1a\x34\n\x12LabelSelectorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"<\n\x1aListContainerStatsResponse\x12\x1e\n\x05stats\x18\x01 \x03(\x0b\x32\x0f.ContainerStats\"\x98\x02\n\x13\x43ontainerAttributes\x12\n\n\x02id\x18\x01 \x01(\t\x12$\n\x08metadata\x18\x02 \x01(\x0b\x32\x12.ContainerMetadata\x12\x30\n\x06labels\x18\x03 \x03(\x0b\x32 .ContainerAttributes.LabelsEntry\x12:\n\x0b\x61nnotations\x18\x04 \x03(\x0b\x32%.ContainerAttributes.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x9a\x01\n\x0e\x43ontainerStats\x12(\n\nattributes\x18\x01 \x01(\x0b\x32\x14.ContainerAttributes\x12\x16\n\x03\x63pu\x18\x02 \x01(\x0b\x32\t.CpuUsage\x12\x1c\n\x06memory\x18\x03 \x01(\x0b\x32\x0c.MemoryUsage\x12(\n\x0ewritable_layer\x18\x04 \x01(\x0b\x32\x10.FilesystemUsage\"L\n\x08\x43puUsage\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12-\n\x17usage_core_nano_seconds\x18\x02 \x01(\x0b\x32\x0c.UInt64Value\"I\n\x0bMemoryUsage\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\'\n\x11working_set_bytes\x18\x02 \x01(\x0b\x32\x0c.UInt64Value\"1\n\x19ReopenContainerLogRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"\x1c\n\x1aReopenContainerLogResponse*\x1c\n\x08Protocol\x12\x07\n\x03TCP\x10\x00\x12\x07\n\x03UDP\x10\x01*m\n\x10MountPropagation\x12\x17\n\x13PROPAGATION_PRIVATE\x10\x00\x12!\n\x1dPROPAGATION_HOST_TO_CONTAINER\x10\x01\x12\x1d\n\x19PROPAGATION_BIDIRECTIONAL\x10\x02*1\n\rNamespaceMode\x12\x07\n\x03POD\x10\x00\x12\r\n\tCONTAINER\x10\x01\x12\x08\n\x04NODE\x10\x02*:\n\x0fPodSandboxState\x12\x11\n\rSANDBOX_READY\x10\x00\x12\x14\n\x10SANDBOX_NOTREADY\x10\x01*k\n\x0e\x43ontainerState\x12\x15\n\x11\x43ONTAINER_CREATED\x10\x00\x12\x15\n\x11\x43ONTAINER_RUNNING\x10\x01\x12\x14\n\x10\x43ONTAINER_EXITED\x10\x02\x12\x15\n\x11\x43ONTAINER_UNKNOWN\x10\x03\x32\xd4\x0b\n\x0eRuntimeService\x12.\n\x07Version\x12\x0f.VersionRequest\x1a\x10.VersionResponse\"\x00\x12@\n\rRunPodSandbox\x12\x15.RunPodSandboxRequest\x1a\x16.RunPodSandboxResponse\"\x00\x12\x43\n\x0eStopPodSandbox\x12\x16.StopPodSandboxRequest\x1a\x17.StopPodSandboxResponse\"\x00\x12I\n\x10RemovePodSandbox\x12\x18.RemovePodSandboxRequest\x1a\x19.RemovePodSandboxResponse\"\x00\x12I\n\x10PodSandboxStatus\x12\x18.PodSandboxStatusRequest\x1a\x19.PodSandboxStatusResponse\"\x00\x12\x43\n\x0eListPodSandbox\x12\x16.ListPodSandboxRequest\x1a\x17.ListPodSandboxResponse\"\x00\x12\x46\n\x0f\x43reateContainer\x12\x17.CreateContainerRequest\x1a\x18.CreateContainerResponse\"\x00\x12\x43\n\x0eStartContainer\x12\x16.StartContainerRequest\x1a\x17.StartContainerResponse\"\x00\x12@\n\rStopContainer\x12\x15.StopContainerRequest\x1a\x16.StopContainerResponse\"\x00\x12\x46\n\x0fRemoveContainer\x12\x17.RemoveContainerRequest\x1a\x18.RemoveContainerResponse\"\x00\x12\x43\n\x0eListContainers\x12\x16.ListContainersRequest\x1a\x17.ListContainersResponse\"\x00\x12\x46\n\x0f\x43ontainerStatus\x12\x17.ContainerStatusRequest\x1a\x18.ContainerStatusResponse\"\x00\x12\x61\n\x18UpdateContainerResources\x12 .UpdateContainerResourcesRequest\x1a!.UpdateContainerResourcesResponse\"\x00\x12O\n\x12ReopenContainerLog\x12\x1a.ReopenContainerLogRequest\x1a\x1b.ReopenContainerLogResponse\"\x00\x12\x31\n\x08\x45xecSync\x12\x10.ExecSyncRequest\x1a\x11.ExecSyncResponse\"\x00\x12%\n\x04\x45xec\x12\x0c.ExecRequest\x1a\r.ExecResponse\"\x00\x12+\n\x06\x41ttach\x12\x0e.AttachRequest\x1a\x0f.AttachResponse\"\x00\x12:\n\x0bPortForward\x12\x13.PortForwardRequest\x1a\x14.PortForwardResponse\"\x00\x12\x43\n\x0e\x43ontainerStats\x12\x16.ContainerStatsRequest\x1a\x17.ContainerStatsResponse\"\x00\x12O\n\x12ListContainerStats\x12\x1a.ListContainerStatsRequest\x1a\x1b.ListContainerStatsResponse\"\x00\x12R\n\x13UpdateRuntimeConfig\x12\x1b.UpdateRuntimeConfigRequest\x1a\x1c.UpdateRuntimeConfigResponse\"\x00\x12+\n\x06Status\x12\x0e.StatusRequest\x1a\x0f.StatusResponse\"\x00\x32\xb1\x02\n\x0cImageService\x12\x37\n\nListImages\x12\x12.ListImagesRequest\x1a\x13.ListImagesResponse\"\x00\x12:\n\x0bImageStatus\x12\x13.ImageStatusRequest\x1a\x14.ImageStatusResponse\"\x00\x12\x34\n\tPullImage\x12\x11.PullImageRequest\x1a\x12.PullImageResponse\"\x00\x12:\n\x0bRemoveImage\x12\x13.RemoveImageRequest\x1a\x14.RemoveImageResponse\"\x00\x12:\n\x0bImageFsInfo\x12\x13.ImageFsInfoRequest\x1a\x14.ImageFsInfoResponse\"\x00\x62\x06proto3')
-)
+  serialized_pb=_b('\n\tapi.proto\x12\x10runtime.v1alpha2\x1a-github.com/gogo/protobuf/gogoproto/gogo.proto\"!\n\x0eVersionRequest\x12\x0f\n\x07version\x18\x01 \x01(\t\"n\n\x0fVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x14\n\x0cruntime_name\x18\x02 \x01(\t\x12\x17\n\x0fruntime_version\x18\x03 \x01(\t\x12\x1b\n\x13runtime_api_version\x18\x04 \x01(\t\"?\n\tDNSConfig\x12\x0f\n\x07servers\x18\x01 \x03(\t\x12\x10\n\x08searches\x18\x02 \x03(\t\x12\x0f\n\x07options\x18\x03 \x03(\t\"w\n\x0bPortMapping\x12,\n\x08protocol\x18\x01 \x01(\x0e\x32\x1a.runtime.v1alpha2.Protocol\x12\x16\n\x0e\x63ontainer_port\x18\x02 \x01(\x05\x12\x11\n\thost_port\x18\x03 \x01(\x05\x12\x0f\n\x07host_ip\x18\x04 \x01(\t\"\x96\x01\n\x05Mount\x12\x16\n\x0e\x63ontainer_path\x18\x01 \x01(\t\x12\x11\n\thost_path\x18\x02 \x01(\t\x12\x10\n\x08readonly\x18\x03 \x01(\x08\x12\x17\n\x0fselinux_relabel\x18\x04 \x01(\x08\x12\x37\n\x0bpropagation\x18\x05 \x01(\x0e\x32\".runtime.v1alpha2.MountPropagation\"\x9f\x01\n\x0fNamespaceOption\x12\x30\n\x07network\x18\x01 \x01(\x0e\x32\x1f.runtime.v1alpha2.NamespaceMode\x12,\n\x03pid\x18\x02 \x01(\x0e\x32\x1f.runtime.v1alpha2.NamespaceMode\x12,\n\x03ipc\x18\x03 \x01(\x0e\x32\x1f.runtime.v1alpha2.NamespaceMode\"\x1b\n\nInt64Value\x12\r\n\x05value\x18\x01 \x01(\x03\"\xe4\x02\n\x1bLinuxSandboxSecurityContext\x12<\n\x11namespace_options\x18\x01 \x01(\x0b\x32!.runtime.v1alpha2.NamespaceOption\x12\x38\n\x0fselinux_options\x18\x02 \x01(\x0b\x32\x1f.runtime.v1alpha2.SELinuxOption\x12\x31\n\x0brun_as_user\x18\x03 \x01(\x0b\x32\x1c.runtime.v1alpha2.Int64Value\x12\x32\n\x0crun_as_group\x18\x08 \x01(\x0b\x32\x1c.runtime.v1alpha2.Int64Value\x12\x17\n\x0freadonly_rootfs\x18\x04 \x01(\x08\x12\x1b\n\x13supplemental_groups\x18\x05 \x03(\x03\x12\x12\n\nprivileged\x18\x06 \x01(\x08\x12\x1c\n\x14seccomp_profile_path\x18\x07 \x01(\t\"\xee\x01\n\x15LinuxPodSandboxConfig\x12\x15\n\rcgroup_parent\x18\x01 \x01(\t\x12G\n\x10security_context\x18\x02 \x01(\x0b\x32-.runtime.v1alpha2.LinuxSandboxSecurityContext\x12\x45\n\x07sysctls\x18\x03 \x03(\x0b\x32\x34.runtime.v1alpha2.LinuxPodSandboxConfig.SysctlsEntry\x1a.\n\x0cSysctlsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"S\n\x12PodSandboxMetadata\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03uid\x18\x02 \x01(\t\x12\x11\n\tnamespace\x18\x03 \x01(\t\x12\x0f\n\x07\x61ttempt\x18\x04 \x01(\r\"\xff\x03\n\x10PodSandboxConfig\x12\x36\n\x08metadata\x18\x01 \x01(\x0b\x32$.runtime.v1alpha2.PodSandboxMetadata\x12\x10\n\x08hostname\x18\x02 \x01(\t\x12\x15\n\rlog_directory\x18\x03 \x01(\t\x12/\n\ndns_config\x18\x04 \x01(\x0b\x32\x1b.runtime.v1alpha2.DNSConfig\x12\x34\n\rport_mappings\x18\x05 \x03(\x0b\x32\x1d.runtime.v1alpha2.PortMapping\x12>\n\x06labels\x18\x06 \x03(\x0b\x32..runtime.v1alpha2.PodSandboxConfig.LabelsEntry\x12H\n\x0b\x61nnotations\x18\x07 \x03(\x0b\x32\x33.runtime.v1alpha2.PodSandboxConfig.AnnotationsEntry\x12\x36\n\x05linux\x18\x08 \x01(\x0b\x32\'.runtime.v1alpha2.LinuxPodSandboxConfig\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"J\n\x14RunPodSandboxRequest\x12\x32\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\".runtime.v1alpha2.PodSandboxConfig\"/\n\x15RunPodSandboxResponse\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\"/\n\x15StopPodSandboxRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\"\x18\n\x16StopPodSandboxResponse\"1\n\x17RemovePodSandboxRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\"\x1a\n\x18RemovePodSandboxResponse\"B\n\x17PodSandboxStatusRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\"%\n\x17PodSandboxNetworkStatus\x12\n\n\x02ip\x18\x01 \x01(\t\"?\n\tNamespace\x12\x32\n\x07options\x18\x02 \x01(\x0b\x32!.runtime.v1alpha2.NamespaceOption\"H\n\x15LinuxPodSandboxStatus\x12/\n\nnamespaces\x18\x01 \x01(\x0b\x32\x1b.runtime.v1alpha2.Namespace\"\xfd\x03\n\x10PodSandboxStatus\x12\n\n\x02id\x18\x01 \x01(\t\x12\x36\n\x08metadata\x18\x02 \x01(\x0b\x32$.runtime.v1alpha2.PodSandboxMetadata\x12\x30\n\x05state\x18\x03 \x01(\x0e\x32!.runtime.v1alpha2.PodSandboxState\x12\x12\n\ncreated_at\x18\x04 \x01(\x03\x12:\n\x07network\x18\x05 \x01(\x0b\x32).runtime.v1alpha2.PodSandboxNetworkStatus\x12\x36\n\x05linux\x18\x06 \x01(\x0b\x32\'.runtime.v1alpha2.LinuxPodSandboxStatus\x12>\n\x06labels\x18\x07 \x03(\x0b\x32..runtime.v1alpha2.PodSandboxStatus.LabelsEntry\x12H\n\x0b\x61nnotations\x18\x08 \x03(\x0b\x32\x33.runtime.v1alpha2.PodSandboxStatus.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xbf\x01\n\x18PodSandboxStatusResponse\x12\x32\n\x06status\x18\x01 \x01(\x0b\x32\".runtime.v1alpha2.PodSandboxStatus\x12\x42\n\x04info\x18\x02 \x03(\x0b\x32\x34.runtime.v1alpha2.PodSandboxStatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"H\n\x14PodSandboxStateValue\x12\x30\n\x05state\x18\x01 \x01(\x0e\x32!.runtime.v1alpha2.PodSandboxState\"\xda\x01\n\x10PodSandboxFilter\x12\n\n\x02id\x18\x01 \x01(\t\x12\x35\n\x05state\x18\x02 \x01(\x0b\x32&.runtime.v1alpha2.PodSandboxStateValue\x12M\n\x0elabel_selector\x18\x03 \x03(\x0b\x32\x35.runtime.v1alpha2.PodSandboxFilter.LabelSelectorEntry\x1a\x34\n\x12LabelSelectorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"K\n\x15ListPodSandboxRequest\x12\x32\n\x06\x66ilter\x18\x01 \x01(\x0b\x32\".runtime.v1alpha2.PodSandboxFilter\"\xf7\x02\n\nPodSandbox\x12\n\n\x02id\x18\x01 \x01(\t\x12\x36\n\x08metadata\x18\x02 \x01(\x0b\x32$.runtime.v1alpha2.PodSandboxMetadata\x12\x30\n\x05state\x18\x03 \x01(\x0e\x32!.runtime.v1alpha2.PodSandboxState\x12\x12\n\ncreated_at\x18\x04 \x01(\x03\x12\x38\n\x06labels\x18\x05 \x03(\x0b\x32(.runtime.v1alpha2.PodSandbox.LabelsEntry\x12\x42\n\x0b\x61nnotations\x18\x06 \x03(\x0b\x32-.runtime.v1alpha2.PodSandbox.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"E\n\x16ListPodSandboxResponse\x12+\n\x05items\x18\x01 \x03(\x0b\x32\x1c.runtime.v1alpha2.PodSandbox\"\x1a\n\tImageSpec\x12\r\n\x05image\x18\x01 \x01(\t\"&\n\x08KeyValue\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xb4\x01\n\x17LinuxContainerResources\x12\x12\n\ncpu_period\x18\x01 \x01(\x03\x12\x11\n\tcpu_quota\x18\x02 \x01(\x03\x12\x12\n\ncpu_shares\x18\x03 \x01(\x03\x12\x1d\n\x15memory_limit_in_bytes\x18\x04 \x01(\x03\x12\x15\n\room_score_adj\x18\x05 \x01(\x03\x12\x13\n\x0b\x63puset_cpus\x18\x06 \x01(\t\x12\x13\n\x0b\x63puset_mems\x18\x07 \x01(\t\"H\n\rSELinuxOption\x12\x0c\n\x04user\x18\x01 \x01(\t\x12\x0c\n\x04role\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\r\n\x05level\x18\x04 \x01(\t\"A\n\nCapability\x12\x18\n\x10\x61\x64\x64_capabilities\x18\x01 \x03(\t\x12\x19\n\x11\x64rop_capabilities\x18\x02 \x03(\t\"\xe3\x03\n\x1dLinuxContainerSecurityContext\x12\x32\n\x0c\x63\x61pabilities\x18\x01 \x01(\x0b\x32\x1c.runtime.v1alpha2.Capability\x12\x12\n\nprivileged\x18\x02 \x01(\x08\x12<\n\x11namespace_options\x18\x03 \x01(\x0b\x32!.runtime.v1alpha2.NamespaceOption\x12\x38\n\x0fselinux_options\x18\x04 \x01(\x0b\x32\x1f.runtime.v1alpha2.SELinuxOption\x12\x31\n\x0brun_as_user\x18\x05 \x01(\x0b\x32\x1c.runtime.v1alpha2.Int64Value\x12\x32\n\x0crun_as_group\x18\x0c \x01(\x0b\x32\x1c.runtime.v1alpha2.Int64Value\x12\x17\n\x0frun_as_username\x18\x06 \x01(\t\x12\x17\n\x0freadonly_rootfs\x18\x07 \x01(\x08\x12\x1b\n\x13supplemental_groups\x18\x08 \x03(\x03\x12\x18\n\x10\x61pparmor_profile\x18\t \x01(\t\x12\x1c\n\x14seccomp_profile_path\x18\n \x01(\t\x12\x14\n\x0cno_new_privs\x18\x0b \x01(\x08\"\x9f\x01\n\x14LinuxContainerConfig\x12<\n\tresources\x18\x01 \x01(\x0b\x32).runtime.v1alpha2.LinuxContainerResources\x12I\n\x10security_context\x18\x02 \x01(\x0b\x32/.runtime.v1alpha2.LinuxContainerSecurityContext\":\n\x1fWindowsContainerSecurityContext\x12\x17\n\x0frun_as_username\x18\x01 \x01(\t\"\xa5\x01\n\x16WindowsContainerConfig\x12>\n\tresources\x18\x01 \x01(\x0b\x32+.runtime.v1alpha2.WindowsContainerResources\x12K\n\x10security_context\x18\x02 \x01(\x0b\x32\x31.runtime.v1alpha2.WindowsContainerSecurityContext\"v\n\x19WindowsContainerResources\x12\x12\n\ncpu_shares\x18\x01 \x01(\x03\x12\x11\n\tcpu_count\x18\x02 \x01(\x03\x12\x13\n\x0b\x63pu_maximum\x18\x03 \x01(\x03\x12\x1d\n\x15memory_limit_in_bytes\x18\x04 \x01(\x03\"2\n\x11\x43ontainerMetadata\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x61ttempt\x18\x02 \x01(\r\"H\n\x06\x44\x65vice\x12\x16\n\x0e\x63ontainer_path\x18\x01 \x01(\t\x12\x11\n\thost_path\x18\x02 \x01(\t\x12\x13\n\x0bpermissions\x18\x03 \x01(\t\"\xc5\x05\n\x0f\x43ontainerConfig\x12\x35\n\x08metadata\x18\x01 \x01(\x0b\x32#.runtime.v1alpha2.ContainerMetadata\x12*\n\x05image\x18\x02 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\x12\x0f\n\x07\x63ommand\x18\x03 \x03(\t\x12\x0c\n\x04\x61rgs\x18\x04 \x03(\t\x12\x13\n\x0bworking_dir\x18\x05 \x01(\t\x12(\n\x04\x65nvs\x18\x06 \x03(\x0b\x32\x1a.runtime.v1alpha2.KeyValue\x12\'\n\x06mounts\x18\x07 \x03(\x0b\x32\x17.runtime.v1alpha2.Mount\x12)\n\x07\x64\x65vices\x18\x08 \x03(\x0b\x32\x18.runtime.v1alpha2.Device\x12=\n\x06labels\x18\t \x03(\x0b\x32-.runtime.v1alpha2.ContainerConfig.LabelsEntry\x12G\n\x0b\x61nnotations\x18\n \x03(\x0b\x32\x32.runtime.v1alpha2.ContainerConfig.AnnotationsEntry\x12\x10\n\x08log_path\x18\x0b \x01(\t\x12\r\n\x05stdin\x18\x0c \x01(\x08\x12\x12\n\nstdin_once\x18\r \x01(\x08\x12\x0b\n\x03tty\x18\x0e \x01(\x08\x12\x35\n\x05linux\x18\x0f \x01(\x0b\x32&.runtime.v1alpha2.LinuxContainerConfig\x12\x39\n\x07windows\x18\x10 \x01(\x0b\x32(.runtime.v1alpha2.WindowsContainerConfig\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x9f\x01\n\x16\x43reateContainerRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\x12\x31\n\x06\x63onfig\x18\x02 \x01(\x0b\x32!.runtime.v1alpha2.ContainerConfig\x12:\n\x0esandbox_config\x18\x03 \x01(\x0b\x32\".runtime.v1alpha2.PodSandboxConfig\"/\n\x17\x43reateContainerResponse\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"-\n\x15StartContainerRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"\x18\n\x16StartContainerResponse\"=\n\x14StopContainerRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0f\n\x07timeout\x18\x02 \x01(\x03\"\x17\n\x15StopContainerResponse\".\n\x16RemoveContainerRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"\x19\n\x17RemoveContainerResponse\"F\n\x13\x43ontainerStateValue\x12/\n\x05state\x18\x01 \x01(\x0e\x32 .runtime.v1alpha2.ContainerState\"\xef\x01\n\x0f\x43ontainerFilter\x12\n\n\x02id\x18\x01 \x01(\t\x12\x34\n\x05state\x18\x02 \x01(\x0b\x32%.runtime.v1alpha2.ContainerStateValue\x12\x16\n\x0epod_sandbox_id\x18\x03 \x01(\t\x12L\n\x0elabel_selector\x18\x04 \x03(\x0b\x32\x34.runtime.v1alpha2.ContainerFilter.LabelSelectorEntry\x1a\x34\n\x12LabelSelectorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"J\n\x15ListContainersRequest\x12\x31\n\x06\x66ilter\x18\x01 \x01(\x0b\x32!.runtime.v1alpha2.ContainerFilter\"\xc9\x03\n\tContainer\x12\n\n\x02id\x18\x01 \x01(\t\x12\x16\n\x0epod_sandbox_id\x18\x02 \x01(\t\x12\x35\n\x08metadata\x18\x03 \x01(\x0b\x32#.runtime.v1alpha2.ContainerMetadata\x12*\n\x05image\x18\x04 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\x12\x11\n\timage_ref\x18\x05 \x01(\t\x12/\n\x05state\x18\x06 \x01(\x0e\x32 .runtime.v1alpha2.ContainerState\x12\x12\n\ncreated_at\x18\x07 \x01(\x03\x12\x37\n\x06labels\x18\x08 \x03(\x0b\x32\'.runtime.v1alpha2.Container.LabelsEntry\x12\x41\n\x0b\x61nnotations\x18\t \x03(\x0b\x32,.runtime.v1alpha2.Container.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"I\n\x16ListContainersResponse\x12/\n\ncontainers\x18\x01 \x03(\x0b\x32\x1b.runtime.v1alpha2.Container\"?\n\x16\x43ontainerStatusRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\"\xdb\x04\n\x0f\x43ontainerStatus\x12\n\n\x02id\x18\x01 \x01(\t\x12\x35\n\x08metadata\x18\x02 \x01(\x0b\x32#.runtime.v1alpha2.ContainerMetadata\x12/\n\x05state\x18\x03 \x01(\x0e\x32 .runtime.v1alpha2.ContainerState\x12\x12\n\ncreated_at\x18\x04 \x01(\x03\x12\x12\n\nstarted_at\x18\x05 \x01(\x03\x12\x13\n\x0b\x66inished_at\x18\x06 \x01(\x03\x12\x11\n\texit_code\x18\x07 \x01(\x05\x12*\n\x05image\x18\x08 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\x12\x11\n\timage_ref\x18\t \x01(\t\x12\x0e\n\x06reason\x18\n \x01(\t\x12\x0f\n\x07message\x18\x0b \x01(\t\x12=\n\x06labels\x18\x0c \x03(\x0b\x32-.runtime.v1alpha2.ContainerStatus.LabelsEntry\x12G\n\x0b\x61nnotations\x18\r \x03(\x0b\x32\x32.runtime.v1alpha2.ContainerStatus.AnnotationsEntry\x12\'\n\x06mounts\x18\x0e \x03(\x0b\x32\x17.runtime.v1alpha2.Mount\x12\x10\n\x08log_path\x18\x0f \x01(\t\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xbc\x01\n\x17\x43ontainerStatusResponse\x12\x31\n\x06status\x18\x01 \x01(\x0b\x32!.runtime.v1alpha2.ContainerStatus\x12\x41\n\x04info\x18\x02 \x03(\x0b\x32\x33.runtime.v1alpha2.ContainerStatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"q\n\x1fUpdateContainerResourcesRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x38\n\x05linux\x18\x02 \x01(\x0b\x32).runtime.v1alpha2.LinuxContainerResources\"\"\n UpdateContainerResourcesResponse\"E\n\x0f\x45xecSyncRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0b\n\x03\x63md\x18\x02 \x03(\t\x12\x0f\n\x07timeout\x18\x03 \x01(\x03\"E\n\x10\x45xecSyncResponse\x12\x0e\n\x06stdout\x18\x01 \x01(\x0c\x12\x0e\n\x06stderr\x18\x02 \x01(\x0c\x12\x11\n\texit_code\x18\x03 \x01(\x05\"l\n\x0b\x45xecRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\x0b\n\x03\x63md\x18\x02 \x03(\t\x12\x0b\n\x03tty\x18\x03 \x01(\x08\x12\r\n\x05stdin\x18\x04 \x01(\x08\x12\x0e\n\x06stdout\x18\x05 \x01(\x08\x12\x0e\n\x06stderr\x18\x06 \x01(\x08\"\x1b\n\x0c\x45xecResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"a\n\rAttachRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\x12\r\n\x05stdin\x18\x02 \x01(\x08\x12\x0b\n\x03tty\x18\x03 \x01(\x08\x12\x0e\n\x06stdout\x18\x04 \x01(\x08\x12\x0e\n\x06stderr\x18\x05 \x01(\x08\"\x1d\n\x0e\x41ttachResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\":\n\x12PortForwardRequest\x12\x16\n\x0epod_sandbox_id\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x03(\x05\"\"\n\x13PortForwardResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"9\n\x0bImageFilter\x12*\n\x05image\x18\x01 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\"B\n\x11ListImagesRequest\x12-\n\x06\x66ilter\x18\x01 \x01(\x0b\x32\x1d.runtime.v1alpha2.ImageFilter\"\x87\x01\n\x05Image\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\trepo_tags\x18\x02 \x03(\t\x12\x14\n\x0crepo_digests\x18\x03 \x03(\t\x12\x0c\n\x04size\x18\x04 \x01(\x04\x12)\n\x03uid\x18\x05 \x01(\x0b\x32\x1c.runtime.v1alpha2.Int64Value\x12\x10\n\x08username\x18\x06 \x01(\t\"=\n\x12ListImagesResponse\x12\'\n\x06images\x18\x01 \x03(\x0b\x32\x17.runtime.v1alpha2.Image\"Q\n\x12ImageStatusRequest\x12*\n\x05image\x18\x01 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\"\xa9\x01\n\x13ImageStatusResponse\x12&\n\x05image\x18\x01 \x01(\x0b\x32\x17.runtime.v1alpha2.Image\x12=\n\x04info\x18\x02 \x03(\x0b\x32/.runtime.v1alpha2.ImageStatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x86\x01\n\nAuthConfig\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0c\n\x04\x61uth\x18\x03 \x01(\t\x12\x16\n\x0eserver_address\x18\x04 \x01(\t\x12\x16\n\x0eidentity_token\x18\x05 \x01(\t\x12\x16\n\x0eregistry_token\x18\x06 \x01(\t\"\xa6\x01\n\x10PullImageRequest\x12*\n\x05image\x18\x01 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\x12*\n\x04\x61uth\x18\x02 \x01(\x0b\x32\x1c.runtime.v1alpha2.AuthConfig\x12:\n\x0esandbox_config\x18\x03 \x01(\x0b\x32\".runtime.v1alpha2.PodSandboxConfig\"&\n\x11PullImageResponse\x12\x11\n\timage_ref\x18\x01 \x01(\t\"@\n\x12RemoveImageRequest\x12*\n\x05image\x18\x01 \x01(\x0b\x32\x1b.runtime.v1alpha2.ImageSpec\"\x15\n\x13RemoveImageResponse\"!\n\rNetworkConfig\x12\x10\n\x08pod_cidr\x18\x01 \x01(\t\"H\n\rRuntimeConfig\x12\x37\n\x0enetwork_config\x18\x01 \x01(\x0b\x32\x1f.runtime.v1alpha2.NetworkConfig\"U\n\x1aUpdateRuntimeConfigRequest\x12\x37\n\x0eruntime_config\x18\x01 \x01(\x0b\x32\x1f.runtime.v1alpha2.RuntimeConfig\"\x1d\n\x1bUpdateRuntimeConfigResponse\"Q\n\x10RuntimeCondition\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"G\n\rRuntimeStatus\x12\x36\n\nconditions\x18\x01 \x03(\x0b\x32\".runtime.v1alpha2.RuntimeCondition\" \n\rStatusRequest\x12\x0f\n\x07verbose\x18\x01 \x01(\x08\"\xa8\x01\n\x0eStatusResponse\x12/\n\x06status\x18\x01 \x01(\x0b\x32\x1f.runtime.v1alpha2.RuntimeStatus\x12\x38\n\x04info\x18\x02 \x03(\x0b\x32*.runtime.v1alpha2.StatusResponse.InfoEntry\x1a+\n\tInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x14\n\x12ImageFsInfoRequest\"\x1c\n\x0bUInt64Value\x12\r\n\x05value\x18\x01 \x01(\x04\"*\n\x14\x46ilesystemIdentifier\x12\x12\n\nmountpoint\x18\x01 \x01(\t\"\xc2\x01\n\x0f\x46ilesystemUsage\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\x35\n\x05\x66s_id\x18\x02 \x01(\x0b\x32&.runtime.v1alpha2.FilesystemIdentifier\x12\x31\n\nused_bytes\x18\x03 \x01(\x0b\x32\x1d.runtime.v1alpha2.UInt64Value\x12\x32\n\x0binodes_used\x18\x04 \x01(\x0b\x32\x1d.runtime.v1alpha2.UInt64Value\"S\n\x13ImageFsInfoResponse\x12<\n\x11image_filesystems\x18\x01 \x03(\x0b\x32!.runtime.v1alpha2.FilesystemUsage\"-\n\x15\x43ontainerStatsRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"I\n\x16\x43ontainerStatsResponse\x12/\n\x05stats\x18\x01 \x01(\x0b\x32 .runtime.v1alpha2.ContainerStats\"S\n\x19ListContainerStatsRequest\x12\x36\n\x06\x66ilter\x18\x01 \x01(\x0b\x32&.runtime.v1alpha2.ContainerStatsFilter\"\xc3\x01\n\x14\x43ontainerStatsFilter\x12\n\n\x02id\x18\x01 \x01(\t\x12\x16\n\x0epod_sandbox_id\x18\x02 \x01(\t\x12Q\n\x0elabel_selector\x18\x03 \x03(\x0b\x32\x39.runtime.v1alpha2.ContainerStatsFilter.LabelSelectorEntry\x1a\x34\n\x12LabelSelectorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"M\n\x1aListContainerStatsResponse\x12/\n\x05stats\x18\x01 \x03(\x0b\x32 .runtime.v1alpha2.ContainerStats\"\xcb\x02\n\x13\x43ontainerAttributes\x12\n\n\x02id\x18\x01 \x01(\t\x12\x35\n\x08metadata\x18\x02 \x01(\x0b\x32#.runtime.v1alpha2.ContainerMetadata\x12\x41\n\x06labels\x18\x03 \x03(\x0b\x32\x31.runtime.v1alpha2.ContainerAttributes.LabelsEntry\x12K\n\x0b\x61nnotations\x18\x04 \x03(\x0b\x32\x36.runtime.v1alpha2.ContainerAttributes.AnnotationsEntry\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x32\n\x10\x41nnotationsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xde\x01\n\x0e\x43ontainerStats\x12\x39\n\nattributes\x18\x01 \x01(\x0b\x32%.runtime.v1alpha2.ContainerAttributes\x12\'\n\x03\x63pu\x18\x02 \x01(\x0b\x32\x1a.runtime.v1alpha2.CpuUsage\x12-\n\x06memory\x18\x03 \x01(\x0b\x32\x1d.runtime.v1alpha2.MemoryUsage\x12\x39\n\x0ewritable_layer\x18\x04 \x01(\x0b\x32!.runtime.v1alpha2.FilesystemUsage\"]\n\x08\x43puUsage\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12>\n\x17usage_core_nano_seconds\x18\x02 \x01(\x0b\x32\x1d.runtime.v1alpha2.UInt64Value\"Z\n\x0bMemoryUsage\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\x38\n\x11working_set_bytes\x18\x02 \x01(\x0b\x32\x1d.runtime.v1alpha2.UInt64Value\"1\n\x19ReopenContainerLogRequest\x12\x14\n\x0c\x63ontainer_id\x18\x01 \x01(\t\"\x1c\n\x1aReopenContainerLogResponse*\x1c\n\x08Protocol\x12\x07\n\x03TCP\x10\x00\x12\x07\n\x03UDP\x10\x01*m\n\x10MountPropagation\x12\x17\n\x13PROPAGATION_PRIVATE\x10\x00\x12!\n\x1dPROPAGATION_HOST_TO_CONTAINER\x10\x01\x12\x1d\n\x19PROPAGATION_BIDIRECTIONAL\x10\x02*1\n\rNamespaceMode\x12\x07\n\x03POD\x10\x00\x12\r\n\tCONTAINER\x10\x01\x12\x08\n\x04NODE\x10\x02*:\n\x0fPodSandboxState\x12\x11\n\rSANDBOX_READY\x10\x00\x12\x14\n\x10SANDBOX_NOTREADY\x10\x01*k\n\x0e\x43ontainerState\x12\x15\n\x11\x43ONTAINER_CREATED\x10\x00\x12\x15\n\x11\x43ONTAINER_RUNNING\x10\x01\x12\x14\n\x10\x43ONTAINER_EXITED\x10\x02\x12\x15\n\x11\x43ONTAINER_UNKNOWN\x10\x03\x32\xc1\x11\n\x0eRuntimeService\x12P\n\x07Version\x12 .runtime.v1alpha2.VersionRequest\x1a!.runtime.v1alpha2.VersionResponse\"\x00\x12\x62\n\rRunPodSandbox\x12&.runtime.v1alpha2.RunPodSandboxRequest\x1a\'.runtime.v1alpha2.RunPodSandboxResponse\"\x00\x12\x65\n\x0eStopPodSandbox\x12\'.runtime.v1alpha2.StopPodSandboxRequest\x1a(.runtime.v1alpha2.StopPodSandboxResponse\"\x00\x12k\n\x10RemovePodSandbox\x12).runtime.v1alpha2.RemovePodSandboxRequest\x1a*.runtime.v1alpha2.RemovePodSandboxResponse\"\x00\x12k\n\x10PodSandboxStatus\x12).runtime.v1alpha2.PodSandboxStatusRequest\x1a*.runtime.v1alpha2.PodSandboxStatusResponse\"\x00\x12\x65\n\x0eListPodSandbox\x12\'.runtime.v1alpha2.ListPodSandboxRequest\x1a(.runtime.v1alpha2.ListPodSandboxResponse\"\x00\x12h\n\x0f\x43reateContainer\x12(.runtime.v1alpha2.CreateContainerRequest\x1a).runtime.v1alpha2.CreateContainerResponse\"\x00\x12\x65\n\x0eStartContainer\x12\'.runtime.v1alpha2.StartContainerRequest\x1a(.runtime.v1alpha2.StartContainerResponse\"\x00\x12\x62\n\rStopContainer\x12&.runtime.v1alpha2.StopContainerRequest\x1a\'.runtime.v1alpha2.StopContainerResponse\"\x00\x12h\n\x0fRemoveContainer\x12(.runtime.v1alpha2.RemoveContainerRequest\x1a).runtime.v1alpha2.RemoveContainerResponse\"\x00\x12\x65\n\x0eListContainers\x12\'.runtime.v1alpha2.ListContainersRequest\x1a(.runtime.v1alpha2.ListContainersResponse\"\x00\x12h\n\x0f\x43ontainerStatus\x12(.runtime.v1alpha2.ContainerStatusRequest\x1a).runtime.v1alpha2.ContainerStatusResponse\"\x00\x12\x83\x01\n\x18UpdateContainerResources\x12\x31.runtime.v1alpha2.UpdateContainerResourcesRequest\x1a\x32.runtime.v1alpha2.UpdateContainerResourcesResponse\"\x00\x12q\n\x12ReopenContainerLog\x12+.runtime.v1alpha2.ReopenContainerLogRequest\x1a,.runtime.v1alpha2.ReopenContainerLogResponse\"\x00\x12S\n\x08\x45xecSync\x12!.runtime.v1alpha2.ExecSyncRequest\x1a\".runtime.v1alpha2.ExecSyncResponse\"\x00\x12G\n\x04\x45xec\x12\x1d.runtime.v1alpha2.ExecRequest\x1a\x1e.runtime.v1alpha2.ExecResponse\"\x00\x12M\n\x06\x41ttach\x12\x1f.runtime.v1alpha2.AttachRequest\x1a .runtime.v1alpha2.AttachResponse\"\x00\x12\\\n\x0bPortForward\x12$.runtime.v1alpha2.PortForwardRequest\x1a%.runtime.v1alpha2.PortForwardResponse\"\x00\x12\x65\n\x0e\x43ontainerStats\x12\'.runtime.v1alpha2.ContainerStatsRequest\x1a(.runtime.v1alpha2.ContainerStatsResponse\"\x00\x12q\n\x12ListContainerStats\x12+.runtime.v1alpha2.ListContainerStatsRequest\x1a,.runtime.v1alpha2.ListContainerStatsResponse\"\x00\x12t\n\x13UpdateRuntimeConfig\x12,.runtime.v1alpha2.UpdateRuntimeConfigRequest\x1a-.runtime.v1alpha2.UpdateRuntimeConfigResponse\"\x00\x12M\n\x06Status\x12\x1f.runtime.v1alpha2.StatusRequest\x1a .runtime.v1alpha2.StatusResponse\"\x00\x32\xdb\x03\n\x0cImageService\x12Y\n\nListImages\x12#.runtime.v1alpha2.ListImagesRequest\x1a$.runtime.v1alpha2.ListImagesResponse\"\x00\x12\\\n\x0bImageStatus\x12$.runtime.v1alpha2.ImageStatusRequest\x1a%.runtime.v1alpha2.ImageStatusResponse\"\x00\x12V\n\tPullImage\x12\".runtime.v1alpha2.PullImageRequest\x1a#.runtime.v1alpha2.PullImageResponse\"\x00\x12\\\n\x0bRemoveImage\x12$.runtime.v1alpha2.RemoveImageRequest\x1a%.runtime.v1alpha2.RemoveImageResponse\"\x00\x12\\\n\x0bImageFsInfo\x12$.runtime.v1alpha2.ImageFsInfoRequest\x1a%.runtime.v1alpha2.ImageFsInfoResponse\"\x00\x42&Z\x08v1alpha2\xd8\xe1\x1e\x00\x80\xe2\x1e\x01\xc8\xe1\x1e\x01\xc8\xe2\x1e\x01\xe0\xe2\x1e\x01\xd0\xe2\x1e\x01\x90\xe3\x1e\x00\x62\x06proto3')
+  ,
+  dependencies=[github_dot_com_dot_gogo_dot_protobuf_dot_gogoproto_dot_gogo__pb2.DESCRIPTOR,])
 
 _PROTOCOL = _descriptor.EnumDescriptor(
   name='Protocol',
-  full_name='Protocol',
+  full_name='runtime.v1alpha2.Protocol',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -40,15 +42,15 @@ _PROTOCOL = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=10496,
-  serialized_end=10524,
+  serialized_start=12419,
+  serialized_end=12447,
 )
 _sym_db.RegisterEnumDescriptor(_PROTOCOL)
 
 Protocol = enum_type_wrapper.EnumTypeWrapper(_PROTOCOL)
 _MOUNTPROPAGATION = _descriptor.EnumDescriptor(
   name='MountPropagation',
-  full_name='MountPropagation',
+  full_name='runtime.v1alpha2.MountPropagation',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -67,15 +69,15 @@ _MOUNTPROPAGATION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=10526,
-  serialized_end=10635,
+  serialized_start=12449,
+  serialized_end=12558,
 )
 _sym_db.RegisterEnumDescriptor(_MOUNTPROPAGATION)
 
 MountPropagation = enum_type_wrapper.EnumTypeWrapper(_MOUNTPROPAGATION)
 _NAMESPACEMODE = _descriptor.EnumDescriptor(
   name='NamespaceMode',
-  full_name='NamespaceMode',
+  full_name='runtime.v1alpha2.NamespaceMode',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -94,15 +96,15 @@ _NAMESPACEMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=10637,
-  serialized_end=10686,
+  serialized_start=12560,
+  serialized_end=12609,
 )
 _sym_db.RegisterEnumDescriptor(_NAMESPACEMODE)
 
 NamespaceMode = enum_type_wrapper.EnumTypeWrapper(_NAMESPACEMODE)
 _PODSANDBOXSTATE = _descriptor.EnumDescriptor(
   name='PodSandboxState',
-  full_name='PodSandboxState',
+  full_name='runtime.v1alpha2.PodSandboxState',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -117,15 +119,15 @@ _PODSANDBOXSTATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=10688,
-  serialized_end=10746,
+  serialized_start=12611,
+  serialized_end=12669,
 )
 _sym_db.RegisterEnumDescriptor(_PODSANDBOXSTATE)
 
 PodSandboxState = enum_type_wrapper.EnumTypeWrapper(_PODSANDBOXSTATE)
 _CONTAINERSTATE = _descriptor.EnumDescriptor(
   name='ContainerState',
-  full_name='ContainerState',
+  full_name='runtime.v1alpha2.ContainerState',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -148,8 +150,8 @@ _CONTAINERSTATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=10748,
-  serialized_end=10855,
+  serialized_start=12671,
+  serialized_end=12778,
 )
 _sym_db.RegisterEnumDescriptor(_CONTAINERSTATE)
 
@@ -173,13 +175,13 @@ CONTAINER_UNKNOWN = 3
 
 _VERSIONREQUEST = _descriptor.Descriptor(
   name='VersionRequest',
-  full_name='VersionRequest',
+  full_name='runtime.v1alpha2.VersionRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='version', full_name='VersionRequest.version', index=0,
+      name='version', full_name='runtime.v1alpha2.VersionRequest.version', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -197,41 +199,41 @@ _VERSIONREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13,
-  serialized_end=46,
+  serialized_start=78,
+  serialized_end=111,
 )
 
 
 _VERSIONRESPONSE = _descriptor.Descriptor(
   name='VersionResponse',
-  full_name='VersionResponse',
+  full_name='runtime.v1alpha2.VersionResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='version', full_name='VersionResponse.version', index=0,
+      name='version', full_name='runtime.v1alpha2.VersionResponse.version', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='runtime_name', full_name='VersionResponse.runtime_name', index=1,
+      name='runtime_name', full_name='runtime.v1alpha2.VersionResponse.runtime_name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='runtime_version', full_name='VersionResponse.runtime_version', index=2,
+      name='runtime_version', full_name='runtime.v1alpha2.VersionResponse.runtime_version', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='runtime_api_version', full_name='VersionResponse.runtime_api_version', index=3,
+      name='runtime_api_version', full_name='runtime.v1alpha2.VersionResponse.runtime_api_version', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -249,34 +251,34 @@ _VERSIONRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=48,
-  serialized_end=158,
+  serialized_start=113,
+  serialized_end=223,
 )
 
 
 _DNSCONFIG = _descriptor.Descriptor(
   name='DNSConfig',
-  full_name='DNSConfig',
+  full_name='runtime.v1alpha2.DNSConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='servers', full_name='DNSConfig.servers', index=0,
+      name='servers', full_name='runtime.v1alpha2.DNSConfig.servers', index=0,
       number=1, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='searches', full_name='DNSConfig.searches', index=1,
+      name='searches', full_name='runtime.v1alpha2.DNSConfig.searches', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='options', full_name='DNSConfig.options', index=2,
+      name='options', full_name='runtime.v1alpha2.DNSConfig.options', index=2,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -294,41 +296,41 @@ _DNSCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=160,
-  serialized_end=223,
+  serialized_start=225,
+  serialized_end=288,
 )
 
 
 _PORTMAPPING = _descriptor.Descriptor(
   name='PortMapping',
-  full_name='PortMapping',
+  full_name='runtime.v1alpha2.PortMapping',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='protocol', full_name='PortMapping.protocol', index=0,
+      name='protocol', full_name='runtime.v1alpha2.PortMapping.protocol', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='container_port', full_name='PortMapping.container_port', index=1,
+      name='container_port', full_name='runtime.v1alpha2.PortMapping.container_port', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='host_port', full_name='PortMapping.host_port', index=2,
+      name='host_port', full_name='runtime.v1alpha2.PortMapping.host_port', index=2,
       number=3, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='host_ip', full_name='PortMapping.host_ip', index=3,
+      name='host_ip', full_name='runtime.v1alpha2.PortMapping.host_ip', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -346,48 +348,48 @@ _PORTMAPPING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=225,
-  serialized_end=327,
+  serialized_start=290,
+  serialized_end=409,
 )
 
 
 _MOUNT = _descriptor.Descriptor(
   name='Mount',
-  full_name='Mount',
+  full_name='runtime.v1alpha2.Mount',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_path', full_name='Mount.container_path', index=0,
+      name='container_path', full_name='runtime.v1alpha2.Mount.container_path', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='host_path', full_name='Mount.host_path', index=1,
+      name='host_path', full_name='runtime.v1alpha2.Mount.host_path', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='readonly', full_name='Mount.readonly', index=2,
+      name='readonly', full_name='runtime.v1alpha2.Mount.readonly', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='selinux_relabel', full_name='Mount.selinux_relabel', index=3,
+      name='selinux_relabel', full_name='runtime.v1alpha2.Mount.selinux_relabel', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='propagation', full_name='Mount.propagation', index=4,
+      name='propagation', full_name='runtime.v1alpha2.Mount.propagation', index=4,
       number=5, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -405,34 +407,34 @@ _MOUNT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=330,
-  serialized_end=463,
+  serialized_start=412,
+  serialized_end=562,
 )
 
 
 _NAMESPACEOPTION = _descriptor.Descriptor(
   name='NamespaceOption',
-  full_name='NamespaceOption',
+  full_name='runtime.v1alpha2.NamespaceOption',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='network', full_name='NamespaceOption.network', index=0,
+      name='network', full_name='runtime.v1alpha2.NamespaceOption.network', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='pid', full_name='NamespaceOption.pid', index=1,
+      name='pid', full_name='runtime.v1alpha2.NamespaceOption.pid', index=1,
       number=2, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='ipc', full_name='NamespaceOption.ipc', index=2,
+      name='ipc', full_name='runtime.v1alpha2.NamespaceOption.ipc', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -450,20 +452,20 @@ _NAMESPACEOPTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=465,
-  serialized_end=573,
+  serialized_start=565,
+  serialized_end=724,
 )
 
 
 _INT64VALUE = _descriptor.Descriptor(
   name='Int64Value',
-  full_name='Int64Value',
+  full_name='runtime.v1alpha2.Int64Value',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='value', full_name='Int64Value.value', index=0,
+      name='value', full_name='runtime.v1alpha2.Int64Value.value', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -481,69 +483,69 @@ _INT64VALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=575,
-  serialized_end=602,
+  serialized_start=726,
+  serialized_end=753,
 )
 
 
 _LINUXSANDBOXSECURITYCONTEXT = _descriptor.Descriptor(
   name='LinuxSandboxSecurityContext',
-  full_name='LinuxSandboxSecurityContext',
+  full_name='runtime.v1alpha2.LinuxSandboxSecurityContext',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='namespace_options', full_name='LinuxSandboxSecurityContext.namespace_options', index=0,
+      name='namespace_options', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.namespace_options', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='selinux_options', full_name='LinuxSandboxSecurityContext.selinux_options', index=1,
+      name='selinux_options', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.selinux_options', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='run_as_user', full_name='LinuxSandboxSecurityContext.run_as_user', index=2,
+      name='run_as_user', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.run_as_user', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='run_as_group', full_name='LinuxSandboxSecurityContext.run_as_group', index=3,
+      name='run_as_group', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.run_as_group', index=3,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='readonly_rootfs', full_name='LinuxSandboxSecurityContext.readonly_rootfs', index=4,
+      name='readonly_rootfs', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.readonly_rootfs', index=4,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='supplemental_groups', full_name='LinuxSandboxSecurityContext.supplemental_groups', index=5,
+      name='supplemental_groups', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.supplemental_groups', index=5,
       number=5, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='privileged', full_name='LinuxSandboxSecurityContext.privileged', index=6,
+      name='privileged', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.privileged', index=6,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='seccomp_profile_path', full_name='LinuxSandboxSecurityContext.seccomp_profile_path', index=7,
+      name='seccomp_profile_path', full_name='runtime.v1alpha2.LinuxSandboxSecurityContext.seccomp_profile_path', index=7,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -561,27 +563,27 @@ _LINUXSANDBOXSECURITYCONTEXT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=605,
-  serialized_end=893,
+  serialized_start=756,
+  serialized_end=1112,
 )
 
 
 _LINUXPODSANDBOXCONFIG_SYSCTLSENTRY = _descriptor.Descriptor(
   name='SysctlsEntry',
-  full_name='LinuxPodSandboxConfig.SysctlsEntry',
+  full_name='runtime.v1alpha2.LinuxPodSandboxConfig.SysctlsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='LinuxPodSandboxConfig.SysctlsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.LinuxPodSandboxConfig.SysctlsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='LinuxPodSandboxConfig.SysctlsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.LinuxPodSandboxConfig.SysctlsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -599,33 +601,33 @@ _LINUXPODSANDBOXCONFIG_SYSCTLSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1054,
-  serialized_end=1100,
+  serialized_start=1307,
+  serialized_end=1353,
 )
 
 _LINUXPODSANDBOXCONFIG = _descriptor.Descriptor(
   name='LinuxPodSandboxConfig',
-  full_name='LinuxPodSandboxConfig',
+  full_name='runtime.v1alpha2.LinuxPodSandboxConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='cgroup_parent', full_name='LinuxPodSandboxConfig.cgroup_parent', index=0,
+      name='cgroup_parent', full_name='runtime.v1alpha2.LinuxPodSandboxConfig.cgroup_parent', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='security_context', full_name='LinuxPodSandboxConfig.security_context', index=1,
+      name='security_context', full_name='runtime.v1alpha2.LinuxPodSandboxConfig.security_context', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sysctls', full_name='LinuxPodSandboxConfig.sysctls', index=2,
+      name='sysctls', full_name='runtime.v1alpha2.LinuxPodSandboxConfig.sysctls', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -643,41 +645,41 @@ _LINUXPODSANDBOXCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=896,
-  serialized_end=1100,
+  serialized_start=1115,
+  serialized_end=1353,
 )
 
 
 _PODSANDBOXMETADATA = _descriptor.Descriptor(
   name='PodSandboxMetadata',
-  full_name='PodSandboxMetadata',
+  full_name='runtime.v1alpha2.PodSandboxMetadata',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='PodSandboxMetadata.name', index=0,
+      name='name', full_name='runtime.v1alpha2.PodSandboxMetadata.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='uid', full_name='PodSandboxMetadata.uid', index=1,
+      name='uid', full_name='runtime.v1alpha2.PodSandboxMetadata.uid', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='namespace', full_name='PodSandboxMetadata.namespace', index=2,
+      name='namespace', full_name='runtime.v1alpha2.PodSandboxMetadata.namespace', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='attempt', full_name='PodSandboxMetadata.attempt', index=3,
+      name='attempt', full_name='runtime.v1alpha2.PodSandboxMetadata.attempt', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -695,27 +697,27 @@ _PODSANDBOXMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1102,
-  serialized_end=1185,
+  serialized_start=1355,
+  serialized_end=1438,
 )
 
 
 _PODSANDBOXCONFIG_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='PodSandboxConfig.LabelsEntry',
+  full_name='runtime.v1alpha2.PodSandboxConfig.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandboxConfig.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandboxConfig.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandboxConfig.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandboxConfig.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -733,26 +735,26 @@ _PODSANDBOXCONFIG_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _PODSANDBOXCONFIG_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='PodSandboxConfig.AnnotationsEntry',
+  full_name='runtime.v1alpha2.PodSandboxConfig.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandboxConfig.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandboxConfig.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandboxConfig.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandboxConfig.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -770,68 +772,68 @@ _PODSANDBOXCONFIG_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _PODSANDBOXCONFIG = _descriptor.Descriptor(
   name='PodSandboxConfig',
-  full_name='PodSandboxConfig',
+  full_name='runtime.v1alpha2.PodSandboxConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='PodSandboxConfig.metadata', index=0,
+      name='metadata', full_name='runtime.v1alpha2.PodSandboxConfig.metadata', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='hostname', full_name='PodSandboxConfig.hostname', index=1,
+      name='hostname', full_name='runtime.v1alpha2.PodSandboxConfig.hostname', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='log_directory', full_name='PodSandboxConfig.log_directory', index=2,
+      name='log_directory', full_name='runtime.v1alpha2.PodSandboxConfig.log_directory', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='dns_config', full_name='PodSandboxConfig.dns_config', index=3,
+      name='dns_config', full_name='runtime.v1alpha2.PodSandboxConfig.dns_config', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='port_mappings', full_name='PodSandboxConfig.port_mappings', index=4,
+      name='port_mappings', full_name='runtime.v1alpha2.PodSandboxConfig.port_mappings', index=4,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='PodSandboxConfig.labels', index=5,
+      name='labels', full_name='runtime.v1alpha2.PodSandboxConfig.labels', index=5,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='PodSandboxConfig.annotations', index=6,
+      name='annotations', full_name='runtime.v1alpha2.PodSandboxConfig.annotations', index=6,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='linux', full_name='PodSandboxConfig.linux', index=7,
+      name='linux', full_name='runtime.v1alpha2.PodSandboxConfig.linux', index=7,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -849,20 +851,20 @@ _PODSANDBOXCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1188,
-  serialized_end=1597,
+  serialized_start=1441,
+  serialized_end=1952,
 )
 
 
 _RUNPODSANDBOXREQUEST = _descriptor.Descriptor(
   name='RunPodSandboxRequest',
-  full_name='RunPodSandboxRequest',
+  full_name='runtime.v1alpha2.RunPodSandboxRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='config', full_name='RunPodSandboxRequest.config', index=0,
+      name='config', full_name='runtime.v1alpha2.RunPodSandboxRequest.config', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -880,20 +882,20 @@ _RUNPODSANDBOXREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1599,
-  serialized_end=1656,
+  serialized_start=1954,
+  serialized_end=2028,
 )
 
 
 _RUNPODSANDBOXRESPONSE = _descriptor.Descriptor(
   name='RunPodSandboxResponse',
-  full_name='RunPodSandboxResponse',
+  full_name='runtime.v1alpha2.RunPodSandboxResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='RunPodSandboxResponse.pod_sandbox_id', index=0,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.RunPodSandboxResponse.pod_sandbox_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -911,20 +913,20 @@ _RUNPODSANDBOXRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1658,
-  serialized_end=1705,
+  serialized_start=2030,
+  serialized_end=2077,
 )
 
 
 _STOPPODSANDBOXREQUEST = _descriptor.Descriptor(
   name='StopPodSandboxRequest',
-  full_name='StopPodSandboxRequest',
+  full_name='runtime.v1alpha2.StopPodSandboxRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='StopPodSandboxRequest.pod_sandbox_id', index=0,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.StopPodSandboxRequest.pod_sandbox_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -942,14 +944,14 @@ _STOPPODSANDBOXREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1707,
-  serialized_end=1754,
+  serialized_start=2079,
+  serialized_end=2126,
 )
 
 
 _STOPPODSANDBOXRESPONSE = _descriptor.Descriptor(
   name='StopPodSandboxResponse',
-  full_name='StopPodSandboxResponse',
+  full_name='runtime.v1alpha2.StopPodSandboxResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -966,20 +968,20 @@ _STOPPODSANDBOXRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1756,
-  serialized_end=1780,
+  serialized_start=2128,
+  serialized_end=2152,
 )
 
 
 _REMOVEPODSANDBOXREQUEST = _descriptor.Descriptor(
   name='RemovePodSandboxRequest',
-  full_name='RemovePodSandboxRequest',
+  full_name='runtime.v1alpha2.RemovePodSandboxRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='RemovePodSandboxRequest.pod_sandbox_id', index=0,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.RemovePodSandboxRequest.pod_sandbox_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -997,14 +999,14 @@ _REMOVEPODSANDBOXREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1782,
-  serialized_end=1831,
+  serialized_start=2154,
+  serialized_end=2203,
 )
 
 
 _REMOVEPODSANDBOXRESPONSE = _descriptor.Descriptor(
   name='RemovePodSandboxResponse',
-  full_name='RemovePodSandboxResponse',
+  full_name='runtime.v1alpha2.RemovePodSandboxResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -1021,27 +1023,27 @@ _REMOVEPODSANDBOXRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1833,
-  serialized_end=1859,
+  serialized_start=2205,
+  serialized_end=2231,
 )
 
 
 _PODSANDBOXSTATUSREQUEST = _descriptor.Descriptor(
   name='PodSandboxStatusRequest',
-  full_name='PodSandboxStatusRequest',
+  full_name='runtime.v1alpha2.PodSandboxStatusRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='PodSandboxStatusRequest.pod_sandbox_id', index=0,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.PodSandboxStatusRequest.pod_sandbox_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='verbose', full_name='PodSandboxStatusRequest.verbose', index=1,
+      name='verbose', full_name='runtime.v1alpha2.PodSandboxStatusRequest.verbose', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1059,20 +1061,20 @@ _PODSANDBOXSTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1861,
-  serialized_end=1927,
+  serialized_start=2233,
+  serialized_end=2299,
 )
 
 
 _PODSANDBOXNETWORKSTATUS = _descriptor.Descriptor(
   name='PodSandboxNetworkStatus',
-  full_name='PodSandboxNetworkStatus',
+  full_name='runtime.v1alpha2.PodSandboxNetworkStatus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='ip', full_name='PodSandboxNetworkStatus.ip', index=0,
+      name='ip', full_name='runtime.v1alpha2.PodSandboxNetworkStatus.ip', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1090,20 +1092,20 @@ _PODSANDBOXNETWORKSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1929,
-  serialized_end=1966,
+  serialized_start=2301,
+  serialized_end=2338,
 )
 
 
 _NAMESPACE = _descriptor.Descriptor(
   name='Namespace',
-  full_name='Namespace',
+  full_name='runtime.v1alpha2.Namespace',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='options', full_name='Namespace.options', index=0,
+      name='options', full_name='runtime.v1alpha2.Namespace.options', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1121,20 +1123,20 @@ _NAMESPACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1968,
-  serialized_end=2014,
+  serialized_start=2340,
+  serialized_end=2403,
 )
 
 
 _LINUXPODSANDBOXSTATUS = _descriptor.Descriptor(
   name='LinuxPodSandboxStatus',
-  full_name='LinuxPodSandboxStatus',
+  full_name='runtime.v1alpha2.LinuxPodSandboxStatus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='namespaces', full_name='LinuxPodSandboxStatus.namespaces', index=0,
+      name='namespaces', full_name='runtime.v1alpha2.LinuxPodSandboxStatus.namespaces', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1152,27 +1154,27 @@ _LINUXPODSANDBOXSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2016,
-  serialized_end=2071,
+  serialized_start=2405,
+  serialized_end=2477,
 )
 
 
 _PODSANDBOXSTATUS_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='PodSandboxStatus.LabelsEntry',
+  full_name='runtime.v1alpha2.PodSandboxStatus.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandboxStatus.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandboxStatus.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandboxStatus.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandboxStatus.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1190,26 +1192,26 @@ _PODSANDBOXSTATUS_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _PODSANDBOXSTATUS_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='PodSandboxStatus.AnnotationsEntry',
+  full_name='runtime.v1alpha2.PodSandboxStatus.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandboxStatus.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandboxStatus.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandboxStatus.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandboxStatus.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1227,68 +1229,68 @@ _PODSANDBOXSTATUS_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _PODSANDBOXSTATUS = _descriptor.Descriptor(
   name='PodSandboxStatus',
-  full_name='PodSandboxStatus',
+  full_name='runtime.v1alpha2.PodSandboxStatus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='PodSandboxStatus.id', index=0,
+      name='id', full_name='runtime.v1alpha2.PodSandboxStatus.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='PodSandboxStatus.metadata', index=1,
+      name='metadata', full_name='runtime.v1alpha2.PodSandboxStatus.metadata', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='PodSandboxStatus.state', index=2,
+      name='state', full_name='runtime.v1alpha2.PodSandboxStatus.state', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='created_at', full_name='PodSandboxStatus.created_at', index=3,
+      name='created_at', full_name='runtime.v1alpha2.PodSandboxStatus.created_at', index=3,
       number=4, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='network', full_name='PodSandboxStatus.network', index=4,
+      name='network', full_name='runtime.v1alpha2.PodSandboxStatus.network', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='linux', full_name='PodSandboxStatus.linux', index=5,
+      name='linux', full_name='runtime.v1alpha2.PodSandboxStatus.linux', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='PodSandboxStatus.labels', index=6,
+      name='labels', full_name='runtime.v1alpha2.PodSandboxStatus.labels', index=6,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='PodSandboxStatus.annotations', index=7,
+      name='annotations', full_name='runtime.v1alpha2.PodSandboxStatus.annotations', index=7,
       number=8, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1306,27 +1308,27 @@ _PODSANDBOXSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2074,
-  serialized_end=2481,
+  serialized_start=2480,
+  serialized_end=2989,
 )
 
 
 _PODSANDBOXSTATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   name='InfoEntry',
-  full_name='PodSandboxStatusResponse.InfoEntry',
+  full_name='runtime.v1alpha2.PodSandboxStatusResponse.InfoEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandboxStatusResponse.InfoEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandboxStatusResponse.InfoEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandboxStatusResponse.InfoEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandboxStatusResponse.InfoEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1344,26 +1346,26 @@ _PODSANDBOXSTATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2598,
-  serialized_end=2641,
+  serialized_start=3140,
+  serialized_end=3183,
 )
 
 _PODSANDBOXSTATUSRESPONSE = _descriptor.Descriptor(
   name='PodSandboxStatusResponse',
-  full_name='PodSandboxStatusResponse',
+  full_name='runtime.v1alpha2.PodSandboxStatusResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='status', full_name='PodSandboxStatusResponse.status', index=0,
+      name='status', full_name='runtime.v1alpha2.PodSandboxStatusResponse.status', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='info', full_name='PodSandboxStatusResponse.info', index=1,
+      name='info', full_name='runtime.v1alpha2.PodSandboxStatusResponse.info', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1381,20 +1383,20 @@ _PODSANDBOXSTATUSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2484,
-  serialized_end=2641,
+  serialized_start=2992,
+  serialized_end=3183,
 )
 
 
 _PODSANDBOXSTATEVALUE = _descriptor.Descriptor(
   name='PodSandboxStateValue',
-  full_name='PodSandboxStateValue',
+  full_name='runtime.v1alpha2.PodSandboxStateValue',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='state', full_name='PodSandboxStateValue.state', index=0,
+      name='state', full_name='runtime.v1alpha2.PodSandboxStateValue.state', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -1412,27 +1414,27 @@ _PODSANDBOXSTATEVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2643,
-  serialized_end=2698,
+  serialized_start=3185,
+  serialized_end=3257,
 )
 
 
 _PODSANDBOXFILTER_LABELSELECTORENTRY = _descriptor.Descriptor(
   name='LabelSelectorEntry',
-  full_name='PodSandboxFilter.LabelSelectorEntry',
+  full_name='runtime.v1alpha2.PodSandboxFilter.LabelSelectorEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandboxFilter.LabelSelectorEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandboxFilter.LabelSelectorEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandboxFilter.LabelSelectorEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandboxFilter.LabelSelectorEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1450,33 +1452,33 @@ _PODSANDBOXFILTER_LABELSELECTORENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2833,
-  serialized_end=2885,
+  serialized_start=3426,
+  serialized_end=3478,
 )
 
 _PODSANDBOXFILTER = _descriptor.Descriptor(
   name='PodSandboxFilter',
-  full_name='PodSandboxFilter',
+  full_name='runtime.v1alpha2.PodSandboxFilter',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='PodSandboxFilter.id', index=0,
+      name='id', full_name='runtime.v1alpha2.PodSandboxFilter.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='PodSandboxFilter.state', index=1,
+      name='state', full_name='runtime.v1alpha2.PodSandboxFilter.state', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='label_selector', full_name='PodSandboxFilter.label_selector', index=2,
+      name='label_selector', full_name='runtime.v1alpha2.PodSandboxFilter.label_selector', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1494,20 +1496,20 @@ _PODSANDBOXFILTER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2701,
-  serialized_end=2885,
+  serialized_start=3260,
+  serialized_end=3478,
 )
 
 
 _LISTPODSANDBOXREQUEST = _descriptor.Descriptor(
   name='ListPodSandboxRequest',
-  full_name='ListPodSandboxRequest',
+  full_name='runtime.v1alpha2.ListPodSandboxRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='filter', full_name='ListPodSandboxRequest.filter', index=0,
+      name='filter', full_name='runtime.v1alpha2.ListPodSandboxRequest.filter', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1525,27 +1527,27 @@ _LISTPODSANDBOXREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2887,
-  serialized_end=2945,
+  serialized_start=3480,
+  serialized_end=3555,
 )
 
 
 _PODSANDBOX_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='PodSandbox.LabelsEntry',
+  full_name='runtime.v1alpha2.PodSandbox.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandbox.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandbox.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandbox.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandbox.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1563,26 +1565,26 @@ _PODSANDBOX_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _PODSANDBOX_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='PodSandbox.AnnotationsEntry',
+  full_name='runtime.v1alpha2.PodSandbox.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='PodSandbox.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.PodSandbox.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='PodSandbox.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.PodSandbox.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1600,54 +1602,54 @@ _PODSANDBOX_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _PODSANDBOX = _descriptor.Descriptor(
   name='PodSandbox',
-  full_name='PodSandbox',
+  full_name='runtime.v1alpha2.PodSandbox',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='PodSandbox.id', index=0,
+      name='id', full_name='runtime.v1alpha2.PodSandbox.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='PodSandbox.metadata', index=1,
+      name='metadata', full_name='runtime.v1alpha2.PodSandbox.metadata', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='PodSandbox.state', index=2,
+      name='state', full_name='runtime.v1alpha2.PodSandbox.state', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='created_at', full_name='PodSandbox.created_at', index=3,
+      name='created_at', full_name='runtime.v1alpha2.PodSandbox.created_at', index=3,
       number=4, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='PodSandbox.labels', index=4,
+      name='labels', full_name='runtime.v1alpha2.PodSandbox.labels', index=4,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='PodSandbox.annotations', index=5,
+      name='annotations', full_name='runtime.v1alpha2.PodSandbox.annotations', index=5,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1665,20 +1667,20 @@ _PODSANDBOX = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2948,
-  serialized_end=3255,
+  serialized_start=3558,
+  serialized_end=3933,
 )
 
 
 _LISTPODSANDBOXRESPONSE = _descriptor.Descriptor(
   name='ListPodSandboxResponse',
-  full_name='ListPodSandboxResponse',
+  full_name='runtime.v1alpha2.ListPodSandboxResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='items', full_name='ListPodSandboxResponse.items', index=0,
+      name='items', full_name='runtime.v1alpha2.ListPodSandboxResponse.items', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1696,20 +1698,20 @@ _LISTPODSANDBOXRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3257,
-  serialized_end=3309,
+  serialized_start=3935,
+  serialized_end=4004,
 )
 
 
 _IMAGESPEC = _descriptor.Descriptor(
   name='ImageSpec',
-  full_name='ImageSpec',
+  full_name='runtime.v1alpha2.ImageSpec',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image', full_name='ImageSpec.image', index=0,
+      name='image', full_name='runtime.v1alpha2.ImageSpec.image', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1727,27 +1729,27 @@ _IMAGESPEC = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3311,
-  serialized_end=3337,
+  serialized_start=4006,
+  serialized_end=4032,
 )
 
 
 _KEYVALUE = _descriptor.Descriptor(
   name='KeyValue',
-  full_name='KeyValue',
+  full_name='runtime.v1alpha2.KeyValue',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='KeyValue.key', index=0,
+      name='key', full_name='runtime.v1alpha2.KeyValue.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='KeyValue.value', index=1,
+      name='value', full_name='runtime.v1alpha2.KeyValue.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1765,62 +1767,62 @@ _KEYVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3339,
-  serialized_end=3377,
+  serialized_start=4034,
+  serialized_end=4072,
 )
 
 
 _LINUXCONTAINERRESOURCES = _descriptor.Descriptor(
   name='LinuxContainerResources',
-  full_name='LinuxContainerResources',
+  full_name='runtime.v1alpha2.LinuxContainerResources',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='cpu_period', full_name='LinuxContainerResources.cpu_period', index=0,
+      name='cpu_period', full_name='runtime.v1alpha2.LinuxContainerResources.cpu_period', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpu_quota', full_name='LinuxContainerResources.cpu_quota', index=1,
+      name='cpu_quota', full_name='runtime.v1alpha2.LinuxContainerResources.cpu_quota', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpu_shares', full_name='LinuxContainerResources.cpu_shares', index=2,
+      name='cpu_shares', full_name='runtime.v1alpha2.LinuxContainerResources.cpu_shares', index=2,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='memory_limit_in_bytes', full_name='LinuxContainerResources.memory_limit_in_bytes', index=3,
+      name='memory_limit_in_bytes', full_name='runtime.v1alpha2.LinuxContainerResources.memory_limit_in_bytes', index=3,
       number=4, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='oom_score_adj', full_name='LinuxContainerResources.oom_score_adj', index=4,
+      name='oom_score_adj', full_name='runtime.v1alpha2.LinuxContainerResources.oom_score_adj', index=4,
       number=5, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpuset_cpus', full_name='LinuxContainerResources.cpuset_cpus', index=5,
+      name='cpuset_cpus', full_name='runtime.v1alpha2.LinuxContainerResources.cpuset_cpus', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpuset_mems', full_name='LinuxContainerResources.cpuset_mems', index=6,
+      name='cpuset_mems', full_name='runtime.v1alpha2.LinuxContainerResources.cpuset_mems', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1838,41 +1840,41 @@ _LINUXCONTAINERRESOURCES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3380,
-  serialized_end=3560,
+  serialized_start=4075,
+  serialized_end=4255,
 )
 
 
 _SELINUXOPTION = _descriptor.Descriptor(
   name='SELinuxOption',
-  full_name='SELinuxOption',
+  full_name='runtime.v1alpha2.SELinuxOption',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='user', full_name='SELinuxOption.user', index=0,
+      name='user', full_name='runtime.v1alpha2.SELinuxOption.user', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='role', full_name='SELinuxOption.role', index=1,
+      name='role', full_name='runtime.v1alpha2.SELinuxOption.role', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='type', full_name='SELinuxOption.type', index=2,
+      name='type', full_name='runtime.v1alpha2.SELinuxOption.type', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='level', full_name='SELinuxOption.level', index=3,
+      name='level', full_name='runtime.v1alpha2.SELinuxOption.level', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1890,27 +1892,27 @@ _SELINUXOPTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3562,
-  serialized_end=3634,
+  serialized_start=4257,
+  serialized_end=4329,
 )
 
 
 _CAPABILITY = _descriptor.Descriptor(
   name='Capability',
-  full_name='Capability',
+  full_name='runtime.v1alpha2.Capability',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='add_capabilities', full_name='Capability.add_capabilities', index=0,
+      name='add_capabilities', full_name='runtime.v1alpha2.Capability.add_capabilities', index=0,
       number=1, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='drop_capabilities', full_name='Capability.drop_capabilities', index=1,
+      name='drop_capabilities', full_name='runtime.v1alpha2.Capability.drop_capabilities', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1928,97 +1930,97 @@ _CAPABILITY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3636,
-  serialized_end=3701,
+  serialized_start=4331,
+  serialized_end=4396,
 )
 
 
 _LINUXCONTAINERSECURITYCONTEXT = _descriptor.Descriptor(
   name='LinuxContainerSecurityContext',
-  full_name='LinuxContainerSecurityContext',
+  full_name='runtime.v1alpha2.LinuxContainerSecurityContext',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='capabilities', full_name='LinuxContainerSecurityContext.capabilities', index=0,
+      name='capabilities', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.capabilities', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='privileged', full_name='LinuxContainerSecurityContext.privileged', index=1,
+      name='privileged', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.privileged', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='namespace_options', full_name='LinuxContainerSecurityContext.namespace_options', index=2,
+      name='namespace_options', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.namespace_options', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='selinux_options', full_name='LinuxContainerSecurityContext.selinux_options', index=3,
+      name='selinux_options', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.selinux_options', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='run_as_user', full_name='LinuxContainerSecurityContext.run_as_user', index=4,
+      name='run_as_user', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.run_as_user', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='run_as_group', full_name='LinuxContainerSecurityContext.run_as_group', index=5,
+      name='run_as_group', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.run_as_group', index=5,
       number=12, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='run_as_username', full_name='LinuxContainerSecurityContext.run_as_username', index=6,
+      name='run_as_username', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.run_as_username', index=6,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='readonly_rootfs', full_name='LinuxContainerSecurityContext.readonly_rootfs', index=7,
+      name='readonly_rootfs', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.readonly_rootfs', index=7,
       number=7, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='supplemental_groups', full_name='LinuxContainerSecurityContext.supplemental_groups', index=8,
+      name='supplemental_groups', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.supplemental_groups', index=8,
       number=8, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='apparmor_profile', full_name='LinuxContainerSecurityContext.apparmor_profile', index=9,
+      name='apparmor_profile', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.apparmor_profile', index=9,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='seccomp_profile_path', full_name='LinuxContainerSecurityContext.seccomp_profile_path', index=10,
+      name='seccomp_profile_path', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.seccomp_profile_path', index=10,
       number=10, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='no_new_privs', full_name='LinuxContainerSecurityContext.no_new_privs', index=11,
+      name='no_new_privs', full_name='runtime.v1alpha2.LinuxContainerSecurityContext.no_new_privs', index=11,
       number=11, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -2036,27 +2038,27 @@ _LINUXCONTAINERSECURITYCONTEXT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3704,
-  serialized_end=4102,
+  serialized_start=4399,
+  serialized_end=4882,
 )
 
 
 _LINUXCONTAINERCONFIG = _descriptor.Descriptor(
   name='LinuxContainerConfig',
-  full_name='LinuxContainerConfig',
+  full_name='runtime.v1alpha2.LinuxContainerConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='resources', full_name='LinuxContainerConfig.resources', index=0,
+      name='resources', full_name='runtime.v1alpha2.LinuxContainerConfig.resources', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='security_context', full_name='LinuxContainerConfig.security_context', index=1,
+      name='security_context', full_name='runtime.v1alpha2.LinuxContainerConfig.security_context', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -2074,20 +2076,20 @@ _LINUXCONTAINERCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4104,
-  serialized_end=4229,
+  serialized_start=4885,
+  serialized_end=5044,
 )
 
 
 _WINDOWSCONTAINERSECURITYCONTEXT = _descriptor.Descriptor(
   name='WindowsContainerSecurityContext',
-  full_name='WindowsContainerSecurityContext',
+  full_name='runtime.v1alpha2.WindowsContainerSecurityContext',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='run_as_username', full_name='WindowsContainerSecurityContext.run_as_username', index=0,
+      name='run_as_username', full_name='runtime.v1alpha2.WindowsContainerSecurityContext.run_as_username', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2105,27 +2107,27 @@ _WINDOWSCONTAINERSECURITYCONTEXT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4231,
-  serialized_end=4289,
+  serialized_start=5046,
+  serialized_end=5104,
 )
 
 
 _WINDOWSCONTAINERCONFIG = _descriptor.Descriptor(
   name='WindowsContainerConfig',
-  full_name='WindowsContainerConfig',
+  full_name='runtime.v1alpha2.WindowsContainerConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='resources', full_name='WindowsContainerConfig.resources', index=0,
+      name='resources', full_name='runtime.v1alpha2.WindowsContainerConfig.resources', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='security_context', full_name='WindowsContainerConfig.security_context', index=1,
+      name='security_context', full_name='runtime.v1alpha2.WindowsContainerConfig.security_context', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -2143,41 +2145,41 @@ _WINDOWSCONTAINERCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4292,
-  serialized_end=4423,
+  serialized_start=5107,
+  serialized_end=5272,
 )
 
 
 _WINDOWSCONTAINERRESOURCES = _descriptor.Descriptor(
   name='WindowsContainerResources',
-  full_name='WindowsContainerResources',
+  full_name='runtime.v1alpha2.WindowsContainerResources',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='cpu_shares', full_name='WindowsContainerResources.cpu_shares', index=0,
+      name='cpu_shares', full_name='runtime.v1alpha2.WindowsContainerResources.cpu_shares', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpu_count', full_name='WindowsContainerResources.cpu_count', index=1,
+      name='cpu_count', full_name='runtime.v1alpha2.WindowsContainerResources.cpu_count', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpu_maximum', full_name='WindowsContainerResources.cpu_maximum', index=2,
+      name='cpu_maximum', full_name='runtime.v1alpha2.WindowsContainerResources.cpu_maximum', index=2,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='memory_limit_in_bytes', full_name='WindowsContainerResources.memory_limit_in_bytes', index=3,
+      name='memory_limit_in_bytes', full_name='runtime.v1alpha2.WindowsContainerResources.memory_limit_in_bytes', index=3,
       number=4, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -2195,27 +2197,27 @@ _WINDOWSCONTAINERRESOURCES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4425,
-  serialized_end=4543,
+  serialized_start=5274,
+  serialized_end=5392,
 )
 
 
 _CONTAINERMETADATA = _descriptor.Descriptor(
   name='ContainerMetadata',
-  full_name='ContainerMetadata',
+  full_name='runtime.v1alpha2.ContainerMetadata',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='ContainerMetadata.name', index=0,
+      name='name', full_name='runtime.v1alpha2.ContainerMetadata.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='attempt', full_name='ContainerMetadata.attempt', index=1,
+      name='attempt', full_name='runtime.v1alpha2.ContainerMetadata.attempt', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -2233,34 +2235,34 @@ _CONTAINERMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4545,
-  serialized_end=4595,
+  serialized_start=5394,
+  serialized_end=5444,
 )
 
 
 _DEVICE = _descriptor.Descriptor(
   name='Device',
-  full_name='Device',
+  full_name='runtime.v1alpha2.Device',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_path', full_name='Device.container_path', index=0,
+      name='container_path', full_name='runtime.v1alpha2.Device.container_path', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='host_path', full_name='Device.host_path', index=1,
+      name='host_path', full_name='runtime.v1alpha2.Device.host_path', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='permissions', full_name='Device.permissions', index=2,
+      name='permissions', full_name='runtime.v1alpha2.Device.permissions', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2278,27 +2280,27 @@ _DEVICE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4597,
-  serialized_end=4669,
+  serialized_start=5446,
+  serialized_end=5518,
 )
 
 
 _CONTAINERCONFIG_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='ContainerConfig.LabelsEntry',
+  full_name='runtime.v1alpha2.ContainerConfig.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerConfig.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerConfig.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerConfig.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerConfig.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2316,26 +2318,26 @@ _CONTAINERCONFIG_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _CONTAINERCONFIG_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='ContainerConfig.AnnotationsEntry',
+  full_name='runtime.v1alpha2.ContainerConfig.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerConfig.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerConfig.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerConfig.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerConfig.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2353,124 +2355,124 @@ _CONTAINERCONFIG_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _CONTAINERCONFIG = _descriptor.Descriptor(
   name='ContainerConfig',
-  full_name='ContainerConfig',
+  full_name='runtime.v1alpha2.ContainerConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='ContainerConfig.metadata', index=0,
+      name='metadata', full_name='runtime.v1alpha2.ContainerConfig.metadata', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='image', full_name='ContainerConfig.image', index=1,
+      name='image', full_name='runtime.v1alpha2.ContainerConfig.image', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='command', full_name='ContainerConfig.command', index=2,
+      name='command', full_name='runtime.v1alpha2.ContainerConfig.command', index=2,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='args', full_name='ContainerConfig.args', index=3,
+      name='args', full_name='runtime.v1alpha2.ContainerConfig.args', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='working_dir', full_name='ContainerConfig.working_dir', index=4,
+      name='working_dir', full_name='runtime.v1alpha2.ContainerConfig.working_dir', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='envs', full_name='ContainerConfig.envs', index=5,
+      name='envs', full_name='runtime.v1alpha2.ContainerConfig.envs', index=5,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mounts', full_name='ContainerConfig.mounts', index=6,
+      name='mounts', full_name='runtime.v1alpha2.ContainerConfig.mounts', index=6,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='devices', full_name='ContainerConfig.devices', index=7,
+      name='devices', full_name='runtime.v1alpha2.ContainerConfig.devices', index=7,
       number=8, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='ContainerConfig.labels', index=8,
+      name='labels', full_name='runtime.v1alpha2.ContainerConfig.labels', index=8,
       number=9, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='ContainerConfig.annotations', index=9,
+      name='annotations', full_name='runtime.v1alpha2.ContainerConfig.annotations', index=9,
       number=10, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='log_path', full_name='ContainerConfig.log_path', index=10,
+      name='log_path', full_name='runtime.v1alpha2.ContainerConfig.log_path', index=10,
       number=11, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stdin', full_name='ContainerConfig.stdin', index=11,
+      name='stdin', full_name='runtime.v1alpha2.ContainerConfig.stdin', index=11,
       number=12, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stdin_once', full_name='ContainerConfig.stdin_once', index=12,
+      name='stdin_once', full_name='runtime.v1alpha2.ContainerConfig.stdin_once', index=12,
       number=13, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='tty', full_name='ContainerConfig.tty', index=13,
+      name='tty', full_name='runtime.v1alpha2.ContainerConfig.tty', index=13,
       number=14, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='linux', full_name='ContainerConfig.linux', index=14,
+      name='linux', full_name='runtime.v1alpha2.ContainerConfig.linux', index=14,
       number=15, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='windows', full_name='ContainerConfig.windows', index=15,
+      name='windows', full_name='runtime.v1alpha2.ContainerConfig.windows', index=15,
       number=16, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -2488,34 +2490,34 @@ _CONTAINERCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4672,
-  serialized_end=5228,
+  serialized_start=5521,
+  serialized_end=6230,
 )
 
 
 _CREATECONTAINERREQUEST = _descriptor.Descriptor(
   name='CreateContainerRequest',
-  full_name='CreateContainerRequest',
+  full_name='runtime.v1alpha2.CreateContainerRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='CreateContainerRequest.pod_sandbox_id', index=0,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.CreateContainerRequest.pod_sandbox_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='config', full_name='CreateContainerRequest.config', index=1,
+      name='config', full_name='runtime.v1alpha2.CreateContainerRequest.config', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sandbox_config', full_name='CreateContainerRequest.sandbox_config', index=2,
+      name='sandbox_config', full_name='runtime.v1alpha2.CreateContainerRequest.sandbox_config', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -2533,20 +2535,20 @@ _CREATECONTAINERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5230,
-  serialized_end=5355,
+  serialized_start=6233,
+  serialized_end=6392,
 )
 
 
 _CREATECONTAINERRESPONSE = _descriptor.Descriptor(
   name='CreateContainerResponse',
-  full_name='CreateContainerResponse',
+  full_name='runtime.v1alpha2.CreateContainerResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='CreateContainerResponse.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.CreateContainerResponse.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2564,20 +2566,20 @@ _CREATECONTAINERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5357,
-  serialized_end=5404,
+  serialized_start=6394,
+  serialized_end=6441,
 )
 
 
 _STARTCONTAINERREQUEST = _descriptor.Descriptor(
   name='StartContainerRequest',
-  full_name='StartContainerRequest',
+  full_name='runtime.v1alpha2.StartContainerRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='StartContainerRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.StartContainerRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2595,14 +2597,14 @@ _STARTCONTAINERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5406,
-  serialized_end=5451,
+  serialized_start=6443,
+  serialized_end=6488,
 )
 
 
 _STARTCONTAINERRESPONSE = _descriptor.Descriptor(
   name='StartContainerResponse',
-  full_name='StartContainerResponse',
+  full_name='runtime.v1alpha2.StartContainerResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -2619,27 +2621,27 @@ _STARTCONTAINERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5453,
-  serialized_end=5477,
+  serialized_start=6490,
+  serialized_end=6514,
 )
 
 
 _STOPCONTAINERREQUEST = _descriptor.Descriptor(
   name='StopContainerRequest',
-  full_name='StopContainerRequest',
+  full_name='runtime.v1alpha2.StopContainerRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='StopContainerRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.StopContainerRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='timeout', full_name='StopContainerRequest.timeout', index=1,
+      name='timeout', full_name='runtime.v1alpha2.StopContainerRequest.timeout', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -2657,14 +2659,14 @@ _STOPCONTAINERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5479,
-  serialized_end=5540,
+  serialized_start=6516,
+  serialized_end=6577,
 )
 
 
 _STOPCONTAINERRESPONSE = _descriptor.Descriptor(
   name='StopContainerResponse',
-  full_name='StopContainerResponse',
+  full_name='runtime.v1alpha2.StopContainerResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -2681,20 +2683,20 @@ _STOPCONTAINERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5542,
-  serialized_end=5565,
+  serialized_start=6579,
+  serialized_end=6602,
 )
 
 
 _REMOVECONTAINERREQUEST = _descriptor.Descriptor(
   name='RemoveContainerRequest',
-  full_name='RemoveContainerRequest',
+  full_name='runtime.v1alpha2.RemoveContainerRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='RemoveContainerRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.RemoveContainerRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2712,14 +2714,14 @@ _REMOVECONTAINERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5567,
-  serialized_end=5613,
+  serialized_start=6604,
+  serialized_end=6650,
 )
 
 
 _REMOVECONTAINERRESPONSE = _descriptor.Descriptor(
   name='RemoveContainerResponse',
-  full_name='RemoveContainerResponse',
+  full_name='runtime.v1alpha2.RemoveContainerResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -2736,20 +2738,20 @@ _REMOVECONTAINERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5615,
-  serialized_end=5640,
+  serialized_start=6652,
+  serialized_end=6677,
 )
 
 
 _CONTAINERSTATEVALUE = _descriptor.Descriptor(
   name='ContainerStateValue',
-  full_name='ContainerStateValue',
+  full_name='runtime.v1alpha2.ContainerStateValue',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='state', full_name='ContainerStateValue.state', index=0,
+      name='state', full_name='runtime.v1alpha2.ContainerStateValue.state', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -2767,27 +2769,27 @@ _CONTAINERSTATEVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5642,
-  serialized_end=5695,
+  serialized_start=6679,
+  serialized_end=6749,
 )
 
 
 _CONTAINERFILTER_LABELSELECTORENTRY = _descriptor.Descriptor(
   name='LabelSelectorEntry',
-  full_name='ContainerFilter.LabelSelectorEntry',
+  full_name='runtime.v1alpha2.ContainerFilter.LabelSelectorEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerFilter.LabelSelectorEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerFilter.LabelSelectorEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerFilter.LabelSelectorEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerFilter.LabelSelectorEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2805,40 +2807,40 @@ _CONTAINERFILTER_LABELSELECTORENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2833,
-  serialized_end=2885,
+  serialized_start=3426,
+  serialized_end=3478,
 )
 
 _CONTAINERFILTER = _descriptor.Descriptor(
   name='ContainerFilter',
-  full_name='ContainerFilter',
+  full_name='runtime.v1alpha2.ContainerFilter',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='ContainerFilter.id', index=0,
+      name='id', full_name='runtime.v1alpha2.ContainerFilter.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='ContainerFilter.state', index=1,
+      name='state', full_name='runtime.v1alpha2.ContainerFilter.state', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='ContainerFilter.pod_sandbox_id', index=2,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.ContainerFilter.pod_sandbox_id', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='label_selector', full_name='ContainerFilter.label_selector', index=3,
+      name='label_selector', full_name='runtime.v1alpha2.ContainerFilter.label_selector', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -2856,20 +2858,20 @@ _CONTAINERFILTER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5698,
-  serialized_end=5903,
+  serialized_start=6752,
+  serialized_end=6991,
 )
 
 
 _LISTCONTAINERSREQUEST = _descriptor.Descriptor(
   name='ListContainersRequest',
-  full_name='ListContainersRequest',
+  full_name='runtime.v1alpha2.ListContainersRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='filter', full_name='ListContainersRequest.filter', index=0,
+      name='filter', full_name='runtime.v1alpha2.ListContainersRequest.filter', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -2887,27 +2889,27 @@ _LISTCONTAINERSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5905,
-  serialized_end=5962,
+  serialized_start=6993,
+  serialized_end=7067,
 )
 
 
 _CONTAINER_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='Container.LabelsEntry',
+  full_name='runtime.v1alpha2.Container.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='Container.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.Container.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='Container.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.Container.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2925,26 +2927,26 @@ _CONTAINER_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _CONTAINER_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='Container.AnnotationsEntry',
+  full_name='runtime.v1alpha2.Container.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='Container.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.Container.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='Container.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.Container.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2962,75 +2964,75 @@ _CONTAINER_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _CONTAINER = _descriptor.Descriptor(
   name='Container',
-  full_name='Container',
+  full_name='runtime.v1alpha2.Container',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='Container.id', index=0,
+      name='id', full_name='runtime.v1alpha2.Container.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='Container.pod_sandbox_id', index=1,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.Container.pod_sandbox_id', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='Container.metadata', index=2,
+      name='metadata', full_name='runtime.v1alpha2.Container.metadata', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='image', full_name='Container.image', index=3,
+      name='image', full_name='runtime.v1alpha2.Container.image', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='image_ref', full_name='Container.image_ref', index=4,
+      name='image_ref', full_name='runtime.v1alpha2.Container.image_ref', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='Container.state', index=5,
+      name='state', full_name='runtime.v1alpha2.Container.state', index=5,
       number=6, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='created_at', full_name='Container.created_at', index=6,
+      name='created_at', full_name='runtime.v1alpha2.Container.created_at', index=6,
       number=7, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='Container.labels', index=7,
+      name='labels', full_name='runtime.v1alpha2.Container.labels', index=7,
       number=8, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='Container.annotations', index=8,
+      name='annotations', full_name='runtime.v1alpha2.Container.annotations', index=8,
       number=9, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -3048,20 +3050,20 @@ _CONTAINER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5965,
-  serialized_end=6337,
+  serialized_start=7070,
+  serialized_end=7527,
 )
 
 
 _LISTCONTAINERSRESPONSE = _descriptor.Descriptor(
   name='ListContainersResponse',
-  full_name='ListContainersResponse',
+  full_name='runtime.v1alpha2.ListContainersResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='containers', full_name='ListContainersResponse.containers', index=0,
+      name='containers', full_name='runtime.v1alpha2.ListContainersResponse.containers', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -3079,27 +3081,27 @@ _LISTCONTAINERSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6339,
-  serialized_end=6395,
+  serialized_start=7529,
+  serialized_end=7602,
 )
 
 
 _CONTAINERSTATUSREQUEST = _descriptor.Descriptor(
   name='ContainerStatusRequest',
-  full_name='ContainerStatusRequest',
+  full_name='runtime.v1alpha2.ContainerStatusRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='ContainerStatusRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.ContainerStatusRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='verbose', full_name='ContainerStatusRequest.verbose', index=1,
+      name='verbose', full_name='runtime.v1alpha2.ContainerStatusRequest.verbose', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -3117,27 +3119,27 @@ _CONTAINERSTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6397,
-  serialized_end=6460,
+  serialized_start=7604,
+  serialized_end=7667,
 )
 
 
 _CONTAINERSTATUS_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='ContainerStatus.LabelsEntry',
+  full_name='runtime.v1alpha2.ContainerStatus.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerStatus.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerStatus.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerStatus.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerStatus.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3155,26 +3157,26 @@ _CONTAINERSTATUS_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _CONTAINERSTATUS_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='ContainerStatus.AnnotationsEntry',
+  full_name='runtime.v1alpha2.ContainerStatus.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerStatus.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerStatus.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerStatus.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerStatus.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3192,117 +3194,117 @@ _CONTAINERSTATUS_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _CONTAINERSTATUS = _descriptor.Descriptor(
   name='ContainerStatus',
-  full_name='ContainerStatus',
+  full_name='runtime.v1alpha2.ContainerStatus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='ContainerStatus.id', index=0,
+      name='id', full_name='runtime.v1alpha2.ContainerStatus.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='ContainerStatus.metadata', index=1,
+      name='metadata', full_name='runtime.v1alpha2.ContainerStatus.metadata', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='ContainerStatus.state', index=2,
+      name='state', full_name='runtime.v1alpha2.ContainerStatus.state', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='created_at', full_name='ContainerStatus.created_at', index=3,
+      name='created_at', full_name='runtime.v1alpha2.ContainerStatus.created_at', index=3,
       number=4, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='started_at', full_name='ContainerStatus.started_at', index=4,
+      name='started_at', full_name='runtime.v1alpha2.ContainerStatus.started_at', index=4,
       number=5, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='finished_at', full_name='ContainerStatus.finished_at', index=5,
+      name='finished_at', full_name='runtime.v1alpha2.ContainerStatus.finished_at', index=5,
       number=6, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='exit_code', full_name='ContainerStatus.exit_code', index=6,
+      name='exit_code', full_name='runtime.v1alpha2.ContainerStatus.exit_code', index=6,
       number=7, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='image', full_name='ContainerStatus.image', index=7,
+      name='image', full_name='runtime.v1alpha2.ContainerStatus.image', index=7,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='image_ref', full_name='ContainerStatus.image_ref', index=8,
+      name='image_ref', full_name='runtime.v1alpha2.ContainerStatus.image_ref', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='reason', full_name='ContainerStatus.reason', index=9,
+      name='reason', full_name='runtime.v1alpha2.ContainerStatus.reason', index=9,
       number=10, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='message', full_name='ContainerStatus.message', index=10,
+      name='message', full_name='runtime.v1alpha2.ContainerStatus.message', index=10,
       number=11, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='ContainerStatus.labels', index=11,
+      name='labels', full_name='runtime.v1alpha2.ContainerStatus.labels', index=11,
       number=12, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='ContainerStatus.annotations', index=12,
+      name='annotations', full_name='runtime.v1alpha2.ContainerStatus.annotations', index=12,
       number=13, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mounts', full_name='ContainerStatus.mounts', index=13,
+      name='mounts', full_name='runtime.v1alpha2.ContainerStatus.mounts', index=13,
       number=14, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='log_path', full_name='ContainerStatus.log_path', index=14,
+      name='log_path', full_name='runtime.v1alpha2.ContainerStatus.log_path', index=14,
       number=15, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3320,27 +3322,27 @@ _CONTAINERSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6463,
-  serialized_end=6964,
+  serialized_start=7670,
+  serialized_end=8273,
 )
 
 
 _CONTAINERSTATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   name='InfoEntry',
-  full_name='ContainerStatusResponse.InfoEntry',
+  full_name='runtime.v1alpha2.ContainerStatusResponse.InfoEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerStatusResponse.InfoEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerStatusResponse.InfoEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerStatusResponse.InfoEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerStatusResponse.InfoEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3358,26 +3360,26 @@ _CONTAINERSTATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2598,
-  serialized_end=2641,
+  serialized_start=3140,
+  serialized_end=3183,
 )
 
 _CONTAINERSTATUSRESPONSE = _descriptor.Descriptor(
   name='ContainerStatusResponse',
-  full_name='ContainerStatusResponse',
+  full_name='runtime.v1alpha2.ContainerStatusResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='status', full_name='ContainerStatusResponse.status', index=0,
+      name='status', full_name='runtime.v1alpha2.ContainerStatusResponse.status', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='info', full_name='ContainerStatusResponse.info', index=1,
+      name='info', full_name='runtime.v1alpha2.ContainerStatusResponse.info', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -3395,27 +3397,27 @@ _CONTAINERSTATUSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6967,
-  serialized_end=7121,
+  serialized_start=8276,
+  serialized_end=8464,
 )
 
 
 _UPDATECONTAINERRESOURCESREQUEST = _descriptor.Descriptor(
   name='UpdateContainerResourcesRequest',
-  full_name='UpdateContainerResourcesRequest',
+  full_name='runtime.v1alpha2.UpdateContainerResourcesRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='UpdateContainerResourcesRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.UpdateContainerResourcesRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='linux', full_name='UpdateContainerResourcesRequest.linux', index=1,
+      name='linux', full_name='runtime.v1alpha2.UpdateContainerResourcesRequest.linux', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -3433,14 +3435,14 @@ _UPDATECONTAINERRESOURCESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7123,
-  serialized_end=7219,
+  serialized_start=8466,
+  serialized_end=8579,
 )
 
 
 _UPDATECONTAINERRESOURCESRESPONSE = _descriptor.Descriptor(
   name='UpdateContainerResourcesResponse',
-  full_name='UpdateContainerResourcesResponse',
+  full_name='runtime.v1alpha2.UpdateContainerResourcesResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -3457,34 +3459,34 @@ _UPDATECONTAINERRESOURCESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7221,
-  serialized_end=7255,
+  serialized_start=8581,
+  serialized_end=8615,
 )
 
 
 _EXECSYNCREQUEST = _descriptor.Descriptor(
   name='ExecSyncRequest',
-  full_name='ExecSyncRequest',
+  full_name='runtime.v1alpha2.ExecSyncRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='ExecSyncRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.ExecSyncRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cmd', full_name='ExecSyncRequest.cmd', index=1,
+      name='cmd', full_name='runtime.v1alpha2.ExecSyncRequest.cmd', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='timeout', full_name='ExecSyncRequest.timeout', index=2,
+      name='timeout', full_name='runtime.v1alpha2.ExecSyncRequest.timeout', index=2,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -3502,34 +3504,34 @@ _EXECSYNCREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7257,
-  serialized_end=7326,
+  serialized_start=8617,
+  serialized_end=8686,
 )
 
 
 _EXECSYNCRESPONSE = _descriptor.Descriptor(
   name='ExecSyncResponse',
-  full_name='ExecSyncResponse',
+  full_name='runtime.v1alpha2.ExecSyncResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='stdout', full_name='ExecSyncResponse.stdout', index=0,
+      name='stdout', full_name='runtime.v1alpha2.ExecSyncResponse.stdout', index=0,
       number=1, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stderr', full_name='ExecSyncResponse.stderr', index=1,
+      name='stderr', full_name='runtime.v1alpha2.ExecSyncResponse.stderr', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='exit_code', full_name='ExecSyncResponse.exit_code', index=2,
+      name='exit_code', full_name='runtime.v1alpha2.ExecSyncResponse.exit_code', index=2,
       number=3, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -3547,55 +3549,55 @@ _EXECSYNCRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7328,
-  serialized_end=7397,
+  serialized_start=8688,
+  serialized_end=8757,
 )
 
 
 _EXECREQUEST = _descriptor.Descriptor(
   name='ExecRequest',
-  full_name='ExecRequest',
+  full_name='runtime.v1alpha2.ExecRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='ExecRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.ExecRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cmd', full_name='ExecRequest.cmd', index=1,
+      name='cmd', full_name='runtime.v1alpha2.ExecRequest.cmd', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='tty', full_name='ExecRequest.tty', index=2,
+      name='tty', full_name='runtime.v1alpha2.ExecRequest.tty', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stdin', full_name='ExecRequest.stdin', index=3,
+      name='stdin', full_name='runtime.v1alpha2.ExecRequest.stdin', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stdout', full_name='ExecRequest.stdout', index=4,
+      name='stdout', full_name='runtime.v1alpha2.ExecRequest.stdout', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stderr', full_name='ExecRequest.stderr', index=5,
+      name='stderr', full_name='runtime.v1alpha2.ExecRequest.stderr', index=5,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -3613,20 +3615,20 @@ _EXECREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7399,
-  serialized_end=7507,
+  serialized_start=8759,
+  serialized_end=8867,
 )
 
 
 _EXECRESPONSE = _descriptor.Descriptor(
   name='ExecResponse',
-  full_name='ExecResponse',
+  full_name='runtime.v1alpha2.ExecResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='url', full_name='ExecResponse.url', index=0,
+      name='url', full_name='runtime.v1alpha2.ExecResponse.url', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3644,48 +3646,48 @@ _EXECRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7509,
-  serialized_end=7536,
+  serialized_start=8869,
+  serialized_end=8896,
 )
 
 
 _ATTACHREQUEST = _descriptor.Descriptor(
   name='AttachRequest',
-  full_name='AttachRequest',
+  full_name='runtime.v1alpha2.AttachRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='AttachRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.AttachRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stdin', full_name='AttachRequest.stdin', index=1,
+      name='stdin', full_name='runtime.v1alpha2.AttachRequest.stdin', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='tty', full_name='AttachRequest.tty', index=2,
+      name='tty', full_name='runtime.v1alpha2.AttachRequest.tty', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stdout', full_name='AttachRequest.stdout', index=3,
+      name='stdout', full_name='runtime.v1alpha2.AttachRequest.stdout', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='stderr', full_name='AttachRequest.stderr', index=4,
+      name='stderr', full_name='runtime.v1alpha2.AttachRequest.stderr', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -3703,20 +3705,20 @@ _ATTACHREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7538,
-  serialized_end=7635,
+  serialized_start=8898,
+  serialized_end=8995,
 )
 
 
 _ATTACHRESPONSE = _descriptor.Descriptor(
   name='AttachResponse',
-  full_name='AttachResponse',
+  full_name='runtime.v1alpha2.AttachResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='url', full_name='AttachResponse.url', index=0,
+      name='url', full_name='runtime.v1alpha2.AttachResponse.url', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3734,27 +3736,27 @@ _ATTACHRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7637,
-  serialized_end=7666,
+  serialized_start=8997,
+  serialized_end=9026,
 )
 
 
 _PORTFORWARDREQUEST = _descriptor.Descriptor(
   name='PortForwardRequest',
-  full_name='PortForwardRequest',
+  full_name='runtime.v1alpha2.PortForwardRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='PortForwardRequest.pod_sandbox_id', index=0,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.PortForwardRequest.pod_sandbox_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='port', full_name='PortForwardRequest.port', index=1,
+      name='port', full_name='runtime.v1alpha2.PortForwardRequest.port', index=1,
       number=2, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -3772,20 +3774,20 @@ _PORTFORWARDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7668,
-  serialized_end=7726,
+  serialized_start=9028,
+  serialized_end=9086,
 )
 
 
 _PORTFORWARDRESPONSE = _descriptor.Descriptor(
   name='PortForwardResponse',
-  full_name='PortForwardResponse',
+  full_name='runtime.v1alpha2.PortForwardResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='url', full_name='PortForwardResponse.url', index=0,
+      name='url', full_name='runtime.v1alpha2.PortForwardResponse.url', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3803,20 +3805,20 @@ _PORTFORWARDRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7728,
-  serialized_end=7762,
+  serialized_start=9088,
+  serialized_end=9122,
 )
 
 
 _IMAGEFILTER = _descriptor.Descriptor(
   name='ImageFilter',
-  full_name='ImageFilter',
+  full_name='runtime.v1alpha2.ImageFilter',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image', full_name='ImageFilter.image', index=0,
+      name='image', full_name='runtime.v1alpha2.ImageFilter.image', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -3834,20 +3836,20 @@ _IMAGEFILTER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7764,
-  serialized_end=7804,
+  serialized_start=9124,
+  serialized_end=9181,
 )
 
 
 _LISTIMAGESREQUEST = _descriptor.Descriptor(
   name='ListImagesRequest',
-  full_name='ListImagesRequest',
+  full_name='runtime.v1alpha2.ListImagesRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='filter', full_name='ListImagesRequest.filter', index=0,
+      name='filter', full_name='runtime.v1alpha2.ListImagesRequest.filter', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -3865,55 +3867,55 @@ _LISTIMAGESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7806,
-  serialized_end=7855,
+  serialized_start=9183,
+  serialized_end=9249,
 )
 
 
 _IMAGE = _descriptor.Descriptor(
   name='Image',
-  full_name='Image',
+  full_name='runtime.v1alpha2.Image',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='Image.id', index=0,
+      name='id', full_name='runtime.v1alpha2.Image.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='repo_tags', full_name='Image.repo_tags', index=1,
+      name='repo_tags', full_name='runtime.v1alpha2.Image.repo_tags', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='repo_digests', full_name='Image.repo_digests', index=2,
+      name='repo_digests', full_name='runtime.v1alpha2.Image.repo_digests', index=2,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='size', full_name='Image.size', index=3,
+      name='size', full_name='runtime.v1alpha2.Image.size', index=3,
       number=4, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='uid', full_name='Image.uid', index=4,
+      name='uid', full_name='runtime.v1alpha2.Image.uid', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='username', full_name='Image.username', index=5,
+      name='username', full_name='runtime.v1alpha2.Image.username', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -3931,20 +3933,20 @@ _IMAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7857,
-  serialized_end=7975,
+  serialized_start=9252,
+  serialized_end=9387,
 )
 
 
 _LISTIMAGESRESPONSE = _descriptor.Descriptor(
   name='ListImagesResponse',
-  full_name='ListImagesResponse',
+  full_name='runtime.v1alpha2.ListImagesResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='images', full_name='ListImagesResponse.images', index=0,
+      name='images', full_name='runtime.v1alpha2.ListImagesResponse.images', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -3962,27 +3964,27 @@ _LISTIMAGESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7977,
-  serialized_end=8021,
+  serialized_start=9389,
+  serialized_end=9450,
 )
 
 
 _IMAGESTATUSREQUEST = _descriptor.Descriptor(
   name='ImageStatusRequest',
-  full_name='ImageStatusRequest',
+  full_name='runtime.v1alpha2.ImageStatusRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image', full_name='ImageStatusRequest.image', index=0,
+      name='image', full_name='runtime.v1alpha2.ImageStatusRequest.image', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='verbose', full_name='ImageStatusRequest.verbose', index=1,
+      name='verbose', full_name='runtime.v1alpha2.ImageStatusRequest.verbose', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -4000,27 +4002,27 @@ _IMAGESTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8023,
-  serialized_end=8087,
+  serialized_start=9452,
+  serialized_end=9533,
 )
 
 
 _IMAGESTATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   name='InfoEntry',
-  full_name='ImageStatusResponse.InfoEntry',
+  full_name='runtime.v1alpha2.ImageStatusResponse.InfoEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ImageStatusResponse.InfoEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ImageStatusResponse.InfoEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ImageStatusResponse.InfoEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ImageStatusResponse.InfoEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4038,26 +4040,26 @@ _IMAGESTATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2598,
-  serialized_end=2641,
+  serialized_start=3140,
+  serialized_end=3183,
 )
 
 _IMAGESTATUSRESPONSE = _descriptor.Descriptor(
   name='ImageStatusResponse',
-  full_name='ImageStatusResponse',
+  full_name='runtime.v1alpha2.ImageStatusResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image', full_name='ImageStatusResponse.image', index=0,
+      name='image', full_name='runtime.v1alpha2.ImageStatusResponse.image', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='info', full_name='ImageStatusResponse.info', index=1,
+      name='info', full_name='runtime.v1alpha2.ImageStatusResponse.info', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -4075,55 +4077,55 @@ _IMAGESTATUSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8090,
-  serialized_end=8225,
+  serialized_start=9536,
+  serialized_end=9705,
 )
 
 
 _AUTHCONFIG = _descriptor.Descriptor(
   name='AuthConfig',
-  full_name='AuthConfig',
+  full_name='runtime.v1alpha2.AuthConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='username', full_name='AuthConfig.username', index=0,
+      name='username', full_name='runtime.v1alpha2.AuthConfig.username', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='password', full_name='AuthConfig.password', index=1,
+      name='password', full_name='runtime.v1alpha2.AuthConfig.password', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='auth', full_name='AuthConfig.auth', index=2,
+      name='auth', full_name='runtime.v1alpha2.AuthConfig.auth', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='server_address', full_name='AuthConfig.server_address', index=3,
+      name='server_address', full_name='runtime.v1alpha2.AuthConfig.server_address', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='identity_token', full_name='AuthConfig.identity_token', index=4,
+      name='identity_token', full_name='runtime.v1alpha2.AuthConfig.identity_token', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='registry_token', full_name='AuthConfig.registry_token', index=5,
+      name='registry_token', full_name='runtime.v1alpha2.AuthConfig.registry_token', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4141,34 +4143,34 @@ _AUTHCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8228,
-  serialized_end=8362,
+  serialized_start=9708,
+  serialized_end=9842,
 )
 
 
 _PULLIMAGEREQUEST = _descriptor.Descriptor(
   name='PullImageRequest',
-  full_name='PullImageRequest',
+  full_name='runtime.v1alpha2.PullImageRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image', full_name='PullImageRequest.image', index=0,
+      name='image', full_name='runtime.v1alpha2.PullImageRequest.image', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='auth', full_name='PullImageRequest.auth', index=1,
+      name='auth', full_name='runtime.v1alpha2.PullImageRequest.auth', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sandbox_config', full_name='PullImageRequest.sandbox_config', index=2,
+      name='sandbox_config', full_name='runtime.v1alpha2.PullImageRequest.sandbox_config', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4186,20 +4188,20 @@ _PULLIMAGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8364,
-  serialized_end=8479,
+  serialized_start=9845,
+  serialized_end=10011,
 )
 
 
 _PULLIMAGERESPONSE = _descriptor.Descriptor(
   name='PullImageResponse',
-  full_name='PullImageResponse',
+  full_name='runtime.v1alpha2.PullImageResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image_ref', full_name='PullImageResponse.image_ref', index=0,
+      name='image_ref', full_name='runtime.v1alpha2.PullImageResponse.image_ref', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4217,20 +4219,20 @@ _PULLIMAGERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8481,
-  serialized_end=8519,
+  serialized_start=10013,
+  serialized_end=10051,
 )
 
 
 _REMOVEIMAGEREQUEST = _descriptor.Descriptor(
   name='RemoveImageRequest',
-  full_name='RemoveImageRequest',
+  full_name='runtime.v1alpha2.RemoveImageRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image', full_name='RemoveImageRequest.image', index=0,
+      name='image', full_name='runtime.v1alpha2.RemoveImageRequest.image', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4248,14 +4250,14 @@ _REMOVEIMAGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8521,
-  serialized_end=8568,
+  serialized_start=10053,
+  serialized_end=10117,
 )
 
 
 _REMOVEIMAGERESPONSE = _descriptor.Descriptor(
   name='RemoveImageResponse',
-  full_name='RemoveImageResponse',
+  full_name='runtime.v1alpha2.RemoveImageResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -4272,20 +4274,20 @@ _REMOVEIMAGERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8570,
-  serialized_end=8591,
+  serialized_start=10119,
+  serialized_end=10140,
 )
 
 
 _NETWORKCONFIG = _descriptor.Descriptor(
   name='NetworkConfig',
-  full_name='NetworkConfig',
+  full_name='runtime.v1alpha2.NetworkConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pod_cidr', full_name='NetworkConfig.pod_cidr', index=0,
+      name='pod_cidr', full_name='runtime.v1alpha2.NetworkConfig.pod_cidr', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4303,20 +4305,20 @@ _NETWORKCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8593,
-  serialized_end=8626,
+  serialized_start=10142,
+  serialized_end=10175,
 )
 
 
 _RUNTIMECONFIG = _descriptor.Descriptor(
   name='RuntimeConfig',
-  full_name='RuntimeConfig',
+  full_name='runtime.v1alpha2.RuntimeConfig',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='network_config', full_name='RuntimeConfig.network_config', index=0,
+      name='network_config', full_name='runtime.v1alpha2.RuntimeConfig.network_config', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4334,20 +4336,20 @@ _RUNTIMECONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8628,
-  serialized_end=8683,
+  serialized_start=10177,
+  serialized_end=10249,
 )
 
 
 _UPDATERUNTIMECONFIGREQUEST = _descriptor.Descriptor(
   name='UpdateRuntimeConfigRequest',
-  full_name='UpdateRuntimeConfigRequest',
+  full_name='runtime.v1alpha2.UpdateRuntimeConfigRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='runtime_config', full_name='UpdateRuntimeConfigRequest.runtime_config', index=0,
+      name='runtime_config', full_name='runtime.v1alpha2.UpdateRuntimeConfigRequest.runtime_config', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4365,14 +4367,14 @@ _UPDATERUNTIMECONFIGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8685,
-  serialized_end=8753,
+  serialized_start=10251,
+  serialized_end=10336,
 )
 
 
 _UPDATERUNTIMECONFIGRESPONSE = _descriptor.Descriptor(
   name='UpdateRuntimeConfigResponse',
-  full_name='UpdateRuntimeConfigResponse',
+  full_name='runtime.v1alpha2.UpdateRuntimeConfigResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -4389,41 +4391,41 @@ _UPDATERUNTIMECONFIGRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8755,
-  serialized_end=8784,
+  serialized_start=10338,
+  serialized_end=10367,
 )
 
 
 _RUNTIMECONDITION = _descriptor.Descriptor(
   name='RuntimeCondition',
-  full_name='RuntimeCondition',
+  full_name='runtime.v1alpha2.RuntimeCondition',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='type', full_name='RuntimeCondition.type', index=0,
+      name='type', full_name='runtime.v1alpha2.RuntimeCondition.type', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='status', full_name='RuntimeCondition.status', index=1,
+      name='status', full_name='runtime.v1alpha2.RuntimeCondition.status', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='reason', full_name='RuntimeCondition.reason', index=2,
+      name='reason', full_name='runtime.v1alpha2.RuntimeCondition.reason', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='message', full_name='RuntimeCondition.message', index=3,
+      name='message', full_name='runtime.v1alpha2.RuntimeCondition.message', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4441,20 +4443,20 @@ _RUNTIMECONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8786,
-  serialized_end=8867,
+  serialized_start=10369,
+  serialized_end=10450,
 )
 
 
 _RUNTIMESTATUS = _descriptor.Descriptor(
   name='RuntimeStatus',
-  full_name='RuntimeStatus',
+  full_name='runtime.v1alpha2.RuntimeStatus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='conditions', full_name='RuntimeStatus.conditions', index=0,
+      name='conditions', full_name='runtime.v1alpha2.RuntimeStatus.conditions', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -4472,20 +4474,20 @@ _RUNTIMESTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8869,
-  serialized_end=8923,
+  serialized_start=10452,
+  serialized_end=10523,
 )
 
 
 _STATUSREQUEST = _descriptor.Descriptor(
   name='StatusRequest',
-  full_name='StatusRequest',
+  full_name='runtime.v1alpha2.StatusRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='verbose', full_name='StatusRequest.verbose', index=0,
+      name='verbose', full_name='runtime.v1alpha2.StatusRequest.verbose', index=0,
       number=1, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -4503,27 +4505,27 @@ _STATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8925,
-  serialized_end=8957,
+  serialized_start=10525,
+  serialized_end=10557,
 )
 
 
 _STATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   name='InfoEntry',
-  full_name='StatusResponse.InfoEntry',
+  full_name='runtime.v1alpha2.StatusResponse.InfoEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='StatusResponse.InfoEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.StatusResponse.InfoEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='StatusResponse.InfoEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.StatusResponse.InfoEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4541,26 +4543,26 @@ _STATUSRESPONSE_INFOENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2598,
-  serialized_end=2641,
+  serialized_start=3140,
+  serialized_end=3183,
 )
 
 _STATUSRESPONSE = _descriptor.Descriptor(
   name='StatusResponse',
-  full_name='StatusResponse',
+  full_name='runtime.v1alpha2.StatusResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='status', full_name='StatusResponse.status', index=0,
+      name='status', full_name='runtime.v1alpha2.StatusResponse.status', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='info', full_name='StatusResponse.info', index=1,
+      name='info', full_name='runtime.v1alpha2.StatusResponse.info', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -4578,14 +4580,14 @@ _STATUSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8960,
-  serialized_end=9094,
+  serialized_start=10560,
+  serialized_end=10728,
 )
 
 
 _IMAGEFSINFOREQUEST = _descriptor.Descriptor(
   name='ImageFsInfoRequest',
-  full_name='ImageFsInfoRequest',
+  full_name='runtime.v1alpha2.ImageFsInfoRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -4602,20 +4604,20 @@ _IMAGEFSINFOREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9096,
-  serialized_end=9116,
+  serialized_start=10730,
+  serialized_end=10750,
 )
 
 
 _UINT64VALUE = _descriptor.Descriptor(
   name='UInt64Value',
-  full_name='UInt64Value',
+  full_name='runtime.v1alpha2.UInt64Value',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='value', full_name='UInt64Value.value', index=0,
+      name='value', full_name='runtime.v1alpha2.UInt64Value.value', index=0,
       number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -4633,20 +4635,20 @@ _UINT64VALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9118,
-  serialized_end=9146,
+  serialized_start=10752,
+  serialized_end=10780,
 )
 
 
 _FILESYSTEMIDENTIFIER = _descriptor.Descriptor(
   name='FilesystemIdentifier',
-  full_name='FilesystemIdentifier',
+  full_name='runtime.v1alpha2.FilesystemIdentifier',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='mountpoint', full_name='FilesystemIdentifier.mountpoint', index=0,
+      name='mountpoint', full_name='runtime.v1alpha2.FilesystemIdentifier.mountpoint', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4664,41 +4666,41 @@ _FILESYSTEMIDENTIFIER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9148,
-  serialized_end=9190,
+  serialized_start=10782,
+  serialized_end=10824,
 )
 
 
 _FILESYSTEMUSAGE = _descriptor.Descriptor(
   name='FilesystemUsage',
-  full_name='FilesystemUsage',
+  full_name='runtime.v1alpha2.FilesystemUsage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='FilesystemUsage.timestamp', index=0,
+      name='timestamp', full_name='runtime.v1alpha2.FilesystemUsage.timestamp', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='fs_id', full_name='FilesystemUsage.fs_id', index=1,
+      name='fs_id', full_name='runtime.v1alpha2.FilesystemUsage.fs_id', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='used_bytes', full_name='FilesystemUsage.used_bytes', index=2,
+      name='used_bytes', full_name='runtime.v1alpha2.FilesystemUsage.used_bytes', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='inodes_used', full_name='FilesystemUsage.inodes_used', index=3,
+      name='inodes_used', full_name='runtime.v1alpha2.FilesystemUsage.inodes_used', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4716,20 +4718,20 @@ _FILESYSTEMUSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9193,
-  serialized_end=9336,
+  serialized_start=10827,
+  serialized_end=11021,
 )
 
 
 _IMAGEFSINFORESPONSE = _descriptor.Descriptor(
   name='ImageFsInfoResponse',
-  full_name='ImageFsInfoResponse',
+  full_name='runtime.v1alpha2.ImageFsInfoResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='image_filesystems', full_name='ImageFsInfoResponse.image_filesystems', index=0,
+      name='image_filesystems', full_name='runtime.v1alpha2.ImageFsInfoResponse.image_filesystems', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -4747,20 +4749,20 @@ _IMAGEFSINFORESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9338,
-  serialized_end=9404,
+  serialized_start=11023,
+  serialized_end=11106,
 )
 
 
 _CONTAINERSTATSREQUEST = _descriptor.Descriptor(
   name='ContainerStatsRequest',
-  full_name='ContainerStatsRequest',
+  full_name='runtime.v1alpha2.ContainerStatsRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='ContainerStatsRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.ContainerStatsRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4778,20 +4780,20 @@ _CONTAINERSTATSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9406,
-  serialized_end=9451,
+  serialized_start=11108,
+  serialized_end=11153,
 )
 
 
 _CONTAINERSTATSRESPONSE = _descriptor.Descriptor(
   name='ContainerStatsResponse',
-  full_name='ContainerStatsResponse',
+  full_name='runtime.v1alpha2.ContainerStatsResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='stats', full_name='ContainerStatsResponse.stats', index=0,
+      name='stats', full_name='runtime.v1alpha2.ContainerStatsResponse.stats', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4809,20 +4811,20 @@ _CONTAINERSTATSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9453,
-  serialized_end=9509,
+  serialized_start=11155,
+  serialized_end=11228,
 )
 
 
 _LISTCONTAINERSTATSREQUEST = _descriptor.Descriptor(
   name='ListContainerStatsRequest',
-  full_name='ListContainerStatsRequest',
+  full_name='runtime.v1alpha2.ListContainerStatsRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='filter', full_name='ListContainerStatsRequest.filter', index=0,
+      name='filter', full_name='runtime.v1alpha2.ListContainerStatsRequest.filter', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -4840,27 +4842,27 @@ _LISTCONTAINERSTATSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9511,
-  serialized_end=9577,
+  serialized_start=11230,
+  serialized_end=11313,
 )
 
 
 _CONTAINERSTATSFILTER_LABELSELECTORENTRY = _descriptor.Descriptor(
   name='LabelSelectorEntry',
-  full_name='ContainerStatsFilter.LabelSelectorEntry',
+  full_name='runtime.v1alpha2.ContainerStatsFilter.LabelSelectorEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerStatsFilter.LabelSelectorEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerStatsFilter.LabelSelectorEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerStatsFilter.LabelSelectorEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerStatsFilter.LabelSelectorEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4878,33 +4880,33 @@ _CONTAINERSTATSFILTER_LABELSELECTORENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2833,
-  serialized_end=2885,
+  serialized_start=3426,
+  serialized_end=3478,
 )
 
 _CONTAINERSTATSFILTER = _descriptor.Descriptor(
   name='ContainerStatsFilter',
-  full_name='ContainerStatsFilter',
+  full_name='runtime.v1alpha2.ContainerStatsFilter',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='ContainerStatsFilter.id', index=0,
+      name='id', full_name='runtime.v1alpha2.ContainerStatsFilter.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='pod_sandbox_id', full_name='ContainerStatsFilter.pod_sandbox_id', index=1,
+      name='pod_sandbox_id', full_name='runtime.v1alpha2.ContainerStatsFilter.pod_sandbox_id', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='label_selector', full_name='ContainerStatsFilter.label_selector', index=2,
+      name='label_selector', full_name='runtime.v1alpha2.ContainerStatsFilter.label_selector', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -4922,20 +4924,20 @@ _CONTAINERSTATSFILTER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9580,
-  serialized_end=9758,
+  serialized_start=11316,
+  serialized_end=11511,
 )
 
 
 _LISTCONTAINERSTATSRESPONSE = _descriptor.Descriptor(
   name='ListContainerStatsResponse',
-  full_name='ListContainerStatsResponse',
+  full_name='runtime.v1alpha2.ListContainerStatsResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='stats', full_name='ListContainerStatsResponse.stats', index=0,
+      name='stats', full_name='runtime.v1alpha2.ListContainerStatsResponse.stats', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -4953,27 +4955,27 @@ _LISTCONTAINERSTATSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9760,
-  serialized_end=9820,
+  serialized_start=11513,
+  serialized_end=11590,
 )
 
 
 _CONTAINERATTRIBUTES_LABELSENTRY = _descriptor.Descriptor(
   name='LabelsEntry',
-  full_name='ContainerAttributes.LabelsEntry',
+  full_name='runtime.v1alpha2.ContainerAttributes.LabelsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerAttributes.LabelsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerAttributes.LabelsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerAttributes.LabelsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerAttributes.LabelsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -4991,26 +4993,26 @@ _CONTAINERATTRIBUTES_LABELSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1500,
-  serialized_end=1545,
+  serialized_start=1855,
+  serialized_end=1900,
 )
 
 _CONTAINERATTRIBUTES_ANNOTATIONSENTRY = _descriptor.Descriptor(
   name='AnnotationsEntry',
-  full_name='ContainerAttributes.AnnotationsEntry',
+  full_name='runtime.v1alpha2.ContainerAttributes.AnnotationsEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='ContainerAttributes.AnnotationsEntry.key', index=0,
+      name='key', full_name='runtime.v1alpha2.ContainerAttributes.AnnotationsEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='ContainerAttributes.AnnotationsEntry.value', index=1,
+      name='value', full_name='runtime.v1alpha2.ContainerAttributes.AnnotationsEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -5028,40 +5030,40 @@ _CONTAINERATTRIBUTES_ANNOTATIONSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1597,
+  serialized_start=1902,
+  serialized_end=1952,
 )
 
 _CONTAINERATTRIBUTES = _descriptor.Descriptor(
   name='ContainerAttributes',
-  full_name='ContainerAttributes',
+  full_name='runtime.v1alpha2.ContainerAttributes',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='ContainerAttributes.id', index=0,
+      name='id', full_name='runtime.v1alpha2.ContainerAttributes.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='ContainerAttributes.metadata', index=1,
+      name='metadata', full_name='runtime.v1alpha2.ContainerAttributes.metadata', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='labels', full_name='ContainerAttributes.labels', index=2,
+      name='labels', full_name='runtime.v1alpha2.ContainerAttributes.labels', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='annotations', full_name='ContainerAttributes.annotations', index=3,
+      name='annotations', full_name='runtime.v1alpha2.ContainerAttributes.annotations', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -5079,41 +5081,41 @@ _CONTAINERATTRIBUTES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9823,
-  serialized_end=10103,
+  serialized_start=11593,
+  serialized_end=11924,
 )
 
 
 _CONTAINERSTATS = _descriptor.Descriptor(
   name='ContainerStats',
-  full_name='ContainerStats',
+  full_name='runtime.v1alpha2.ContainerStats',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='attributes', full_name='ContainerStats.attributes', index=0,
+      name='attributes', full_name='runtime.v1alpha2.ContainerStats.attributes', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cpu', full_name='ContainerStats.cpu', index=1,
+      name='cpu', full_name='runtime.v1alpha2.ContainerStats.cpu', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='memory', full_name='ContainerStats.memory', index=2,
+      name='memory', full_name='runtime.v1alpha2.ContainerStats.memory', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='writable_layer', full_name='ContainerStats.writable_layer', index=3,
+      name='writable_layer', full_name='runtime.v1alpha2.ContainerStats.writable_layer', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -5131,27 +5133,27 @@ _CONTAINERSTATS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=10106,
-  serialized_end=10260,
+  serialized_start=11927,
+  serialized_end=12149,
 )
 
 
 _CPUUSAGE = _descriptor.Descriptor(
   name='CpuUsage',
-  full_name='CpuUsage',
+  full_name='runtime.v1alpha2.CpuUsage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='CpuUsage.timestamp', index=0,
+      name='timestamp', full_name='runtime.v1alpha2.CpuUsage.timestamp', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='usage_core_nano_seconds', full_name='CpuUsage.usage_core_nano_seconds', index=1,
+      name='usage_core_nano_seconds', full_name='runtime.v1alpha2.CpuUsage.usage_core_nano_seconds', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -5169,27 +5171,27 @@ _CPUUSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=10262,
-  serialized_end=10338,
+  serialized_start=12151,
+  serialized_end=12244,
 )
 
 
 _MEMORYUSAGE = _descriptor.Descriptor(
   name='MemoryUsage',
-  full_name='MemoryUsage',
+  full_name='runtime.v1alpha2.MemoryUsage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='MemoryUsage.timestamp', index=0,
+      name='timestamp', full_name='runtime.v1alpha2.MemoryUsage.timestamp', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='working_set_bytes', full_name='MemoryUsage.working_set_bytes', index=1,
+      name='working_set_bytes', full_name='runtime.v1alpha2.MemoryUsage.working_set_bytes', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -5207,20 +5209,20 @@ _MEMORYUSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=10340,
-  serialized_end=10413,
+  serialized_start=12246,
+  serialized_end=12336,
 )
 
 
 _REOPENCONTAINERLOGREQUEST = _descriptor.Descriptor(
   name='ReopenContainerLogRequest',
-  full_name='ReopenContainerLogRequest',
+  full_name='runtime.v1alpha2.ReopenContainerLogRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='container_id', full_name='ReopenContainerLogRequest.container_id', index=0,
+      name='container_id', full_name='runtime.v1alpha2.ReopenContainerLogRequest.container_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -5238,14 +5240,14 @@ _REOPENCONTAINERLOGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=10415,
-  serialized_end=10464,
+  serialized_start=12338,
+  serialized_end=12387,
 )
 
 
 _REOPENCONTAINERLOGRESPONSE = _descriptor.Descriptor(
   name='ReopenContainerLogResponse',
-  full_name='ReopenContainerLogResponse',
+  full_name='runtime.v1alpha2.ReopenContainerLogResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -5262,8 +5264,8 @@ _REOPENCONTAINERLOGRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=10466,
-  serialized_end=10494,
+  serialized_start=12389,
+  serialized_end=12417,
 )
 
 _PORTMAPPING.fields_by_name['protocol'].enum_type = _PROTOCOL
@@ -5509,56 +5511,56 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 VersionRequest = _reflection.GeneratedProtocolMessageType('VersionRequest', (_message.Message,), dict(
   DESCRIPTOR = _VERSIONREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:VersionRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.VersionRequest)
   ))
 _sym_db.RegisterMessage(VersionRequest)
 
 VersionResponse = _reflection.GeneratedProtocolMessageType('VersionResponse', (_message.Message,), dict(
   DESCRIPTOR = _VERSIONRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:VersionResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.VersionResponse)
   ))
 _sym_db.RegisterMessage(VersionResponse)
 
 DNSConfig = _reflection.GeneratedProtocolMessageType('DNSConfig', (_message.Message,), dict(
   DESCRIPTOR = _DNSCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:DNSConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.DNSConfig)
   ))
 _sym_db.RegisterMessage(DNSConfig)
 
 PortMapping = _reflection.GeneratedProtocolMessageType('PortMapping', (_message.Message,), dict(
   DESCRIPTOR = _PORTMAPPING,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PortMapping)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PortMapping)
   ))
 _sym_db.RegisterMessage(PortMapping)
 
 Mount = _reflection.GeneratedProtocolMessageType('Mount', (_message.Message,), dict(
   DESCRIPTOR = _MOUNT,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Mount)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Mount)
   ))
 _sym_db.RegisterMessage(Mount)
 
 NamespaceOption = _reflection.GeneratedProtocolMessageType('NamespaceOption', (_message.Message,), dict(
   DESCRIPTOR = _NAMESPACEOPTION,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:NamespaceOption)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.NamespaceOption)
   ))
 _sym_db.RegisterMessage(NamespaceOption)
 
 Int64Value = _reflection.GeneratedProtocolMessageType('Int64Value', (_message.Message,), dict(
   DESCRIPTOR = _INT64VALUE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Int64Value)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Int64Value)
   ))
 _sym_db.RegisterMessage(Int64Value)
 
 LinuxSandboxSecurityContext = _reflection.GeneratedProtocolMessageType('LinuxSandboxSecurityContext', (_message.Message,), dict(
   DESCRIPTOR = _LINUXSANDBOXSECURITYCONTEXT,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:LinuxSandboxSecurityContext)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxSandboxSecurityContext)
   ))
 _sym_db.RegisterMessage(LinuxSandboxSecurityContext)
 
@@ -5567,12 +5569,12 @@ LinuxPodSandboxConfig = _reflection.GeneratedProtocolMessageType('LinuxPodSandbo
   SysctlsEntry = _reflection.GeneratedProtocolMessageType('SysctlsEntry', (_message.Message,), dict(
     DESCRIPTOR = _LINUXPODSANDBOXCONFIG_SYSCTLSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:LinuxPodSandboxConfig.SysctlsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxPodSandboxConfig.SysctlsEntry)
     ))
   ,
   DESCRIPTOR = _LINUXPODSANDBOXCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:LinuxPodSandboxConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxPodSandboxConfig)
   ))
 _sym_db.RegisterMessage(LinuxPodSandboxConfig)
 _sym_db.RegisterMessage(LinuxPodSandboxConfig.SysctlsEntry)
@@ -5580,7 +5582,7 @@ _sym_db.RegisterMessage(LinuxPodSandboxConfig.SysctlsEntry)
 PodSandboxMetadata = _reflection.GeneratedProtocolMessageType('PodSandboxMetadata', (_message.Message,), dict(
   DESCRIPTOR = _PODSANDBOXMETADATA,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxMetadata)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxMetadata)
   ))
 _sym_db.RegisterMessage(PodSandboxMetadata)
 
@@ -5589,19 +5591,19 @@ PodSandboxConfig = _reflection.GeneratedProtocolMessageType('PodSandboxConfig', 
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOXCONFIG_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandboxConfig.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxConfig.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOXCONFIG_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandboxConfig.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxConfig.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _PODSANDBOXCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxConfig)
   ))
 _sym_db.RegisterMessage(PodSandboxConfig)
 _sym_db.RegisterMessage(PodSandboxConfig.LabelsEntry)
@@ -5610,70 +5612,70 @@ _sym_db.RegisterMessage(PodSandboxConfig.AnnotationsEntry)
 RunPodSandboxRequest = _reflection.GeneratedProtocolMessageType('RunPodSandboxRequest', (_message.Message,), dict(
   DESCRIPTOR = _RUNPODSANDBOXREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RunPodSandboxRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RunPodSandboxRequest)
   ))
 _sym_db.RegisterMessage(RunPodSandboxRequest)
 
 RunPodSandboxResponse = _reflection.GeneratedProtocolMessageType('RunPodSandboxResponse', (_message.Message,), dict(
   DESCRIPTOR = _RUNPODSANDBOXRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RunPodSandboxResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RunPodSandboxResponse)
   ))
 _sym_db.RegisterMessage(RunPodSandboxResponse)
 
 StopPodSandboxRequest = _reflection.GeneratedProtocolMessageType('StopPodSandboxRequest', (_message.Message,), dict(
   DESCRIPTOR = _STOPPODSANDBOXREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StopPodSandboxRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StopPodSandboxRequest)
   ))
 _sym_db.RegisterMessage(StopPodSandboxRequest)
 
 StopPodSandboxResponse = _reflection.GeneratedProtocolMessageType('StopPodSandboxResponse', (_message.Message,), dict(
   DESCRIPTOR = _STOPPODSANDBOXRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StopPodSandboxResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StopPodSandboxResponse)
   ))
 _sym_db.RegisterMessage(StopPodSandboxResponse)
 
 RemovePodSandboxRequest = _reflection.GeneratedProtocolMessageType('RemovePodSandboxRequest', (_message.Message,), dict(
   DESCRIPTOR = _REMOVEPODSANDBOXREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RemovePodSandboxRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RemovePodSandboxRequest)
   ))
 _sym_db.RegisterMessage(RemovePodSandboxRequest)
 
 RemovePodSandboxResponse = _reflection.GeneratedProtocolMessageType('RemovePodSandboxResponse', (_message.Message,), dict(
   DESCRIPTOR = _REMOVEPODSANDBOXRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RemovePodSandboxResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RemovePodSandboxResponse)
   ))
 _sym_db.RegisterMessage(RemovePodSandboxResponse)
 
 PodSandboxStatusRequest = _reflection.GeneratedProtocolMessageType('PodSandboxStatusRequest', (_message.Message,), dict(
   DESCRIPTOR = _PODSANDBOXSTATUSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxStatusRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStatusRequest)
   ))
 _sym_db.RegisterMessage(PodSandboxStatusRequest)
 
 PodSandboxNetworkStatus = _reflection.GeneratedProtocolMessageType('PodSandboxNetworkStatus', (_message.Message,), dict(
   DESCRIPTOR = _PODSANDBOXNETWORKSTATUS,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxNetworkStatus)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxNetworkStatus)
   ))
 _sym_db.RegisterMessage(PodSandboxNetworkStatus)
 
 Namespace = _reflection.GeneratedProtocolMessageType('Namespace', (_message.Message,), dict(
   DESCRIPTOR = _NAMESPACE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Namespace)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Namespace)
   ))
 _sym_db.RegisterMessage(Namespace)
 
 LinuxPodSandboxStatus = _reflection.GeneratedProtocolMessageType('LinuxPodSandboxStatus', (_message.Message,), dict(
   DESCRIPTOR = _LINUXPODSANDBOXSTATUS,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:LinuxPodSandboxStatus)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxPodSandboxStatus)
   ))
 _sym_db.RegisterMessage(LinuxPodSandboxStatus)
 
@@ -5682,19 +5684,19 @@ PodSandboxStatus = _reflection.GeneratedProtocolMessageType('PodSandboxStatus', 
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOXSTATUS_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandboxStatus.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStatus.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOXSTATUS_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandboxStatus.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStatus.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _PODSANDBOXSTATUS,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxStatus)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStatus)
   ))
 _sym_db.RegisterMessage(PodSandboxStatus)
 _sym_db.RegisterMessage(PodSandboxStatus.LabelsEntry)
@@ -5705,12 +5707,12 @@ PodSandboxStatusResponse = _reflection.GeneratedProtocolMessageType('PodSandboxS
   InfoEntry = _reflection.GeneratedProtocolMessageType('InfoEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOXSTATUSRESPONSE_INFOENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandboxStatusResponse.InfoEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStatusResponse.InfoEntry)
     ))
   ,
   DESCRIPTOR = _PODSANDBOXSTATUSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxStatusResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStatusResponse)
   ))
 _sym_db.RegisterMessage(PodSandboxStatusResponse)
 _sym_db.RegisterMessage(PodSandboxStatusResponse.InfoEntry)
@@ -5718,7 +5720,7 @@ _sym_db.RegisterMessage(PodSandboxStatusResponse.InfoEntry)
 PodSandboxStateValue = _reflection.GeneratedProtocolMessageType('PodSandboxStateValue', (_message.Message,), dict(
   DESCRIPTOR = _PODSANDBOXSTATEVALUE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxStateValue)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxStateValue)
   ))
 _sym_db.RegisterMessage(PodSandboxStateValue)
 
@@ -5727,12 +5729,12 @@ PodSandboxFilter = _reflection.GeneratedProtocolMessageType('PodSandboxFilter', 
   LabelSelectorEntry = _reflection.GeneratedProtocolMessageType('LabelSelectorEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOXFILTER_LABELSELECTORENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandboxFilter.LabelSelectorEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxFilter.LabelSelectorEntry)
     ))
   ,
   DESCRIPTOR = _PODSANDBOXFILTER,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandboxFilter)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandboxFilter)
   ))
 _sym_db.RegisterMessage(PodSandboxFilter)
 _sym_db.RegisterMessage(PodSandboxFilter.LabelSelectorEntry)
@@ -5740,7 +5742,7 @@ _sym_db.RegisterMessage(PodSandboxFilter.LabelSelectorEntry)
 ListPodSandboxRequest = _reflection.GeneratedProtocolMessageType('ListPodSandboxRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTPODSANDBOXREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListPodSandboxRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListPodSandboxRequest)
   ))
 _sym_db.RegisterMessage(ListPodSandboxRequest)
 
@@ -5749,19 +5751,19 @@ PodSandbox = _reflection.GeneratedProtocolMessageType('PodSandbox', (_message.Me
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOX_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandbox.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandbox.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _PODSANDBOX_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:PodSandbox.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandbox.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _PODSANDBOX,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PodSandbox)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PodSandbox)
   ))
 _sym_db.RegisterMessage(PodSandbox)
 _sym_db.RegisterMessage(PodSandbox.LabelsEntry)
@@ -5770,91 +5772,91 @@ _sym_db.RegisterMessage(PodSandbox.AnnotationsEntry)
 ListPodSandboxResponse = _reflection.GeneratedProtocolMessageType('ListPodSandboxResponse', (_message.Message,), dict(
   DESCRIPTOR = _LISTPODSANDBOXRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListPodSandboxResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListPodSandboxResponse)
   ))
 _sym_db.RegisterMessage(ListPodSandboxResponse)
 
 ImageSpec = _reflection.GeneratedProtocolMessageType('ImageSpec', (_message.Message,), dict(
   DESCRIPTOR = _IMAGESPEC,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ImageSpec)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageSpec)
   ))
 _sym_db.RegisterMessage(ImageSpec)
 
 KeyValue = _reflection.GeneratedProtocolMessageType('KeyValue', (_message.Message,), dict(
   DESCRIPTOR = _KEYVALUE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:KeyValue)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.KeyValue)
   ))
 _sym_db.RegisterMessage(KeyValue)
 
 LinuxContainerResources = _reflection.GeneratedProtocolMessageType('LinuxContainerResources', (_message.Message,), dict(
   DESCRIPTOR = _LINUXCONTAINERRESOURCES,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:LinuxContainerResources)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxContainerResources)
   ))
 _sym_db.RegisterMessage(LinuxContainerResources)
 
 SELinuxOption = _reflection.GeneratedProtocolMessageType('SELinuxOption', (_message.Message,), dict(
   DESCRIPTOR = _SELINUXOPTION,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:SELinuxOption)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.SELinuxOption)
   ))
 _sym_db.RegisterMessage(SELinuxOption)
 
 Capability = _reflection.GeneratedProtocolMessageType('Capability', (_message.Message,), dict(
   DESCRIPTOR = _CAPABILITY,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Capability)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Capability)
   ))
 _sym_db.RegisterMessage(Capability)
 
 LinuxContainerSecurityContext = _reflection.GeneratedProtocolMessageType('LinuxContainerSecurityContext', (_message.Message,), dict(
   DESCRIPTOR = _LINUXCONTAINERSECURITYCONTEXT,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:LinuxContainerSecurityContext)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxContainerSecurityContext)
   ))
 _sym_db.RegisterMessage(LinuxContainerSecurityContext)
 
 LinuxContainerConfig = _reflection.GeneratedProtocolMessageType('LinuxContainerConfig', (_message.Message,), dict(
   DESCRIPTOR = _LINUXCONTAINERCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:LinuxContainerConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.LinuxContainerConfig)
   ))
 _sym_db.RegisterMessage(LinuxContainerConfig)
 
 WindowsContainerSecurityContext = _reflection.GeneratedProtocolMessageType('WindowsContainerSecurityContext', (_message.Message,), dict(
   DESCRIPTOR = _WINDOWSCONTAINERSECURITYCONTEXT,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:WindowsContainerSecurityContext)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.WindowsContainerSecurityContext)
   ))
 _sym_db.RegisterMessage(WindowsContainerSecurityContext)
 
 WindowsContainerConfig = _reflection.GeneratedProtocolMessageType('WindowsContainerConfig', (_message.Message,), dict(
   DESCRIPTOR = _WINDOWSCONTAINERCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:WindowsContainerConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.WindowsContainerConfig)
   ))
 _sym_db.RegisterMessage(WindowsContainerConfig)
 
 WindowsContainerResources = _reflection.GeneratedProtocolMessageType('WindowsContainerResources', (_message.Message,), dict(
   DESCRIPTOR = _WINDOWSCONTAINERRESOURCES,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:WindowsContainerResources)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.WindowsContainerResources)
   ))
 _sym_db.RegisterMessage(WindowsContainerResources)
 
 ContainerMetadata = _reflection.GeneratedProtocolMessageType('ContainerMetadata', (_message.Message,), dict(
   DESCRIPTOR = _CONTAINERMETADATA,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerMetadata)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerMetadata)
   ))
 _sym_db.RegisterMessage(ContainerMetadata)
 
 Device = _reflection.GeneratedProtocolMessageType('Device', (_message.Message,), dict(
   DESCRIPTOR = _DEVICE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Device)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Device)
   ))
 _sym_db.RegisterMessage(Device)
 
@@ -5863,19 +5865,19 @@ ContainerConfig = _reflection.GeneratedProtocolMessageType('ContainerConfig', (_
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERCONFIG_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerConfig.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerConfig.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERCONFIG_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerConfig.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerConfig.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINERCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerConfig)
   ))
 _sym_db.RegisterMessage(ContainerConfig)
 _sym_db.RegisterMessage(ContainerConfig.LabelsEntry)
@@ -5884,63 +5886,63 @@ _sym_db.RegisterMessage(ContainerConfig.AnnotationsEntry)
 CreateContainerRequest = _reflection.GeneratedProtocolMessageType('CreateContainerRequest', (_message.Message,), dict(
   DESCRIPTOR = _CREATECONTAINERREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:CreateContainerRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.CreateContainerRequest)
   ))
 _sym_db.RegisterMessage(CreateContainerRequest)
 
 CreateContainerResponse = _reflection.GeneratedProtocolMessageType('CreateContainerResponse', (_message.Message,), dict(
   DESCRIPTOR = _CREATECONTAINERRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:CreateContainerResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.CreateContainerResponse)
   ))
 _sym_db.RegisterMessage(CreateContainerResponse)
 
 StartContainerRequest = _reflection.GeneratedProtocolMessageType('StartContainerRequest', (_message.Message,), dict(
   DESCRIPTOR = _STARTCONTAINERREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StartContainerRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StartContainerRequest)
   ))
 _sym_db.RegisterMessage(StartContainerRequest)
 
 StartContainerResponse = _reflection.GeneratedProtocolMessageType('StartContainerResponse', (_message.Message,), dict(
   DESCRIPTOR = _STARTCONTAINERRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StartContainerResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StartContainerResponse)
   ))
 _sym_db.RegisterMessage(StartContainerResponse)
 
 StopContainerRequest = _reflection.GeneratedProtocolMessageType('StopContainerRequest', (_message.Message,), dict(
   DESCRIPTOR = _STOPCONTAINERREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StopContainerRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StopContainerRequest)
   ))
 _sym_db.RegisterMessage(StopContainerRequest)
 
 StopContainerResponse = _reflection.GeneratedProtocolMessageType('StopContainerResponse', (_message.Message,), dict(
   DESCRIPTOR = _STOPCONTAINERRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StopContainerResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StopContainerResponse)
   ))
 _sym_db.RegisterMessage(StopContainerResponse)
 
 RemoveContainerRequest = _reflection.GeneratedProtocolMessageType('RemoveContainerRequest', (_message.Message,), dict(
   DESCRIPTOR = _REMOVECONTAINERREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RemoveContainerRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RemoveContainerRequest)
   ))
 _sym_db.RegisterMessage(RemoveContainerRequest)
 
 RemoveContainerResponse = _reflection.GeneratedProtocolMessageType('RemoveContainerResponse', (_message.Message,), dict(
   DESCRIPTOR = _REMOVECONTAINERRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RemoveContainerResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RemoveContainerResponse)
   ))
 _sym_db.RegisterMessage(RemoveContainerResponse)
 
 ContainerStateValue = _reflection.GeneratedProtocolMessageType('ContainerStateValue', (_message.Message,), dict(
   DESCRIPTOR = _CONTAINERSTATEVALUE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStateValue)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStateValue)
   ))
 _sym_db.RegisterMessage(ContainerStateValue)
 
@@ -5949,12 +5951,12 @@ ContainerFilter = _reflection.GeneratedProtocolMessageType('ContainerFilter', (_
   LabelSelectorEntry = _reflection.GeneratedProtocolMessageType('LabelSelectorEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERFILTER_LABELSELECTORENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerFilter.LabelSelectorEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerFilter.LabelSelectorEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINERFILTER,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerFilter)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerFilter)
   ))
 _sym_db.RegisterMessage(ContainerFilter)
 _sym_db.RegisterMessage(ContainerFilter.LabelSelectorEntry)
@@ -5962,7 +5964,7 @@ _sym_db.RegisterMessage(ContainerFilter.LabelSelectorEntry)
 ListContainersRequest = _reflection.GeneratedProtocolMessageType('ListContainersRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTCONTAINERSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListContainersRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListContainersRequest)
   ))
 _sym_db.RegisterMessage(ListContainersRequest)
 
@@ -5971,19 +5973,19 @@ Container = _reflection.GeneratedProtocolMessageType('Container', (_message.Mess
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINER_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:Container.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Container.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINER_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:Container.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Container.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINER,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Container)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Container)
   ))
 _sym_db.RegisterMessage(Container)
 _sym_db.RegisterMessage(Container.LabelsEntry)
@@ -5992,14 +5994,14 @@ _sym_db.RegisterMessage(Container.AnnotationsEntry)
 ListContainersResponse = _reflection.GeneratedProtocolMessageType('ListContainersResponse', (_message.Message,), dict(
   DESCRIPTOR = _LISTCONTAINERSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListContainersResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListContainersResponse)
   ))
 _sym_db.RegisterMessage(ListContainersResponse)
 
 ContainerStatusRequest = _reflection.GeneratedProtocolMessageType('ContainerStatusRequest', (_message.Message,), dict(
   DESCRIPTOR = _CONTAINERSTATUSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStatusRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatusRequest)
   ))
 _sym_db.RegisterMessage(ContainerStatusRequest)
 
@@ -6008,19 +6010,19 @@ ContainerStatus = _reflection.GeneratedProtocolMessageType('ContainerStatus', (_
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERSTATUS_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerStatus.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatus.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERSTATUS_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerStatus.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatus.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINERSTATUS,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStatus)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatus)
   ))
 _sym_db.RegisterMessage(ContainerStatus)
 _sym_db.RegisterMessage(ContainerStatus.LabelsEntry)
@@ -6031,12 +6033,12 @@ ContainerStatusResponse = _reflection.GeneratedProtocolMessageType('ContainerSta
   InfoEntry = _reflection.GeneratedProtocolMessageType('InfoEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERSTATUSRESPONSE_INFOENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerStatusResponse.InfoEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatusResponse.InfoEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINERSTATUSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStatusResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatusResponse)
   ))
 _sym_db.RegisterMessage(ContainerStatusResponse)
 _sym_db.RegisterMessage(ContainerStatusResponse.InfoEntry)
@@ -6044,105 +6046,105 @@ _sym_db.RegisterMessage(ContainerStatusResponse.InfoEntry)
 UpdateContainerResourcesRequest = _reflection.GeneratedProtocolMessageType('UpdateContainerResourcesRequest', (_message.Message,), dict(
   DESCRIPTOR = _UPDATECONTAINERRESOURCESREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:UpdateContainerResourcesRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.UpdateContainerResourcesRequest)
   ))
 _sym_db.RegisterMessage(UpdateContainerResourcesRequest)
 
 UpdateContainerResourcesResponse = _reflection.GeneratedProtocolMessageType('UpdateContainerResourcesResponse', (_message.Message,), dict(
   DESCRIPTOR = _UPDATECONTAINERRESOURCESRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:UpdateContainerResourcesResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.UpdateContainerResourcesResponse)
   ))
 _sym_db.RegisterMessage(UpdateContainerResourcesResponse)
 
 ExecSyncRequest = _reflection.GeneratedProtocolMessageType('ExecSyncRequest', (_message.Message,), dict(
   DESCRIPTOR = _EXECSYNCREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ExecSyncRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ExecSyncRequest)
   ))
 _sym_db.RegisterMessage(ExecSyncRequest)
 
 ExecSyncResponse = _reflection.GeneratedProtocolMessageType('ExecSyncResponse', (_message.Message,), dict(
   DESCRIPTOR = _EXECSYNCRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ExecSyncResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ExecSyncResponse)
   ))
 _sym_db.RegisterMessage(ExecSyncResponse)
 
 ExecRequest = _reflection.GeneratedProtocolMessageType('ExecRequest', (_message.Message,), dict(
   DESCRIPTOR = _EXECREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ExecRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ExecRequest)
   ))
 _sym_db.RegisterMessage(ExecRequest)
 
 ExecResponse = _reflection.GeneratedProtocolMessageType('ExecResponse', (_message.Message,), dict(
   DESCRIPTOR = _EXECRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ExecResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ExecResponse)
   ))
 _sym_db.RegisterMessage(ExecResponse)
 
 AttachRequest = _reflection.GeneratedProtocolMessageType('AttachRequest', (_message.Message,), dict(
   DESCRIPTOR = _ATTACHREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:AttachRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.AttachRequest)
   ))
 _sym_db.RegisterMessage(AttachRequest)
 
 AttachResponse = _reflection.GeneratedProtocolMessageType('AttachResponse', (_message.Message,), dict(
   DESCRIPTOR = _ATTACHRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:AttachResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.AttachResponse)
   ))
 _sym_db.RegisterMessage(AttachResponse)
 
 PortForwardRequest = _reflection.GeneratedProtocolMessageType('PortForwardRequest', (_message.Message,), dict(
   DESCRIPTOR = _PORTFORWARDREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PortForwardRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PortForwardRequest)
   ))
 _sym_db.RegisterMessage(PortForwardRequest)
 
 PortForwardResponse = _reflection.GeneratedProtocolMessageType('PortForwardResponse', (_message.Message,), dict(
   DESCRIPTOR = _PORTFORWARDRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PortForwardResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PortForwardResponse)
   ))
 _sym_db.RegisterMessage(PortForwardResponse)
 
 ImageFilter = _reflection.GeneratedProtocolMessageType('ImageFilter', (_message.Message,), dict(
   DESCRIPTOR = _IMAGEFILTER,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ImageFilter)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageFilter)
   ))
 _sym_db.RegisterMessage(ImageFilter)
 
 ListImagesRequest = _reflection.GeneratedProtocolMessageType('ListImagesRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTIMAGESREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListImagesRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListImagesRequest)
   ))
 _sym_db.RegisterMessage(ListImagesRequest)
 
 Image = _reflection.GeneratedProtocolMessageType('Image', (_message.Message,), dict(
   DESCRIPTOR = _IMAGE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:Image)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.Image)
   ))
 _sym_db.RegisterMessage(Image)
 
 ListImagesResponse = _reflection.GeneratedProtocolMessageType('ListImagesResponse', (_message.Message,), dict(
   DESCRIPTOR = _LISTIMAGESRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListImagesResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListImagesResponse)
   ))
 _sym_db.RegisterMessage(ListImagesResponse)
 
 ImageStatusRequest = _reflection.GeneratedProtocolMessageType('ImageStatusRequest', (_message.Message,), dict(
   DESCRIPTOR = _IMAGESTATUSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ImageStatusRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageStatusRequest)
   ))
 _sym_db.RegisterMessage(ImageStatusRequest)
 
@@ -6151,12 +6153,12 @@ ImageStatusResponse = _reflection.GeneratedProtocolMessageType('ImageStatusRespo
   InfoEntry = _reflection.GeneratedProtocolMessageType('InfoEntry', (_message.Message,), dict(
     DESCRIPTOR = _IMAGESTATUSRESPONSE_INFOENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ImageStatusResponse.InfoEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageStatusResponse.InfoEntry)
     ))
   ,
   DESCRIPTOR = _IMAGESTATUSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ImageStatusResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageStatusResponse)
   ))
 _sym_db.RegisterMessage(ImageStatusResponse)
 _sym_db.RegisterMessage(ImageStatusResponse.InfoEntry)
@@ -6164,84 +6166,84 @@ _sym_db.RegisterMessage(ImageStatusResponse.InfoEntry)
 AuthConfig = _reflection.GeneratedProtocolMessageType('AuthConfig', (_message.Message,), dict(
   DESCRIPTOR = _AUTHCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:AuthConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.AuthConfig)
   ))
 _sym_db.RegisterMessage(AuthConfig)
 
 PullImageRequest = _reflection.GeneratedProtocolMessageType('PullImageRequest', (_message.Message,), dict(
   DESCRIPTOR = _PULLIMAGEREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PullImageRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PullImageRequest)
   ))
 _sym_db.RegisterMessage(PullImageRequest)
 
 PullImageResponse = _reflection.GeneratedProtocolMessageType('PullImageResponse', (_message.Message,), dict(
   DESCRIPTOR = _PULLIMAGERESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:PullImageResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.PullImageResponse)
   ))
 _sym_db.RegisterMessage(PullImageResponse)
 
 RemoveImageRequest = _reflection.GeneratedProtocolMessageType('RemoveImageRequest', (_message.Message,), dict(
   DESCRIPTOR = _REMOVEIMAGEREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RemoveImageRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RemoveImageRequest)
   ))
 _sym_db.RegisterMessage(RemoveImageRequest)
 
 RemoveImageResponse = _reflection.GeneratedProtocolMessageType('RemoveImageResponse', (_message.Message,), dict(
   DESCRIPTOR = _REMOVEIMAGERESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RemoveImageResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RemoveImageResponse)
   ))
 _sym_db.RegisterMessage(RemoveImageResponse)
 
 NetworkConfig = _reflection.GeneratedProtocolMessageType('NetworkConfig', (_message.Message,), dict(
   DESCRIPTOR = _NETWORKCONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:NetworkConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.NetworkConfig)
   ))
 _sym_db.RegisterMessage(NetworkConfig)
 
 RuntimeConfig = _reflection.GeneratedProtocolMessageType('RuntimeConfig', (_message.Message,), dict(
   DESCRIPTOR = _RUNTIMECONFIG,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RuntimeConfig)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RuntimeConfig)
   ))
 _sym_db.RegisterMessage(RuntimeConfig)
 
 UpdateRuntimeConfigRequest = _reflection.GeneratedProtocolMessageType('UpdateRuntimeConfigRequest', (_message.Message,), dict(
   DESCRIPTOR = _UPDATERUNTIMECONFIGREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:UpdateRuntimeConfigRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.UpdateRuntimeConfigRequest)
   ))
 _sym_db.RegisterMessage(UpdateRuntimeConfigRequest)
 
 UpdateRuntimeConfigResponse = _reflection.GeneratedProtocolMessageType('UpdateRuntimeConfigResponse', (_message.Message,), dict(
   DESCRIPTOR = _UPDATERUNTIMECONFIGRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:UpdateRuntimeConfigResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.UpdateRuntimeConfigResponse)
   ))
 _sym_db.RegisterMessage(UpdateRuntimeConfigResponse)
 
 RuntimeCondition = _reflection.GeneratedProtocolMessageType('RuntimeCondition', (_message.Message,), dict(
   DESCRIPTOR = _RUNTIMECONDITION,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RuntimeCondition)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RuntimeCondition)
   ))
 _sym_db.RegisterMessage(RuntimeCondition)
 
 RuntimeStatus = _reflection.GeneratedProtocolMessageType('RuntimeStatus', (_message.Message,), dict(
   DESCRIPTOR = _RUNTIMESTATUS,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:RuntimeStatus)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.RuntimeStatus)
   ))
 _sym_db.RegisterMessage(RuntimeStatus)
 
 StatusRequest = _reflection.GeneratedProtocolMessageType('StatusRequest', (_message.Message,), dict(
   DESCRIPTOR = _STATUSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StatusRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StatusRequest)
   ))
 _sym_db.RegisterMessage(StatusRequest)
 
@@ -6250,12 +6252,12 @@ StatusResponse = _reflection.GeneratedProtocolMessageType('StatusResponse', (_me
   InfoEntry = _reflection.GeneratedProtocolMessageType('InfoEntry', (_message.Message,), dict(
     DESCRIPTOR = _STATUSRESPONSE_INFOENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:StatusResponse.InfoEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StatusResponse.InfoEntry)
     ))
   ,
   DESCRIPTOR = _STATUSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:StatusResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.StatusResponse)
   ))
 _sym_db.RegisterMessage(StatusResponse)
 _sym_db.RegisterMessage(StatusResponse.InfoEntry)
@@ -6263,56 +6265,56 @@ _sym_db.RegisterMessage(StatusResponse.InfoEntry)
 ImageFsInfoRequest = _reflection.GeneratedProtocolMessageType('ImageFsInfoRequest', (_message.Message,), dict(
   DESCRIPTOR = _IMAGEFSINFOREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ImageFsInfoRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageFsInfoRequest)
   ))
 _sym_db.RegisterMessage(ImageFsInfoRequest)
 
 UInt64Value = _reflection.GeneratedProtocolMessageType('UInt64Value', (_message.Message,), dict(
   DESCRIPTOR = _UINT64VALUE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:UInt64Value)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.UInt64Value)
   ))
 _sym_db.RegisterMessage(UInt64Value)
 
 FilesystemIdentifier = _reflection.GeneratedProtocolMessageType('FilesystemIdentifier', (_message.Message,), dict(
   DESCRIPTOR = _FILESYSTEMIDENTIFIER,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:FilesystemIdentifier)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.FilesystemIdentifier)
   ))
 _sym_db.RegisterMessage(FilesystemIdentifier)
 
 FilesystemUsage = _reflection.GeneratedProtocolMessageType('FilesystemUsage', (_message.Message,), dict(
   DESCRIPTOR = _FILESYSTEMUSAGE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:FilesystemUsage)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.FilesystemUsage)
   ))
 _sym_db.RegisterMessage(FilesystemUsage)
 
 ImageFsInfoResponse = _reflection.GeneratedProtocolMessageType('ImageFsInfoResponse', (_message.Message,), dict(
   DESCRIPTOR = _IMAGEFSINFORESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ImageFsInfoResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ImageFsInfoResponse)
   ))
 _sym_db.RegisterMessage(ImageFsInfoResponse)
 
 ContainerStatsRequest = _reflection.GeneratedProtocolMessageType('ContainerStatsRequest', (_message.Message,), dict(
   DESCRIPTOR = _CONTAINERSTATSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStatsRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatsRequest)
   ))
 _sym_db.RegisterMessage(ContainerStatsRequest)
 
 ContainerStatsResponse = _reflection.GeneratedProtocolMessageType('ContainerStatsResponse', (_message.Message,), dict(
   DESCRIPTOR = _CONTAINERSTATSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStatsResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatsResponse)
   ))
 _sym_db.RegisterMessage(ContainerStatsResponse)
 
 ListContainerStatsRequest = _reflection.GeneratedProtocolMessageType('ListContainerStatsRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTCONTAINERSTATSREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListContainerStatsRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListContainerStatsRequest)
   ))
 _sym_db.RegisterMessage(ListContainerStatsRequest)
 
@@ -6321,12 +6323,12 @@ ContainerStatsFilter = _reflection.GeneratedProtocolMessageType('ContainerStatsF
   LabelSelectorEntry = _reflection.GeneratedProtocolMessageType('LabelSelectorEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERSTATSFILTER_LABELSELECTORENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerStatsFilter.LabelSelectorEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatsFilter.LabelSelectorEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINERSTATSFILTER,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStatsFilter)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStatsFilter)
   ))
 _sym_db.RegisterMessage(ContainerStatsFilter)
 _sym_db.RegisterMessage(ContainerStatsFilter.LabelSelectorEntry)
@@ -6334,7 +6336,7 @@ _sym_db.RegisterMessage(ContainerStatsFilter.LabelSelectorEntry)
 ListContainerStatsResponse = _reflection.GeneratedProtocolMessageType('ListContainerStatsResponse', (_message.Message,), dict(
   DESCRIPTOR = _LISTCONTAINERSTATSRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ListContainerStatsResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ListContainerStatsResponse)
   ))
 _sym_db.RegisterMessage(ListContainerStatsResponse)
 
@@ -6343,19 +6345,19 @@ ContainerAttributes = _reflection.GeneratedProtocolMessageType('ContainerAttribu
   LabelsEntry = _reflection.GeneratedProtocolMessageType('LabelsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERATTRIBUTES_LABELSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerAttributes.LabelsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerAttributes.LabelsEntry)
     ))
   ,
 
   AnnotationsEntry = _reflection.GeneratedProtocolMessageType('AnnotationsEntry', (_message.Message,), dict(
     DESCRIPTOR = _CONTAINERATTRIBUTES_ANNOTATIONSENTRY,
     __module__ = 'api_pb2'
-    # @@protoc_insertion_point(class_scope:ContainerAttributes.AnnotationsEntry)
+    # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerAttributes.AnnotationsEntry)
     ))
   ,
   DESCRIPTOR = _CONTAINERATTRIBUTES,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerAttributes)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerAttributes)
   ))
 _sym_db.RegisterMessage(ContainerAttributes)
 _sym_db.RegisterMessage(ContainerAttributes.LabelsEntry)
@@ -6364,39 +6366,41 @@ _sym_db.RegisterMessage(ContainerAttributes.AnnotationsEntry)
 ContainerStats = _reflection.GeneratedProtocolMessageType('ContainerStats', (_message.Message,), dict(
   DESCRIPTOR = _CONTAINERSTATS,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ContainerStats)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ContainerStats)
   ))
 _sym_db.RegisterMessage(ContainerStats)
 
 CpuUsage = _reflection.GeneratedProtocolMessageType('CpuUsage', (_message.Message,), dict(
   DESCRIPTOR = _CPUUSAGE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:CpuUsage)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.CpuUsage)
   ))
 _sym_db.RegisterMessage(CpuUsage)
 
 MemoryUsage = _reflection.GeneratedProtocolMessageType('MemoryUsage', (_message.Message,), dict(
   DESCRIPTOR = _MEMORYUSAGE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:MemoryUsage)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.MemoryUsage)
   ))
 _sym_db.RegisterMessage(MemoryUsage)
 
 ReopenContainerLogRequest = _reflection.GeneratedProtocolMessageType('ReopenContainerLogRequest', (_message.Message,), dict(
   DESCRIPTOR = _REOPENCONTAINERLOGREQUEST,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ReopenContainerLogRequest)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ReopenContainerLogRequest)
   ))
 _sym_db.RegisterMessage(ReopenContainerLogRequest)
 
 ReopenContainerLogResponse = _reflection.GeneratedProtocolMessageType('ReopenContainerLogResponse', (_message.Message,), dict(
   DESCRIPTOR = _REOPENCONTAINERLOGRESPONSE,
   __module__ = 'api_pb2'
-  # @@protoc_insertion_point(class_scope:ReopenContainerLogResponse)
+  # @@protoc_insertion_point(class_scope:runtime.v1alpha2.ReopenContainerLogResponse)
   ))
 _sym_db.RegisterMessage(ReopenContainerLogResponse)
 
 
+DESCRIPTOR.has_options = True
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('Z\010v1alpha2\330\341\036\000\200\342\036\001\310\341\036\001\310\342\036\001\340\342\036\001\320\342\036\001\220\343\036\000'))
 _LINUXPODSANDBOXCONFIG_SYSCTLSENTRY.has_options = True
 _LINUXPODSANDBOXCONFIG_SYSCTLSENTRY._options = _descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001'))
 _PODSANDBOXCONFIG_LABELSENTRY.has_options = True
@@ -6444,16 +6448,16 @@ _CONTAINERATTRIBUTES_ANNOTATIONSENTRY._options = _descriptor._ParseOptions(descr
 
 _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   name='RuntimeService',
-  full_name='RuntimeService',
+  full_name='runtime.v1alpha2.RuntimeService',
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=10858,
-  serialized_end=12350,
+  serialized_start=12781,
+  serialized_end=15022,
   methods=[
   _descriptor.MethodDescriptor(
     name='Version',
-    full_name='RuntimeService.Version',
+    full_name='runtime.v1alpha2.RuntimeService.Version',
     index=0,
     containing_service=None,
     input_type=_VERSIONREQUEST,
@@ -6462,7 +6466,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='RunPodSandbox',
-    full_name='RuntimeService.RunPodSandbox',
+    full_name='runtime.v1alpha2.RuntimeService.RunPodSandbox',
     index=1,
     containing_service=None,
     input_type=_RUNPODSANDBOXREQUEST,
@@ -6471,7 +6475,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='StopPodSandbox',
-    full_name='RuntimeService.StopPodSandbox',
+    full_name='runtime.v1alpha2.RuntimeService.StopPodSandbox',
     index=2,
     containing_service=None,
     input_type=_STOPPODSANDBOXREQUEST,
@@ -6480,7 +6484,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='RemovePodSandbox',
-    full_name='RuntimeService.RemovePodSandbox',
+    full_name='runtime.v1alpha2.RuntimeService.RemovePodSandbox',
     index=3,
     containing_service=None,
     input_type=_REMOVEPODSANDBOXREQUEST,
@@ -6489,7 +6493,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='PodSandboxStatus',
-    full_name='RuntimeService.PodSandboxStatus',
+    full_name='runtime.v1alpha2.RuntimeService.PodSandboxStatus',
     index=4,
     containing_service=None,
     input_type=_PODSANDBOXSTATUSREQUEST,
@@ -6498,7 +6502,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ListPodSandbox',
-    full_name='RuntimeService.ListPodSandbox',
+    full_name='runtime.v1alpha2.RuntimeService.ListPodSandbox',
     index=5,
     containing_service=None,
     input_type=_LISTPODSANDBOXREQUEST,
@@ -6507,7 +6511,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='CreateContainer',
-    full_name='RuntimeService.CreateContainer',
+    full_name='runtime.v1alpha2.RuntimeService.CreateContainer',
     index=6,
     containing_service=None,
     input_type=_CREATECONTAINERREQUEST,
@@ -6516,7 +6520,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='StartContainer',
-    full_name='RuntimeService.StartContainer',
+    full_name='runtime.v1alpha2.RuntimeService.StartContainer',
     index=7,
     containing_service=None,
     input_type=_STARTCONTAINERREQUEST,
@@ -6525,7 +6529,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='StopContainer',
-    full_name='RuntimeService.StopContainer',
+    full_name='runtime.v1alpha2.RuntimeService.StopContainer',
     index=8,
     containing_service=None,
     input_type=_STOPCONTAINERREQUEST,
@@ -6534,7 +6538,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='RemoveContainer',
-    full_name='RuntimeService.RemoveContainer',
+    full_name='runtime.v1alpha2.RuntimeService.RemoveContainer',
     index=9,
     containing_service=None,
     input_type=_REMOVECONTAINERREQUEST,
@@ -6543,7 +6547,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ListContainers',
-    full_name='RuntimeService.ListContainers',
+    full_name='runtime.v1alpha2.RuntimeService.ListContainers',
     index=10,
     containing_service=None,
     input_type=_LISTCONTAINERSREQUEST,
@@ -6552,7 +6556,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ContainerStatus',
-    full_name='RuntimeService.ContainerStatus',
+    full_name='runtime.v1alpha2.RuntimeService.ContainerStatus',
     index=11,
     containing_service=None,
     input_type=_CONTAINERSTATUSREQUEST,
@@ -6561,7 +6565,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='UpdateContainerResources',
-    full_name='RuntimeService.UpdateContainerResources',
+    full_name='runtime.v1alpha2.RuntimeService.UpdateContainerResources',
     index=12,
     containing_service=None,
     input_type=_UPDATECONTAINERRESOURCESREQUEST,
@@ -6570,7 +6574,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ReopenContainerLog',
-    full_name='RuntimeService.ReopenContainerLog',
+    full_name='runtime.v1alpha2.RuntimeService.ReopenContainerLog',
     index=13,
     containing_service=None,
     input_type=_REOPENCONTAINERLOGREQUEST,
@@ -6579,7 +6583,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ExecSync',
-    full_name='RuntimeService.ExecSync',
+    full_name='runtime.v1alpha2.RuntimeService.ExecSync',
     index=14,
     containing_service=None,
     input_type=_EXECSYNCREQUEST,
@@ -6588,7 +6592,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Exec',
-    full_name='RuntimeService.Exec',
+    full_name='runtime.v1alpha2.RuntimeService.Exec',
     index=15,
     containing_service=None,
     input_type=_EXECREQUEST,
@@ -6597,7 +6601,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Attach',
-    full_name='RuntimeService.Attach',
+    full_name='runtime.v1alpha2.RuntimeService.Attach',
     index=16,
     containing_service=None,
     input_type=_ATTACHREQUEST,
@@ -6606,7 +6610,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='PortForward',
-    full_name='RuntimeService.PortForward',
+    full_name='runtime.v1alpha2.RuntimeService.PortForward',
     index=17,
     containing_service=None,
     input_type=_PORTFORWARDREQUEST,
@@ -6615,7 +6619,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ContainerStats',
-    full_name='RuntimeService.ContainerStats',
+    full_name='runtime.v1alpha2.RuntimeService.ContainerStats',
     index=18,
     containing_service=None,
     input_type=_CONTAINERSTATSREQUEST,
@@ -6624,7 +6628,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ListContainerStats',
-    full_name='RuntimeService.ListContainerStats',
+    full_name='runtime.v1alpha2.RuntimeService.ListContainerStats',
     index=19,
     containing_service=None,
     input_type=_LISTCONTAINERSTATSREQUEST,
@@ -6633,7 +6637,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='UpdateRuntimeConfig',
-    full_name='RuntimeService.UpdateRuntimeConfig',
+    full_name='runtime.v1alpha2.RuntimeService.UpdateRuntimeConfig',
     index=20,
     containing_service=None,
     input_type=_UPDATERUNTIMECONFIGREQUEST,
@@ -6642,7 +6646,7 @@ _RUNTIMESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Status',
-    full_name='RuntimeService.Status',
+    full_name='runtime.v1alpha2.RuntimeService.Status',
     index=21,
     containing_service=None,
     input_type=_STATUSREQUEST,
@@ -6657,16 +6661,16 @@ DESCRIPTOR.services_by_name['RuntimeService'] = _RUNTIMESERVICE
 
 _IMAGESERVICE = _descriptor.ServiceDescriptor(
   name='ImageService',
-  full_name='ImageService',
+  full_name='runtime.v1alpha2.ImageService',
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=12353,
-  serialized_end=12658,
+  serialized_start=15025,
+  serialized_end=15500,
   methods=[
   _descriptor.MethodDescriptor(
     name='ListImages',
-    full_name='ImageService.ListImages',
+    full_name='runtime.v1alpha2.ImageService.ListImages',
     index=0,
     containing_service=None,
     input_type=_LISTIMAGESREQUEST,
@@ -6675,7 +6679,7 @@ _IMAGESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ImageStatus',
-    full_name='ImageService.ImageStatus',
+    full_name='runtime.v1alpha2.ImageService.ImageStatus',
     index=1,
     containing_service=None,
     input_type=_IMAGESTATUSREQUEST,
@@ -6684,7 +6688,7 @@ _IMAGESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='PullImage',
-    full_name='ImageService.PullImage',
+    full_name='runtime.v1alpha2.ImageService.PullImage',
     index=2,
     containing_service=None,
     input_type=_PULLIMAGEREQUEST,
@@ -6693,7 +6697,7 @@ _IMAGESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='RemoveImage',
-    full_name='ImageService.RemoveImage',
+    full_name='runtime.v1alpha2.ImageService.RemoveImage',
     index=3,
     containing_service=None,
     input_type=_REMOVEIMAGEREQUEST,
@@ -6702,7 +6706,7 @@ _IMAGESERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='ImageFsInfo',
-    full_name='ImageService.ImageFsInfo',
+    full_name='runtime.v1alpha2.ImageService.ImageFsInfo',
     index=4,
     containing_service=None,
     input_type=_IMAGEFSINFOREQUEST,

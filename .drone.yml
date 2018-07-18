@@ -40,6 +40,17 @@ pipeline:
       - pylint plugins
       - bandit -r plugins || echo "There are security warnings"
 
+  generate-docs:
+    image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
+    group: docs
+    commands:
+      - cd doc; pip install -r requirements.txt; make html
+      - cd build/html
+      - echo -e "FROM nginx:latest\nADD . /usr/share/nginx/html/\n" > Dockerfile
+      - docker build -t dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER}
+      # temporarily pushing all docs for now
+      - docker push dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER}
+
   dockerd1:
     image: docker:18.03.0-ce-dind
     privileged: true
@@ -114,6 +125,8 @@ pipeline:
     commands:
       - docker tag dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/beiran:edge
       - docker push dkr.rsnc.io/poc/beiran/beiran:edge
+      - docker tag dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER} dkr.rsnc.io/poc/beiran/docs:edge
+      - docker push dkr.rsnc.io/poc/beiran/docs:edge
     volumes:
       - /var/run/docker.sock:/var/run/host.sock:ro
 

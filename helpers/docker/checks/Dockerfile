@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     gcc \
     g++ \
     linux-headers \
-    musl-dev
+    musl-dev \
+    make
 
 RUN pip install flake8 flake8-docstrings pylint bandit
 

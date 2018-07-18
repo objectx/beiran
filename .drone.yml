@@ -22,14 +22,16 @@ pipeline:
   generate-docs:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     commands:
-      - cd doc; pip install -r requirements.txt; make html
-      - cd build/html
+      - cd doc
+      - pip install -r requirements.txt
+      - make html
 
   package-docs:
     image: docker
     commands:
+      - cd doc/build/html
       - echo -e "FROM nginx:latest\nADD . /usr/share/nginx/html/\n" > Dockerfile
-      - docker build -t dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER}
+      - docker build -t dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER} .
       # temporarily pushing all docs for now
       - docker push dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER}
 

@@ -6,12 +6,23 @@
 Welcome to Beiran's documentation!
 ==================================
 
+Beiran is a set of tools for replacing distribution layer
+of package management systems.
+
+At this moment, it is under heavy development and we will be
+announcing an alpha release soon.
+
+It aims provide out-of-box experience to fit along with
+existing tools, focuses on security, decentralization and availability.
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   beiran
    beirand
-   zeroconf_discovery
+   plugins
 
 
 Indices and tables

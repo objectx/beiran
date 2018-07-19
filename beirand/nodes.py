@@ -9,12 +9,12 @@ import socket
 from beiran.models import Node
 from beiran.client import Client as BeiranClient
 
-import beiran.defaults as defaults
+from beiran import defaults
 
 from beirand.peer import Peer
 
 
-class Nodes(object):
+class Nodes:
     """Nodes is in memory data model, composed of members of Beiran Cluster"""
 
     def __init__(self):
@@ -48,7 +48,7 @@ class Nodes(object):
             (dict): serialized node object
 
         """
-        return Node.get(uuid == uuid)
+        return Node.get(uuid == uuid)  # pylint: disable=comparison-with-itself
 
     async def get_node_by_uuid(self, uuid=None, from_db=False):
         """
@@ -66,7 +66,7 @@ class Nodes(object):
 
         """
         if uuid is None:
-            uuid = self.local_node.uuid.hex
+            uuid = self.local_node.uuid.hex  # pylint: disable=no-member
 
         if not from_db:
             return self.all_nodes.get(uuid, None)

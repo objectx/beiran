@@ -6,7 +6,7 @@ import sys
 import tarfile
 
 
-class Unbuffered(object):
+class Unbuffered:
     """
     Unbuffered stream write class
     """

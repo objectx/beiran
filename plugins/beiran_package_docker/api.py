@@ -325,10 +325,9 @@ class ImageList(RPCEndpoint):
 
                 # FIXME!
                 if self.real_size != image.size:
-                    Services.logger.debug("WARNING: size of image != " +
-                                          "sum of chuncks length. [%d, %d]",
-                                          self.real_size, image.size)
-
+                    Services.logger.debug(
+                        "WARNING: size of image != sum of chuncks length. [%d, %d]",
+                        self.real_size, image.size)
 
             await docker_result
         except Client.Error as error:

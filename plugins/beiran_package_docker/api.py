@@ -224,9 +224,10 @@ class ImageList(RPCEndpoint):
         pass
 
     @rpc
-    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches
+    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """
             Pulling image in cluster
+
         """
         body = json.loads(self.request.body)
 

@@ -2,6 +2,7 @@
 import grpc
 import time
 import logging
+import os
 from concurrent import futures
 
 from api_pb2_grpc import ImageServiceServicer, add_ImageServiceServicer_to_server
@@ -13,36 +14,35 @@ from api_pb2 import ImageFsInfoResponse, FilesystemUsage, FilesystemIdentifier, 
 
 from api_pb2 import Int64Value
 
+from beiran.sync_client import Client
+from beirand.common import Services
+
 
 class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
+    def __init__(self, url):
+        super().__init__()
+        self.client = Client(url)
+
     def ListImages(self, request, context):
         """ListImages lists existing images.
         """
-        # https://github.com/containerd/containerd/blob/372cdfac3b9e7fa6e1b21d38b6f84d996b4f4142/api/services/images/v1/images.proto
-        # https://github.com/containerd/containerd/blob/1a5e0df98f9673ca37a9018f14e31af9984d49b0/services/images/local.go#L89
-
-        # TODO: Investigate and implement filters
-        print("req: ", request)
-        print("req.filter: ", request.filter) # ImageFilter
-        print("req.filter.image: ", request.filter.image) # ImageSpec
-        print("req.filter.image.image: ", request.filter.image.image) # string
+        # don't care ImageFilter like containerd (https://github.com/containerd/cri/blob/013ab03a5369fa1c75da350ca0888017dc3a3b01/pkg/server/image_list.go#L29)
+        Services.logger.debug("request: ListImages")
 
         images = []
 
-        # get beiran iamges
-        # convert image(dict) to Image
-        
-        image = Image(
-            id="hello1",
-            repo_tags=["hello2","hello3"],
-            repo_digests=["deadbeefdeadbeef","deadbeef"],
-            size=4873483,
-            uid=Int64Value(value=1),
-            username="hellodesu"
-        )
-        images.append(image)
+        for resp_image in self.client.get_images():
+            images.append(Image(
+                id=resp_image["hash_id"], # should obey the format "docker.io/library/aaaa:latest"?
+                repo_tags=resp_image["tags"],
+                repo_digests=[], # missing filed
+                size=resp_image["size"],
+                uid=Int64Value(value=1), # missing field
+                username="" # missing field
+            ))
+
         response = ListImagesResponse(images=images)
         return response
 
@@ -51,26 +51,58 @@ class K8SImageServicer(ImageServiceServicer):
         present, returns a response with ImageStatusResponse.Image set to
         nil.
         """
-        print("req2: ", request)
-        print("req2.image: ", request.image)
-        print("req2.verbose: ", request.verbose)
-        print("req2.image.image: ", request.image.image)
+        Services.logger.debug("request: ImageStatus")
 
-        image = Image(
-                id="hello1",
-                repo_tags=["hello2","hello3"],
-                repo_digests=["deadbeefdeadbeef","deadbeef"],
-                size=4873483,
-                uid=Int64Value(value=2),
-                username="root"
-        )
-        info = {"HEI": "HEIIII"}
-        response = ImageStatusResponse(image=image, info=info)
+        # if ImageSpec is not set 
+        if request.image == None:
+            return ImageStatusResponse()
+
+
+        images = self.client.get_images()
+        imagename = request.image.image
+        image = None
+        find = False
+
+        for resp_image in images:
+            # for digest in resp_image["repo_digests"]:
+            #     if imagename in digest:
+            #         find = True
+            #         image = resp_image
+            #         break
+
+            for tag in resp_image["tags"]:
+                if imagename in tag:
+                    find = True
+                    image = resp_image
+                    break
+    
+            
+            if imagename in resp_image["hash_id"]:
+                find = True
+                image = resp_image
+
+            if find:
+                break
+
+        info = {}
+        if request.verbose:
+            # not yet support
+            info = {}
+    
+        response = ImageStatusResponse(image=Image(
+            id=image["hash_id"],
+            repo_tags=image["tags"],
+            repo_digests=[], # missing field
+            size=image["size"],
+            uid=Int64Value(value=1), # missing field
+            username="" # missing field
+        ), info=info)
         return response
 
     def PullImage(self, request, context):
         """PullImage pulls an image with authentication config.
         """
+        Services.logger.debug("request: PullImage")
         print("req3: ", request)
         print("req3.image: ", request.image)
         print("req3.auth: ", request.auth)
@@ -88,6 +120,10 @@ class K8SImageServicer(ImageServiceServicer):
         This call is idempotent, and must not return an error if the image has
         already been removed.
         """
+        Services.logger.debug("request: RemoveImage")
+
+        # remove(request.image.image)
+
         print("req4: ", request)
         print("req4.image: ", request.image)
 
@@ -97,6 +133,7 @@ class K8SImageServicer(ImageServiceServicer):
     def ImageFsInfo(self, request, context):
         """ImageFSInfo returns information of the filesystem that is used to store images.
         """
+        Services.logger.debug("request: ImageFsInfo")
         print("req5: ", request)
 
         filesystemidentifier = FilesystemIdentifier(
@@ -123,8 +160,14 @@ class MyInterceptor(grpc.ServerInterceptor):
 def main():
     # server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), interceptors=[ MyInterceptor() ])
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    add_ImageServiceServicer_to_server(K8SImageServicer(), server)
-    server.add_insecure_port('[::]:50051')
+
+    url = "http://localhost:8888" # url for creating sync_client
+
+    add_ImageServiceServicer_to_server(K8SImageServicer(url), server)
+    
+    # server.add_insecure_port('[::]:50051')
+    path = os.getcwd()
+    server.add_insecure_port('unix://' + path + "/grpc.sock")
     server.start()
     try:
         while True:

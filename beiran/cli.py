@@ -9,6 +9,7 @@ import json
 import click
 from tabulate import tabulate
 from beiran.util import exit_print
+from beiran.util import sizeof_fmt
 from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.sync_client import Client
@@ -17,23 +18,11 @@ from beiran.client import Client as AsyncClient
 from beiran.models import Node
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
-# LOG_FILE = os.getenv('LOG_FILE', '/var/log/beirand.log')
 logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'library')
 
 sys.stdout = Unbuffered(sys.stdout)
-
-
-def sizeof_fmt(num, suffix='B'):
-    """Human readable format for sizes
-    source: https://stackoverflow.com/a/1094933
-    """
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
 @click.group()
@@ -45,6 +34,7 @@ def main(ctx=None, debug=False):
     if debug:
         logger.setLevel(logging.DEBUG)
     ctx.obj = Cli.singleton
+
 
 class Cli:
     """beiran cli methods for click(lib)"""

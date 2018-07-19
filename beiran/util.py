@@ -82,3 +82,14 @@ def create_tar_archive(dir_path, output_file_path):
     """
     with tarfile.open(output_file_path, "w") as tar:
         tar.add(dir_path, arcname='.')
+
+
+def sizeof_fmt(num, suffix='B'):
+    """Human readable format for sizes
+    source: https://stackoverflow.com/a/1094933
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)

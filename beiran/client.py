@@ -35,7 +35,7 @@ class Client:
         if not matched:
             raise ValueError("URL is broken: %s" % url)
 
-        # proto = matched.groups()[0]
+        proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
         uuid = matched.groups()[3]

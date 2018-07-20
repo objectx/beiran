@@ -90,19 +90,16 @@ async def input_reader(stream, **kwargs):
     input_reder
     """
 
-    async def tornado_input_reader(stream):
-        # pylint: disable=missing-docstring
-        while not stream.at_eof():
-            data = await stream.readchunk()
-            yield data
-
     if hasattr(stream, 'iter_chunked'):
         async for data in stream.iter_chunked(64*1024):
             yield data
         return
 
     if hasattr(stream, 'at_eof') and hasattr(stream, 'readchunk'):
-        async for data in tornado_input_reader(stream):
+        while not stream.at_eof():
+            # https://docs.aiohttp.org/en/stable/streams.html#aiohttp.StreamReader.readchunk
+            # Retuns [bytes,boolean]
+            data, end_of_chunk = await stream.readchunk()
             yield data
         return
 

@@ -76,7 +76,7 @@ class K8SImageServicer(ImageServiceServicer):
                     image = resp_image
                     break
     
-            
+
             if imagename in resp_image["hash_id"]:
                 find = True
                 image = resp_image
@@ -103,16 +103,23 @@ class K8SImageServicer(ImageServiceServicer):
         """PullImage pulls an image with authentication config.
         """
         Services.logger.debug("request: PullImage")
-        print("req3: ", request)
-        print("req3.image: ", request.image)
-        print("req3.auth: ", request.auth)
-        print("req3.sandbox_config: ", request.sandbox_config)
-        print("req3.sandbox_config.metadata: ", request.sandbox_config.metadata)
-        print("req3.sandbox_config.dns_config: ", request.sandbox_config.dns_config)
-        print("req3.sandbox_config.port_mappings: ", request.sandbox_config.port_mappings)
-        print("req3.sandbox_config.linux: ", request.sandbox_config.linux)
 
-        response = PullImageResponse(image_ref="nginx:latest")
+        imagename = request.image.image
+        if ":" not in imagename:
+            imagename += ":latest"
+
+        # not supporting AuthConfig and PodSandboxConfig now
+
+        resp = self.client.pull_image(imagename, wait=True)
+        image_ref = ""
+        if resp['finished']:
+            images = self.client.get_images()
+            for image in images:
+                for tag in image["tags"]:
+                    if tag == imagename:
+                        image_ref = image["hash_id"]
+                        break
+        response = PullImageResponse(image_ref=image_ref)
         return response
 
     def RemoveImage(self, request, context):
@@ -122,10 +129,7 @@ class K8SImageServicer(ImageServiceServicer):
         """
         Services.logger.debug("request: RemoveImage")
 
-        # remove(request.image.image)
-
-        print("req4: ", request)
-        print("req4.image: ", request.image)
+        # "remove function" isn't implemented yet
 
         response = RemoveImageResponse()
         return response
@@ -134,20 +138,10 @@ class K8SImageServicer(ImageServiceServicer):
         """ImageFSInfo returns information of the filesystem that is used to store images.
         """
         Services.logger.debug("request: ImageFsInfo")
-        print("req5: ", request)
 
-        filesystemidentifier = FilesystemIdentifier(
-            mountpoint="/home/ubuntu"
-        )
-        filesystemusage = FilesystemUsage(
-            timestamp=123,
-            fs_id=filesystemidentifier,
-            used_bytes = UInt64Value(1),
-            inodes_used = UInt64Value(2)
-        )
-        image_filesystems = []
-        image_filesystems.append(filesystemusage)
-        response = ImageFsInfoResponse(image_filesystems=image_filesystems)
+        # not support
+
+        response = ImageFsInfoResponse()
         return response
 
 class MyInterceptor(grpc.ServerInterceptor):

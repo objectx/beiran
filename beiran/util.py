@@ -99,7 +99,7 @@ async def input_reader(stream, **kwargs):
         while not stream.at_eof():
             # https://docs.aiohttp.org/en/stable/streams.html#aiohttp.StreamReader.readchunk
             # Retuns [bytes,boolean]
-            data, end_of_chunk = await stream.readchunk()
+            data = await stream.readchunk()
             yield data
         return
 

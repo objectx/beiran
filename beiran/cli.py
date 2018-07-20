@@ -173,7 +173,7 @@ class Cli:
         if progress:
             progbar = click.progressbar(length=1)
 
-            async def pulling(progress):
+            async def _pull_with_progress():
                 """Pull image with async client"""
                 resp = await self.async_beiran_client.pull_image(imagename,
                                                                  node=node,
@@ -187,7 +187,7 @@ class Cli:
                     before = update['progress']
 
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(pulling(progress))
+            loop.run_until_complete(_pull_with_progress())
 
             progbar.render_finish()
             click.echo('done!')

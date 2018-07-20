@@ -39,6 +39,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     manifest = JSONStringField(null=True)
     layers = JSONStringField(default=list)
     available_at = JSONStringField(default=list)
+    repo_digests = JSONStringField(default=list)
+    config = JSONStringField(default=list)
 
     has_not_found_layers = BooleanField(default=False)
     has_unknown_layers = BooleanField(default=False)
@@ -65,6 +67,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             # aiodocker images.list returns ParentId, since images.get returns Parent
             new_dict['parent_hash_id'] = _dict.get('ParentId') or _dict.get('Parent') or None
             new_dict['tags'] = _dict['RepoTags']
+            new_dict['repo_digests'] = _dict['RepoDigests']
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
 
@@ -77,6 +81,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             new_dict['hash_id'] = _dict['hashid']
 
             new_dict['tags'] = [_dict['tag']]
+            new_dict['repo_digests'] = [_dict['repo_digests']]
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['manifest'] = dict(_dict)
 
             new_layer_list = []

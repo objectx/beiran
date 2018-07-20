@@ -40,7 +40,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     layers = JSONStringField(default=list)
     available_at = JSONStringField(default=list)
     repo_digests = JSONStringField(default=list)
-    username = CharField()
+    config = JSONStringField(default=list)
 
     has_not_found_layers = BooleanField(default=False)
     has_unknown_layers = BooleanField(default=False)
@@ -68,7 +68,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             new_dict['parent_hash_id'] = _dict.get('ParentId') or _dict.get('Parent') or None
             new_dict['tags'] = _dict['RepoTags']
             new_dict['repo_digests'] = _dict['RepoDigests']
-            new_dict['username'] = _dict["ContainerConfig"]["User"]
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
 
@@ -82,7 +82,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
 
             new_dict['tags'] = [_dict['tag']]
             new_dict['repo_digests'] = [_dict['repo_digests']]
-            new_dict['username'] = new_dict['username']
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['manifest'] = dict(_dict)
 
             new_layer_list = []

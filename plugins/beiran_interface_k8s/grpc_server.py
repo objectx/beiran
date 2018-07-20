@@ -18,6 +18,22 @@ from beiran.sync_client import Client
 from beirand.common import Services
 
 
+def get_user_from_image(username: str):
+    """
+    get username or uid of the image user
+    If username is numeric, it will be treated as uid; or else, it is treated as user name.
+    """
+    if username == "":
+        return None, ""
+    
+    username = username.split(":")[0]
+    try:
+        uid = Int64Value(value=int(username))
+        return uid, ""
+    except ValueError:
+        return None, username
+
+
 class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
@@ -33,15 +49,17 @@ class K8SImageServicer(ImageServiceServicer):
 
         images = []
 
-        for resp_image in self.client.get_images():
+        for image in self.client.get_images():
+            uid, username = get_user_from_image(image["config"]["User"])
+            
             images.append(Image(
-                id=resp_image["hash_id"], # should obey the format "docker.io/library/aaaa:latest"?
-                repo_tags=resp_image["tags"],
-                repo_digests=[], # missing filed
-                size=resp_image["size"],
-                uid=Int64Value(value=1), # missing field
-                username="" # missing field
-            ))
+                id=image["hash_id"],
+                repo_tags=image["tags"],
+                repo_digests=image["repo_digests"],
+                size=image["size"],
+                uid=uid,
+                username=username
+        ))
 
         response = ListImagesResponse(images=images)
         return response
@@ -57,25 +75,26 @@ class K8SImageServicer(ImageServiceServicer):
         if request.image == None:
             return ImageStatusResponse()
 
+        imagename = request.image.image
+        if ":" not in imagename:
+            imagename += ":latest"
 
         images = self.client.get_images()
-        imagename = request.image.image
         image = None
         find = False
 
         for resp_image in images:
-            # for digest in resp_image["repo_digests"]:
-            #     if imagename in digest:
-            #         find = True
-            #         image = resp_image
-            #         break
+            for digest in resp_image["repo_digests"]:
+                if imagename in digest:
+                    find = True
+                    image = resp_image
+                    break
 
             for tag in resp_image["tags"]:
                 if imagename in tag:
                     find = True
                     image = resp_image
                     break
-    
 
             if imagename in resp_image["hash_id"]:
                 find = True
@@ -88,20 +107,25 @@ class K8SImageServicer(ImageServiceServicer):
         if request.verbose:
             # not yet support
             info = {}
-    
+
+        uid, username = get_user_from_image(image["config"]["User"])
+
         response = ImageStatusResponse(image=Image(
             id=image["hash_id"],
             repo_tags=image["tags"],
-            repo_digests=[], # missing field
+            repo_digests=image["repo_digests"],
             size=image["size"],
-            uid=Int64Value(value=1), # missing field
-            username="" # missing field
+            uid=uid,
+            username=username
         ), info=info)
         return response
 
     def PullImage(self, request, context):
         """PullImage pulls an image with authentication config.
         """
+        # This method operates like "beiran image pull".
+        # Do not pull an image from registry server.
+        
         Services.logger.debug("request: PullImage")
 
         imagename = request.image.image
@@ -112,13 +136,12 @@ class K8SImageServicer(ImageServiceServicer):
 
         resp = self.client.pull_image(imagename, wait=True)
         image_ref = ""
-        if resp['finished']:
-            images = self.client.get_images()
-            for image in images:
-                for tag in image["tags"]:
-                    if tag == imagename:
-                        image_ref = image["hash_id"]
-                        break
+        images = self.client.get_images()
+        for image in images:
+            for tag in image["tags"]:
+                if tag == imagename:
+                    image_ref = image["hash_id"]
+                    break
         response = PullImageResponse(image_ref=image_ref)
         return response
 

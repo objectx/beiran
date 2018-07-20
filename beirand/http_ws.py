@@ -144,12 +144,12 @@ class NodesHandler(RPCEndpoint):
 
     def get(self):
         """
-        Return list of nodes, if specified `all`from database or discovered ones from memory.
+        Return list of nodes, if specified ``all`` from database or discovered ones from memory.
 
         Returns:
-            (dict) list of nodes, it is a dict, since tornado does not write list for security
-                   reasons; see:
-                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+            (dict): list of nodes, it is a dict, since
+            tornado does not write list for security reasons; see:
+            ``http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write``
 
         """
         all_nodes = self.get_argument('all', False) == 'true'

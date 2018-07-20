@@ -286,10 +286,11 @@ class Client:
         """
         Stream image from this node
 
-        Usage:
+        Usage::
+
             image_response = await client.stream_image(image_identifier)
             async for data in image_response.content.iter_chunked(64*1024):
-                ... do something with data chunk
+                do something with data chunk
         """
 
         path = '/docker/images/{}'.format(imagename)

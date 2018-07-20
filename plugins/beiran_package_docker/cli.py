@@ -9,25 +9,20 @@ import asyncio
 from beiran.util import sizeof_fmt
 
 
-@click.group()
+@click.group("docker", short_help="docker subcommands")
 @click.pass_context
-def docker(ctx=None, debug=False):
+def cli(ctx=None, debug=False):
     """Main subcommand method."""
     pass
 
 
-# image subcommand group
-@click.group()
+@cli.group()
 @click.pass_obj
 def image(self):
     """Group command for image management"""
     pass
 
-
-docker.add_command(image)
-
-
-@click.command('pull')
+@image.command('pull')
 @click.option('--from', 'node', default=None,
               help='Pull from spesific node')
 @click.option('--wait', 'wait', default=False, is_flag=True,
@@ -94,10 +89,8 @@ def image_pull(self, node, wait, force, progress, imagename):
 
 # pylint: enable-msg=too-many-arguments
 
-image.add_command(image_pull)
 
-
-@click.command('list')
+@image.command('list')
 @click.option('--all', 'all_nodes', default=False, is_flag=True,
               help='List images from all known nodes')
 @click.option('--node', default=None,
@@ -120,22 +113,16 @@ def image_list(self, all_nodes, node):
     click.echo(tabulate(table, headers=["Tags", "Size", "Availability"]))
 
 
-image.add_command(image_list)
-
-
 # ##########  Layer management commands
 
-@click.group()
+@cli.group()
 @click.pass_obj
 def layer(self):
     """group command for layer management"""
     pass
 
 
-docker.add_command(layer)
-
-
-@click.command('list')
+@layer.command('list')
 @click.option('--all', 'all_nodes', default=False, is_flag=True,
               help='List layers from all known nodes')
 @click.option('--node', default=None,
@@ -149,6 +136,3 @@ def layer_list(self, all_nodes, node):
         for i in layers
     ]
     print(tabulate(table, headers=["Digest", "Size", "Availability"]))
-
-
-layer.add_command(layer_list)

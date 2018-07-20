@@ -89,7 +89,7 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
         await self.zeroconf.register_service(self.info)
 
 
-class ZeroconfListener(object):
+class ZeroconfListener:
     """Listener instance for zeroconf discovery to monitor changes
     """
 

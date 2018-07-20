@@ -179,9 +179,10 @@ class Cli:
                                                                  node=node,
                                                                  wait=wait,
                                                                  force=force,
-                                                                 progress=progress)
+                                                                 progress=True,
+                                                                 raise_error=True)
                 before = 0
-                async for update in json_streamer(resp.content, 'progress.*'):
+                async for update in json_streamer(resp.content, '$.progress[::]'):
                     progbar.update(update['progress'] - before)
                     before = update['progress']
 
@@ -196,7 +197,8 @@ class Cli:
                                                    node=node,
                                                    wait=wait,
                                                    force=force,
-                                                   progress=progress)
+                                                   progress=False,
+                                                   raise_error=True)
 
             if "started" in result:
                 click.echo("Process is started")

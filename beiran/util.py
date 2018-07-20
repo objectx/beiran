@@ -296,4 +296,3 @@ async def json_streamer(stream, subpath="$"):
                     values[-1].append(val)
                     keys.append(key + 1)
                 depth -= 1
-    stream.close()

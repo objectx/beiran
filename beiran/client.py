@@ -48,6 +48,7 @@ class Client:
         if is_unix_socket:
             self.socket_path = location
             self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
+            self.url = proto + '://unixsocket'
         else:
             self.client_connector = None
         self.http_client = None
@@ -63,6 +64,9 @@ class Client:
             self.http_client = None
 
     def __del__(self):
+        if not self.http_client:
+            return
+
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.ensure_future(self.cleanup())

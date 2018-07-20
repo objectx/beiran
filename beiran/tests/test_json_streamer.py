@@ -62,6 +62,8 @@ def test_parse_subpath(subpath, result):
     ('[1, 2, 3, 4, 5, 6]', '$[1:3]', [2, 3]),
     ('[1, 2, 3, 4, 5, 6]', '$[:4]', [1, 2, 3, 4]),
     ('[1, 2, 3, 4, 5, 6]', '$[::2]', [1, 3, 5]),
+    ('{"image":"nginx:latest","progress":[{"progress": 0.05, "done": false},{"progress": 0.10, "done": false},{"progress": 1.03, "done": true}]}',
+        '$.progress[::]', [{ "progress": 0.05, "done": False }, { "progress": 0.10, "done": False }, { "progress": 1.03, "done": True }]),
 ])
 def test_json_streamer(string, subpath, result):
     import asyncio

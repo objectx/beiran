@@ -107,6 +107,11 @@ pipeline:
         done
       - pyresttest --url http://beirand1:8888 --test test/rest_api/beirand.yaml
 
+  pytest:
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    commands:
+      - pytest
+
   publish:
     image: docker
     environment:

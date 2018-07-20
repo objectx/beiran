@@ -60,6 +60,11 @@ pipeline:
       - pylint plugins
       - bandit -r plugins || echo "There are security warnings"
 
+  pytest:
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    commands:
+      - pytest
+
   dockerd1:
     image: docker:18.03.0-ce-dind
     privileged: true

@@ -5,10 +5,10 @@ import os
 import sys
 import logging
 import asyncio
-import json
 import click
 from tabulate import tabulate
 from beiran.util import exit_print
+from beiran.util import json_streamer
 from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.sync_client import Client
@@ -173,35 +173,21 @@ class Cli:
         if progress:
             progbar = click.progressbar(length=1)
 
-            # We should use decent JSON stream parser.
-            # This is a temporary solution.
-            async def json_streamer(stream, subpath="*"):
-                """Parse a stream of JSON chunks"""
-                if subpath:
-                    pass
-                while not stream.at_eof():
-                    data = await stream.readchunk()
-                    try:
-                        json_str = data[0].decode("utf-8")[:-1]
-                        json_dir = json.loads(json_str)
-                        yield json_dir
-                    except json.decoder.JSONDecodeError:
-                        pass
-
-            async def pulling(progress):
+            async def _pull_with_progress():
                 """Pull image with async client"""
                 resp = await self.async_beiran_client.pull_image(imagename,
                                                                  node=node,
                                                                  wait=wait,
                                                                  force=force,
-                                                                 progress=progress)
+                                                                 progress=True,
+                                                                 raise_error=True)
                 before = 0
-                async for update in json_streamer(resp.content, 'progress.*'):
+                async for update in json_streamer(resp.content, '$.progress[::]'):
                     progbar.update(update['progress'] - before)
                     before = update['progress']
 
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(pulling(progress))
+            loop.run_until_complete(_pull_with_progress())
 
             progbar.render_finish()
             click.echo('done!')
@@ -211,7 +197,8 @@ class Cli:
                                                    node=node,
                                                    wait=wait,
                                                    force=force,
-                                                   progress=progress)
+                                                   progress=False,
+                                                   raise_error=True)
 
             if "started" in result:
                 click.echo("Process is started")

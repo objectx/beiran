@@ -1,22 +1,34 @@
+"""
+gRPC server (CRI Version: v1alpha2)
+"""
 
-import grpc
+
+
+import json
+import random
+import asyncio
 import time
-import logging
-import os
-from concurrent import futures
 
-from api_pb2_grpc import ImageServiceServicer, add_ImageServiceServicer_to_server
-from api_pb2 import ImageStatusResponse
-from api_pb2 import ListImagesResponse, Image
-from api_pb2 import PullImageResponse
-from api_pb2 import RemoveImageResponse
-from api_pb2 import ImageFsInfoResponse, FilesystemUsage, FilesystemIdentifier, UInt64Value
+import aiohttp
+from peewee import SQL
 
-from api_pb2 import Int64Value
+from beiran.client import Client
+from plugins.beiran_package_docker.models import DockerImage
 
-from beiran.sync_client import Client
-from beirand.common import Services
+from .api_pb2_grpc import ImageServiceServicer
+from .api_pb2 import ImageStatusResponse
+from .api_pb2 import ListImagesResponse, Image
+from .api_pb2 import PullImageResponse
+from .api_pb2 import RemoveImageResponse
+from .api_pb2 import ImageFsInfoResponse, FilesystemUsage, FilesystemIdentifier, UInt64Value
+from .api_pb2 import Int64Value
 
+class Services:
+    """These needs to be injected from the plugin init code"""
+    loop = None
+    logger = None
+    daemon = None
+    aiodocker = None
 
 def get_user_from_image(username: str):
     """
@@ -25,7 +37,7 @@ def get_user_from_image(username: str):
     """
     if username == "":
         return None, ""
-    
+
     username = username.split(":")[0]
     try:
         uid = Int64Value(value=int(username))
@@ -37,29 +49,25 @@ def get_user_from_image(username: str):
 class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
-    def __init__(self, url):
-        super().__init__()
-        self.client = Client(url)
-
     def ListImages(self, request, context):
         """ListImages lists existing images.
         """
-        # don't care ImageFilter like containerd (https://github.com/containerd/cri/blob/013ab03a5369fa1c75da350ca0888017dc3a3b01/pkg/server/image_list.go#L29)
+        # don't care ImageFilter like containerd (containerd/cri/pkg/server/image_list.go)
         Services.logger.debug("request: ListImages")
 
         images = []
 
-        for image in self.client.get_images():
-            uid, username = get_user_from_image(image["config"]["User"])
-            
+        for image in DockerImage.select():
+            uid, username = get_user_from_image(image.config["User"])
+
             images.append(Image(
-                id=image["hash_id"],
-                repo_tags=image["tags"],
-                repo_digests=image["repo_digests"],
-                size=image["size"],
+                id=image.hash_id,
+                repo_tags=image.tags,
+                repo_digests=image.repo_digests,
+                size=image.size,
                 uid=uid,
                 username=username
-        ))
+            ))
 
         response = ListImagesResponse(images=images)
         return response
@@ -71,50 +79,40 @@ class K8SImageServicer(ImageServiceServicer):
         """
         Services.logger.debug("request: ImageStatus")
 
-        # if ImageSpec is not set 
-        if request.image == None:
+        if not request.image:
             return ImageStatusResponse()
 
-        imagename = request.image.image
-        if ":" not in imagename:
-            imagename += ":latest"
+        if "@" in request.image.image:
+            images = DockerImage.select()
+            images = images.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % request.image.image))
+            image = images.first()
 
-        images = self.client.get_images()
-        image = None
-        find = False
+        elif request.image.image.startswith("sha256:"):
+            image = DockerImage.get(DockerImage.hash_id == request.image.image)
 
-        for resp_image in images:
-            for digest in resp_image["repo_digests"]:
-                if imagename in digest:
-                    find = True
-                    image = resp_image
-                    break
+        else:
+            image_name = request.image.image
+            if ":" not in image_name:
+                image_name += ":latest"
 
-            for tag in resp_image["tags"]:
-                if imagename in tag:
-                    find = True
-                    image = resp_image
-                    break
+            images = DockerImage.select()
+            images = images.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
+            image = images.first()
 
-            if imagename in resp_image["hash_id"]:
-                find = True
-                image = resp_image
-
-            if find:
-                break
+        if not image:
+            return ImageStatusResponse()
 
         info = {}
         if request.verbose:
-            # not yet support
-            info = {}
+            info = {'config': json.dumps(image.config)} # tentatively return config...
 
-        uid, username = get_user_from_image(image["config"]["User"])
+        uid, username = get_user_from_image(image.config["User"])
 
         response = ImageStatusResponse(image=Image(
-            id=image["hash_id"],
-            repo_tags=image["tags"],
-            repo_digests=image["repo_digests"],
-            size=image["size"],
+            id=image.hash_id,
+            repo_tags=image.tags,
+            repo_digests=image.repo_digests,
+            size=image.size,
             uid=uid,
             username=username
         ), info=info)
@@ -124,24 +122,20 @@ class K8SImageServicer(ImageServiceServicer):
         """PullImage pulls an image with authentication config.
         """
         # This method operates like "beiran image pull".
-        # Do not pull an image from registry server.
-        
+        # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
 
-        imagename = request.image.image
-        if ":" not in imagename:
-            imagename += ":latest"
+        image_name = request.image.image
+        if ":" not in image_name:
+            image_name += ":latest"
 
         # not supporting AuthConfig and PodSandboxConfig now
 
-        resp = self.client.pull_image(imagename, wait=True)
-        image_ref = ""
-        images = self.client.get_images()
-        for image in images:
-            for tag in image["tags"]:
-                if tag == imagename:
-                    image_ref = image["hash_id"]
-                    break
+        image_pull_task = Services.loop.create_task(self.pull_routine(image_name))
+        while not image_pull_task.done():
+            time.sleep(.1) # FIXME!
+        image_ref = image_pull_task.result()
+
         response = PullImageResponse(image_ref=image_ref)
         return response
 
@@ -152,7 +146,7 @@ class K8SImageServicer(ImageServiceServicer):
         """
         Services.logger.debug("request: RemoveImage")
 
-        # "remove function" isn't implemented yet
+        # not support
 
         response = RemoveImageResponse()
         return response
@@ -164,33 +158,58 @@ class K8SImageServicer(ImageServiceServicer):
 
         # not support
 
-        response = ImageFsInfoResponse()
+        response = ImageFsInfoResponse(
+            image_filesystems=FilesystemUsage(
+                timestamp=None,
+                fs_id=FilesystemIdentifier(),
+                used_bytes=UInt64Value(),
+                inodes_used=UInt64Value()
+            )
+        )
         return response
 
-class MyInterceptor(grpc.ServerInterceptor):
-    def intercept_service(self, continuation, handler_call_details):
-        print(handler_call_details)
-        return continuation(handler_call_details)
- 
+    async def pull_routine(self, image_name): # pylint: disable=too-many-locals
+        """coroutine for pulling images"""
+        available_nodes = await DockerImage.get_available_nodes_by_tag(image_name)
+        online_nodes = Services.daemon.nodes.all_nodes.keys()
+        online_availables = [n for n in available_nodes if n in online_nodes]
+        if online_availables:
+            node_identifier = random.choice(online_availables)
 
+        query = DockerImage.select()
+        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
+        image = query.first()
 
-def main():
-    # server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), interceptors=[ MyInterceptor() ])
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        Services.logger.debug("Will fetch %s from >>%s<<",
+                              image_name, node_identifier)
+        node = await Services.daemon.nodes.get_node_by_uuid(node_identifier)
 
-    url = "http://localhost:8888" # url for creating sync_client
+        client = Client(node=node)
+        chunks = asyncio.Queue()
 
-    add_ImageServiceServicer_to_server(K8SImageServicer(url), server)
-    
-    # server.add_insecure_port('[::]:50051')
-    path = os.getcwd()
-    server.add_insecure_port('unix://' + path + "/grpc.sock")
-    server.start()
-    try:
-        while True:
-            time.sleep(86400)
-    except KeyboardInterrupt:
-            server.stop(0)
+        @aiohttp.streamer
+        async def sender(writer, chunks):
+            """ async generator data sender for aiodocker """
+            chunk = await chunks.get()
+            while chunk:
+                await writer.write(chunk)
+                chunk = await chunks.get()
 
-if __name__ == '__main__':
-    main()
+        try:
+            # pylint: disable=no-value-for-parameter,no-member
+            docker_future = Services.aiodocker.images.import_image(data=sender(chunks))
+            # pylint: enable=no-value-for-parameter,no-member
+            docker_result = asyncio.ensure_future(docker_future)
+
+            image_response = await client.stream_image(image_name)
+            async for data in image_response.content.iter_chunked(64*1024):
+                # Services.logger.debug("Pull: Chunk received with length: %s", len(data))
+                chunks.put_nowait(data)
+
+            chunks.put_nowait(None)
+
+            await docker_result
+        except Client.Error as error:
+            Services.logger.error(error)
+
+        return image.hash_id

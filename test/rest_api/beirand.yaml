@@ -3,7 +3,7 @@
 ---
 - config:
   - testset: "Beiran"
-  - variable_binds: {test_docker_layer: 'sha256:9bb5a5d4561a5511fa7f80718617e67cf2ed2e6cdcd02e31be111a8d0ac4d6b7', test_docker_image: 'hello-world'}
+  - variable_binds: {test_docker_layer: 'sha256:4b8ff392a12ed9ea17784bd3c9a8b1fa3299cac44aca35a85c90c5e3c7afacdc', test_docker_image: 'hello-world'}
 
 - test:
   - name: "Version from root handler"

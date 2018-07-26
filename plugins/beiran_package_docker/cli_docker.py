@@ -2,17 +2,18 @@
 Beiran Docker Plugin command line interface module
 """
 
-import click
 import json
-from tabulate import tabulate
 import asyncio
+import click
+from tabulate import tabulate
+
 from beiran.util import sizeof_fmt
 from beiran.cli import pass_context
 
 
 @click.group("docker", short_help="docker subcommands")
 @pass_context
-def cli(ctx, debug=False):
+def cli():
     """Main subcommand method."""
     pass
 
@@ -20,7 +21,7 @@ def cli(ctx, debug=False):
 @cli.group()
 @click.pass_obj
 @pass_context
-def image(ctx):
+def image():
     """Group command for image management"""
     pass
 
@@ -61,11 +62,13 @@ def image_pull(ctx, node, wait, force, progress, imagename):
 
         async def pulling(progress):
             """Pull image with async client"""
-            resp = await ctx.async_beiran_client.pull_image(imagename,
-                                                             node=node,
-                                                             wait=wait,
-                                                             force=force,
-                                                             progress=progress)
+            resp = await ctx.async_beiran_client.pull_image(
+                imagename,
+                node=node,
+                wait=wait,
+                force=force,
+                progress=progress
+            )
             before = 0
             async for update in json_streamer(resp.content, 'progress.*'):
                 progbar.update(update['progress'] - before)
@@ -78,11 +81,13 @@ def image_pull(ctx, node, wait, force, progress, imagename):
         click.echo('done!')
 
     else:
-        result = ctx.beiran_client.pull_image(imagename,
-                                               node=node,
-                                               wait=wait,
-                                               force=force,
-                                               progress=progress)
+        result = ctx.beiran_client.pull_image(
+            imagename,
+            node=node,
+            wait=wait,
+            force=force,
+            progress=progress
+        )
 
         if "started" in result:
             click.echo("Process is started")
@@ -122,7 +127,7 @@ def image_list(ctx, all_nodes, node):
 @cli.group()
 @click.pass_obj
 @pass_context
-def layer(ctx):
+def layer():
     """group command for layer management"""
     pass
 

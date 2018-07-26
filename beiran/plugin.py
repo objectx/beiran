@@ -239,8 +239,8 @@ def get_installed_plugins():
 
     """
     return [
-            name
-            for finder, name, ispkg
-            in pkgutil.iter_modules()
-            if name.startswith('beiran_')
+        name
+        for finder, name, ispkg
+        in pkgutil.iter_modules()
+        if name.startswith('beiran_')
     ]

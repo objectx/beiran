@@ -4,9 +4,9 @@
 import os
 import sys
 import logging
-import click
 import importlib
 import pkgutil
+import click
 
 from beiran.util import Unbuffered
 from beiran.sync_client import Client
@@ -35,6 +35,7 @@ class BeiranContext(object):
         self.async_beiran_client = AsyncClient(self.beiran_url)
 
 
+# pylint: disable=invalid-name
 pass_context = click.make_pass_decorator(BeiranContext, ensure=True)
 
 
@@ -66,26 +67,26 @@ class BeiranCLI(click.MultiCommand):
         commands.sort()
         return commands
 
-    def get_command(self, ctx, name):
+    def get_command(self, ctx, cmd_name):
         """
         Load command object
 
         Args:
             ctx (BeiranContext): context object
-            name (str): subcommand name
+            cmd_name (str): subcommand name
 
         Returns:
             click.group: subcommand group object
 
         """
-        if name == "node":
-            cli_module = '{}.cli_{}'.format("beiran", name)
+        if cmd_name == "node":
+            cli_module = '{}.cli_{}'.format("beiran", cmd_name)
             module = importlib.import_module(cli_module)
             return module.cli
 
         for plugin in self.installed_plugins:
             try:
-                cli_module = '{}.cli_{}'.format(plugin, name)
+                cli_module = '{}.cli_{}'.format(plugin, cmd_name)
                 module = importlib.import_module(cli_module)
                 return module.cli
             except ModuleNotFoundError:
@@ -94,8 +95,7 @@ class BeiranCLI(click.MultiCommand):
 
 @click.command(cls=BeiranCLI)
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
-@pass_context
-def main(ctx, debug=False):
+def main(debug=False):
     """Main entrypoint."""
     if debug:
         logger.setLevel(logging.DEBUG)

@@ -35,7 +35,7 @@ class Client:
         if not matched:
             raise ValueError("URL is broken: %s" % url)
 
-        # proto = matched.groups()[0]
+        proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
         uuid = matched.groups()[3]
@@ -48,6 +48,7 @@ class Client:
         if is_unix_socket:
             self.socket_path = location
             self.client_connector = aiohttp.UnixConnector(path=self.socket_path)
+            self.url = proto + '://unixsocket'
         else:
             self.client_connector = None
         self.http_client = None
@@ -63,6 +64,9 @@ class Client:
             self.http_client = None
 
     def __del__(self):
+        if not self.http_client:
+            return
+
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.ensure_future(self.cleanup())
@@ -286,10 +290,11 @@ class Client:
         """
         Stream image from this node
 
-        Usage:
+        Usage::
+
             image_response = await client.stream_image(image_identifier)
             async for data in image_response.content.iter_chunked(64*1024):
-                ... do something with data chunk
+                do something with data chunk
         """
 
         path = '/docker/images/{}'.format(imagename)

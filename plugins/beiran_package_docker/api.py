@@ -224,9 +224,10 @@ class ImageList(RPCEndpoint):
         pass
 
     @rpc
-    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches
+    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """
             Pulling image in cluster
+
         """
         body = json.loads(self.request.body)
 
@@ -325,10 +326,9 @@ class ImageList(RPCEndpoint):
 
                 # FIXME!
                 if self.real_size != image.size:
-                    Services.logger.debug("WARNING: size of image != " +
-                                          "sum of chuncks length. [%d, %d]",
-                                          self.real_size, image.size)
-
+                    Services.logger.debug(
+                        "WARNING: size of image != sum of chuncks length. [%d, %d]",
+                        self.real_size, image.size)
 
             await docker_result
         except Client.Error as error:
@@ -341,12 +341,13 @@ class ImageList(RPCEndpoint):
 
     def get(self):  # pylint: disable=arguments-differ
         """
-        Return list of nodes, if specified `all`from database or discovered ones from memory.
+        Return list of docker images.
 
         Returns:
-            (dict) list of nodes, it is a dict, since tornado does not write list for security
-                   reasons; see:
-                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+            (dict): list of images, it is a dict, since
+            tornado does not write list for security reasons; see:
+            ``http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write``
+
 
         """
         self.set_header("Content-Type", "application/json")
@@ -389,12 +390,13 @@ class LayerList(web.RequestHandler):
     # pylint: disable=arguments-differ
     def get(self):
         """
-        Return list of nodes, if specified `all`from database or discovered ones from memory.
+        Return list of docker layers.
 
         Returns:
-            (dict) list of nodes, it is a dict, since tornado does not write list for security
-                   reasons; see:
-                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+            (dict): list of layers, it is a dict, since
+            tornado does not write list for security reasons; see:
+            ``http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write``
+
 
         """
         self.set_header("Content-Type", "application/json")

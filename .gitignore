@@ -9,3 +9,5 @@ run
 uuid.conf
 env
 .idea/
+**/.pytest_cache/
+doc/build

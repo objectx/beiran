@@ -21,7 +21,7 @@ logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 sys.stdout = Unbuffered(sys.stdout)
 
 
-class BeiranContext(object):
+class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
     def __init__(self):

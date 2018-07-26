@@ -2,7 +2,6 @@
 Beiran Docker Plugin command line interface module
 """
 
-import json
 import asyncio
 import click
 from tabulate import tabulate
@@ -13,15 +12,12 @@ from beiran.cli import pass_context
 
 
 @click.group("docker", short_help="docker subcommands")
-@pass_context
 def cli():
     """Main subcommand method."""
     pass
 
 
-@cli.group()
-@click.pass_obj
-@pass_context
+@cli.group("image", short_help="docker image subcommand")
 def image():
     """Group command for image management"""
     pass
@@ -111,9 +107,7 @@ def image_list(ctx, all_nodes, node):
 
 # ##########  Layer management commands
 
-@cli.group()
-@click.pass_obj
-@pass_context
+@cli.group("layer", short_help="docker layer subcommand")
 def layer():
     """group command for layer management"""
     pass

@@ -4,21 +4,23 @@ Beiran Docker Plugin command line interface module
 
 import click
 import json
-import tabulate
+from tabulate import tabulate
 import asyncio
 from beiran.util import sizeof_fmt
+from beiran.cli import pass_context
 
 
 @click.group("docker", short_help="docker subcommands")
-@click.pass_context
-def cli(ctx=None, debug=False):
+@pass_context
+def cli(ctx, debug=False):
     """Main subcommand method."""
     pass
 
 
 @cli.group()
 @click.pass_obj
-def image(self):
+@pass_context
+def image(ctx):
     """Group command for image management"""
     pass
 
@@ -33,8 +35,9 @@ def image(self):
               help='Show image transfer progress')
 @click.argument('imagename')
 @click.pass_obj
+@pass_context
 # pylint: disable-msg=too-many-arguments
-def image_pull(self, node, wait, force, progress, imagename):
+def image_pull(ctx, node, wait, force, progress, imagename):
     """Pull a container image from cluster or repository"""
     click.echo('Pulling image %s from %s!' % (imagename, node))
 
@@ -58,7 +61,7 @@ def image_pull(self, node, wait, force, progress, imagename):
 
         async def pulling(progress):
             """Pull image with async client"""
-            resp = await self.async_beiran_client.pull_image(imagename,
+            resp = await ctx.async_beiran_client.pull_image(imagename,
                                                              node=node,
                                                              wait=wait,
                                                              force=force,
@@ -75,7 +78,7 @@ def image_pull(self, node, wait, force, progress, imagename):
         click.echo('done!')
 
     else:
-        result = self.beiran_client.pull_image(imagename,
+        result = ctx.beiran_client.pull_image(imagename,
                                                node=node,
                                                wait=wait,
                                                force=force,
@@ -96,7 +99,8 @@ def image_pull(self, node, wait, force, progress, imagename):
 @click.option('--node', default=None,
               help='List images from specific node')
 @click.pass_obj
-def image_list(self, all_nodes, node):
+@pass_context
+def image_list(ctx, all_nodes, node):
     """List container images across the cluster"""
 
     def _get_availability(i):
@@ -105,7 +109,7 @@ def image_list(self, all_nodes, node):
             return i['availability'] + '(' + num + ' node(s))'
         return i['availability']
 
-    images = self.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
+    images = ctx.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
     table = [
         [",\n".join(i['tags']), sizeof_fmt(i['size']), _get_availability(i)]
         for i in images
@@ -117,7 +121,8 @@ def image_list(self, all_nodes, node):
 
 @cli.group()
 @click.pass_obj
-def layer(self):
+@pass_context
+def layer(ctx):
     """group command for layer management"""
     pass
 
@@ -128,9 +133,10 @@ def layer(self):
 @click.option('--node', default=None,
               help='List layers from specific node')
 @click.pass_obj
-def layer_list(self, all_nodes, node):
+@pass_context
+def layer_list(ctx, all_nodes, node):
     """List container layers across the cluster"""
-    layers = self.beiran_client.get_layers(all_nodes=all_nodes, node_uuid=node)
+    layers = ctx.beiran_client.get_layers(all_nodes=all_nodes, node_uuid=node)
     table = [
         [i['digest'], sizeof_fmt(i['size']), str(len(i['available_at'])) + ' node(s)']
         for i in layers

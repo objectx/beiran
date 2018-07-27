@@ -4,7 +4,7 @@ Utilities for beiran project
 
 import sys
 import tarfile
-
+import asyncio
 
 class Unbuffered:
     """
@@ -293,3 +293,19 @@ async def json_streamer(stream, subpath="$"):
                     values[-1].append(val)
                     keys.append(key + 1)
                 depth -= 1
+
+
+def wait_task_result(task):
+    # FIXME! This is a bad way to do this.
+    # Not sure if there is a good way.
+    while not task.done():
+        time.sleep(.1)
+    return task.result()
+
+def run_in_loop(coroutine, loop = None, sync = False):
+    if not loop:
+        loop = asyncio.get_event_loop()
+    task = loop.create_task(coroutine)
+    if not sync:
+        return task
+    return wait_task_result(task)

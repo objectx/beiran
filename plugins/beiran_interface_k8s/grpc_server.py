@@ -31,7 +31,7 @@ class Services:
     daemon = None
     aiodocker = None
 
-def get_user_from_image(username: str):
+def get_username_or_uid(username: str):
     """
     get username or uid of the image user
     If username is numeric, it will be treated as uid; or else, it is treated as user name.
@@ -59,7 +59,7 @@ class K8SImageServicer(ImageServiceServicer):
         images = []
 
         for image in DockerImage.select():
-            uid, username = get_user_from_image(image.config["User"])
+            uid, username = get_username_or_uid(image.config["User"])
 
             images.append(Image(
                 id=image.hash_id,
@@ -107,7 +107,7 @@ class K8SImageServicer(ImageServiceServicer):
         if request.verbose:
             info = {'config': json.dumps(image.config)} # tentatively return config...
 
-        uid, username = get_user_from_image(image.config["User"])
+        uid, username = get_username_or_uid(image.config["User"])
 
         response = ImageStatusResponse(image=Image(
             id=image.hash_id,
@@ -131,7 +131,7 @@ class K8SImageServicer(ImageServiceServicer):
             image_name += ":latest"
 
         # not supporting AuthConfig and PodSandboxConfig now
-        image_ref = run_in_loop(self.pull_routine(image_name)
+        image_ref = run_in_loop(self.pull_routine(image_name),
                                 loop=Services.loop,
                                 sync=True)
 

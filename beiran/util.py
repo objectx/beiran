@@ -5,6 +5,7 @@ Utilities for beiran project
 import sys
 import tarfile
 import asyncio
+import time
 
 class Unbuffered:
     """

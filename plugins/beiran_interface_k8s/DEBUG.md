@@ -19,7 +19,7 @@ $ python -m beirand
 
 ### Debug
 
-Create `crictl.yaml`, which is a configure file of `crictl`.
+Create `crictl.yaml`, which is a configuration file of `crictl`.
 
 ```
 $ vim crictl.yaml

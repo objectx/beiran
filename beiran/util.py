@@ -297,13 +297,23 @@ async def json_streamer(stream, subpath="$"):
 
 
 def wait_task_result(task):
+    """
+    Blocks thread until given task has finished, and returns the
+    result value of the task
+    """
     # FIXME! This is a bad way to do this.
     # Not sure if there is a good way.
     while not task.done():
         time.sleep(.1)
     return task.result()
 
-def run_in_loop(coroutine, loop = None, sync = False):
+def run_in_loop(coroutine, loop=None, sync=False):
+    """
+    Runs given coroutine in the given or default asyncio loop.
+    Returns Task object is sync if False.
+    If sync is True, blocks the thread and returns the task's result.
+    """
+
     if not loop:
         loop = asyncio.get_event_loop()
     task = loop.create_task(coroutine)

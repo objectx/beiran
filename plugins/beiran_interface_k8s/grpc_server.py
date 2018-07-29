@@ -7,7 +7,6 @@ gRPC server (CRI Version: v1alpha2)
 import json
 import random
 import asyncio
-import time
 
 import aiohttp
 from peewee import SQL

@@ -50,18 +50,13 @@ def node_list(ctx, all_nodes):
     nodes = ctx.beiran_client.get_nodes(all_nodes=all_nodes)
     table = []
     for node_ in nodes:
-        if 'docker' in node_ and node_['docker']:
-            docker_version = node_['docker']['ServerVersion']
-        else:
-            docker_version = 'N/A'
         table.append([
             node_['uuid'],
             node_['ip_address'] + ':' + str(node_['port']),
             node_['version'],
-            docker_version,
             node_['status'] if 'status' in node_ else Node.STATUS_UNKNOWN
         ])
-    print(tabulate(table, headers=["UUID", "IP:Port", "Version", "Docker Ver.", "Status?"]))
+    print(tabulate(table, headers=["UUID", "IP:Port", "Version", "Status?"]))
 
 
 @cli.command('info')

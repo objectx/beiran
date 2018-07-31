@@ -96,7 +96,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         return _dict
 
     @classmethod
-    async def get_available_nodes_by_tag(cls, image_name: str) -> Optional[list]:
+    async def get_available_nodes_by_tag(cls, image_name: str) -> list:
         """
 
         Args:
@@ -120,9 +120,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
                 SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
             return image.available_at
         except DockerImage.DoesNotExist:
-            pass
+            return []
 
-        return None
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     """DockerLayer"""

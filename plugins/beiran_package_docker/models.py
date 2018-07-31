@@ -9,6 +9,7 @@ from typing import Optional
 
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
+from beirand.common import Services
 
 
 class CommonDockerObjectFunctions:
@@ -41,12 +42,17 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     manifest = JSONStringField(null=True)
     layers = JSONStringField(default=list)
     available_at = JSONStringField(default=list)
+    repo_digests = JSONStringField(default=list)
+    config = JSONStringField(default=list)
 
     has_not_found_layers = BooleanField(default=False)
     has_unknown_layers = BooleanField(default=False)
 
     @classmethod
     def from_dict(cls, _dict: dict, **kwargs) -> "DockerImage":
+        if 'availability' in _dict:
+            del _dict['availability']
+
         if 'dialect' in kwargs and kwargs['dialect'] == "docker":
             new_dict = {}
 
@@ -64,6 +70,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             # aiodocker images.list returns ParentId, since images.get returns Parent
             new_dict['parent_hash_id'] = _dict.get('ParentId') or _dict.get('Parent') or None
             new_dict['tags'] = _dict['RepoTags']
+            new_dict['repo_digests'] = _dict['RepoDigests']
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
 
@@ -76,6 +84,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             new_dict['hash_id'] = _dict['hashid']
 
             new_dict['tags'] = [_dict['tag']]
+            new_dict['repo_digests'] = [_dict['repo_digests']]
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['manifest'] = dict(_dict)
 
             new_layer_list = []
@@ -92,6 +102,15 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             del _dict['data']
             del _dict['has_not_found_layers']
             del _dict['has_unknown_layers']
+
+        available_at = _dict['available_at']
+        local = Services.daemon.nodes.local_node.uuid.hex
+        if not available_at:
+            _dict['availability'] = 'unavailable'
+        elif not local in available_at:
+            _dict['availability'] = 'available'
+        else:
+            _dict['availability'] = 'local'
 
         return _dict
 

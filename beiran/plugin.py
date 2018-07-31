@@ -140,7 +140,7 @@ class BaseDiscoveryPlugin(BasePlugin):
     """Discovery Plugin Base
     """
 
-    class DiscoveredNode(object):
+    class DiscoveredNode:
         """Beiran node information class"""
         def __init__(self, hostname: str = None, ip_address: str = None, port: int = None) -> None:
             self.hostname = hostname

@@ -8,7 +8,7 @@ import tarfile
 import io
 from typing import Any
 
-class Unbuffered(object):
+class Unbuffered:
     """
     Unbuffered stream write class
     """

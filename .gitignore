@@ -9,3 +9,4 @@ run
 uuid.conf
 env
 .mypy_cache
+doc/build

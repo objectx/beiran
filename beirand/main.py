@@ -266,6 +266,14 @@ class BeiranDaemon(EventEmitter):
             })
             Services.plugins['package:' + _plugin] = _plugin_obj
 
+        # Initialize interface plugins
+        interface_plugins_enabled = ['k8s']
+        for _plugin in interface_plugins_enabled:
+            _plugin_obj = await self.get_plugin('interface', 'k8s', {
+                "unix_socket_path": "unix://" + DATA_FOLDER + "/grpc.sock"
+            })
+            Services.plugins['interface:' + _plugin] = _plugin_obj
+
     async def probe_without_discovery(self):
         """Bootstrapping peer without discovery"""
         # Probe Known Nodes

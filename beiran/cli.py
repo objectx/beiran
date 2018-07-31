@@ -25,9 +25,12 @@ class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
     def __init__(self):
-        self.beiran_url = os.getenv('BEIRAN_SOCK', None) or \
-                     os.getenv('BEIRAN_URL', None) or \
-                     "http+unix:///var/run/beirand.sock"
+        if 'BEIRAN_SOCK' in os.environ:
+            self.beiran_url = "http+unix://" + os.environ['BEIRAN_SOCK']
+        elif 'BEIRAN_URL' in os.environ:
+            self.beiran_url = os.environ['BEIRAN_URL']
+        else:
+            self.beiran_url = "http+unix:///var/run/beirand.sock"
 
         self.beiran_client = Client(self.beiran_url)
         self.async_beiran_client = AsyncClient(self.beiran_url)

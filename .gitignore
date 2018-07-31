@@ -9,4 +9,5 @@ run
 uuid.conf
 env
 .mypy_cache
+**/.pytest_cache/
 doc/build

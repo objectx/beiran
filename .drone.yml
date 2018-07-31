@@ -66,6 +66,11 @@ pipeline:
       - export MYPYPATH=/usr/local/lib/python3.6/site-packages
       - python helpers/mypy plugins
 
+  pytest:
+    image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
+    commands:
+      - pytest
+
   dockerd1:
     image: docker:18.03.0-ce-dind
     privileged: true

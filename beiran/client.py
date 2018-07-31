@@ -39,7 +39,7 @@ class Client:
         if not matched:
             raise ValueError("URL is broken: %s" % url)
 
-        # proto = matched.groups()[0]
+        proto = matched.groups()[0]
         is_unix_socket = matched.groups()[1]
         location = matched.groups()[2]
         uuid = matched.groups()[3]
@@ -54,6 +54,7 @@ class Client:
             self.client_connector = aiohttp.UnixConnector(
                 path=self.socket_path
                 ) # type: Optional[aiohttp.UnixConnector]
+            self.url = proto + '://unixsocket'
         else:
             self.client_connector = None
         self.http_client = None
@@ -69,6 +70,9 @@ class Client:
             self.http_client = None
 
     def __del__(self):
+        if not self.http_client:
+            return
+
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.ensure_future(self.cleanup())

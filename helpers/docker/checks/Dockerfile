@@ -26,3 +26,6 @@ RUN pip install -r /opt/beiran/r-zeroconf.txt
 
 ADD plugins/beiran_package_docker/requirements.txt /opt/beiran/r-docker.txt
 RUN pip install -r /opt/beiran/r-docker.txt
+
+ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
+RUN pip install -r /opt/beiran/r-k8s.txt

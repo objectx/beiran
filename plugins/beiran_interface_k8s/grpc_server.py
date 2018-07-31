@@ -84,7 +84,7 @@ class K8SImageServicer(ImageServiceServicer):
 
         # This is for supporting RepoDigest included in request message.
         # RepoDigest is a string value and includes @
-        # (e.g. docker.io/library/redis@sha256:61e089bc75e6bd6650a63d8962e3601698115fee26ada4ff1b166b37bf7a7153)
+        # (e.g. docker.io/library/redis@sha256:61e089bc75e6bd6650a63d8962e3601698115fee26ada4ff1b166b37bf7a7153) # pylint: disable=line-too-long
         if "@" in request.image.image:
             images = DockerImage.select()
             images = images.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % request.image.image))

@@ -7,9 +7,9 @@ import logging
 import socket
 import sys
 import time
+import pkgutil
 
 from typing import Optional, Union # pylint: disable=unused-import
-
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
@@ -236,3 +236,19 @@ class History(EventEmitter):
         if not self.updates:
             return None
         return self.updates[-1]
+
+
+def get_installed_plugins():
+    """
+    Iterates installed packages and modules to match beiran modules.
+
+    Returns:
+        list: list of package name of installed beiran plugins.
+
+    """
+    return [
+        name
+        for finder, name, ispkg
+        in pkgutil.iter_modules()
+        if name.startswith('beiran_')
+    ]

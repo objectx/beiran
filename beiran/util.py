@@ -85,7 +85,6 @@ def create_tar_archive(dir_path, output_file_path):
         tar.add(dir_path, arcname='.')
 
 
-
 async def input_reader(stream, **kwargs):
     """
     input_reder
@@ -296,6 +295,17 @@ async def json_streamer(stream, subpath="$"):
                 depth -= 1
 
 
+def sizeof_fmt(num, suffix='B'):
+    """Human readable format for sizes
+    source: https://stackoverflow.com/a/1094933
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
 def wait_task_result(task):
     """
     Blocks thread until given task has finished, and returns the
@@ -306,6 +316,7 @@ def wait_task_result(task):
     while not task.done():
         time.sleep(.1)
     return task.result()
+
 
 def run_in_loop(coroutine, loop=None, sync=False):
     """

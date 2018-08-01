@@ -6,11 +6,10 @@ Common client for beiran project
 
 import socket
 import json
-import re
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
-
+from beiran.models import PeerAddress
 
 class UnixResolver(Resolver):
 
@@ -49,34 +48,30 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url):
+    def __init__(self, peer_address):
         """
         Initialization method for client
+
         Args:
-            url: beirand url
+            peer_address (PeerAddress, str): beirand address
         """
-        url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
-        matched = url_pattern.match(url)
-        if not matched:
-            raise ValueError("URL is broken: %s" % url)
 
-        proto = matched.groups()[0]
-        is_unix_socket = matched.groups()[1]
-        location = matched.groups()[2]
+        if not isinstance(peer_address, PeerAddress):
+            address = PeerAddress(address=peer_address)
+        else:
+            address = peer_address
 
-        if is_unix_socket:
-            self.socket_path = location
-
-            resolver = UnixResolver(self.socket_path)
+        if address.unix_socket:
+            resolver = UnixResolver(address.path)
             # AsyncHTTPClient.configure(None, resolver=resolver)
             # self.http_client = httpclient.HTTPClient()
             self.http_client = httpclient.HTTPClient(force_instance=True,
                                                      async_client_class=AsyncHTTPClient,
                                                      resolver=resolver)
-            self.url = proto + "://unixsocket"
+            self.url = address.protocol + "://unixsocket"
         else:
             self.http_client = httpclient.HTTPClient(force_instance=True)
-            self.url = url
+            self.url = address.location
 
     def request(self, path="/", **kwargs):
         """

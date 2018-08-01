@@ -10,6 +10,7 @@ from uuid import uuid4, UUID
 import netifaces
 
 from beiran.log import build_logger
+from beiran.models import PeerAddress
 from beiran.version import get_version
 
 from beiran import defaults
@@ -229,8 +230,14 @@ def collect_node_info():
         dict: node informations
 
     """
+    peer_address = PeerAddress(
+        uuid=local_node_uuid().hex,
+        host=get_advertise_address(),
+        port=get_listen_port(),
+    )
     return {
         "uuid": local_node_uuid().hex,
+        "address": peer_address.address,
         "hostname": get_hostname(),
         "ip_address": get_advertise_address(),
         "port": get_listen_port(),

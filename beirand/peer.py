@@ -6,8 +6,6 @@
 """
 
 import asyncio
-import asyncio.unix_events as unix_events
-
 import logging
 import time
 
@@ -22,7 +20,7 @@ from beiran.models import Node
 class Peer(EventEmitter):
     """Peer class"""
 
-    def __init__(self, node: Node, loop: unix_events._UnixSelectorEventLoop = None) -> None: # pylint: disable=W0212
+    def __init__(self, node: Node, loop: asyncio.unix_events._UnixSelectorEventLoop = None): # pylint: disable=W0212
         super().__init__()
         self.node = node
         self.ping = -1

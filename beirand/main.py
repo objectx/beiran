@@ -5,7 +5,6 @@
 import os
 import sys
 import asyncio
-import asyncio.unix_events as unix_events
 import importlib
 import signal
 import logging
@@ -46,7 +45,7 @@ class BeiranDaemon(EventEmitter):
     """Beiran Daemon"""
     version = __version__
 
-    def __init__(self, loop: unix_events._UnixSelectorEventLoop = None) -> None: # pylint: disable=W0212
+    def __init__(self, loop: asyncio.unix_events._UnixSelectorEventLoop = None): # pylint: disable=W0212
         super().__init__()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.nodes = Nodes()

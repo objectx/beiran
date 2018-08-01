@@ -15,7 +15,7 @@ from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING')) # type: ignore
-logger = build_logger(None, LOG_LEVEL) # type: ignore # pylint: disable=invalid-name
+logger = build_logger(None, LOG_LEVEL) # type: ignore, pylint: disable=invalid-name
 
 
 sys.stdout = Unbuffered(sys.stdout) # type: ignore

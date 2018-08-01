@@ -1,11 +1,7 @@
-# TODO : Move docker models here
-# TODO : Support plugin models on daemon
 """
 Module for DockerLayer and DockerImage Model
 """
 from datetime import datetime
-
-from typing import Optional
 
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField

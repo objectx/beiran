@@ -282,23 +282,22 @@ class Peer(EventEmitter, metaclass=PeerMeta):
                     "Inconsistency error, already connected node is being added AGAIN")
                 return self.peers[uuid].node  # pylint: disable=no-member
 
-            if node:
-                node.set_get_address(peer_address.address)  # update address of uuid, it may differ
-                node = Node.add_or_update(node)
-
-                node.status = Node.STATUS_CONNECTING
-                node.save()
-                Peer(node=node, loop=self.loop)
-                self.nodes.update_node(node)
-
-                self.logger.info(
-                    'Probed node, uuid, address: %s, %s',
-                    node.uuid.hex, node.address)
-
-                return node
-            else:
+            if not node:
                 self.logger.info(
                     'Can not probed given info: %s', peer_address)
+                return None
+
+            node.set_get_address(peer_address.address)  # update address of uuid, it may differ
+            node = Node.add_or_update(node)
+
+            node.status = Node.STATUS_CONNECTING
+            node.save()
+            Peer(node=node, loop=self.loop)
+            self.nodes.update_node(node)
+
+            self.logger.info(
+                'Probed node, uuid, address: %s, %s',
+                node.uuid.hex, node.address)
 
     async def fetch_node_info(self, peer_address):
         """

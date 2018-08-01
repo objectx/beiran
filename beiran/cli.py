@@ -27,8 +27,6 @@ class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
     def __init__(self):
-        Cli.singleton = self
-
         if 'BEIRAN_SOCK' in os.environ:
             daemon_url = "http+unix://" + os.environ['BEIRAN_SOCK']
         elif 'BEIRAN_URL' in os.environ:

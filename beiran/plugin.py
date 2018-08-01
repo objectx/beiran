@@ -7,6 +7,7 @@ import logging
 import socket
 import sys
 import time
+import pkgutil
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
@@ -136,7 +137,7 @@ class BaseDiscoveryPlugin(BasePlugin):
     """Discovery Plugin Base
     """
 
-    class DiscoveredNode(object):
+    class DiscoveredNode:
         """Beiran node information class"""
         def __init__(self, hostname=None, ip_address=None, port=None):
             self.hostname = hostname
@@ -192,6 +193,11 @@ class BasePackagePlugin(BasePlugin):
     pass
 
 
+class BaseInterfacePlugin(BasePlugin):
+    """Base class for interface plugins"""
+    pass
+
+
 class History(EventEmitter):
     """Class for keeping update/sync history (of anything)"""
 
@@ -227,3 +233,19 @@ class History(EventEmitter):
         if not self.updates:
             return None
         return self.updates[-1]
+
+
+def get_installed_plugins():
+    """
+    Iterates installed packages and modules to match beiran modules.
+
+    Returns:
+        list: list of package name of installed beiran plugins.
+
+    """
+    return [
+        name
+        for finder, name, ispkg
+        in pkgutil.iter_modules()
+        if name.startswith('beiran_')
+    ]

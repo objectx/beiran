@@ -35,6 +35,7 @@ from beirand.version import __version__
 
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
+from beiran.plugin import get_installed_plugins
 
 AsyncIOMainLoop().install()
 
@@ -152,14 +153,8 @@ class BeiranDaemon(EventEmitter):
 
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""
-        import pkgutil
 
-        self.available_plugins = [
-            name
-            for finder, name, ispkg
-            in pkgutil.iter_modules()
-            if name.startswith('beiran_')
-        ]
+        self.available_plugins = get_installed_plugins()
         print("Found plugins;", self.available_plugins)
 
     async def init_db(self, append_new=False):
@@ -244,6 +239,14 @@ class BeiranDaemon(EventEmitter):
                 "url": None # default
             })
             Services.plugins['package:' + _plugin] = _plugin_obj
+
+        # Initialize interface plugins
+        interface_plugins_enabled = ['k8s']
+        for _plugin in interface_plugins_enabled:
+            _plugin_obj = await self.get_plugin('interface', 'k8s', {
+                "unix_socket_path": "unix://" + DATA_FOLDER + "/grpc.sock"
+            })
+            Services.plugins['interface:' + _plugin] = _plugin_obj
 
     async def probe_without_discovery(self):
         """Bootstrapping peer without discovery"""

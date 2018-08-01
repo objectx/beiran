@@ -33,6 +33,7 @@ class Client:
 
         if address.unix_socket:
             self.client_connector = aiohttp.UnixConnector(path=address.location)
+            self.url = address.protocol + '://unixsocket'
         else:
             self.client_connector = None
         self.http_client = None
@@ -48,6 +49,9 @@ class Client:
             self.http_client = None
 
     def __del__(self):
+        if not self.http_client:
+            return
+
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.ensure_future(self.cleanup())
@@ -271,10 +275,11 @@ class Client:
         """
         Stream image from this node
 
-        Usage:
+        Usage::
+
             image_response = await client.stream_image(image_identifier)
             async for data in image_response.content.iter_chunked(64*1024):
-                ... do something with data chunk
+                do something with data chunk
         """
 
         path = '/docker/images/{}'.format(imagename)

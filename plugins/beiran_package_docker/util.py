@@ -1,7 +1,6 @@
 """Docker Plugin Utility Module"""
 import asyncio
 import os
-import json
 
 import aiofiles
 from peewee import SQL
@@ -69,26 +68,31 @@ class DockerUtil:
             string directory path or None
 
         """
+        diff_file_name = ""
 
-        local_diff_dir = self.storage + '/image/overlay2/distribution/v2metadata-by-diffid/sha256'
-        local_cache_id = self.storage + '/image/overlay2/layerdb/sha256/{diff_file_name}/cache-id'
-        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff/'
+        local_digest_dir = self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
+        local_layer_db = self.storage + '/image/overlay2/layerdb/sha256'
+        local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
+        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
 
-        for file_name in os.listdir(local_diff_dir):
-            f_path = '{}/{}'.format(local_diff_dir, file_name)
-            file = open(f_path)
-            try:
-                content = json.load(file)
-                if not content[0].get('Digest', None) == sha:
-                    continue  # next file
+        f_path = local_digest_dir + "/{}".format(sha.replace('sha256:', '', 1))
 
-                file.close()
+        file = open(f_path, 'r')
+        diff_1 = file.read()
+        file.close()
 
-                with open(local_cache_id.format(diff_file_name=file_name)) as file:
-                    return local_layer_dir.format(layer_dir_name=file.read())
+        for layer_dir_name in os.listdir(local_layer_db):
+            f_path = '{}/{}/diff'.format(local_layer_db, layer_dir_name)
 
-            except ValueError:
-                pass
+            with open(f_path, 'r') as file:
+                diff_2 = file.read()
+                if diff_2 == diff_1:
+                    diff_file_name = layer_dir_name
+                    break
+
+        with open(local_cache_id.format(diff_file_name=diff_file_name)) as file:
+            return local_layer_dir.format(layer_dir_name=file.read())
+
 
     @staticmethod
     async def reset_docker_info_of_node(uuid_hex):

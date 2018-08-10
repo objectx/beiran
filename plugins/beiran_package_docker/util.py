@@ -1,12 +1,16 @@
 """Docker Plugin Utility Module"""
 import asyncio
 import os
+import json
+import re
+import random
+import aiohttp
 
 import aiofiles
 from peewee import SQL
 
 from beiran.log import build_logger
-from beiran.lib import async_req
+from beiran.lib import async_write_file_stream, async_req
 from .models import DockerImage, DockerLayer
 
 
@@ -391,3 +395,103 @@ class DockerUtil:
         manifest['hashid'] = resp.headers['Docker-Content-Digest']
 
         DockerImage.from_dict(manifest, dialect="manifest").save()
+
+
+    async def get_docker_bearer_token(self, realm, service, scope):
+        """
+        Get Bearer token from auth.docker.io
+        """
+        try:
+            _, data = await async_req(
+                "{}?service={}&scope={}".format(realm, service, scope)
+            )
+            token = data['token']
+        except KeyError:
+            return None
+        return token
+
+
+    async def docker_download_layer_from_origin(self, host, # pylint: disable=too-many-return-statements, too-many-branches
+                                                repository, layer_hash, save_path, **kwargs):
+        """
+        Download layer from registry.
+        Args:
+            host (str): registry domain (e.g. index.docker.io)
+            repository (str): path of repository (e.g. library/centos)
+            layer_hash (str): SHA-256 hash of a blob
+            save_path (str): path for saving temporary blob file
+        """
+        tmp_tar_path = save_path + 'GetImageBlob' + '%09d' % random.randrange(1000000000)
+        url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+
+        self.logger.debug("puling layer from %s", url)
+
+        # try to access the server with HTTP HEAD requests
+        # there is also a purpose to check the type of authentication
+        try:
+            resp = await async_req(url=url, return_json=False, method='HEAD')
+
+        except aiohttp.client_exceptions.ClientConnectorSSLError as err:
+            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
+            url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+            resp = await async_req(url=url, return_json=False, method='HEAD')
+
+        except Exception as err: # pylint: disable=broad-except
+            self.logger.error(err)
+            return False
+
+        if resp.status == 401:
+            if resp.headers['Www-Authenticate'].startswith('Bearer'):
+                # parse 'Bearer realm="https://auth.docker.io/token",
+                # service="registry.docker.io",scope="repository:google/cadvisor:pull"'
+                values = re.findall('(\w+(?==)|(?<=")[\w.:/]+)',  # pylint: disable=anomalous-backslash-in-string
+                                    resp.headers['Www-Authenticate'])
+                val_dict = dict(zip(values[0::2], values[1::2]))
+                token = await self.get_docker_bearer_token(
+                    val_dict['realm'],
+                    val_dict['service'],
+                    val_dict['scope']
+                )
+                if token is None:
+                    self.logger.error("failed to get bearer token")
+                    return False
+
+                try:
+                    resp = await async_write_file_stream(url, tmp_tar_path,
+                                                         Authorization="Bearer " + token)
+                except Exception as err: # pylint: disable=broad-except
+                    self.logger.error(err)
+                    return False
+
+            elif resp.headers['Www-Authenticate'].startswith('Basic'):
+                try:
+                    auth = aiohttp.BasicAuth(login=kwargs.pop('user'),
+                                             password=kwargs.pop('passwd'))
+                except KeyError:
+                    self.logger.error("Basic auth failed because 'user' and 'passwd' wasn't passed")
+                    return False
+
+                try:
+                    resp = await async_write_file_stream(url, tmp_tar_path, 'wb', auth=auth)
+                except Exception as err: # pylint: disable=broad-except
+                    self.logger.error(err)
+                    return False
+
+            else:
+                self.logger.error("beirand not support the type of authentication")
+                return False
+
+        elif resp.status == 200: # authentication is not required
+            try:
+                resp = await async_write_file_stream(url, tmp_tar_path, 'wb')
+            except Exception as err: # pylint: disable=broad-except
+                self.logger.error(err)
+                return False
+
+        if resp.status != 200:
+            self.logger.error("failed to pull layer. code: %d", resp.status)
+            return False
+
+        self.logger.debug("pulled %s to tempfile %s", layer_hash, tmp_tar_path)
+
+        return True

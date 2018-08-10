@@ -12,7 +12,7 @@
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
-     - compare: {jsonpath_mini: "version",   comparator: "eq",     expected: "0.0.6"}
+     - compare: {jsonpath_mini: "version",   comparator: "eq",     expected: "0.0.7"}
 
 - test:
   - name: "Info endpoint"
@@ -21,7 +21,7 @@
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
-     - compare: {jsonpath_mini: "version",   comparator: "eq",     expected: "0.0.6"}
+     - compare: {jsonpath_mini: "version",   comparator: "eq",     expected: "0.0.7"}
 
 
 - test:

@@ -411,8 +411,8 @@ class DockerUtil:
         return token
 
 
-    async def docker_download_layer_from_origin(self, host, # pylint: disable=too-many-return-statements, too-many-branches
-                                                repository, layer_hash, save_path, **kwargs):
+    async def download_layer_from_origin(self, host, # pylint: disable=too-many-return-statements, too-many-branches
+                                         repository, layer_hash, save_path, **kwargs):
         """
         Download layer from registry.
         Args:

@@ -412,6 +412,45 @@ class DockerUtil:
         return token
 
 
+    async def get_auth_requirements(self, headers, **kwargs):
+        """
+        Get requirements for registry authentication.
+        Supporting -> Basic, Bearer token
+
+        Args:
+            headers: async client response header
+        """
+
+        if headers['Www-Authenticate'].startswith('Bearer'):
+            # parse 'Bearer realm="https://auth.docker.io/token",
+            # service="registry.docker.io",scope="repository:google/cadvisor:pull"'
+            values = re.findall('(\w+(?==)|(?<=")[\w.:/]+)',  # pylint: disable=anomalous-backslash-in-string
+                                headers['Www-Authenticate'])
+            val_dict = dict(zip(values[0::2], values[1::2]))
+            token = await self.get_docker_bearer_token(
+                val_dict['realm'],
+                val_dict['service'],
+                val_dict['scope']
+            )
+            if token is None:
+                self.logger.error("failed to get bearer token")
+                return None
+            return 'Bearer ' + token
+
+        if headers['Www-Authenticate'].startswith('Basic'):
+            try:
+                login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
+                login_str = base64.b64encode(login_str.encode('utf-8')).decode('utf-8')
+            except KeyError:
+                self.logger.error("Basic auth required but 'user' and 'passwd' wasn't passed")
+                return None
+            return 'Basic ' + login_str
+
+        self.logger.error("beirand not support the type of authentication (%s)",
+                          headers['Www-Authenticate'])
+        return None
+
+
     async def download_layer_from_origin(self, host, # pylint: disable=too-many-return-statements, too-many-branches
                                          repository, layer_hash, save_path, **kwargs):
         """
@@ -442,47 +481,16 @@ class DockerUtil:
             return False
 
         if resp.status == 401:
-            if resp.headers['Www-Authenticate'].startswith('Bearer'):
-                # parse 'Bearer realm="https://auth.docker.io/token",
-                # service="registry.docker.io",scope="repository:google/cadvisor:pull"'
-                values = re.findall('(\w+(?==)|(?<=")[\w.:/]+)',  # pylint: disable=anomalous-backslash-in-string
-                                    resp.headers['Www-Authenticate'])
-                val_dict = dict(zip(values[0::2], values[1::2]))
-                token = await self.get_docker_bearer_token(
-                    val_dict['realm'],
-                    val_dict['service'],
-                    val_dict['scope']
-                )
-                if token is None:
-                    self.logger.error("failed to get bearer token")
-                    return False
+            requirements = await self.get_auth_requirements(resp.headers, **kwargs)
+            if requirements is None:
+                self.logger.error("failed to authenticate")
 
-                try:
-                    resp = await async_write_file_stream(url, tmp_tar_path,
-                                                         Authorization="Bearer " + token)
-                except Exception as err: # pylint: disable=broad-except
-                    self.logger.error(err)
-                    return False
-
-            elif resp.headers['Www-Authenticate'].startswith('Basic'):
-                try:
-                    login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
-                    login_str = base64.b64encode(login_str.encode('utf-8'))
-                except KeyError:
-                    self.logger.error("Basic auth failed because 'user' and 'passwd' wasn't passed")
-                    return False
-
-                try:
-                    resp = await async_write_file_stream(
-                        url, tmp_tar_path, Authorization="Basic " + login_str.decode('utf-8')
-                    )
-                except Exception as err: # pylint: disable=broad-except
-                    self.logger.error(err)
-                    return False
-
-            else:
-                self.logger.error("beirand not support the type of authentication")
+            try:
+                resp = await async_write_file_stream(url, tmp_tar_path, Authorization=requirements)
+            except Exception as err: # pylint: disable=broad-except
+                self.logger.error(err)
                 return False
+
 
         elif resp.status == 200: # authentication is not required
             try:
@@ -503,6 +511,8 @@ class DockerUtil:
     # async def map_layer(self, host, # pylint: disable=too-many-return-statements, too-many-branches
     #                     repository, layer_hash, **kwargs):
     #     """Download a layer from registry server and make Docker recognize it."""
+
+    #     # get_auth_requirements()
 
     #     if not await self.download_layer_from_origin(host, repository, layer_hash,
     #                                                  "/var/lib/docker/tmp/", **kwargs):

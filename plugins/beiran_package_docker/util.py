@@ -4,6 +4,7 @@ import os
 import json
 import re
 import random
+import base64
 import aiohttp
 
 import aiofiles
@@ -465,14 +466,16 @@ class DockerUtil:
 
             elif resp.headers['Www-Authenticate'].startswith('Basic'):
                 try:
-                    auth = aiohttp.BasicAuth(login=kwargs.pop('user'),
-                                             password=kwargs.pop('passwd'))
+                    login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
+                    login_str = base64.b64encode(login_str.encode('utf-8'))
                 except KeyError:
                     self.logger.error("Basic auth failed because 'user' and 'passwd' wasn't passed")
                     return False
 
                 try:
-                    resp = await async_write_file_stream(url, tmp_tar_path, 'wb', auth=auth)
+                    resp = await async_write_file_stream(
+                        url, tmp_tar_path, Authorization="Basic " + login_str.decode('utf-8')
+                    )
                 except Exception as err: # pylint: disable=broad-except
                     self.logger.error(err)
                     return False
@@ -495,3 +498,14 @@ class DockerUtil:
         self.logger.debug("pulled %s to tempfile %s", layer_hash, tmp_tar_path)
 
         return True
+
+
+    # async def map_layer(self, host, # pylint: disable=too-many-return-statements, too-many-branches
+    #                     repository, layer_hash, **kwargs):
+    #     """Download a layer from registry server and make Docker recognize it."""
+
+    #     if not await self.download_layer_from_origin(host, repository, layer_hash,
+    #                                                  "/var/lib/docker/tmp/", **kwargs):
+    #         return False
+
+    #     return True

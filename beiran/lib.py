@@ -30,15 +30,13 @@ async def async_req(url, return_json=True, timeout=3, method="GET", **kwargs):
                 return resp
 
 
-async def async_write_file_stream(url, save_path, mode='wb', auth=None, # pylint: disable=too-many-arguments
-                                  timeout=3, method="GET", **kwargs):
+async def async_write_file_stream(url, save_path, mode='wb', timeout=3, method="GET", **kwargs):
     """
     Async write a stream to a file
     Args:
         url (str): get url
         save_path (str): path for saving file
         mode (str): file mode
-        auth (aiohttp.BasicAuth): configuration of authentication
         timeout (int): timeout
 
     Returns:
@@ -48,7 +46,7 @@ async def async_write_file_stream(url, save_path, mode='wb', auth=None, # pylint
     data = kwargs.pop('data', None)
     headers = kwargs
 
-    async with aiohttp.ClientSession(auth=auth) as session:
+    async with aiohttp.ClientSession() as session:
         async with async_timeout.timeout(timeout):
             async with session.request(method, url, json=json,
                                        data=data, headers=headers) as resp:

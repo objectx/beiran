@@ -12,7 +12,7 @@ from beiran.log import build_logger
 from beiran.cli import pass_context
 
 from .util import AptUtil as util
-from .models import AptPackage
+from .models import AptPackage, PackageLocation
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
 logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
@@ -63,3 +63,10 @@ def update(ctx):
                 p_dict = util.package_data_to_dict(package)
                 pkg = AptPackage.from_dict(p_dict)
                 AptPackage.add_or_update(pkg)
+                try:
+                    PackageLocation(
+                        sha256=p_dict['sha256'],
+                        location="{}/{}".format(url, p_dict['filename'])
+                    ).save()
+                except:  # todo: be more explicit, expect index / integrity error
+                    pass

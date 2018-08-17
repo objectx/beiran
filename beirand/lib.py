@@ -5,6 +5,7 @@ import os
 import ipaddress
 import platform
 import socket
+import subprocess
 from uuid import uuid4, UUID
 
 import netifaces
@@ -222,6 +223,58 @@ def get_plugin_list():
     }
 
 
+def run_command(command):
+    """
+
+    Args:
+        command (list): list of command and args.
+
+    Returns:
+        str: byte string
+
+    Raises:
+        OSError: if command not found.
+        CalledProcessError: if command returns exit code different than 0.
+    """
+
+    try:
+        return subprocess.call(command)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+
+
+def get_distro():
+    """
+    Runs shell command `lsb_release -i` and returns the stripped result
+
+    Returns:
+        str: distro name
+
+    """
+    result = run_command(["lsb_release", "-i"])
+
+    if result:
+        result = result.split(':')[1].strip()
+
+    return result
+
+
+def get_release():
+    """
+    Runs shell command `lsb_release -c` and returns the stripped result
+
+    Returns:
+        str: release name
+
+    """
+    result = run_command(["lsb_release", "-c"])
+
+    if result:
+        result = result.split(':')[1].strip()
+
+    return result
+
+
 def collect_node_info():
     """
     Collect and return Node info
@@ -245,6 +298,8 @@ def collect_node_info():
         "os_type": platform.system(),
         "os_version": platform.version(),
         "architecture": platform.machine(),
+        "distro": get_distro(),
+        "release": get_release(),
         "version": get_version(),
         "last_sync_version": get_sync_version()
     }

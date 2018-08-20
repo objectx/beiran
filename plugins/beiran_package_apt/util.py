@@ -166,7 +166,8 @@ class AptUtil:
         """
         resp = requests.get(packages_gz_path)
         for package in gzip.decompress(resp.content).decode().split('\n\n'):
-            yield package
+            if package:
+                yield package
 
     @staticmethod
     def package_data_to_dict(package_data):

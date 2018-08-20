@@ -240,7 +240,7 @@ class Node(BaseModel):
     os_type = CharField(max_length=20)  # linux, win,
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
-    distro = CharField(max_length=32)  # Debian
+    distro = CharField(max_length=32, null=True)  # Debian
     release = CharField(max_length=32, null=True)  # jessie
     version = CharField(max_length=10, null=True)  # beiran daemon version of node
     status = CharField(max_length=32, default=STATUS_NEW)

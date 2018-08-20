@@ -5,11 +5,14 @@ import os
 import sys
 import logging
 import click
+from peewee import Proxy
+from peewee import SqliteDatabase
 
 from beiran.util import Unbuffered
 from beiran.version import get_version
 from beiran.log import build_logger
 from beiran.cli import pass_context
+from beiran import defaults
 
 from .util import AptUtil as util
 from .models import AptPackage, PackageLocation
@@ -20,6 +23,18 @@ logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 VERSION = get_version('short', 'library')
 
 sys.stdout = Unbuffered(sys.stdout)
+
+DATA_FOLDER = os.getenv("DATA_FOLDER_PATH", defaults.DATA_FOLDER)
+beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(DATA_FOLDER))
+db_file_exists = os.path.exists(beiran_db_path)
+DB_PROXY = Proxy()
+# init database object
+database = SqliteDatabase(beiran_db_path)
+DB_PROXY.initialize(database)
+
+# bind database to model
+AptPackage.bind(database)
+PackageLocation.bind(database)
 
 @click.group()
 def cli():
@@ -37,7 +52,6 @@ def clean(ctx):
 
 @cli.command("update")
 @click.pass_obj
-@click.argument('uuid', required=False)
 @pass_context
 def update(ctx):
     """Update local package database

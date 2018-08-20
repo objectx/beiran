@@ -3,6 +3,10 @@ import re
 from io import StringIO
 import requests
 import gzip
+import platform
+import tarfile
+import uuid
+from beirand.lib import run_command
 
 SOURCE_LIST_PATHS = os.getenv(
     'SOURCE_LIST_PATHS', [
@@ -137,16 +141,20 @@ class AptUtil:
             release_file (file): file like object
 
         Returns:
-            list: of Packages.gz files
+            set: of Packages.gz files, it is set rather than list, because of not to have
+            duplicate links.
 
         """
-        packages_gz_paths = list()
+        packages_gz_paths = set()
         release_file.seek(0)
+
+        arch_packages_path = "binary-{}/Packages.gz".format(AptUtil.deb_architecture())
+
         for line in release_file.readlines():
-            if line.strip().endswith('Packages.gz'):
+            if line.strip().endswith(arch_packages_path):
                 packages_path = line.strip().split(" ")[-1]
                 if packages_path.startswith(tuple(components)):
-                    packages_gz_paths.append("{}/dists/{}/{}".format(repo_url, dist, packages_path))
+                    packages_gz_paths.add("{}/dists/{}/{}".format(repo_url, dist, packages_path))
 
         return packages_gz_paths
 
@@ -186,9 +194,60 @@ class AptUtil:
         for line in lines:
             if line:
                 [key, *val] = line.split(":")
-                package.update({key.strip().lower(): ":".join(val).strip()})
+                key = key.strip().lower()
+                if key in ['package', 'version', 'filename', 'size', 'md5sum', 'sha256']:
+                    package.update({key: ":".join(val).strip()})
 
         if "" in package and package[""] == "":
             return None
 
         return package
+
+    @staticmethod
+    def deb_architecture():
+        machine = platform.machine()
+
+        if machine == "x86_64":
+            return "amd64"
+
+        if re.match(r'^i[2-6]86$', machine):
+            return "i386"
+
+        raise NotImplementedError(
+            """Your architecture %s, isn't one of those that 
+            Beiran already supports: x86_64 and i386.
+            
+            You should consider disable apt plugin on this node.""", machine
+        )
+
+
+#
+#     @staticmethod
+#     def extract_deb_file(file_path):
+#         """
+#
+#         Args:
+#             file_path (str):
+#
+#         Returns:
+#
+#         """
+#
+#         try:
+#             dir_path = os.path.dirname(file_path)
+#             uuid.uuid4().hex
+#             _ = run_command(["ar", "-x", file_path])
+#             control_tar_file = tarfile.TarFile("/".join([dir_path, 'control.tar.gz']))
+#             control_file = control_tar_file.extractfile('control')
+#             for line in control_file.readlines():
+#                 if line:
+#
+#
+#         except:
+#             return None
+#
+#
+#
+# z = zipfile.ZipFile('a.deb')
+#
+# print(z.infolist())

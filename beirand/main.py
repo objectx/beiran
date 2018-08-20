@@ -231,7 +231,7 @@ class BeiranDaemon(EventEmitter):
             Services.plugins['discovery'] = discovery
 
         # Initialize package plugins
-        package_plugins_enabled = ['docker']
+        package_plugins_enabled = ['docker', 'apt']
 
         for _plugin in package_plugins_enabled:
             _plugin_obj = await self.get_plugin('package', _plugin, {

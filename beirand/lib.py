@@ -230,7 +230,7 @@ def run_command(command):
         command (list): list of command and args.
 
     Returns:
-        str: byte string
+        bytearray: byte string
 
     Raises:
         OSError: if command not found.
@@ -238,7 +238,7 @@ def run_command(command):
     """
 
     try:
-        return subprocess.call(command)
+        return subprocess.check_output(command)
     except (FileNotFoundError, subprocess.CalledProcessError):
         return None
 
@@ -254,7 +254,7 @@ def get_distro():
     result = run_command(["lsb_release", "-i"])
 
     if result:
-        result = result.split(':')[1].strip()
+            result = result.decode().split(':')[1].strip()
 
     return result
 
@@ -270,7 +270,7 @@ def get_release():
     result = run_command(["lsb_release", "-c"])
 
     if result:
-        result = result.split(':')[1].strip()
+        result = result.decode().split(':')[1].strip()
 
     return result
 

@@ -1,6 +1,7 @@
 stages:
  - pre_build
  - checks
+ - start_test_services
  - test
  # - publish
  - cleanup
@@ -79,7 +80,24 @@ checks:bandit-plugins:
    - bandit -r plugins
   allow_failure: true
 
-# FIXME: services are not yet supported by gitlab-ci, as least not as implemented in drone ci
+start_test_services:
+  stage: start_test_services
+  tags:
+   - docker
+  script:
+   - SRC_DIR=$(pwd)
+   - mkdir -p /tmp/beirantest-${CI_PIPELINE_ID}
+   - cd /tmp/beirantest-${CI_PIPELINE_ID}
+   - cp $SRC_DIR/docker-compose.multipod.yml ./docker-compose.yml
+   - sed -i "s/dkr\.rsnc\.io\/poc\/beiran\/daemon:dev/$CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}/g" docker-compose.yml
+   - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3
+   - sleep 5
+   # seed docker daemon (docker1 only)
+   - docker-compose exec -T docker1 docker pull hello-world
+   - docker-compose exec -T docker1 docker pull alpine:latest
+   - docker-compose exec -T docker1 docker images
+   # starting beiran
+   - docker-compose up -d beiran1
 
 test:unit:
   stage: test
@@ -88,6 +106,38 @@ test:unit:
    - docker
   script:
    - pytest
+
+test:api:
+  stage: test
+  tags:
+   - docker
+  script:
+   - cd /tmp/beirantest-${CI_PIPELINE_ID}
+   - |
+     echo "waiting until beirand is accessible"
+     times=0
+     until $(docker-compose exec -T beirand1 curl --output /dev/null --silent --fail http://beirand1:8888); do
+         printf '.'
+         sleep 3
+         times=$(( $times + 1 ))
+         if [ $times -eq 10 ]; then
+           2>&1 echo "timed out waiting for beirand"
+           exit 1
+         fi
+     done
+   - docker-compose exec -T beirand1 pyresttest --url http://beirand1:8888 --test test/rest_api/beirand.yaml
+
+cleanup:services:
+  stage: cleanup
+  tags:
+   - docker
+  when: always
+  script:
+   - cd /tmp/beirantest-${CI_PIPELINE_ID}
+   - docker-compose kill || true
+   - docker-compose rm -f
+   - cd /
+   - rm -rf /tmp/beirantest-${CI_PIPELINE_ID}
 
 # cleanup:
 #   image: alpine:3.7

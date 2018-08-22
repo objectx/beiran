@@ -113,7 +113,10 @@ test:api:
    - docker
   script:
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   - docker-compose ps
+   - docker-compose logs beiran1
    - |
+     echo "=========================================="
      echo "waiting until beirand is accessible"
      times=0
      until $(docker-compose exec -T beirand1 curl --output /dev/null --silent --fail http://beirand1:8888); do

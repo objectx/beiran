@@ -89,7 +89,7 @@ start_test_services:
    - mkdir -p /tmp/beirantest-${CI_PIPELINE_ID}
    - cd /tmp/beirantest-${CI_PIPELINE_ID}
    - cp $SRC_DIR/docker-compose.multipod.yml ./docker-compose.yml
-   - sed -i "s/dkr\.rsnc\.io\/poc\/beiran\/daemon:dev/$CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}/g" docker-compose.yml
+   - sed -i "s#dkr\.beiran\.io\/beiran\/beiran:dev#${CI_REGISTRY_IMAGE}:ci-${CI_PIPELINE_ID}#g" docker-compose.yml
    - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3
    - sleep 5
    # seed docker daemon (docker1 only)

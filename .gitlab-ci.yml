@@ -129,7 +129,7 @@ test:api:
            exit 1
          fi
      done
-   - CONTAINER=$(docker-compose -f docker-compose.multipod.yml ps -q beiran1)
+   - CONTAINER=$(docker-compose ps -q beiran1)
    - docker exec ${CONTAINER} pip install pyresttest==1.7.1
    # send test files to the container
    - cd ${SRC_DIR}

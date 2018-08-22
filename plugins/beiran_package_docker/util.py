@@ -3,7 +3,6 @@ import asyncio
 import os
 import json
 import re
-import random
 import base64
 import aiohttp
 
@@ -459,12 +458,13 @@ class DockerUtil:
             host (str): registry domain (e.g. index.docker.io)
             repository (str): path of repository (e.g. library/centos)
             layer_hash (str): SHA-256 hash of a blob
-            save_path (str): path for saving temporary blob file
+            save_path (str): path for saving blob file
         """
-        tmp_tar_path = save_path + 'GetImageBlob' + '%09d' % random.randrange(1000000000)
+        tmp_tar_path = save_path + layer_hash.lstrip("sha256:") + ".tar.gz"
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+        requirements = None
 
-        self.logger.debug("puling layer from %s", url)
+        self.logger.debug("downloading layer from %s", url)
 
         # try to access the server with HTTP HEAD requests
         # there is also a purpose to check the type of authentication
@@ -480,10 +480,11 @@ class DockerUtil:
             self.logger.error(err)
             return False
 
-        if resp.status == 401:
-            requirements = await self.get_auth_requirements(resp.headers, **kwargs)
-            if requirements is None:
-                self.logger.error("failed to authenticate")
+        if resp.status == 401 or resp.status == 200:
+            if resp.status == 401:
+                requirements = await self.get_auth_requirements(resp.headers, **kwargs)
+                if requirements is None:
+                    self.logger.error("failed to authenticate")
 
             try:
                 resp = await async_write_file_stream(url, tmp_tar_path, Authorization=requirements)
@@ -491,31 +492,10 @@ class DockerUtil:
                 self.logger.error(err)
                 return False
 
-
-        elif resp.status == 200: # authentication is not required
-            try:
-                resp = await async_write_file_stream(url, tmp_tar_path, 'wb')
-            except Exception as err: # pylint: disable=broad-except
-                self.logger.error(err)
-                return False
-
         if resp.status != 200:
-            self.logger.error("failed to pull layer. code: %d", resp.status)
+            self.logger.error("failed to download layer. code: %d", resp.status)
             return False
 
-        self.logger.debug("pulled %s to tempfile %s", layer_hash, tmp_tar_path)
+        self.logger.debug("downloaded layer %s to %s", layer_hash, tmp_tar_path)
 
         return True
-
-
-    # async def map_layer(self, host, # pylint: disable=too-many-return-statements, too-many-branches
-    #                     repository, layer_hash, **kwargs):
-    #     """Download a layer from registry server and make Docker recognize it."""
-
-    #     # get_auth_requirements()
-
-    #     if not await self.download_layer_from_origin(host, repository, layer_hash,
-    #                                                  "/var/lib/docker/tmp/", **kwargs):
-    #         return False
-
-    #     return True

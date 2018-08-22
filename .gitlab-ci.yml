@@ -119,7 +119,7 @@ test:api:
      echo "=========================================="
      echo "waiting until beirand is accessible"
      times=0
-     until $(docker-compose exec -T beiran1 curl --output /dev/null --silent --fail http://beiran1:8888); do
+     until $(docker-compose exec -T beiran1 curl --output /dev/null --silent --fail http://localhost:8888); do
          printf '.'
          sleep 3
          times=$(( $times + 1 ))
@@ -128,7 +128,7 @@ test:api:
            exit 1
          fi
      done
-   - docker-compose exec -T beiran1 pyresttest --url http://beiran1:8888 --test test/rest_api/beirand.yaml
+   - docker-compose exec -T beiran1 pyresttest --url http://localhost:8888 --test test/rest_api/beirand.yaml
 
 cleanup:services:
   stage: cleanup

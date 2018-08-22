@@ -331,3 +331,8 @@ def run_in_loop(coroutine, loop=None, sync=False):
     if not sync:
         return task
     return wait_task_result(task)
+
+
+async def wait_event(emitter, eventName, timeout=None):
+    # TODO
+    pass

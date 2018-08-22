@@ -112,6 +112,7 @@ test:api:
   tags:
    - docker
   script:
+   - SRC_DIR=$(pwd)
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    - docker-compose ps
    - docker-compose logs beiran1
@@ -128,8 +129,12 @@ test:api:
            exit 1
          fi
      done
-   - docker-compose exec -T beiran1 pip install pyresttest==1.7.1
-   - docker-compose exec -T beiran1 pyresttest --url http://localhost:8888 --test test/rest_api/beirand.yaml
+   - CONTAINER=$(docker-compose -f docker-compose.multipod.yml ps -q beiran1)
+   - docker exec ${CONTAINER} pip install pyresttest==1.7.1
+   # send test files to the container
+   - cd ${SRC_DIR}
+   - tar c $(find test/rest_api -name "*.yaml") | docker exec -i ${CONTAINER} tar xv -C /opt
+   - docker exec ${CONTAINER} pyresttest --url http://localhost:8888 --test /opt/test/rest_api/beirand.yaml
 
 cleanup:services:
   stage: cleanup

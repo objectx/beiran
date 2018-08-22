@@ -86,8 +86,8 @@ start_test_services:
    - docker
   script:
    - SRC_DIR=$(pwd)
-   - mkdir -p /tmp/beirantest-${CI_PIPELINE_ID}
-   - cd /tmp/beirantest-${CI_PIPELINE_ID}
+   - mkdir -p /cache/beirantest-${CI_PIPELINE_ID}
+   - cd /cache/beirantest-${CI_PIPELINE_ID}
    - cp $SRC_DIR/docker-compose.multipod.yml ./docker-compose.yml
    - sed -i "s#dkr\.beiran\.io\/beiran\/beiran:dev#${CI_REGISTRY_IMAGE}:ci-${CI_PIPELINE_ID}#g" docker-compose.yml
    - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3
@@ -112,7 +112,7 @@ test:api:
   tags:
    - docker
   script:
-   - cd /tmp/beirantest-${CI_PIPELINE_ID}
+   - cd /cache/beirantest-${CI_PIPELINE_ID}
    - |
      echo "waiting until beirand is accessible"
      times=0
@@ -133,20 +133,20 @@ cleanup:services:
    - docker
   when: always
   script:
-   - cd /tmp/beirantest-${CI_PIPELINE_ID}
+   - cd /cache/beirantest-${CI_PIPELINE_ID}
    - docker-compose kill || true
    - docker-compose rm -f
    - cd /
-   - rm -rf /tmp/beirantest-${CI_PIPELINE_ID}
+   - rm -rf /cache/beirantest-${CI_PIPELINE_ID}
 
 # cleanup:
 #   image: alpine:3.7
 #   FIXME: volumes is not supported by gitlab-ci yet
 #   volumes:
-#    - /tmp/beiran-build-vols:/tmp/beiran-build-vols
+#    - /cache/beiran-build-vols:/cache/beiran-build-vols
 #   commands:
 #    - echo "Cleaning up docker storage"
-#    - export B_DIR=/tmp/beiran-build-vols/dockerd1-${CI_PIPELINE_ID} 
+#    - export B_DIR=/cache/beiran-build-vols/dockerd1-${CI_PIPELINE_ID} 
 #    - if [ ! -d $B_DIR ]; then exit 0; fi
 #    - du -ch -d1 $B_DIR
 #    - rm -rf $B_DIR

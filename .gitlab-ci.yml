@@ -128,6 +128,7 @@ test:api:
            exit 1
          fi
      done
+   - docker-compose exec -T beiran1 pip install pyresttest==1.7.1
    - docker-compose exec -T beiran1 pyresttest --url http://localhost:8888 --test test/rest_api/beirand.yaml
 
 cleanup:services:

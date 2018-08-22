@@ -7,7 +7,7 @@ import aiohttp
 import aiofiles
 from peewee import SQL
 
-from beiran.defaults import CACHE_DIR
+from beirand.common import CACHE_FOLDER
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from .models import DockerImage, DockerLayer
@@ -450,7 +450,7 @@ class DockerUtil:
 
 
     async def download_layer_from_origin(self, host, repository, layer_hash,# pylint: disable=too-many-return-statements, too-many-branches
-                                         save_path=CACHE_DIR + '/layers/sha256/', **kwargs):
+                                         save_path=CACHE_FOLDER + '/layers/sha256/', **kwargs):
         """
         Download layer from registry.
         Args:

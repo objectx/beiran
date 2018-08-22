@@ -66,7 +66,7 @@ class ApiRootHandler(web.RequestHandler):
 
     def get(self, *args, **kwargs):
         self.set_header("Content-Type", "application/json")
-        self.write('{"version":"' + Services.daemon.version + '"}')
+        self.write('{"version":"' + Services.daemon.nodes.local_node.version + '"}')
         self.finish()
 
 

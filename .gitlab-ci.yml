@@ -1,54 +1,98 @@
 stages:
- - test_image
- - lint
+ - pre_build
+ - checks
  - test
- - build
+ # - publish
+ - cleanup
 
-test_image:
- stage: test_image
- tags:
-  - docker
- script:
-  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
-  - docker pull $CI_REGISTRY_IMAGE:latest || true
-  - ./make.sh push_test_image
+pre_build:daemon:
+  stage: pre_build
+  tags:
+   - docker
+  script:
+   - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+   - docker build -t $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} .
+   - docker push $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
 
-lint:lib:
- stage: lint
- image: $CI_REGISTRY_IMAGE:latest
- tags:
-  - docker
- script:
-  - pylint beiran
+pre_build:checker:
+  stage: pre_build
+  tags:
+   - docker
+  script:
+   - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+   - docker build -t $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID} .
+   - docker push $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
 
-lint:daemon:
- stage: lint
- image: $CI_REGISTRY_IMAGE:latest
- tags:
-  - docker
- script:
-  - pylint beirand/beirand
+checks:lint-daemon:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - pylint beirand
 
-lint:cli:
- stage: lint
- image: $CI_REGISTRY_IMAGE:latest
- tags:
-  - docker
- script:
-  - pylint beiran-cli
+checks:lint-client:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - pylint beiran
 
-test:
- stage: test
- tags:
-  - docker
- script:
-  - ./make.sh test_using_docker
+checks:lint-plugins:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - pylint plugins
 
-build:daemon:
- stage: build
- tags:
-  - docker
- script:
-  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
-  - ./make.sh build_daemon_image
-  - ./make.sh push_daemon_image
+checks:bandit-daemon:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - bandit -r beirand
+  allow_failure: true
+
+checks:bandit-client:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - bandit -r beiran
+  allow_failure: true
+
+checks:bandit-plugins:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - bandit -r plugins
+  allow_failure: true
+
+# FIXME: services are not yet supported by gitlab-ci, as least not as implemented in drone ci
+
+test:unit:
+  stage: test
+  image: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - pytest
+
+# cleanup:
+#   image: alpine:3.7
+#   FIXME: volumes is not supported by gitlab-ci yet
+#   volumes:
+#    - /tmp/beiran-build-vols:/tmp/beiran-build-vols
+#   commands:
+#    - echo "Cleaning up docker storage"
+#    - export B_DIR=/tmp/beiran-build-vols/dockerd1-${CI_PIPELINE_ID} 
+#    - if [ ! -d $B_DIR ]; then exit 0; fi
+#    - du -ch -d1 $B_DIR
+#    - rm -rf $B_DIR
+#   when: always

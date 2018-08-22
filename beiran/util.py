@@ -334,5 +334,12 @@ def run_in_loop(coroutine, loop=None, sync=False):
 
 
 async def wait_event(emitter, eventName, timeout=None):
-    # TODO
-    pass
+    # TODO: timeout
+    future = asyncio.Future()
+
+    def _handler(*args, **kwargs):
+        future.set_result({"args": args, **kwargs})
+        pass
+
+    emitter.once(eventName, _handler)
+    return await future

@@ -156,19 +156,19 @@ class BeiranDaemon(EventEmitter):
         """Return plugin instance"""
         return Services.plugins[plugin_name]
 
-    def check_or_wait_plugin_to_be_ready(self, plugin_name, loop=None, timeout=None):
-        """Check or wait plugin to be ready"""
+    def check_wait_plugin_status_ready(self, plugin_name, loop=None, timeout=None):
+        """Check or wait uniil plugin status to be 'ready'"""
         plugin_instance = self.get_plugin_instance(plugin_name)
 
         if plugin_instance.status == 'ready':
             return
 
-        run_in_loop(self.wait_plugin_to_be_ready(plugin_instance, timeout=timeout),
+        run_in_loop(self.wait_plugin_status_ready(plugin_instance, timeout=timeout),
                     loop=loop, sync=True)
 
 
-    async def wait_plugin_to_be_ready(self, plugin_instance, timeout=None):
-        """Wait until the status of the plugin is 'ready'"""
+    async def wait_plugin_status_ready(self, plugin_instance, timeout=None):
+        """Wait until plugin status to be 'ready'"""
         while True:
             await wait_event(plugin_instance, 'status', timeout=timeout)
             if plugin_instance.status == 'ready':

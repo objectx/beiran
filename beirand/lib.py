@@ -223,11 +223,12 @@ def get_plugin_list():
     }
 
 
-def run_command(command):
+def run_command(command, cwd=None):
     """
 
     Args:
         command (list): list of command and args.
+        cwd (str): change working diretory input for subprocess
 
     Returns:
         bytearray: byte string
@@ -238,6 +239,8 @@ def run_command(command):
     """
 
     try:
+        if cwd:
+            return subprocess.check_output(command, cwd=cwd)
         return subprocess.check_output(command)
     except (FileNotFoundError, subprocess.CalledProcessError):
         return None

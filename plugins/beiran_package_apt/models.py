@@ -1,3 +1,4 @@
+import os
 from peewee import CharField, IntegerField, TextField
 from beiran.models.base import BaseModel, JSONStringField
 
@@ -82,14 +83,26 @@ class AptPackage(BaseModel):
 
         return pkg_
 
-    # @property
-    # def storage_path(self):
-    #     return self.local_path or "{}/{}/{}/{}".format(
-    #         DEB_CACHE_DIR,
-    #         self.repository,
-    #         self.filename,
-    #     )
-    #
+    def store_binary(self, binary_path):
+        """
+        Move binary deb file on path `binary_path` to `self.storage_path`
+
+        Args:
+            binary_path (str): binary deb file path
+
+        Returns:
+            str: new storage path
+
+        """
+        os.rename(binary_path, self.storage_path)
+        return self.storage_path
+
+    @property
+    def storage_path(self):
+        return self.local_path or "{}/{}".format(
+            DEB_CACHE_DIR,
+            self.filename,
+        )
 
 
 class PackageLocation(BaseModel):

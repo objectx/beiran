@@ -1,12 +1,15 @@
 """Docker Plugin Utility Module"""
 import asyncio
 import os
-
+import re
+import base64
+import aiohttp
 import aiofiles
 from peewee import SQL
 
+from beirand.common import CACHE_FOLDER
 from beiran.log import build_logger
-from beiran.lib import async_req
+from beiran.lib import async_write_file_stream, async_req
 from .models import DockerImage, DockerLayer
 
 
@@ -29,6 +32,14 @@ class DockerUtil:
     """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):
+        """..."""
+        pass
+
+    class AuthenticationFailed(Exception):
+        """..."""
+        pass
+
+    class LayerDownloadFailed(Exception):
         """..."""
         pass
 
@@ -391,3 +402,93 @@ class DockerUtil:
         manifest['hashid'] = resp.headers['Docker-Content-Digest']
 
         DockerImage.from_dict(manifest, dialect="manifest").save()
+
+
+    async def get_docker_bearer_token(self, realm, service, scope):
+        """
+        Get Bearer token from auth.docker.io
+        """
+        _, data = await async_req(
+            "{}?service={}&scope={}".format(realm, service, scope)
+        )
+        token = data['token']
+        return token
+
+
+    async def get_auth_requirements(self, headers, **kwargs):
+        """
+        Get requirements for registry authentication.
+        Supporting -> Basic, Bearer token
+
+        Args:
+            headers: async client response header
+        """
+
+        if headers['Www-Authenticate'].startswith('Bearer'):
+            # parse 'Bearer realm="https://auth.docker.io/token",
+            # service="registry.docker.io",scope="repository:google/cadvisor:pull"'
+            values = re.findall('(\w+(?==)|(?<=")[\w.:/]+)',  # pylint: disable=anomalous-backslash-in-string
+                                headers['Www-Authenticate'])
+            val_dict = dict(zip(values[0::2], values[1::2]))
+
+            try:
+                token = await self.get_docker_bearer_token(
+                    val_dict['realm'],
+                    val_dict['service'],
+                    val_dict['scope']
+                )
+            except Exception:
+                raise DockerUtil.AuthenticationFailed("Failed to get Bearer token")
+
+            return 'Bearer ' + token
+
+        if headers['Www-Authenticate'].startswith('Basic'):
+            try:
+                login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
+                login_str = base64.b64encode(login_str.encode('utf-8')).decode('utf-8')
+            except KeyError:
+                raise DockerUtil.AuthenticationFailed("Basic auth required but " \
+                                                      "'user' and 'passwd' wasn't passed")
+
+            return 'Basic ' + login_str
+
+        raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
+                                              % headers['Www-Authenticate'])
+
+
+
+    async def download_layer_from_origin(self, host, repository, layer_hash, **kwargs):
+        """
+        Download layer from registry.
+        Args:
+            host (str): registry domain (e.g. index.docker.io)
+            repository (str): path of repository (e.g. library/centos)
+            layer_hash (str): SHA-256 hash of a blob
+        """
+        save_path = CACHE_FOLDER + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
+        url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+        requirements = None
+
+        self.logger.debug("downloading layer from %s", url)
+
+        # try to access the server with HTTP HEAD requests
+        # there is also a purpose to check the type of authentication
+        try:
+            resp = await async_req(url=url, return_json=False, method='HEAD')
+
+        except aiohttp.client_exceptions.ClientConnectorSSLError:
+            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
+            url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+            resp = await async_req(url=url, return_json=False, method='HEAD')
+
+
+        if resp.status == 401 or resp.status == 200:
+            if resp.status == 401:
+                requirements = await self.get_auth_requirements(resp.headers, **kwargs)
+
+            resp = await async_write_file_stream(url, save_path, Authorization=requirements)
+
+        if resp.status != 200:
+            raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
+
+        self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)

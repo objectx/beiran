@@ -5,7 +5,8 @@ import requests
 import gzip
 import platform
 import tarfile
-import uuid
+import shutil
+from beiran.lib import async_req
 from beirand.lib import run_command
 
 SOURCE_LIST_PATHS = os.getenv(
@@ -14,6 +15,7 @@ SOURCE_LIST_PATHS = os.getenv(
         '/etc/apt/sources.d/*'
     ]
 )
+DEB_CACHE_DIR = "/var/lib/beiran/apt"
 
 class AptUtil:
     """
@@ -148,13 +150,17 @@ class AptUtil:
         packages_gz_paths = set()
         release_file.seek(0)
 
-        arch_packages_path = "binary-{}/Packages.gz".format(AptUtil.deb_architecture())
+        component_arch_packages_path = r"({})/binary-{}/Packages.gz".format(
+            "|".join(components),
+            AptUtil.deb_architecture()
+        )
 
         for line in release_file.readlines():
-            if line.strip().endswith(arch_packages_path):
-                packages_path = line.strip().split(" ")[-1]
-                if packages_path.startswith(tuple(components)):
-                    packages_gz_paths.add("{}/dists/{}/{}".format(repo_url, dist, packages_path))
+            line = line.strip()
+            if re.search(component_arch_packages_path, line):
+                packages_gz_paths.add(
+                    "{}/dists/{}/{}".format(repo_url, dist, line.split(" ")[-1])
+                )
 
         return packages_gz_paths
 
@@ -221,33 +227,65 @@ class AptUtil:
         )
 
 
-#
-#     @staticmethod
-#     def extract_deb_file(file_path):
-#         """
-#
-#         Args:
-#             file_path (str):
-#
-#         Returns:
-#
-#         """
-#
-#         try:
-#             dir_path = os.path.dirname(file_path)
-#             uuid.uuid4().hex
-#             _ = run_command(["ar", "-x", file_path])
-#             control_tar_file = tarfile.TarFile("/".join([dir_path, 'control.tar.gz']))
-#             control_file = control_tar_file.extractfile('control')
-#             for line in control_file.readlines():
-#                 if line:
-#
-#
-#         except:
-#             return None
-#
-#
-#
-# z = zipfile.ZipFile('a.deb')
-#
-# print(z.infolist())
+
+    @staticmethod
+    def extract_deb_file(file_path):
+        """
+
+        Args:
+            file_path (str): deb file path
+
+        Returns:
+            str: extracted directory path
+
+        """
+
+        extract_dir_path = "{}_extract".format(file_path)
+        os.mkdir(extract_dir_path)
+        _ = run_command(command = ["ar", "-x", file_path], cwd=extract_dir_path)
+        return extract_dir_path
+
+    @staticmethod
+    async def download_deb_file(remote_uri):
+
+        """
+        Get deb file which does not exist locally, from `remote_url`.
+
+        Args:
+            remote_uri (str): remote address of deb file
+
+        Returns:
+            str: downloaded file path
+
+        """
+
+        file_name = remote_uri.split('/')[-1]
+        file_path = "{}/{}".format(DEB_CACHE_DIR, file_name)
+
+        resp, file_path = await async_req(url=remote_uri, file_path=file_path)
+        if resp.status == 200:
+            return file_path
+        else:
+            return None
+
+
+    @staticmethod
+    def get_data_from_deb_file(file_path):
+        """
+        Extracts and grabs package data from deb archive, and cleans remaining.
+
+        Args:
+            file_path:
+
+        Returns:
+            tuple(str, dict): deb file path, and dict of package data
+
+        """
+
+        extract_dir = AptUtil.extract_deb_file(file_path)
+        control_tar_file_path = "{}/{}".format(extract_dir, "control.tar.gz")
+        control_arhive = tarfile.TarFile(control_tar_file_path)
+        control = control_arhive.extractfile('control')
+        package_data = AptUtil.package_data_to_dict(control.read())
+        shutil.rmtree(extract_dir, ignore_errors=True)  # clean extracted deb files
+        return file_path, package_data

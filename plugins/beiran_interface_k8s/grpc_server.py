@@ -45,33 +45,20 @@ def get_username_or_uid(username: str):
     except ValueError:
         return None, username
 
-# TODO: Implement daemon.check_or_wait_plugin_ready(pluginName) method
-async def wait_docker_plugin_to_be_ready(timeout=None):
-    # TODO: Implement daemon.get_plugin_instance method
-    _docker_plugin = Services.daemon.get_plugin_instance('docker')
-    while True:
-        # TODO: Implement wait_event method
-        await wait_event(_docker_plugin, 'status', timeout=timeout)
-        if _docker_plugin.status == 'ready':
-            return
-
-def check_or_wait_docker_plugin_to_be_ready(timeout=None):
-    # TODO: Implement daemon.get_plugin_instance method
-    _docker_plugin = Services.daemon.get_plugin_instance('docker')
-    if _docker_plugin.status == 'ready':
-        return
-
-    run_in_loop(wait_docker_plugin_to_be_ready(timeout=timeout))
 
 class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
+    TIMEOUT_SEC = 5
+
     def ListImages(self, request, context):
         """ListImages lists existing images.
         """
         # don't care ImageFilter like containerd (containerd/cri/pkg/server/image_list.go)
         Services.logger.debug("request: ListImages")
-        Services.daemon.check_or_wait_plugin_to_be_ready('docker')
+        Services.daemon.check_or_wait_plugin_to_be_ready('package:docker',
+                                                         Services.loop,
+                                                         K8SImageServicer.TIMEOUT_SEC)
 
         images = []
 
@@ -96,7 +83,9 @@ class K8SImageServicer(ImageServiceServicer):
         nil.
         """
         Services.logger.debug("request: ImageStatus")
-        check_or_wait_docker_plugin_to_be_ready()
+        Services.daemon.check_or_wait_plugin_to_be_ready('package:docker',
+                                                         Services.loop,
+                                                         K8SImageServicer.TIMEOUT_SEC)
 
         if not request.image:
             return ImageStatusResponse()
@@ -146,7 +135,9 @@ class K8SImageServicer(ImageServiceServicer):
         # This method operates like "beiran image pull".
         # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
-        check_or_wait_docker_plugin_to_be_ready()
+        Services.daemon.check_or_wait_plugin_to_be_ready('package:docker',
+                                                         Services.loop,
+                                                         K8SImageServicer.TIMEOUT_SEC)
 
         image_name = request.image.image
         if ":" not in image_name:
@@ -166,7 +157,9 @@ class K8SImageServicer(ImageServiceServicer):
         already been removed.
         """
         Services.logger.debug("request: RemoveImage")
-        check_or_wait_docker_plugin_to_be_ready()
+        Services.daemon.check_or_wait_plugin_to_be_ready('package:docker',
+                                                         Services.loop,
+                                                         K8SImageServicer.TIMEOUT_SEC)
 
         # not support
 
@@ -176,8 +169,9 @@ class K8SImageServicer(ImageServiceServicer):
     def ImageFsInfo(self, request, context):
         """ImageFSInfo returns information of the filesystem that is used to store images.
         """
-        Services.logger.debug("request: ImageFsInfo")
-        check_or_wait_docker_plugin_to_be_ready()
+        Services.daemon.check_or_wait_plugin_to_be_ready('package:docker',
+                                                         Services.loop,
+                                                         K8SImageServicer.TIMEOUT_SEC)
 
         # not support
 

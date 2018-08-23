@@ -20,6 +20,9 @@ from .models import AptPackage, PackageLocation
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
 logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 
+peewee_loggler = logging.getLogger('peewee')
+peewee_loggler.setLevel("ERROR")  # suppress peewee query logs.
+
 VERSION = get_version('short', 'library')
 
 sys.stdout = Unbuffered(sys.stdout)
@@ -65,14 +68,23 @@ def update(ctx):
         sources_entries.extend(util.read_source_list_file(s_file))
 
     for entry in sources_entries:
-        print("Processing: %s", entry)
+        print("Processing: %s. It may take too long...", entry)
         bin, url, dist, components = util.parse_source_list_entry(entry)
         if bin == 'src':
             continue
 
         release_file = util.get_release_file(url, dist)
         packages_gzs = util.parse_release_file(url, dist, components, release_file)
+
         for packages_gz in packages_gzs:
+            # we should use bulk insert here to speed up process
+            #
+            # with database.atomic():
+            #     AptPackage.bulk_create(packages, 500)
+            #
+            # http://docs.peewee-orm.com/en/latest/peewee/querying.html#alternatives
+            #
+
             for package in util.parse_packages_gz(packages_gz):
                 p_dict = util.package_data_to_dict(package)
                 pkg = AptPackage.from_dict(p_dict)
@@ -84,3 +96,6 @@ def update(ctx):
                     ).save()
                 except:  # todo: be more explicit, expect index / integrity error
                     pass
+
+                # todo: show progress
+

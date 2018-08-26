@@ -8,7 +8,7 @@ import asyncio
 import importlib
 import signal
 import logging
-from uuid import UUID
+from functools import partial
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -22,15 +22,21 @@ from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
 from beirand.common import CONFIG_FOLDER
+from beirand.common import DATA_FOLDER
 
 from beirand.nodes import Nodes
+from beirand.peer import Peer
+
 from beirand.lib import collect_node_info
 from beirand.lib import get_listen_port, get_advertise_address
+from beirand.lib import update_sync_version_file
+
 from beirand.http_ws import ROUTES
 from beirand.version import __version__
 
-from beiran.models import Node
+from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
+from beiran.plugin import get_installed_plugins
 
 AsyncIOMainLoop().install()
 
@@ -46,23 +52,23 @@ class BeiranDaemon(EventEmitter):
         self.available_plugins = []
         self.search_plugins()
         self.uuid = None
+        self.sync_state_version = 0
+        self.peer = None
 
-    async def new_node(self, ip_address, service_port=None, **kwargs):  # pylint: disable=unused-argument
+    async def new_node(self, peer_address, **kwargs):  # pylint: disable=unused-argument
         """
         Discovered new node on beiran network
         Args:
             ip_address (str): ip_address of new node
             service_port (str): service port of new node
         """
-        service_port = service_port or get_listen_port()
-
-        Services.logger.info('New node detected, reached: %s:%s, waiting info',
-                             ip_address, service_port)
-        url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await self.nodes.probe_node(url=url)
+        Services.logger.info('New node detected, reached: %s, waiting info',
+                             peer_address.address)
+        # url = "beiran://{}:{}".format(ip_address, service_port)
+        node = await self.peer.probe_node(peer_address=peer_address)
 
         if not node:
-            EVENTS.emit('node.error', ip_address, service_port)
+            EVENTS.emit('node.error', peer_address.address)
             return
 
         EVENTS.emit('node.added', node)
@@ -76,8 +82,9 @@ class BeiranDaemon(EventEmitter):
         """
 
         service_port = service_port or get_listen_port()
-        node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
-        if not node:
+        try:
+            node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
+        except Node.DoesNotExist:
             Services.logger.warning('Cannot find node at %s:%d for removing',
                                     ip_address, service_port)
             return
@@ -95,6 +102,25 @@ class BeiranDaemon(EventEmitter):
         """Placeholder for event on node removed"""
         pass
 
+    async def on_plugin_state_update(self, plugin, update):
+        """
+        Track updates on (syncable) plugin states
+
+        This will be used for checking if nodes are in sync or not
+        """
+
+        # TODO: Implement 1~3 seconds pull-back before updating
+        # daemon sync version
+
+        self.sync_state_version += 1
+        await update_sync_version_file(self.sync_state_version)
+        self.nodes.local_node.last_sync_version = self.sync_state_version
+        self.nodes.local_node.save()
+
+        # Services.logger.info("sync version up: %d", self.sync_state_version)
+        Services.logger.info("sync version up: %d", self.nodes.local_node.last_sync_version)
+        EVENTS.emit('state.update', update, plugin)
+
     async def get_plugin(self, plugin_type, plugin_name, config):
         """
         Load and initiate plugin
@@ -110,27 +136,27 @@ class BeiranDaemon(EventEmitter):
             config['logger'] = build_logger('beiran.plugin.' + plugin_name)
             config['node'] = self.nodes.local_node
             config['daemon'] = self
+            config['events'] = EVENTS
             module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
             Services.logger.debug("initializing plugin: %s", plugin_name)
             instance = module.Plugin(config)
             await instance.init()
             Services.logger.info("plugin initialisation done: %s", plugin_name)
-            return instance
         except ModuleNotFoundError as error:  # pylint: disable=undefined-variable
             Services.logger.error(error)
             Services.logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
 
+        # Subscribe to plugin state updates
+        if instance.history:
+            instance.history.on('update', partial(self.on_plugin_state_update, instance))
+
+        return instance
+
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""
-        import pkgutil
 
-        self.available_plugins = [
-            name
-            for finder, name, ispkg
-            in pkgutil.iter_modules()
-            if name.startswith('beiran_')
-        ]
+        self.available_plugins = get_installed_plugins()
         print("Found plugins;", self.available_plugins)
 
     async def init_db(self, append_new=False):
@@ -143,7 +169,7 @@ class BeiranDaemon(EventEmitter):
         logger.setLevel(logging.INFO)
 
         # check database file exists
-        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '/var/lib/beiran/beiran.db')
+        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(DATA_FOLDER))
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:
@@ -189,34 +215,6 @@ class BeiranDaemon(EventEmitter):
             from beiran.models import create_tables
 
             create_tables(database)
-
-    async def init_plugins(self):
-        """Initialize configured plugins"""
-
-        # Initialize discovery
-        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
-        if discovery_mode != "none":
-            Services.logger.debug("Discovery method is %s", discovery_mode)
-            discovery = await self.get_plugin('discovery', discovery_mode, {
-                "address": get_advertise_address(),
-                "port": get_listen_port(),
-                "version": VERSION,
-                "events": EVENTS
-            })
-
-            # Only one discovery plugin at a time is supported (for now)
-            Services.plugins['discovery'] = discovery
-
-        # Initialize package plugins
-        package_plugins_enabled = ['docker']
-
-        for _plugin in package_plugins_enabled:
-            _plugin_obj = await self.get_plugin('package', _plugin, {
-                "storage": "/var/lib/docker",
-                "url": None, # default
-                "events": EVENTS
-            })
-            Services.plugins['package:' + _plugin] = _plugin_obj
 
     async def init_keys(self):
         """Initialize key pair, self-signed certificate and UUID"""
@@ -283,20 +281,98 @@ class BeiranDaemon(EventEmitter):
             Services.logger.info("Generating private key and uuid")
             create_keys_and_cert()
 
+    async def init_plugins(self):
+        """Initialize configured plugins"""
+
+        # Initialize discovery
+        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+        if discovery_mode != "none":
+            Services.logger.debug("Discovery method is %s", discovery_mode)
+            discovery = await self.get_plugin('discovery', discovery_mode, {
+                "address": get_advertise_address(),
+                "port": get_listen_port(),
+                "version": VERSION
+            })
+
+            # Only one discovery plugin at a time is supported (for now)
+            Services.plugins['discovery'] = discovery
+
+        # Initialize package plugins
+        package_plugins_enabled = ['docker']
+
+        for _plugin in package_plugins_enabled:
+            _plugin_obj = await self.get_plugin('package', _plugin, {
+                "storage": "/var/lib/docker",
+                "url": None # default
+            })
+            Services.plugins['package:' + _plugin] = _plugin_obj
+
+        # Initialize interface plugins
+        interface_plugins_enabled = ['k8s']
+        for _plugin in interface_plugins_enabled:
+            _plugin_obj = await self.get_plugin('interface', 'k8s', {
+                "unix_socket_path": "unix://" + DATA_FOLDER + "/grpc.sock"
+            })
+            Services.plugins['interface:' + _plugin] = _plugin_obj
+
+    async def probe_without_discovery(self):
+        """Bootstrapping peer without discovery"""
+
+        # Probe DB Nodes
+        probed_locations = set()
+        db_nodes = Services.daemon.nodes.list_of_nodes(
+            from_db=True
+        )
+
+        for db_node in db_nodes:
+            if db_node.uuid.hex == self.nodes.local_node.uuid.hex: # pylint: disable=no-member
+                continue
+            probed_locations.update({conn.location for conn in db_node.get_connections()})
+            self.loop.create_task(self.peer.probe_node(peer_address=db_node.address, retries=60))
+
+        # Probe Known Nodes
+        known_nodes = os.getenv("KNOWN_NODES")
+        known_urls = known_nodes.split(',') if known_nodes else []
+        Services.logger.info("KNOWN_NODES are: %s", known_urls)
+
+        for known_url in known_urls:
+            peer_address = PeerAddress(address=known_url)
+            Services.logger.info("trying to probe : %s", peer_address.address)
+            if not peer_address.location in probed_locations:
+                # try forever
+                self.loop.create_task(self.peer.probe_node(peer_address=peer_address, retries=-1))
+                # todo: does not iterate until the task above is not finished
+
     async def main(self):
         """ Main function """
+
+        # ensure the DATA_FOLDER exists
+        Services.logger.info("Checking the data folder...")
+        if not os.path.exists(DATA_FOLDER):
+            Services.logger.debug("create the folder '%s'", DATA_FOLDER)
+            os.makedirs(DATA_FOLDER)
+        elif not os.path.isdir(DATA_FOLDER):
+            raise RuntimeError("Unexpected file exists")
 
         # set database
         Services.logger.info("Initializing database...")
         await self.init_db()
         await self.init_keys()
 
+        # Set 'offline' to all node status
+        self.clean_database()
+
         # collect node info and create node object
         self.nodes.local_node = Node.from_dict(collect_node_info())
         self.nodes.local_node.uuid = self.uuid
         self.nodes.add_or_update(self.nodes.local_node)
-        self.set_status('init')
+        self.set_status(Node.STATUS_INIT)
         Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
+
+        self.peer = Peer(node=self.nodes.local_node, nodes=self.nodes, loop=self.loop, local=True)
+
+        # initialize sync_state_version
+        self.sync_state_version = self.nodes.local_node.last_sync_version
 
         # initialize plugins
         await self.init_plugins()
@@ -339,12 +415,8 @@ class BeiranDaemon(EventEmitter):
         EVENTS.on('node.added', self.on_new_node_added)
         EVENTS.on('node.removed', self.on_node_removed)
 
-        # Start plugins
-        for name, plugin in Services.plugins.items():
-            if 'discovery' in Services.plugins and plugin == Services.plugins['discovery']:
-                continue
-            Services.logger.info("starting plugin: %s", name)
-            await plugin.start()
+        # Ready
+        self.set_status(Node.STATUS_READY)
 
         # Start discovery last
         if 'discovery' in Services.plugins:
@@ -353,8 +425,25 @@ class BeiranDaemon(EventEmitter):
 
             await Services.plugins['discovery'].start()
 
-        # Ready
-        self.set_status('ready')
+        # Start plugins
+        for name, plugin in Services.plugins.items():
+            if 'discovery' in Services.plugins and plugin == Services.plugins['discovery']:
+                continue
+            Services.logger.info("starting plugin: %s", name)
+            await plugin.start()
+
+        # Bootstrapping peer without discovery
+        await self.probe_without_discovery()
+
+    def clean_database(self):
+        """Set 'offline' to all node status
+        """
+        nodes = Services.daemon.nodes.list_of_nodes(
+            from_db=True
+        )
+        for node in nodes:
+            Services.daemon.nodes.set_offline(node)
+
 
     def set_status(self, new_status):
         """
@@ -369,7 +458,8 @@ class BeiranDaemon(EventEmitter):
 
     async def shutdown(self):
         """Graceful shutdown"""
-        self.set_status('closing')
+        self.clean_database()
+        self.set_status(Node.STATUS_CLOSING)
 
         if 'discovery' in Services.plugins:
             Services.logger.info("stopping discovery")
@@ -379,6 +469,8 @@ class BeiranDaemon(EventEmitter):
         for name, plugin in Services.plugins.items():
             Services.logger.info("stopping %s", name)
             await plugin.stop()
+
+        self.nodes.connections = {}
 
         Services.logger.info("exiting")
         sys.exit(0)

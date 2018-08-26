@@ -1,5 +1,6 @@
 """Docker API endpoints"""
 import os
+import random
 import re
 import json
 import asyncio
@@ -11,8 +12,8 @@ import aiodocker
 from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
+from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
-
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -212,73 +213,59 @@ class ImagesHandler(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-class ImagePullHandler(web.RequestHandler):
-    """Docker image pull"""
-    def data_received(self, chunk):
-        pass
-
-    # pylint: disable=arguments-differ
-
-    @web.asynchronous
-    async def get(self, image):
-        """
-
-        Pull images
-
-        Args:
-            image (str): image name
-
-        Returns:
-            streams image pulling progress
-
-        """
-        self.set_header("Content-Type", "application/json")
-
-        tag = self.get_argument('tag', 'latest')
-
-        Services.logger.info("pulling image %s:%s", image, tag)
-
-        result = await Services.aiodocker.images.pull(from_image=image, tag=tag, stream=True)
-        self.write('{"statuses": [')
-
-        comma = ""
-        async for data in result:
-            data = json.dumps(data)
-            self.write("{comma}{status_data}".format(comma=comma, status_data=data))
-            comma = ", "
-            self.flush()
-
-        self.write(']}')
-        self.finish()
-
-    # pylint: enable=arguments-differ
-
-
-class ImageList(web.RequestHandler):
+class ImageList(RPCEndpoint):
     """List images"""
 
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.real_size = 0
+
     def data_received(self, chunk):
         pass
 
-    # pylint: disable=too-many-locals
-    async def pull(self):
+    @rpc
+    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """
             Pulling image in cluster
+
         """
         body = json.loads(self.request.body)
-
-        node_identifier = body['node']
-        if not node_identifier:
-            raise NotImplementedError('Clusterwise image pull is not implemented yet')
 
         image_identifier = body['image']
         if not image_identifier:
             raise HTTPError(status_code=400, log_message='Image name is not given')
 
+        node_identifier = body['node']
+        if not node_identifier:
+            available_nodes = await DockerImage.get_available_nodes_by_tag(image_identifier)
+            online_nodes = Services.daemon.nodes.all_nodes.keys()
+            online_availables = [n for n in available_nodes if n in online_nodes]
+            if online_availables:
+                node_identifier = random.choice(online_availables)
+
+        if not node_identifier:
+            raise HTTPError(status_code=404, log_message='Image is not available in cluster')
+
         wait = True if 'wait' in body and body['wait'] else False
         force = True if 'force' in body and body['force'] else False
+        show_progress = True if 'progress' in body and body['progress'] else False
 
-        if not wait:
+        image_name = body['image']
+
+        if not ":" in image_name:
+            image_name += ":latest"
+        query = DockerImage.select()
+        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
+        image = query.first()
+
+        if not image:
+            raise HTTPError(status_code=404, log_message="Image Not Found")
+
+        if show_progress:
+            self.write('{"image":"%s","progress":[' % image_name)
+            self.flush()
+
+        if not wait and not show_progress:
             self.write({'started':True})
             self.finish()
 
@@ -301,10 +288,22 @@ class ImageList(web.RequestHandler):
         @aiohttp.streamer
         async def sender(writer, chunks):
             """ async generator data sender for aiodocker """
+            progress = 0.0
+            last_progress = 0.0
+
             chunk = await chunks.get()
             while chunk:
                 await writer.write(chunk)
                 chunk = await chunks.get()
+
+                if chunk:
+                    self.real_size += len(chunk)
+                    if show_progress and self.real_size/float(image.size) - last_progress > 0.05:
+                        progress = self.real_size/float(image.size)
+                        self.write('{"progress": %.2f, "done": false},' % progress)
+                        self.flush()
+                        last_progress = progress
+
 
         try:
             # pylint: disable=no-value-for-parameter,no-member
@@ -318,40 +317,37 @@ class ImageList(web.RequestHandler):
                 chunks.put_nowait(data)
 
             chunks.put_nowait(None)
+
+            if show_progress:
+                self.write('{"progress": %.2f, "done": true}' %
+                           (self.real_size / float(image.size)))
+                self.write(']}')
+                self.finish()
+
+                # FIXME!
+                if self.real_size != image.size:
+                    Services.logger.debug(
+                        "WARNING: size of image != sum of chuncks length. [%d, %d]",
+                        self.real_size, image.size)
+
             await docker_result
         except Client.Error as error:
             Services.logger.error(error)
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
-        if wait:
+        if wait and not show_progress:
             self.write({'finished':True})
             self.finish()
-    # pylint: enable=too-many-locals
 
-    # pylint: disable=arguments-differ
-    @web.asynchronous
-    async def post(self):
-        cmd = self.get_argument('cmd')
-        if cmd:
-            Services.logger.debug("Image endpoint is invoked with command `%s`", cmd)
-            method = None
-            try:
-                method = getattr(self, cmd)
-            except AttributeError:
-                raise NotImplementedError("Endpoint `/images` does not implement `{}`"
-                                          .format(cmd))
-
-            return await method()
-        raise NotImplementedError()
-
-    def get(self):
+    def get(self):  # pylint: disable=arguments-differ
         """
-        Return list of nodes, if specified `all`from database or discovered ones from memory.
+        Return list of docker images.
 
         Returns:
-            (dict) list of nodes, it is a dict, since tornado does not write list for security
-                   reasons; see:
-                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+            (dict): list of images, it is a dict, since
+            tornado does not write list for security reasons; see:
+            ``http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write``
+
 
         """
         self.set_header("Content-Type", "application/json")
@@ -383,7 +379,6 @@ class ImageList(web.RequestHandler):
 
         self.write(']}')
         self.finish()
-    # pylint: enable=arguments-differ
 
 
 class LayerList(web.RequestHandler):
@@ -395,12 +390,13 @@ class LayerList(web.RequestHandler):
     # pylint: disable=arguments-differ
     def get(self):
         """
-        Return list of nodes, if specified `all`from database or discovered ones from memory.
+        Return list of docker layers.
 
         Returns:
-            (dict) list of nodes, it is a dict, since tornado does not write list for security
-                   reasons; see:
-                   http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+            (dict): list of layers, it is a dict, since
+            tornado does not write list for security reasons; see:
+            ``http://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write``
+
 
         """
         self.set_header("Content-Type", "application/json")
@@ -440,5 +436,4 @@ ROUTES = [
     (r'/docker/layers', LayerList),
     (r'/docker/images/(.*)', ImagesTarHandler),
     (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
-    (r'/docker/image/pull/([0-9a-zA-Z:\\\-]+)', ImagePullHandler),
 ]

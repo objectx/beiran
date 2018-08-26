@@ -11,3 +11,5 @@ beiran.key
 beiran.crt
 beiran.pub
 env
+**/.pytest_cache/
+doc/build

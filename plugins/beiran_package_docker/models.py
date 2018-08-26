@@ -3,8 +3,10 @@
 """
 Module for DockerLayer and DockerImage Model
 """
-from peewee import IntegerField, CharField, BooleanField
+from datetime import datetime
+from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
+from beirand.common import Services
 
 
 class CommonDockerObjectFunctions:
@@ -37,19 +39,36 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     manifest = JSONStringField(null=True)
     layers = JSONStringField(default=list)
     available_at = JSONStringField(default=list)
+    repo_digests = JSONStringField(default=list)
+    config = JSONStringField(default=list)
 
     has_not_found_layers = BooleanField(default=False)
     has_unknown_layers = BooleanField(default=False)
 
     @classmethod
     def from_dict(cls, _dict, **kwargs):
+        if 'availability' in _dict:
+            del _dict['availability']
+
         if 'dialect' in kwargs and kwargs['dialect'] == "docker":
             new_dict = {}
 
+            # be sure it is timestamp
+            # aiodocker images.list returns timestamp,
+            # since images.get returns something like iso 8601 with 8 digits of microseconds,
+            # unfortunately python supports only 6 digits.
+            if not isinstance(_dict['Created'], int):
+                time_parts = _dict['Created'].split('.')
+                created = datetime.strptime(time_parts[0], "%Y-%m-%dT%H:%M:%S")
+                _dict['Created'] = int(created.timestamp())
+
             new_dict['created_at'] = _dict['Created']
             new_dict['hash_id'] = _dict['Id']
-            new_dict['parent_hash_id'] = _dict['ParentId'] if _dict['ParentId'] != '' else None
+            # aiodocker images.list returns ParentId, since images.get returns Parent
+            new_dict['parent_hash_id'] = _dict.get('ParentId') or _dict.get('Parent') or None
             new_dict['tags'] = _dict['RepoTags']
+            new_dict['repo_digests'] = _dict['RepoDigests']
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
 
@@ -62,6 +81,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             new_dict['hash_id'] = _dict['hashid']
 
             new_dict['tags'] = [_dict['tag']]
+            new_dict['repo_digests'] = [_dict['repo_digests']]
+            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['manifest'] = dict(_dict)
 
             new_layer_list = []
@@ -79,7 +100,43 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             del _dict['has_not_found_layers']
             del _dict['has_unknown_layers']
 
+        available_at = _dict['available_at']
+        local = Services.daemon.nodes.local_node.uuid.hex
+        if not available_at:
+            _dict['availability'] = 'unavailable'
+        elif not local in available_at:
+            _dict['availability'] = 'available'
+        else:
+            _dict['availability'] = 'local'
+
         return _dict
+
+    @classmethod
+    async def get_available_nodes_by_tag(cls, image_name):
+        """
+
+        Args:
+            image_name: image name
+
+        Returns:
+            (list) list of available nodes of image object
+
+        """
+
+        # image must have a tag, default is latest
+        try:
+            image_name, tag = image_name.split(":")
+        except ValueError:
+            tag = "latest"
+
+        image_tag = "{image_name}:{tag}".format(image_name=image_name, tag=tag)
+
+        try:
+            image = cls.select().where(
+                SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
+            return image.available_at
+        except DockerImage.DoesNotExist:
+            pass
 
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):

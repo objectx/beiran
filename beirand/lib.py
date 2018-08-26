@@ -5,14 +5,15 @@ import os
 import ipaddress
 import platform
 import socket
-from uuid import uuid4
 
 import netifaces
 
 from beiran.log import build_logger
+from beiran.models import PeerAddress
 from beiran.version import get_version
 
-import beiran.defaults as defaults
+from beiran import defaults
+from beirand import common
 
 LOGGER = build_logger()
 
@@ -129,6 +130,45 @@ def get_hostname():
         return os.environ['HOSTNAME']
     return socket.gethostname()
 
+def sync_version_file_path():
+    """Return sync_version file path"""
+    path = common.DATA_FOLDER + "/sync_version"
+    return path
+
+async def update_sync_version_file(version):
+    """Write new sync_version to the sync_version file"""
+
+    path = sync_version_file_path()
+
+    if not os.path.exists(path):
+        LOGGER.warning('Cannot find sync_version_file. Creating new file')
+    with open(path, 'w') as file:
+        file.write(str(version))
+
+def get_sync_version():
+    """
+    Gets last sync_version from local file.
+
+    Returns
+        int: sync version.
+    """
+
+    path = sync_version_file_path()
+    sync_version = 0
+
+    try:
+        with open(path, 'r') as file:
+            sync_version = file.read()
+    except FileNotFoundError:
+        LOGGER.warning('Cannot find sync_version_file. Creating new file')
+        with open(path, 'w') as file:
+            file.write(str(sync_version))
+
+    try:
+        return int(sync_version)
+    except ValueError:
+        raise ValueError("Sync version must be an integer! " +
+                         "Check your SYNC_VERSION_FILE ({})".format(path))
 
 def get_plugin_list():
     """Return plugin list"""
@@ -141,7 +181,7 @@ def get_plugin_list():
     }
 
 
-def collect_node_info(uuid=None):
+def collect_node_info(uuid):
     """
     Collect and return Node info
 
@@ -149,8 +189,14 @@ def collect_node_info(uuid=None):
         dict: node informations
 
     """
+    peer_address = PeerAddress(
+        uuid=uuid,
+        host=get_advertise_address(),
+        port=get_listen_port(),
+    )
     return {
-        "uuid": uuid or uuid4().hex,
+        "uuid": uuid,
+        "address": peer_address.address,
         "hostname": get_hostname(),
         "ip_address": get_advertise_address(),
         "port": get_listen_port(),
@@ -158,6 +204,6 @@ def collect_node_info(uuid=None):
         "os_type": platform.system(),
         "os_version": platform.version(),
         "architecture": platform.machine(),
-        "beiran_version": get_version(),
-        "beiran_service_port": get_listen_port()
+        "version": get_version(),
+        "last_sync_version": get_sync_version()
     }

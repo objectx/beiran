@@ -6,6 +6,8 @@ service implementations.
 import logging
 import socket
 import sys
+import time
+import pkgutil
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
@@ -101,6 +103,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         self.__status = None
         self.api_routes = []
         self.model_list = []
+        self.history = None
 
         self.plugin_name = sys.modules[self.__module__].PLUGIN_NAME
         self.plugin_type = sys.modules[self.__module__].PLUGIN_TYPE
@@ -119,6 +122,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         self.daemon = config.pop('daemon')
         self.config = config
         self.loop = get_event_loop()
+        self.status = 'init'
 
     def set_log_level(self, level: int):
         """
@@ -133,7 +137,7 @@ class BaseDiscoveryPlugin(BasePlugin):
     """Discovery Plugin Base
     """
 
-    class DiscoveredNode(object):
+    class DiscoveredNode:
         """Beiran node information class"""
         def __init__(self, hostname=None, ip_address=None, port=None):
             self.hostname = hostname
@@ -187,3 +191,61 @@ class BaseDiscoveryPlugin(BasePlugin):
 class BasePackagePlugin(BasePlugin):
     """Base class for package plugins"""
     pass
+
+
+class BaseInterfacePlugin(BasePlugin):
+    """Base class for interface plugins"""
+    pass
+
+
+class History(EventEmitter):
+    """Class for keeping update/sync history (of anything)"""
+
+    def __init__(self):
+        super().__init__()
+        self.version = 0
+        self.updated_at = None
+        self.updates = []
+
+    def update(self, msg=None):
+        """Append update to history and increment the version"""
+        self.version += 1
+        new_update = {
+            "time": time.time(),
+            "msg": msg,
+            "v": self.version
+        }
+        self.updated_at = new_update['time']
+        self.updates.append(new_update)
+        self.emit('update', new_update)
+
+    def updates_since(self, since_time):
+        """Return updates since `time`"""
+        return [u for u in self.updates if u['time'] >= since_time]
+
+    def delete_before(self, before_time):
+        """Delete updates before `time`"""
+        self.updates = [u for u in self.updates if u['time'] < before_time]
+
+    @property
+    def latest(self):
+        """Latest update or None"""
+        if not self.updates:
+            return None
+        return self.updates[-1]
+
+
+def get_installed_plugins():
+    """
+    Iterates installed packages and modules to match beiran modules.
+
+    Returns:
+        list: list of package name of installed beiran plugins.
+
+    """
+    return [
+        name
+        for finder, name, ispkg
+        in pkgutil.iter_modules()
+        if name.startswith('beiran_')
+    ]

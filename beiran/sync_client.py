@@ -6,11 +6,10 @@ Common client for beiran project
 
 import socket
 import json
-import re
 from tornado import httpclient, gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.netutil import Resolver
-
+from beiran.models import PeerAddress
 
 class UnixResolver(Resolver):
 
@@ -49,34 +48,30 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url):
+    def __init__(self, peer_address):
         """
         Initialization method for client
+
         Args:
-            url: beirand url
+            peer_address (PeerAddress, str): beirand address
         """
-        url_pattern = re.compile(r'^(https?)(?:\+(unix))?://(.+)$', re.IGNORECASE)
-        matched = url_pattern.match(url)
-        if not matched:
-            raise ValueError("URL is broken: %s" % url)
 
-        proto = matched.groups()[0]
-        is_unix_socket = matched.groups()[1]
-        location = matched.groups()[2]
+        if not isinstance(peer_address, PeerAddress):
+            address = PeerAddress(address=peer_address)
+        else:
+            address = peer_address
 
-        if is_unix_socket:
-            self.socket_path = location
-
-            resolver = UnixResolver(self.socket_path)
+        if address.unix_socket:
+            resolver = UnixResolver(address.path)
             # AsyncHTTPClient.configure(None, resolver=resolver)
             # self.http_client = httpclient.HTTPClient()
             self.http_client = httpclient.HTTPClient(force_instance=True,
                                                      async_client_class=AsyncHTTPClient,
                                                      resolver=resolver)
-            self.url = proto + "://unixsocket"
+            self.url = address.protocol + "://unixsocket"
         else:
             self.http_client = httpclient.HTTPClient(force_instance=True)
-            self.url = url
+            self.url = address.location
 
     def request(self, path="/", **kwargs):
         """
@@ -128,33 +123,42 @@ class Client:
 
         return response.body
 
-    def get_server_info(self):
+    def get_server_info(self, **kwargs):
         """
         Gets root path from daemon for server information
         Returns:
             object: parsed from JSON
 
         """
-        return self.request(path="/", parse_json=True)
+        return self.request(path="/", parse_json=True, **kwargs)
 
-    def get_server_version(self):
+    def get_server_version(self, **kwargs):
         """
         Daemon version retrieve
         Returns:
             str: semantic version
         """
-        return self.get_server_info()['version']
+        return self.get_server_info(**kwargs)['version']
 
-    def get_node_info(self, uuid=None):
+    def get_node_info(self, uuid=None, **kwargs):
         """
         Retrieve information about node
         Returns:
             object: info of node
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
-        return self.request(path=path, parse_json=True)
+        return self.request(path=path, parse_json=True, **kwargs)
 
-    def probe_node(self, address):
+    def get_status(self, plugin=None, **kwargs):
+        """
+        Retrieve status information about node or one of it's plugins
+        Returns:
+            object: status of node or plugin
+        """
+        path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
+        return self.request(path=path, parse_json=True, **kwargs)
+
+    def probe_node(self, address, **kwargs):
         """
         Connect to a new node
         Returns:
@@ -165,9 +169,9 @@ class Client:
             "address": address,
             "probe_back": True
         }
-        return self.request(path=path, data=new_node, parse_json=True, method="POST")
+        return self.request(path=path, data=new_node, parse_json=True, method="POST", **kwargs)
 
-    def get_nodes(self, all_nodes=False):
+    def get_nodes(self, all_nodes=False, **kwargs):
         """
         Daemon get nodes
         Returns:
@@ -175,11 +179,11 @@ class Client:
         """
         path = '/nodes{}'.format('?all=true' if all_nodes else '')
 
-        resp = self.request(path=path)
+        resp = self.request(path=path, **kwargs)
 
         return resp.get('nodes', [])
 
-    def get_images(self, all_nodes=False, node_uuid=None):
+    def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Image list from beiran API
         Returns:
@@ -196,24 +200,39 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = self.request(path=path)
+        resp = self.request(path=path, **kwargs)
         return resp.get('images', [])
 
-    def pull_image(self, imagename, node=None, wait=False):
+    def pull_image(self, imagename, **kwargs):
         """
         Pull image accross cluster with spesific node support
         Returns:
             result: Pulling process result
         """
+
+        progress = kwargs.pop('progress', False)
+        force = kwargs.pop('force', False)
+        wait = kwargs.pop('wait', False)
+        node = kwargs.pop('node', None)
+
         path = '/docker/images?cmd=pull'
+        data = {
+            'image': imagename,
+            'node': node,
+            'wait': wait,
+            'force': force,
+            'progress':progress
+        }
 
         resp = self.request(path,
-                            data={'image': imagename, 'node': node, 'wait': wait},
+                            data=data,
                             method='POST',
-                            timeout=600)
+                            timeout=600,
+                            **kwargs)
         return resp
+    #pylint: enable-msg=too-many-arguments
 
-    def get_layers(self, all_nodes=False, node_uuid=None):
+    def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Layer list from beiran API
         Returns:
@@ -229,6 +248,6 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = self.request(path=path)
+        resp = self.request(path=path, **kwargs)
 
         return resp.get('layers', [])

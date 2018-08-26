@@ -4,99 +4,59 @@ Common client for beiran project
 # pylint: disable=duplicate-code
 
 import asyncio
-import re
-import socket
 import logging
-
-from tornado import gen
-from tornado.netutil import Resolver
 import aiohttp
 import async_timeout
-
-
-class UnixResolver(Resolver):
-
-    """
-    Resolver for unix socket implementation
-    """
-    def initialize(self, socket_path=None):  # pylint: disable=arguments-differ
-        """
-        Class initialization method
-
-        Args:
-            socket_path: Path for unix socket
-        """
-
-        self.socket_path = socket_path  # pylint: disable=attribute-defined-outside-init
-        Resolver.initialize(self)
-
-    def close(self):
-        """Closing resolver"""
-        self.close()
-
-    @gen.coroutine
-    def resolve(self, host, port, family=socket.AF_UNSPEC, callback=None):
-        """
-        Unix Socket resolve
-        Args:
-            host: host ip
-            port: host port
-            family: socket family default socket.AF_UNSPEC
-            callback: function to call after resolve
-        """
-        if host == 'unixsocket':
-            raise gen.Return([(socket.AF_UNIX, self.socket_path)])
-        result = yield self.resolve(host, port, family, callback)
-        raise gen.Return(result)
 
 
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url=None, node=None, version=None):
+    def __init__(self, peer_address=None, node=None, version=None):
         """
         Initialization method for client
         Args:
-            url: beirand url
-            node: Node (optional)
-            version: string (optional)
+            peer_address (PeerAddress): beirand url
+            node (Node): Node (optional)
+            version (str): string (optional)
         """
         self.node = node
-        self.version = node.beiran_version if node else version
+        self.version = node.version if node else version
         self.logger = logging.getLogger('beiran.client')
 
-        if not url and node:
-            url = node.url
+        if not (peer_address or node):
+            raise ValueError("Both node and peer_address can not be None")
 
-        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
-                                 re.IGNORECASE)
-        matched = url_pattern.match(url)
-        if not matched:
-            raise ValueError("URL is broken: %s" % url)
+        address = peer_address or node.get_latest_connection()
 
-        # proto = matched.groups()[0]
-        is_unix_socket = matched.groups()[1]
-        location = matched.groups()[2]
-        uuid = matched.groups()[3]
-        if uuid:
-            extra = len(uuid) + 1
-            self.url = url[:-extra]
+        self.url = address.location
+
+        if address.unix_socket:
+            self.client_connector = aiohttp.UnixConnector(path=address.location)
+            self.url = address.protocol + '://unixsocket'
         else:
-            self.url = url
+            self.client_connector = None
+        self.http_client = None
 
-        if is_unix_socket:
-            self.socket_path = location
-            conn = aiohttp.UnixConnector(path=self.socket_path)
-            self.http_client = aiohttp.ClientSession(connector=conn)
-        else:
-            self.http_client = aiohttp.ClientSession()
+    async def create_client(self):
+        """Create aiohttp client session"""
+        self.http_client = aiohttp.ClientSession(connector=self.client_connector)
 
     async def cleanup(self):
         """Closes aiohttp client session"""
-        await self.http_client.close()
+        if self.http_client:
+            await self.http_client.close()
+            self.http_client = None
 
     def __del__(self):
-        asyncio.ensure_future(self.cleanup())
+        if not self.http_client:
+            return
+
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(self.cleanup())
+        else:
+            loop.run_until_complete(self.cleanup())
 
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""
@@ -153,6 +113,9 @@ class Client:
         self.logger.debug("Requesting %s", url)
 
         try:
+            if not self.http_client:
+                await self.create_client()
+
             if 'timeout' in kwargs:
                 # raises;
                 # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
@@ -182,44 +145,53 @@ class Client:
 
         return response.content
 
-    async def get_server_info(self):
+    async def get_server_info(self, **kwargs):
         """
         Gets root path from daemon for server information
         Returns:
             object: parsed from JSON
 
         """
-        return await self.request(path="/", parse_json=True)
+        return await self.request(path="/", parse_json=True, **kwargs)
 
-    async def get_server_version(self):
+    async def get_server_version(self, **kwargs):
         """
         Daemon version retrieve
         Returns:
             str: semantic version
         """
-        return await self.get_server_info()['version']
+        return await self.get_server_info(**kwargs)['version']
 
-    async def get_node_info(self, uuid=None):
+    async def get_node_info(self, uuid=None, **kwargs):
         """
         Retrieve information about node
         Returns:
             object: info of node
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
-        return await self.request(path=path, parse_json=True)
+        return await self.request(path=path, parse_json=True, **kwargs)
 
-    async def ping(self, timeout=10):
+    async def get_status(self, plugin=None, **kwargs):
+        """
+        Retrieve status information about node or one of it's plugins
+        Returns:
+            object: status of node or plugin
+        """
+        path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
+        return await self.request(path=path, parse_json=True, **kwargs)
+
+    async def ping(self, timeout=10, **kwargs):
         """
         Pings the node
         """
-        response = await self.request("/ping", return_response=True, timeout=timeout)
+        response = await self.request("/ping", return_response=True, timeout=timeout, **kwargs)
         if not response or response.status != 200:
             raise Exception("Failed to receive ping response from node")
 
         # TODO: Return ping time
         return True
 
-    async def probe_node(self, address, probe_back: bool = True):
+    async def probe_node(self, address, probe_back: bool = True, **kwargs):
         """
         Connect to a new node
         Returns:
@@ -230,9 +202,13 @@ class Client:
             "address": address,
             "probe_back": probe_back
         }
-        return await self.request(path=path, data=new_node, parse_json=True, method="POST")
+        return await self.request(path=path,
+                                  data=new_node,
+                                  parse_json=True,
+                                  method="POST",
+                                  **kwargs)
 
-    async def get_nodes(self, all_nodes=False):
+    async def get_nodes(self, all_nodes=False, **kwargs):
         """
         Daemon get nodes
         Returns:
@@ -240,11 +216,11 @@ class Client:
         """
         path = '/nodes{}'.format('?all=true' if all_nodes else '')
 
-        resp = await self.request(path=path)
+        resp = await self.request(path=path, **kwargs)
 
         return resp.get('nodes', [])
 
-    async def get_images(self, all_nodes=False, node_uuid=None):
+    async def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Image list from beiran API
         Returns:
@@ -261,41 +237,60 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path)
+        resp = await self.request(path=path, **kwargs)
         return resp.get('images', [])
 
-    async def pull_image(self, imagename, node=None, wait=False):
+    #pylint: disable-msg=too-many-arguments
+    async def pull_image(self, imagename, **kwargs):
         """
         Pull image accross cluster with spesific node support
         Returns:
             result: Pulling process result
         """
-        path = '/docker/images?cmd=pull'
-        payload = {'image': imagename, 'node': node, 'wait': wait}
-        resp = await self.request(path,
-                                  data=payload,
-                                  method='POST',
-                                  timeout=600)
-        return resp
 
-    async def stream_image(self, imagename):
+        progress = kwargs.pop('progress', False)
+        force = kwargs.pop('force', False)
+        wait = kwargs.pop('wait', False)
+        node = kwargs.pop('node', None)
+
+        path = '/docker/images?cmd=pull'
+        data = {
+            'image': imagename,
+            'node': node,
+            'wait': wait,
+            'force': force,
+            'progress': progress
+        }
+
+        resp = await self.request(path,
+                                  data=data,
+                                  method='POST',
+                                  return_response=True,
+                                  timeout=600,
+                                  **kwargs)
+        return resp
+    #pylint: enable-msg=too-many-arguments
+
+    async def stream_image(self, imagename, **kwargs):
         """
         Stream image from this node
 
-        Usage:
+        Usage::
+
             image_response = await client.stream_image(image_identifier)
             async for data in image_response.content.iter_chunked(64*1024):
-                ... do something with data chunk
+                do something with data chunk
         """
 
         path = '/docker/images/{}'.format(imagename)
 
         resp = await self.request(path,
                                   method='GET',
-                                  return_response=True)
+                                  return_response=True,
+                                  **kwargs)
         return resp
 
-    async def get_layers(self, all_nodes=False, node_uuid=None):
+    async def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
         """
         Get Layer list from beiran API
         Returns:
@@ -311,6 +306,6 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path)
+        resp = await self.request(path=path, **kwargs)
 
         return resp.get('layers', [])

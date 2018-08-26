@@ -16,10 +16,13 @@ services:
       - pod1
     network_mode: "service:pod1"
   beiran1:
-    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    image: dkr.beiran.io/beiran/beiran:dev
     volumes_from:
       - pod1
     network_mode: "service:pod1"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
 
 
   pod2:
@@ -38,10 +41,13 @@ services:
       - pod2
     network_mode: "service:pod2"
   beiran2:
-    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    image: dkr.beiran.io/beiran/beiran:dev
     volumes_from:
       - pod2
     network_mode: "service:pod2"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
 
 
   pod3:
@@ -58,12 +64,15 @@ services:
     command:  [ "-D" ]
     volumes_from:
       - pod3
-    network_mode: "service:pod1"
+    network_mode: "service:pod3"
   beiran3:
-    image: dkr.rsnc.io/poc/beiran/daemon:dev
+    image: dkr.beiran.io/beiran/beiran:dev
     volumes_from:
       - pod3
     network_mode: "service:pod3"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
 
 networks:
   test:

@@ -1,4 +1,4 @@
-FROM python:3.6-jessie
+FROM python:3.6-alpine
 LABEL maintainer="info@beiran.io"
 RUN apt-get update && apt-get -y install \
 	--no-install-recommends \

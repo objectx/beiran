@@ -207,8 +207,8 @@ DB_PROXY.initialize(database)
 #bind database to model
 Apt.bind(database)
 
-# database.drop_tables([Apt])
-# database.create_tables([Apt] )
+database.drop_tables([Apt])
+database.create_tables([Apt] )
 
 p = Apt(
     id = "123455",
@@ -219,5 +219,9 @@ p = Apt(
 p.save()
 
 from pprint import pprint
-pprint(p.serialize())
 
+p_serialized = p.serialize()
+assert 'sha256' in p_serialized
+
+pp_serialized = p.deserialize(p.serialize()).serialize()
+assert 'sha256' in pp_serialized

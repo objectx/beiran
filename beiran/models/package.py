@@ -57,7 +57,7 @@ class Package(BaseModel):
             value = object_dict.get(field, None)
             if value:
                 object_dict[cfield] = value
-                del object_dict[field]
+                # del object_dict[field]
 
         return object_dict
 

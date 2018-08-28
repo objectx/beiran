@@ -193,6 +193,13 @@ class Apt(Package):
 
     filename = CharField(max_length=512, null=True)
 
+
+class Npm(Package):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.id:
+            self.id = "NPM:{}:{}".format(self.name, self.version)
+
 import os
 from peewee import Proxy
 from peewee import SqliteDatabase
@@ -206,22 +213,33 @@ DB_PROXY.initialize(database)
 
 #bind database to model
 Apt.bind(database)
+Npm.bind(database)
 
-database.drop_tables([Apt])
-database.create_tables([Apt] )
+database.drop_tables([Apt, Npm])
+database.create_tables([Apt, Npm] )
 
 p = Apt(
-    id = "123455",
-    name = "p1",
-    version = "v1",
+    id="123455",
+    name="p1",
+    version="v1",
 )
 
 p.save()
 
-from pprint import pprint
+
+n = Npm(
+    name="npm_p1",
+    version="npm_v1",
+)
+
+n.save()
 
 p_serialized = p.serialize()
 assert 'sha256' in p_serialized
 
 pp_serialized = p.deserialize(p.serialize()).serialize()
 assert 'sha256' in pp_serialized
+
+n_serialized = n.serialize()
+assert 'id' in n_serialized
+assert 'NPM:{}:{}'.format(n.name, n.version) == n.id

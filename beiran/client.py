@@ -4,7 +4,6 @@ Common client for beiran project
 # pylint: disable=duplicate-code
 
 import asyncio
-import re
 import logging
 
 from typing import Any, Optional # pylint: disable=unused-import
@@ -13,48 +12,33 @@ import aiohttp
 import async_timeout
 
 from beiran.models import Node
-
+from beiran.models import PeerAddress
 
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, url: str = None, node: Node = None, version: str = None) -> None:
+    def __init__(self, peer_address: PeerAddress = None, node: Node = None, version: str = None):
         """
         Initialization method for client
         Args:
-            url: beirand url
-            node: Node (optional)
-            version: string (optional)
+            peer_address (PeerAddress): beirand url
+            node (Node): Node (optional)
+            version (str): string (optional)
         """
         self.node = node
         self.version = node.version if node else version
         self.logger = logging.getLogger('beiran.client')
 
-        if not url and node:
-            url = node.url
+        if not (peer_address or node):
+            raise ValueError("Both node and peer_address can not be None")
 
-        url_pattern = re.compile(r'^(https?|beirans?)(?:\+(unix))?://([^#]+)(?:#(.+))?$',
-                                 re.IGNORECASE)
-        matched = url_pattern.match(url) #type: ignore
-        if not matched:
-            raise ValueError("URL is broken: %s" % url)
+        address = peer_address or node.get_latest_connection()
 
-        proto = matched.groups()[0]
-        is_unix_socket = matched.groups()[1]
-        location = matched.groups()[2]
-        uuid = matched.groups()[3]
-        if uuid:
-            extra = len(uuid) + 1
-            self.url = url[:-extra] #type: ignore
-        else:
-            self.url = url
+        self.url = address.location
 
-        if is_unix_socket:
-            self.socket_path = location
-            self.client_connector = aiohttp.UnixConnector(
-                path=self.socket_path
-                ) # type: Optional[aiohttp.UnixConnector]
-            self.url = proto + '://unixsocket'
+        if address.unix_socket:
+            self.client_connector = aiohttp.UnixConnector(path=address.location)
+            self.url = address.protocol + '://unixsocket'
         else:
             self.client_connector = None
         self.http_client = None

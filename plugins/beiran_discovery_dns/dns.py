@@ -6,6 +6,7 @@ import os
 import asyncio
 import aiodns
 
+from beiran.models import PeerAddress
 from beiran.plugin import BaseDiscoveryPlugin
 
 # Beiran plugin variables
@@ -62,7 +63,8 @@ class DNSDiscovery(BaseDiscoveryPlugin):
             for node in new_comers:
                 self.log.info("New node %s", node)
                 self.nodes.add(node)
-                self.emit('discovered', ip_address=node)
+                peer_address = PeerAddress(host=node)
+                self.emit('discovered', peer_address=peer_address)
             for node in sadly_goodbyers:
                 self.log.info("Leaving node %s", node)
                 self.nodes.discard(node)

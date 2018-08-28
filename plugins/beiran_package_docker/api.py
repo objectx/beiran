@@ -163,56 +163,56 @@ class LayerDownload(web.RequestHandler):
     # pylint: enable=arguments-differ
 
 
-# @web.stream_request_body
-# class ImagesHandler(web.RequestHandler):
-#     """Endpoint to list docker images"""
+@web.stream_request_body
+class ImagesHandler(web.RequestHandler):
+    """Endpoint to list docker images"""
 
-#     def __init__(self, application, request, **kwargs):
-#         super().__init__(application, request, **kwargs)
-#         self.chunks = None
-#         self.future_response = None
+    def __init__(self, application, request, **kwargs):
+        super().__init__(application, request, **kwargs)
+        self.chunks = None
+        self.future_response = None
 
-#     def prepare(self):
-#         if self.request.method != 'POST':
-#             return
+    def prepare(self):
+        if self.request.method != 'POST':
+            return
 
-#         Services.logger.debug("image: preparing for receiving upload")
-#         self.chunks = asyncio.Queue()
+        Services.logger.debug("image: preparing for receiving upload")
+        self.chunks = asyncio.Queue()
 
-#         @aiohttp.streamer
-#         async def sender(writer, chunks):
-#             """ async generator data sender for aiodocker """
-#             chunk = await chunks.get()
-#             while chunk:
-#                 await writer.write(chunk)
-#                 chunk = await chunks.get()
+        @aiohttp.streamer
+        async def sender(writer, chunks):
+            """ async generator data sender for aiodocker """
+            chunk = await chunks.get()
+            while chunk:
+                await writer.write(chunk)
+                chunk = await chunks.get()
 
-#         # pylint: disable=no-value-for-parameter,no-member
-#         self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
-#         # pylint: enable=no-value-for-parameter,no-member
+        # pylint: disable=no-value-for-parameter,no-member
+        self.future_response = Services.aiodocker.images.import_image(data=sender(self.chunks))
+        # pylint: enable=no-value-for-parameter,no-member
 
-#     # pylint: disable=arguments-differ
-#     async def data_received(self, chunk):
-#         self.chunks.put_nowait(chunk)
+    # pylint: disable=arguments-differ
+    async def data_received(self, chunk):
+        self.chunks.put_nowait(chunk)
 
-#     async def post(self):
-#         """
-#             Loads tarball to docker
-#         """
-#         Services.logger.debug("image: upload done")
-#         try:
-#             await self.chunks.put(None)
-#             response = await self.future_response
-#             for state in response:
-#                 if 'error' in state:
-#                     if 'archive/tar' in state['error']:
-#                         raise HTTPError(status_code=400, log_message=state['error'])
-#                     raise HTTPError(status_code=500, log_message=state['error'])
-#             self.write("OK")
-#             self.finish()
-#         except aiodocker.exceptions.DockerError as error:
-#             raise HTTPError(status_code=404, log_message=error.message)
-#     # pylint: enable=arguments-differ
+    async def post(self):
+        """
+            Loads tarball to docker
+        """
+        Services.logger.debug("image: upload done")
+        try:
+            await self.chunks.put(None)
+            response = await self.future_response
+            for state in response:
+                if 'error' in state:
+                    if 'archive/tar' in state['error']:
+                        raise HTTPError(status_code=400, log_message=state['error'])
+                    raise HTTPError(status_code=500, log_message=state['error'])
+            self.write("OK")
+            self.finish()
+        except aiodocker.exceptions.DockerError as error:
+            raise HTTPError(status_code=404, log_message=error.message)
+    # pylint: enable=arguments-differ
 
 
 class ImageList(RPCEndpoint):

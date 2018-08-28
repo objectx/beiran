@@ -5,12 +5,12 @@ from peewee import SqliteDatabase
 
 from beiran.log import build_logger
 from .base import BaseModel
-from .node import Node
+from .node import Node, PeerAddress
 # from .docker_objects import DockerImage, DockerLayer
 
 LOGGER = build_logger()
 
-MODEL_LIST = [Node, ] # DockerImage, DockerLayer]
+MODEL_LIST = [Node, PeerAddress] # DockerImage, DockerLayer]
 
 
 def create_tables(database: SqliteDatabase, model_list: list = None):

@@ -10,6 +10,7 @@ from typing import Optional, Coroutine
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 import netifaces
 
+from beiran.models import PeerAddress
 from beiran.plugin import BaseDiscoveryPlugin
 
 # Beiran plugin variables
@@ -147,9 +148,10 @@ class ZeroconfListener:
             self.log.debug("  Weight: %d, priority: %d" %
                            (service_info.weight, service_info.priority))
             self.log.debug("  Server: %s" % service_info.server)
-            self.discovery.emit('discovered',
-                                ip_address=socket.inet_ntoa(service_info.address),
-                                service_port=service_info.port)
+            peer_address = PeerAddress(host=socket.inet_ntoa(service_info.address),
+                                       port=service_info.port)
+            self.discovery.emit('discovered', peer_address=peer_address)
+
             if service_info.properties:
                 self.log.debug("  Properties are:")
                 for key, value in service_info.properties.items():

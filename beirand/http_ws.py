@@ -1,12 +1,11 @@
 """HTTP and WS API implementation of beiran daemon"""
 import os
-import urllib
 
 from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from beiran.models import Node
+from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 
 from beirand.common import Services
@@ -67,7 +66,7 @@ class ApiRootHandler(web.RequestHandler):
 
     def get(self, *args, **kwargs):
         self.set_header("Content-Type", "application/json")
-        self.write('{"version":"' + Services.daemon.version + '"}')
+        self.write('{"version":"' + Services.daemon.nodes.local_node.version + '"}')
         self.finish()
 
 
@@ -114,30 +113,35 @@ class NodesHandler(RPCEndpoint):
             raise HTTPError(400, "Unacceptable data")
 
         node_url = self.json_data['address']
-        parsed = urllib.parse.urlparse(node_url)
+        probe_back = self.json_data.get('probe_back', None)
+        peer_address = PeerAddress(address=node_url)
+
         try:
-            if parsed.fragment:
-                existing_node = await Services.daemon.nodes.get_node_by_uuid(parsed.fragment)
+            if peer_address.uuid:
+                existing_node = await Services.daemon.nodes.get_node_by_uuid(peer_address.uuid)
             else:
                 existing_node = await Services.daemon.nodes.get_node_by_ip_and_port(
-                    parsed.hostname, parsed.port)
+                    peer_address.host, peer_address.port)
         except Node.DoesNotExist:
             existing_node = None
 
         if existing_node and existing_node.status != 'offline':
             self.set_status(409)
             self.write({"status": "Node is already synchronized!"})
-            self.finish()
-            return
+            if not probe_back:
+                self.finish()
+                return
 
-        # remote_ip = self.request.remote_ip
+        remote_ip = self.request.remote_ip
 
-        if self.json_data.get('probe_back', None):
-            await Services.daemon.nodes.probe_node_bidirectional(url=node_url)
+        if probe_back:
+            await Services.daemon.peer.probe_node_bidirectional(peer_address=peer_address,
+                                                                extra_addr=[remote_ip, ])
         else:
-            await Services.daemon.nodes.probe_node(url=node_url)
+            await Services.daemon.peer.probe_node(peer_address=peer_address,
+                                                  extra_addr=[remote_ip,])
+            self.write({"status": "OK"})
 
-        self.write({"status": "OK"})
         self.finish()
 
     # pylint: disable=arguments-differ

@@ -5,16 +5,17 @@ import os
 from pyee import EventEmitter
 
 from beiran import defaults
+from beiran.ctx import Config
 from beiran.log import build_logger
 from beiran.version import get_version
 
-DATA_FOLDER = os.getenv("DATA_FOLDER_PATH", defaults.DATA_FOLDER)
-CONFIG_FOLDER = os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER)
+DATA_FOLDER = Config.get_data_folder()
+CONFIG_FOLDER = Config.get_config_folder()
 
 EVENTS = EventEmitter()
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', defaults.LOG_LEVEL))
-LOG_FILE = os.getenv('LOG_FILE', defaults.LOG_FILE)
+LOG_LEVEL = logging.getLevelName(Config.get_log_level())
+LOG_FILE = Config.get_log_file()
 
 VERSION = get_version('short', 'daemon')
 

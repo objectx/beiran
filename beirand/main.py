@@ -219,7 +219,7 @@ class BeiranDaemon(EventEmitter):
         """Initialize configured plugins"""
 
         # Initialize discovery
-        discovery_mode = os.getenv('DISCOVERY_METHOD') or 'zeroconf'
+        discovery_mode = Config.get_discovery_method() or 'zeroconf'
         if discovery_mode != "none":
             Services.logger.debug("Discovery method is %s", discovery_mode)
             discovery = await self.get_plugin('discovery', discovery_mode, {

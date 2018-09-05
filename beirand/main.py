@@ -36,6 +36,7 @@ from beirand.version import __version__
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
 from beiran.plugin import get_installed_plugins
+from beiran.ctx import Config
 
 AsyncIOMainLoop().install()
 
@@ -231,7 +232,7 @@ class BeiranDaemon(EventEmitter):
             Services.plugins['discovery'] = discovery
 
         # Initialize package plugins
-        package_plugins_enabled = ['docker']
+        package_plugins_enabled = Config.get_package_plugins()
 
         for _plugin in package_plugins_enabled:
             _plugin_obj = await self.get_plugin('package', _plugin, {
@@ -241,7 +242,7 @@ class BeiranDaemon(EventEmitter):
             Services.plugins['package:' + _plugin] = _plugin_obj
 
         # Initialize interface plugins
-        interface_plugins_enabled = ['k8s']
+        interface_plugins_enabled = Config.get_interface_plugins()
         for _plugin in interface_plugins_enabled:
             _plugin_obj = await self.get_plugin('interface', 'k8s', {
                 "unix_socket_path": "unix://" + DATA_FOLDER + "/grpc.sock"

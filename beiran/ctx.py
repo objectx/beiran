@@ -7,7 +7,7 @@ import sys
 
 import pytoml
 
-import defaults
+from . import defaults
 
 try:
     with open(path.join(defaults.CONFIG_FOLDER, 'config.toml'), 'r') as f:
@@ -21,8 +21,12 @@ except:
 
 class Config:
     @staticmethod
-    def get_core_config():
-        return conf['beiran']
+    def get_package_plugins():
+        return conf['beiran']['package_plugins']
+
+    @staticmethod
+    def get_interface_plugins():
+        return conf['beiran']['interface_plugins']
 
     @staticmethod
     def get_plugin_config(name):

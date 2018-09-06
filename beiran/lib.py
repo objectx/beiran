@@ -34,7 +34,7 @@ async def async_req(url: str, return_json: bool = True,
                 if return_json:
                     data = await resp.json(content_type=None)
                     return resp, data
-                return resp
+                return resp, {}
 
 
 async def async_write_file_stream(url: str, save_path: str, mode : str = 'wb',

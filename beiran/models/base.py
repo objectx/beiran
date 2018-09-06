@@ -22,7 +22,7 @@ class BaseModel(Model):
         Serialize model to python dict
 
         Args:
-            **kwargs
+            **kwargs: model attributes
 
         Returns:
             (dict): serialized model object
@@ -35,11 +35,12 @@ class BaseModel(Model):
     def from_dict(cls, _dict: dict, **kwargs) -> "BaseModel":
         """
         Deserialize model from python dict
+
         Args:
             _dict (dict): python dict represents obj
 
         Returns:
-            (BaseModel): model object
+            BaseModel: model object
 
         """
         kwargs.pop('dialect', None)
@@ -51,9 +52,6 @@ class BaseModel(Model):
 
         Args:
             obj (BaseModel): new object
-
-        Returns:
-            (BaseModel): updated base object
 
         """
         fields = self._meta.fields

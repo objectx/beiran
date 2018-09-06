@@ -84,7 +84,7 @@ class Client:
 
     async def request(self, path: str = "/", **kwargs) -> Any:
         """
-        Request call to daemon
+        Request call to daemon, return successful repsonses or raises http errors.
 
         Args:
             path: http path to request from daemon
@@ -94,10 +94,12 @@ class Client:
             timeout (int): timeout
             raise_error (bool): raising error
             method (str): request method
-            it returns parsed JSON
 
         Returns:
-            (dict or str) Response from daemon, dict or json string
+            ClientResponse or dict or str: Response from daemon, dict or json string
+
+        Raises:
+            convenient http exception, timeout, bad request, etc.
 
         """
         headers = kwargs['headers'] if 'headers' in kwargs else {}

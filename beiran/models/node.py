@@ -54,7 +54,17 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
 
         self.address = addr
 
-    def to_dict(self, **kwargs):
+    def to_dict(self, **kwargs: Any) -> dict:
+        """
+        Serialize PeerAddress object
+
+        Args:
+            **kwargs: extra parameters
+
+        Returns:
+            dict: serialized object
+
+        """
         _dict = super().to_dict(**kwargs)
         _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
         _dict['host'] = self.host
@@ -65,7 +75,18 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return _dict
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs: Any) -> "PeerAddress":
+        """
+        Deserialize PeerAddress object from given `_dict`
+
+        Args:
+            _dict(dict): dict containing model attributes and data
+            **kwargs: extra parameters
+
+        Returns:
+            PeerAddress: deserialized object
+
+        """
         _dict['uuid'] = UUID(_dict['uuid'])
         obj = super().from_dict(_dict, **kwargs)
         return obj
@@ -111,14 +132,15 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         Build a node address with given host, port, protocol and uuid
 
         Args:
-            host: hostname
-            uuid: uuid of node
-            path: address path
-            port: service port
-            protocol: protocol, default http
-            socket: is unix socket? default False
+            host (str): hostname
+            uuid (str): uuid of node
+            path (str): address path
+            port (int): service port
+            protocol (str): protocol, default http
+            socket (str): is unix socket? default False
 
         Returns:
+            str: formatted address
 
         """
         port = ":{}".format(port or 8888)
@@ -151,9 +173,9 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
 
         Args:
             uuid (str): uuid
-            address: address
-            discovery: discovery channel
-            config: config dict
+            address (str): address
+            discovery (str): discovery channel
+            config (dict): config dict
 
         Returns:
 
@@ -199,6 +221,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         path = parsed.path
         port = parsed.port
         return transport, protocol, hostname, path, port, fragment, unix_socket
+
 
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""

@@ -13,8 +13,11 @@ COMPONENTS = {
 
 
 def git_sha():
-    """ Git current head sha id
-    Returns: git sha number
+    """
+    Git current head sha id
+
+    Returns:
+        str: git sha number
 
     """
     loc = abspath(dirname(__file__))

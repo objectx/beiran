@@ -144,12 +144,12 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
             str: formatted address
 
         """
-        port = ":{}".format(port or 8888)
+        port_str = ":{}".format(port or 8888)
         protocol = protocol or 'http'
         unix_socket = "+unix" if socket else ""
         if unix_socket:
             unix_socket = "+unix"
-            port = ""
+            port_str = ""
             hostname = path
         else:
             hostname = host
@@ -157,7 +157,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         address_format = "beiran+{protocol}{unix_socket}://{hostname}{port}#{uuid}"
         address = address_format.format(
             hostname=hostname,
-            port=port,
+            port=port_str,
             protocol=protocol,
             unix_socket=unix_socket,
             uuid=uuid

@@ -37,7 +37,9 @@ async def async_req(url: str, return_json: bool = True,
                 return resp
 
 
-async def async_write_file_stream(url, save_path, mode='wb', timeout=3, method="GET", **kwargs):
+async def async_write_file_stream(url: str, save_path: str, mode : str = 'wb',
+                                  timeout: int = 3, method: str = "GET",
+                                  **kwargs) -> aiohttp.client_reqrep.ClientResponse:
     """
     Async write a stream to a file
     Args:

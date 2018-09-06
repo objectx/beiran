@@ -13,7 +13,7 @@ LOGGER = build_logger()
 MODEL_LIST = [Node, PeerAddress] # DockerImage, DockerLayer]
 
 
-def create_tables(database: SqliteDatabase, model_list: list = None):
+def create_tables(database: SqliteDatabase, model_list: list = None) -> None:
     """
     We need to create tables for first time. This method can be called by an
     init script or manually while development.

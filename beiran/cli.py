@@ -8,6 +8,8 @@ import importlib
 import pkgutil
 import click
 
+from typing import List
+
 from beiran.models import PeerAddress
 
 from beiran.util import Unbuffered
@@ -25,7 +27,7 @@ sys.stdout = Unbuffered(sys.stdout) # type: ignore
 class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         if 'BEIRAN_SOCK' in os.environ:
             daemon_url = "http+unix://" + os.environ['BEIRAN_SOCK']
         elif 'BEIRAN_URL' in os.environ:
@@ -58,7 +60,7 @@ class BeiranCLI(click.MultiCommand):
 
     installed_plugins = get_installed_plugins()
 
-    def list_commands(self, ctx):
+    def list_commands(self, ctx: BeiranContext) -> List[str]:
         """
         Lists of subcommand names
 
@@ -80,7 +82,7 @@ class BeiranCLI(click.MultiCommand):
         commands.sort()
         return commands
 
-    def get_command(self, ctx, cmd_name):
+    def get_command(self, ctx: BeiranContext, cmd_name: str) -> click.group:
         """
         Load command object
 

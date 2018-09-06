@@ -50,7 +50,7 @@ class UnixResolver(Resolver):
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, peer_address: PeerAddress):
+    def __init__(self, peer_address: PeerAddress) -> None:
         """
         Initialization method for client
 

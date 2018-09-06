@@ -41,8 +41,9 @@ class RPCMeta(type):
 class JSONEndpoint(web.RequestHandler):
     """Request handler where requests and responses speak JSON."""
 
-    def __init__(self, application: web.Application, request: httputil.HTTPServerRequest,
-                 **kwargs) -> None:
+    def __init__(self, application: web.Application,
+                 request: httputil.HTTPServerRequest,
+                 **kwargs: Any) -> None:
         super().__init__(application, request, **kwargs)
         self.json_data = dict() # type: dict
         self.response = dict() # type: dict
@@ -50,7 +51,7 @@ class JSONEndpoint(web.RequestHandler):
     def data_received(self, chunk):
         pass
 
-    def prepare(self):
+    def prepare(self) -> None:
         # Incorporate request JSON into arguments dictionary.
         if self.request.body:
             try:
@@ -62,10 +63,10 @@ class JSONEndpoint(web.RequestHandler):
         # Set up response dictionary.
         self.response = dict()
 
-    def set_default_headers(self):
+    def set_default_headers(self) -> None:
         self.set_header('Content-Type', 'application/json')
 
-    def write_error(self, status_code: int, **kwargs):
+    def write_error(self, status_code: int, **kwargs: Any) -> None:
         if 'message' not in kwargs:
             if status_code == 405:
                 kwargs['message'] = 'Invalid HTTP method.'
@@ -78,7 +79,7 @@ class JSONEndpoint(web.RequestHandler):
         self.response = payload
         self.write_json()
 
-    def write_json(self):
+    def write_json(self) -> None:
         """Write json output"""
         output = json.dumps(self.response)
         self.write(output)
@@ -97,7 +98,7 @@ class RPCEndpoint(BaseRPCEndpoint, JSONEndpoint):
     """
     # pylint: disable=arguments-differ
     @web.asynchronous
-    async def post(self):
+    async def post(self) -> None:
         """
         Requires `cmd` arguments and checks if it is in available public method list.
 

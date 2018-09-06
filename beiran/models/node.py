@@ -23,7 +23,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
     discovery_method = CharField(max_length=32, null=True)
     config = JSONStringField(null=True)  # { "auto-connect": true } ?
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         uuid = kwargs.pop('uuid', None)
 
@@ -92,7 +92,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return obj
 
     @property
-    def location(self):
+    def location(self) -> str:
         """
         Location string which is used by clients.
 
@@ -106,7 +106,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return "{}+unix://{}".format(self.protocol, self.path)
 
     @staticmethod
-    def validate_address(address):
+    def validate_address(address) -> bool:
         """
         Validate address
 
@@ -123,11 +123,12 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         if not matched:
             LOGGER.error("Address is broken: %s", address)
 
-        return matched
+        return bool(matched)
 
     # pylint: disable=too-many-arguments
-    def build_node_address(self, host, path=None,
-                           uuid=None, port=None, protocol=None, socket=False):
+    def build_node_address(self, host: str, path: str = None,
+                           uuid : str = None, port: int = None,
+                           protocol: str = None, socket: bool = False) -> str:
         """
         Build a node address with given host, port, protocol and uuid
 
@@ -167,7 +168,8 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return address
 
     @classmethod
-    def add_or_update(cls, uuid, address, discovery=None, config=None):
+    def add_or_update(cls, uuid: str, address: str,
+                      discovery: str = None, config: dict = None) -> None:
         """
         Update with or create a new peer_address object from provided information.
 
@@ -194,7 +196,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         _self.save()
 
     @staticmethod
-    def parse_address(address):
+    def parse_address(address: str) -> Tuple[str, str, str, str, int, str, bool]:
         """
         Parse beiran address
 
@@ -268,11 +270,11 @@ class Node(BaseModel):
     status = CharField(max_length=32, default=STATUS_NEW) # type: Union[CharField, str]
     last_sync_version = IntegerField()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._address = None
         super().__init__(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"
         return fmt.format(hostname=self.hostname,
                           ip=self.ip_address,
@@ -280,7 +282,7 @@ class Node(BaseModel):
                           uuid=self.uuid)
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs: Any) -> "Node":
         _dict['uuid'] = UUID(_dict['uuid'])
         node_address = _dict.pop('address', None)
         node = super().from_dict(_dict, **kwargs)

@@ -6,7 +6,7 @@ Common client for beiran project
 import asyncio
 import logging
 
-from typing import Any, Optional # pylint: disable=unused-import
+from typing import Any, List, Union # pylint: disable=unused-import
 
 import aiohttp
 import async_timeout
@@ -17,7 +17,8 @@ from beiran.models import PeerAddress
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, peer_address: PeerAddress = None, node: Node = None, version: str = None):
+    def __init__(self, peer_address: PeerAddress = None,
+                 node: Node = None, version: str = None) -> None:
         """
         Initialization method for client
         Args:
@@ -43,17 +44,17 @@ class Client:
             self.client_connector = None
         self.http_client = None
 
-    async def create_client(self):
+    async def create_client(self) -> None:
         """Create aiohttp client session"""
         self.http_client = aiohttp.ClientSession(connector=self.client_connector)
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Closes aiohttp client session"""
         if self.http_client:
             await self.http_client.close()
             self.http_client = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         if not self.http_client:
             return
 
@@ -217,7 +218,7 @@ class Client:
                                   method="POST",
                                   **kwargs)
 
-    async def get_nodes(self, all_nodes: bool = False, **kwargs) -> list:
+    async def get_nodes(self, all_nodes: bool = False, **kwargs) -> List[dict]:
         """
         Daemon get nodes
         Returns:
@@ -229,7 +230,8 @@ class Client:
 
         return resp.get('nodes', [])
 
-    async def get_images(self, all_nodes: bool = False, node_uuid: str = None, **kwargs) -> list:
+    async def get_images(self, all_nodes: bool = False,
+                         node_uuid: str = None, **kwargs) -> List[dict]:
         """
         Get Image list from beiran API
         Returns:
@@ -299,7 +301,8 @@ class Client:
                                   **kwargs)
         return resp
 
-    async def get_layers(self, all_nodes: bool = False, node_uuid: str = None, **kwargs) -> list:
+    async def get_layers(self, all_nodes: bool = False,
+                         node_uuid: str = None, **kwargs) -> List[dict]:
         """
         Get Layer list from beiran API
         Returns:

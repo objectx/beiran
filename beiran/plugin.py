@@ -9,7 +9,7 @@ import sys
 import time
 import pkgutil
 
-from typing import Optional, Union # pylint: disable=unused-import
+from typing import Optional, Union, List, Any # pylint: disable=unused-import
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
@@ -119,7 +119,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
     #     """Get plugin status"""
     #     return self.__status
 
-    def emit(self, event: str, *args, **kwargs):
+    def emit(self, event: str, *args: Any, **kwargs: Any) -> None:
         if event != 'new_listener':
             # self.log.debug('[' + self.plugin_type
             # + ':' + self.plugin_name + ':event] ' + event)
@@ -127,7 +127,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
                            event)
         super().emit(event, *args, **kwargs)
 
-    def set_log_level(self, level: int):
+    def set_log_level(self, level: int) -> None:
         """
         Setting log level for plugin classes
         Args:
@@ -210,7 +210,7 @@ class History(EventEmitter):
         self.updated_at = None # type: Union[float, str, None]
         self.updates = [] # type: list
 
-    def update(self, msg: str = None):
+    def update(self, msg: str = None) -> None:
         """Append update to history and increment the version"""
         self.version += 1
         new_update = {
@@ -222,11 +222,11 @@ class History(EventEmitter):
         self.updates.append(new_update)
         self.emit('update', new_update)
 
-    def updates_since(self, since_time: float):
+    def updates_since(self, since_time: float) -> List[dict]:
         """Return updates since `time`"""
         return [u for u in self.updates if u['time'] >= since_time]
 
-    def delete_before(self, before_time: float):
+    def delete_before(self, before_time: float) -> None:
         """Delete updates before `time`"""
         self.updates = [u for u in self.updates if u['time'] < before_time]
 
@@ -238,7 +238,7 @@ class History(EventEmitter):
         return self.updates[-1]
 
 
-def get_installed_plugins():
+def get_installed_plugins() -> List[str]:
     """
     Iterates installed packages and modules to match beiran modules.
 

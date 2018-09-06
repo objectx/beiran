@@ -3,11 +3,13 @@ Module of Beirand data models. Beirand data models use Peewee ORM.
 """
 
 import json
-
+from typing import Any, TypeVar, Type
 from peewee import Model, Proxy, TextField
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
 DB_PROXY = Proxy()
+
+BaseModelType = TypeVar('BaseModelType', bound='BaseModel')
 
 
 class BaseModel(Model):

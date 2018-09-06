@@ -2,7 +2,7 @@
 import json
 import logging
 
-from typing import Callable
+from typing import Callable, Any
 from tornado import httputil
 
 from tornado import web

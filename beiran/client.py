@@ -83,14 +83,15 @@ class Client:
             self.history = kwargs.pop('history', None)
             self.request = kwargs.pop('request', None)
 
-    async def request(self, path: str = "/", **kwargs) -> Any:
+    async def request(self,
+                      path: str = "/",
+                      **kwargs: Any
+                      ) -> aiohttp.client_reqrep.ClientResponse:
         """
         Request call to daemon, return successful repsonses or raises http errors.
 
         Args:
             path: http path to request from daemon
-            parse_json (bool): if return value is JSON from daemon,
-            return_response (bool): determine if the response returns or not
             data (dict): request payload
             timeout (int): timeout
             raise_error (bool): raising error
@@ -112,12 +113,8 @@ class Client:
             headers['Content-Type'] = 'application/json'
 
         kwargs['headers'] = headers
-
         method = kwargs.pop('method', "GET")
-        parse_json = kwargs.pop('parse_json', True)
-
-        return_response = kwargs.pop('return_response', False)
-        raise_error = kwargs.pop('raise_error', not return_response)
+        raise_error = kwargs.pop('raise_error')
 
         url = self.url + path
         self.logger.debug("Requesting %s", url)
@@ -147,12 +144,15 @@ class Client:
             raise Client.HTTPError(err.code, err.message, headers=err.headers,
                                    history=err.history, request=err.request_info)
 
-        if return_response:
-            return response
+        return response
 
-        if parse_json:
-            return await response.json()
+    async def request_json(self, path: str,  **kwargs: Any) -> dict:
+        """Return json reponse as dict"""
+        response = self.request(path, **kwargs)
+        return await response.json()
 
+    async def request_text(self, path: str,  **kwargs: Any) -> str:
+        response = self.request(path, **kwargs)
         return response.content
 
     async def get_server_info(self, **kwargs) -> dict:
@@ -162,7 +162,7 @@ class Client:
             object: parsed from JSON
 
         """
-        return await self.request(path="/", parse_json=True, **kwargs)
+        return await self.request_json(path="/", **kwargs)
 
     async def get_server_version(self, **kwargs) -> str:
         """
@@ -179,7 +179,7 @@ class Client:
             object: info of node
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
-        return await self.request(path=path, parse_json=True, **kwargs)
+        return await self.request_json(path=path, **kwargs)
 
     async def get_status(self, plugin: str = None, **kwargs) -> dict:
         """
@@ -188,14 +188,15 @@ class Client:
             object: status of node or plugin
         """
         path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
-        return await self.request(path=path, parse_json=True, **kwargs)
+        return await self.request_json(path=path, **kwargs)
 
     async def ping(self, timeout: int = 10, **kwargs) -> bool:
         """
         Pings the node
         """
-        response = await self.request("/ping", return_response=True, timeout=timeout, **kwargs)
+        response = await self.request("/ping", timeout=timeout, **kwargs)
         if not response or response.status != 200:
+            # todo: should we just log the error and return False?
             raise Exception("Failed to receive ping response from node")
 
         # TODO: Return ping time
@@ -212,9 +213,8 @@ class Client:
             "address": address,
             "probe_back": probe_back
         }
-        return await self.request(path=path,
+        return await self.request_json(path=path,
                                   data=new_node,
-                                  parse_json=True,
                                   method="POST",
                                   **kwargs)
 
@@ -226,7 +226,7 @@ class Client:
         """
         path = '/nodes{}'.format('?all=true' if all_nodes else '')
 
-        resp = await self.request(path=path, **kwargs)
+        resp = await self.request_json(path=path, **kwargs)
 
         return resp.get('nodes', [])
 
@@ -248,7 +248,7 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path, **kwargs)
+        resp = await self.request_json(path=path, **kwargs)
         return resp.get('images', [])
 
     #pylint: disable-msg=too-many-arguments
@@ -276,7 +276,6 @@ class Client:
         resp = await self.request(path,
                                   data=data,
                                   method='POST',
-                                  return_response=True,
                                   timeout=600,
                                   **kwargs)
         return resp
@@ -297,7 +296,6 @@ class Client:
 
         resp = await self.request(path,
                                   method='GET',
-                                  return_response=True,
                                   **kwargs)
         return resp
 
@@ -318,6 +316,6 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path, **kwargs)
+        resp = await self.request_json(path=path, **kwargs)
 
         return resp.get('layers', [])

@@ -81,9 +81,8 @@ class Peer(EventEmitter, metaclass=PeerMeta):
 
     async def sync(self, remote_status: dict = None):
         """Sync plugin states with other peers"""
-        if not remote_status:
-            remote_status = await self.client.get_status(timeout=10)
-        sync_version = remote_status['sync_state_version']
+        _remote_status = remote_status or await self.client.get_status(timeout=10)
+        sync_version = _remote_status.get('sync_state_version')
         if sync_version == self.last_sync_state_version:
             self.logger.debug("Already in sync (v:%d) with peer, not syncing", sync_version)
             return

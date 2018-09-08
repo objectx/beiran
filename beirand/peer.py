@@ -17,7 +17,7 @@ from beiran.client import Client
 from beiran.models import Node
 from beirand.nodes import Nodes
 
-PEER_REGISTRY = dict()
+PEER_REGISTRY: dict = dict()
 
 
 class PeerMeta(type):
@@ -37,7 +37,7 @@ class PeerMeta(type):
 class Peer(EventEmitter, metaclass=PeerMeta):
     """Peer class"""
     def __new__(cls, node: Node = None, nodes: Nodes = None,
-                loop: asyncio.unix_events._UnixSelectorEventLoop = None, local: bool = False):
+                loop: asyncio.events.AbstractEventLoop = None, local: bool = False):
         new_obj = None
         if node:
             cls.node = node

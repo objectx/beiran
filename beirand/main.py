@@ -48,11 +48,12 @@ class BeiranDaemon(EventEmitter):
     """Beiran Daemon"""
     version = __version__
 
-    def __init__(self, loop: asyncio.unix_events._UnixSelectorEventLoop = None): # pylint: disable=W0212
+    # pylint: disable=W0212
+    def __init__(self, loop: asyncio.events.AbstractEventLoop = None) -> None:
         super().__init__()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.nodes = Nodes()
-        self.available_plugins = [] # type: list
+        self.available_plugins: list = []
         self.search_plugins()
         self.sync_state_version = 0
         self.peer = None
@@ -67,7 +68,7 @@ class BeiranDaemon(EventEmitter):
         Services.logger.info('New node detected, reached: %s, waiting info',
                              peer_address.address)
         # url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await self.peer.probe_node(peer_address=peer_address)
+        node = await self.peer.probe_node(peer_address=peer_address)  # type: ignore
 
         if not node:
             EVENTS.emit('node.error', peer_address.address)

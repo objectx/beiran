@@ -117,7 +117,7 @@ class Client:
 
         kwargs['headers'] = headers
         method = kwargs.pop('method', "GET")
-        raise_error = kwargs.pop('raise_error')
+        raise_error = kwargs.pop('raise_error', False)
 
         url = self.url + path
         self.logger.debug("Requesting %s", url)
@@ -151,13 +151,13 @@ class Client:
 
     async def request_json(self, path: str, **kwargs: Any) -> dict:
         """Return json reponse as dict"""
-        response = self.request(path, **kwargs)
+        response = await self.request(path, **kwargs)
         return await response.json()  # type: ignore
 
     async def request_text(self, path: str, **kwargs: Any) -> str:
         """Return content of response as string"""
-        response = self.request(path, **kwargs)
-        return response.content  # type: ignore
+        response = await self.request(path, **kwargs)
+        return await response.content
 
     async def get_server_info(self, **kwargs) -> dict:
         """
@@ -174,7 +174,8 @@ class Client:
         Returns:
             str: semantic version
         """
-        return (await self.get_server_info(**kwargs))['version'] # type: ignore
+        server_info = await self.get_server_info(**kwargs)
+        return server_info['version']
 
     async def get_node_info(self, uuid: str = None, **kwargs) -> dict:
         """

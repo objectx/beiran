@@ -3,7 +3,7 @@ Module for Node Data Model
 """
 from typing import Union # pylint: disable=unused-import
 from uuid import UUID
-import urllib
+from urllib.parse import urlparse
 import re
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
@@ -207,7 +207,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
             (tuple): address details
 
         """
-        parsed = urllib.parse.urlparse(address)
+        parsed = urlparse(address)
         scheme = parsed.scheme
         unix_socket = False
         try:

@@ -1,7 +1,7 @@
 """
 Module for Node Data Model
 """
-from typing import Union # pylint: disable=unused-import
+from typing import Union, Any, Tuple
 from uuid import UUID
 from urllib.parse import urlparse
 import re
@@ -267,7 +267,7 @@ class Node(BaseModel):
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
     version = CharField(max_length=10)  # beiran daemon version of node
-    status = CharField(max_length=32, default=STATUS_NEW) # type: Union[CharField, str]
+    status = CharField(max_length=32, default=STATUS_NEW)  # type: Union[CharField, str]
     last_sync_version = IntegerField()
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

@@ -76,7 +76,7 @@ class BeiranCLI(click.MultiCommand):
         commands = list()
         for beiran_plugin in self.installed_plugins:
             module = importlib.import_module(beiran_plugin)
-            for _, modname, _ in pkgutil.iter_modules(module.__path__):
+            for _, modname, _ in pkgutil.iter_modules(module.__path__):  # type: ignore
                 if modname.startswith('cli_'):
                     commands.append(modname.split('_')[1])
 

@@ -18,7 +18,7 @@ logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
 
 VERSION = get_version('short', 'library')
 
-sys.stdout = Unbuffered(sys.stdout)
+sys.stdout = Unbuffered(sys.stdout)  #type: ignore
 
 @click.group()
 def cli():

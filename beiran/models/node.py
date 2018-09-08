@@ -346,7 +346,7 @@ class Node(BaseModel):
         return self.__str__()
 
     @property
-    def address(self, force=False):
+    def address(self, force=False):  # type: ignore
         """
         Returns peer address of node in beiran address format.
 

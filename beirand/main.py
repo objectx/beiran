@@ -194,7 +194,7 @@ class BeiranDaemon(EventEmitter):
         for model in list(MODEL_LIST):
             Services.logger.debug("Checking a model")
             try:
-                model.select().limit(0).get()
+                model.select().limit(0).get()  # type: ignore
             except OperationalError as err:
                 Services.logger.info("Database schema is not up-to-date, destroying")
                 # database is somewhat broken (old)
@@ -205,7 +205,8 @@ class BeiranDaemon(EventEmitter):
                 database = SqliteDatabase(beiran_db_path)
                 DB_PROXY.initialize(database)
                 db_file_exists = False
-            except model.DoesNotExist as err:  # pylint: disable=unused-variable
+
+            except model.DoesNotExist as err:  # type: ignore  # pylint: disable=unused-variable
                 # not a problem
                 continue
             except Exception as err:  # pylint: disable=broad-except

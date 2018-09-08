@@ -19,7 +19,9 @@ from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING')) # type: ignore
-logger = build_logger(None, LOG_LEVEL) # type: ignore, pylint: disable=invalid-name
+
+# pylint: disable=invalid-name
+logger = build_logger(None, LOG_LEVEL)  # type: ignore
 
 
 sys.stdout = Unbuffered(sys.stdout) # type: ignore
@@ -60,7 +62,7 @@ class BeiranCLI(click.MultiCommand):
 
     installed_plugins = get_installed_plugins()
 
-    def list_commands(self, ctx: BeiranContext) -> List[str]:
+    def list_commands(self, ctx) -> List[str]:  # type: ignore
         """
         Lists of subcommand names
 
@@ -82,7 +84,7 @@ class BeiranCLI(click.MultiCommand):
         commands.sort()
         return commands
 
-    def get_command(self, ctx: BeiranContext, cmd_name: str) -> click.group:
+    def get_command(self, ctx: BeiranContext, cmd_name: str) -> click.group:  # type: ignore
         """
         Load command object
 
@@ -97,13 +99,13 @@ class BeiranCLI(click.MultiCommand):
         if cmd_name == "node":
             cli_module = '{}.cli_{}'.format("beiran", cmd_name)
             module = importlib.import_module(cli_module)
-            return module.cli
+            return module.cli  # type: ignore
 
         for plugin in self.installed_plugins:
             try:
                 cli_module = '{}.cli_{}'.format(plugin, cmd_name)
                 module = importlib.import_module(cli_module)
-                return module.cli
+                return module.cli  # type: ignore
             except ModuleNotFoundError:
                 pass
 

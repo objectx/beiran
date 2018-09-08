@@ -60,7 +60,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagenam
         loop = asyncio.get_event_loop()
         loop.run_until_complete(_pull_with_progress())
 
-        progbar.render_finish()
+        progbar.render_finish()  # type: ignore  # typing attribute missing error
         click.echo('done!')
 
     else:

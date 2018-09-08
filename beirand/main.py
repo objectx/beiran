@@ -266,7 +266,12 @@ class BeiranDaemon(EventEmitter):
             if db_node.uuid.hex == self.nodes.local_node.uuid.hex: # pylint: disable=no-member
                 continue
             probed_locations.update({conn.location for conn in db_node.get_connections()})
-            self.loop.create_task(self.peer.probe_node(peer_address=db_node.address, retries=60))
+            self.loop.create_task(
+                self.peer.probe_node(
+                    peer_address=db_node.get_latest_connection(),
+                    retries=60
+                )
+            )
 
         # Probe Known Nodes
         known_nodes = os.getenv("KNOWN_NODES")

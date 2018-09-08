@@ -6,12 +6,11 @@ import sys
 import logging
 import importlib
 import pkgutil
-import click
-
 from typing import List
 
-from beiran.models import PeerAddress
+import click
 
+from beiran.models import PeerAddress
 from beiran.util import Unbuffered
 from beiran.sync_client import Client
 from beiran.log import build_logger

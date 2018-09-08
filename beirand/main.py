@@ -12,8 +12,6 @@ import logging
 from functools import partial
 from typing import Any
 
-import aiohttp
-
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.options import options

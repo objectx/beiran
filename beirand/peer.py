@@ -11,11 +11,10 @@ import time
 from aiohttp import ClientConnectorError
 from pyee import EventEmitter
 
-from beirand.common import Services
-
 from beiran.client import Client
 from beiran.models import Node
 from beirand.nodes import Nodes
+from beirand.common import Services
 
 PEER_REGISTRY: dict = dict()
 

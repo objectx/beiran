@@ -149,12 +149,13 @@ class Client:
 
         return response
 
-    async def request_json(self, path: str,  **kwargs: Any) -> dict:
+    async def request_json(self, path: str, **kwargs: Any) -> dict:
         """Return json reponse as dict"""
         response = self.request(path, **kwargs)
         return await response.json()  # type: ignore
 
-    async def request_text(self, path: str,  **kwargs: Any) -> str:
+    async def request_text(self, path: str, **kwargs: Any) -> str:
+        """Return content of response as string"""
         response = self.request(path, **kwargs)
         return response.content  # type: ignore
 
@@ -217,9 +218,9 @@ class Client:
             "probe_back": probe_back
         }
         return await self.request_json(path=path,
-                                  data=new_node,
-                                  method="POST",
-                                  **kwargs)
+                                       data=new_node,
+                                       method="POST",
+                                       **kwargs)
 
     async def get_nodes(self, all_nodes: bool = False, **kwargs) -> List[dict]:
         """

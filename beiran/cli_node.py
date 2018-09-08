@@ -1,21 +1,19 @@
 #!/bin/env python
 """command line client for managing beiran daemon"""
 
-import os
 import sys
-import logging
 import click
 from tabulate import tabulate
 
 from beiran.util import Unbuffered, exit_print
 from beiran.version import get_version
-from beiran.log import build_logger
 from beiran.models import Node
 from beiran.cli import pass_context
 
 VERSION = get_version('short', 'library')
 
 sys.stdout = Unbuffered(sys.stdout)  #type: ignore
+
 
 @click.group()
 def cli():

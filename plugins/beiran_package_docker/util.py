@@ -48,7 +48,7 @@ class DockerUtil:
         """..."""
         pass
 
-    def __init__(self, storage: str ="/var/lib/docker", aiodocker: Docker = None,
+    def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
                  logger: logging.Logger = None) -> None:
         self.storage = storage
         self.diffid_mapping: dict = {}

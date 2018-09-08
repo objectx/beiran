@@ -34,7 +34,7 @@ class BaseModel(Model):
         return model_to_dict(self, **kwargs)
 
     @classmethod
-    def from_dict(cls:  Type[BaseModelType], _dict: dict, **kwargs: Any) -> BaseModelType:
+    def from_dict(cls: Type[BaseModelType], _dict: dict, **kwargs: Any) -> BaseModelType:
         """
         Deserialize model from python dict
 

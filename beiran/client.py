@@ -6,7 +6,7 @@ Common client for beiran project
 import asyncio
 import logging
 
-from typing import Any, List, Union # pylint: disable=unused-import
+from typing import Any, List
 
 import aiohttp
 import async_timeout
@@ -33,7 +33,10 @@ class Client:
         if not (peer_address or node):
             raise ValueError("Both node and peer_address can not be None")
 
-        address = peer_address or node.get_latest_connection()
+        if not peer_address and node:
+            address = node.get_latest_connection()
+        else:
+            address = peer_address
 
         self.url = address.location
 

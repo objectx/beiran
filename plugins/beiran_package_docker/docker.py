@@ -29,7 +29,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(self.aiodocker, self.config["storage"])
+        self.util = DockerUtil(storage=self.config["storage"], aiodocker=self.aiodocker)
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.tar_cache_dir = "tar_cache"

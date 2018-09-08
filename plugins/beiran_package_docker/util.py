@@ -48,13 +48,12 @@ class DockerUtil:
         """..."""
         pass
 
-
-    def __init__(self, storage: str ="/var/lib/docker", aiodocker : Docker = None,
+    def __init__(self, storage: str ="/var/lib/docker", aiodocker: Docker = None,
                  logger: logging.Logger = None) -> None:
         self.storage = storage
-        self.diffid_mapping = {} # type: dict
-        self.layerdb_mapping = {} # type: dict
-        self.aiodocker = aiodocker
+        self.diffid_mapping: dict = {}
+        self.layerdb_mapping: dict = {}
+        self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
     @staticmethod

@@ -13,9 +13,6 @@ from beiran.log import build_logger
 from beiran.models import Node
 from beiran.cli import pass_context
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
-logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
-
 VERSION = get_version('short', 'library')
 
 sys.stdout = Unbuffered(sys.stdout)  #type: ignore

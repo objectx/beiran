@@ -102,7 +102,7 @@ class Peer(EventEmitter, metaclass=PeerMeta):
         self.last_sync_state_version = sync_version
 
         self.logger.info("node(%s) synced(v:%d) on %s at port %s",
-                         self.node.uuid.hex, # type: ignore
+                         self.node.uuid.hex,
                          sync_version,
                          self.node.ip_address,
                          self.node.port)

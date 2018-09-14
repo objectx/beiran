@@ -70,7 +70,7 @@ class Nodes:
     def update_node(self, node: Node):
         """Append node to online nodes collection
         """
-        self.all_nodes.update({node.uuid.hex: node}) # type: ignore
+        self.all_nodes.update({node.uuid.hex: node})
 
     def set_offline(self, node: Node):
         """Remove node from online nodes collection

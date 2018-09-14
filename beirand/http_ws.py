@@ -222,7 +222,7 @@ class PluginStatusHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    def get(self, plugin_id: str): # type: ignore
+    def get(self, plugin_id: str):
         if not plugin_id in Services.plugins:
             raise HTTPError(status_code=404, log_message="Plugin Not Found")
 

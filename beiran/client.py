@@ -152,7 +152,7 @@ class Client:
     async def request_json(self, path: str, **kwargs: Any) -> dict:
         """Return json reponse as dict"""
         response = await self.request(path, **kwargs)
-        return await response.json()  # type: ignore
+        return await response.json()
 
     async def request_text(self, path: str, **kwargs: Any) -> str:
         """Return content of response as string"""

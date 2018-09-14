@@ -62,7 +62,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.probe_task.cancel()
 
     async def sync(self, peer: Peer):
-        await DockerUtil.reset_docker_info_of_node(peer.node.uuid.hex) # type: ignore
+        await DockerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
 
         await self.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
@@ -71,10 +71,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         """Save an image from a node into db"""
         try:
             image_ = DockerImage.get(DockerImage.hash_id == image.hash_id)
-            image_.set_available_at(node.uuid.hex) # type: ignore
+            image_.set_available_at(node.uuid.hex)
             image_.save()
             self.log.debug("update existing image %s, now available on new node: %s",
-                           image.hash_id, node.uuid.hex) # type: ignore
+                           image.hash_id, node.uuid.hex)
         except DockerImage.DoesNotExist:
             image.available_at = [node.uuid.hex] # type: ignore
             image.save(force_insert=True)
@@ -84,10 +84,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         """Save a layer from a node into db"""
         try:
             layer_ = DockerLayer.get(DockerLayer.digest == layer.digest)
-            layer_.set_available_at(node.uuid.hex) # type: ignore
+            layer_.set_available_at(node.uuid.hex)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
-                           layer.digest, node.uuid.hex) # type: ignore
+                           layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
             layer.save(force_insert=True)

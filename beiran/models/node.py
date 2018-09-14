@@ -293,7 +293,7 @@ class Node(BaseModel):
         _dict = super().to_dict(**kwargs)
 
         # pylint: disable=no-member
-        _dict['uuid'] = self.uuid.hex  # type: ignore
+        _dict['uuid'] = self.uuid.hex
         _dict['address'] = self.address
         if 'dialect' in kwargs and kwargs['dialect'] == 'api':
             _dict.pop('status')

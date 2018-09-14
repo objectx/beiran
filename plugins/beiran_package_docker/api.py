@@ -35,7 +35,7 @@ class ImagesTarHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    async def get(self, image_id_or_sha: str): # type: ignore
+    async def get(self, image_id_or_sha: str):
         """
             Get image as a tarball
         """
@@ -58,7 +58,7 @@ class ImagesTarHandler(web.RequestHandler):
             Services.logger.error("Image Stream failed: %s", str(error)) # type: ignore
             raise HTTPError(status_code=500, log_message=str(error))
 
-    async def head(self, image_id_or_sha: str): # type: ignore
+    async def head(self, image_id_or_sha: str):
         """
             HEAD endpoint
         """
@@ -134,7 +134,7 @@ class LayerDownload(web.RequestHandler):
         return tar_path
 
     # pylint: disable=arguments-differ
-    def head(self, layer_id: str): # type: ignore
+    def head(self, layer_id: str):
         """Head response with actual Content-Lenght of layer"""
         self._set_headers(layer_id)
         tar_path = self.prepare_tar_archive(layer_id)

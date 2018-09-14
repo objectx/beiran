@@ -15,13 +15,13 @@ class CommonDockerObjectFunctions:
 
     def set_available_at(self, uuid_hex: str):
         """add uuid of node to available_at list"""
-        if uuid_hex in self.available_at: # type: ignore
+        if uuid_hex in self.available_at:
             return
-        self.available_at.append(uuid_hex) # type: ignore
+        self.available_at.append(uuid_hex)
 
     def unset_available_at(self, uuid_hex: str):
         """remove uuid of node from available_at list"""
-        if uuid_hex not in self.available_at: # type: ignore
+        if uuid_hex not in self.available_at:
             return
         self.available_at = [n for n in self.available_at if n != uuid_hex] # type: ignore
 

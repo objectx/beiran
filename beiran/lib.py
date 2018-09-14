@@ -27,7 +27,7 @@ async def async_req(url: str, return_json: bool = True,
     data = kwargs.pop('data', None)
     headers = kwargs
 
-    async with aiohttp.ClientSession() as session: # type: ignore
+    async with aiohttp.ClientSession() as session:
         async with async_timeout.timeout(timeout):
             async with session.request(method, url, json=json,
                                        data=data, headers=headers) as resp:

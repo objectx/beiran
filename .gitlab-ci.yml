@@ -93,8 +93,8 @@ start_test_services:
    - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3
    - sleep 5
    # seed docker daemon (docker1 only)
-   - docker-compose exec -T docker1 docker pull hello-world
-   - docker-compose exec -T docker1 docker pull alpine:latest
+   - docker-compose exec -T docker1 docker docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+   - docker-compose exec -T docker1 docker pull alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
    - docker-compose exec -T docker1 docker images
    # starting beiran
    - docker-compose up -d beiran1

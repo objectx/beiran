@@ -143,6 +143,8 @@ cleanup:services:
   when: always
   script:
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   # dump logs for debugging
+   - docker-compose logs
    - docker-compose kill || true
    - docker-compose rm -f
    - cd /

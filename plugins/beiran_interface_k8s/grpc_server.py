@@ -7,7 +7,6 @@ gRPC server (CRI Version: v1alpha2)
 import json
 import random
 import asyncio
-import concurrent
 import grpc
 
 import aiohttp
@@ -187,7 +186,7 @@ class K8SImageServicer(ImageServiceServicer):
             )
         )
         return response
-    
+
     def check_plugin_timeout(self, plugin_name, context):
         """
         Check and wait until plugin status to be ready.
@@ -198,7 +197,7 @@ class K8SImageServicer(ImageServiceServicer):
                                                            Services.loop,
                                                            K8SImageServicer.TIMEOUT_SEC)
             return True
-        except concurrent.futures._base.TimeoutError:
+        except asyncio.TimeoutError:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("Timeout: %s is not ready" % plugin_name)
             return False

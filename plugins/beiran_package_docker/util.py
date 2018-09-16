@@ -104,7 +104,6 @@ class DockerUtil:
         with open(local_cache_id.format(diff_file_name=diff_file_name)) as file:
             return local_layer_dir.format(layer_dir_name=file.read())
 
-
     @staticmethod
     async def reset_docker_info_of_node(uuid_hex):
         """ Delete all (local) layers and images from database """
@@ -128,7 +127,6 @@ class DockerUtil:
         """Delete unavailable layers and images"""
         DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
-
 
     async def fetch_docker_info(self):
         """
@@ -403,7 +401,6 @@ class DockerUtil:
 
         DockerImage.from_dict(manifest, dialect="manifest").save()
 
-
     async def get_docker_bearer_token(self, realm, service, scope):
         """
         Get Bearer token from auth.docker.io
@@ -413,7 +410,6 @@ class DockerUtil:
         )
         token = data['token']
         return token
-
 
     async def get_auth_requirements(self, headers, **kwargs):
         """
@@ -454,8 +450,6 @@ class DockerUtil:
 
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
-
-
 
     async def download_layer_from_origin(self, host, repository, layer_hash, **kwargs):
         """

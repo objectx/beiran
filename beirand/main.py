@@ -169,6 +169,9 @@ class BeiranDaemon(EventEmitter):
 
     async def wait_plugin_status_ready(self, plugin_instance, timeout=None):
         """Wait until plugin status to be 'ready'"""
+
+        # FIXME! timeout parameter should apply to the whole execution of
+        # this method. not just *each* execution of wait_event
         while True:
             await wait_event(plugin_instance, 'status', timeout=timeout)
             if plugin_instance.status == 'ready':

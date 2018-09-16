@@ -331,3 +331,15 @@ def run_in_loop(coroutine, loop=None, sync=False):
     if not sync:
         return task
     return wait_task_result(task)
+
+
+async def wait_event(emitter, event_name, timeout=None):
+    """Wait until emitter is emitted"""
+    # TODO: timeout
+    future = asyncio.Future()
+
+    def _handler(*args, **kwargs):
+        future.set_result({"args": args, **kwargs})
+
+    emitter.once(event_name, _handler)
+    return await asyncio.wait_for(future, timeout)

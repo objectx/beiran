@@ -36,6 +36,7 @@ from beirand.version import __version__
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
 from beiran.plugin import get_installed_plugins
+from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()
 
@@ -150,6 +151,29 @@ class BeiranDaemon(EventEmitter):
             instance.history.on('update', partial(self.on_plugin_state_update, instance))
 
         return instance
+
+    def get_plugin_instance(self, plugin_name):
+        """Return plugin instance"""
+        return Services.plugins[plugin_name]
+
+    def check_wait_plugin_status_ready(self, plugin_name, loop=None, timeout=None):
+        """Check or wait uniil plugin status to be 'ready'"""
+        plugin_instance = self.get_plugin_instance(plugin_name)
+
+        if plugin_instance.status == 'ready':
+            return
+
+        run_in_loop(self.wait_plugin_status_ready(plugin_instance, timeout=timeout),
+                    loop=loop, sync=True)
+
+
+    async def wait_plugin_status_ready(self, plugin_instance, timeout=None):
+        """Wait until plugin status to be 'ready'"""
+        while True:
+            await wait_event(plugin_instance, 'status', timeout=timeout)
+            if plugin_instance.status == 'ready':
+                return
+
 
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""

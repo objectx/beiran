@@ -7,6 +7,8 @@ gRPC server (CRI Version: v1alpha2)
 import json
 import random
 import asyncio
+import concurrent
+import grpc
 
 import aiohttp
 from peewee import SQL
@@ -49,11 +51,16 @@ def get_username_or_uid(username: str):
 class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
+    TIMEOUT_SEC = 5
+
     def ListImages(self, request, context):
         """ListImages lists existing images.
         """
-        # don't care ImageFilter like containerd (containerd/cri/pkg/server/image_list.go)
         Services.logger.debug("request: ListImages")
+        # don't care ImageFilter like containerd (containerd/cri/pkg/server/image_list.go)
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return ListImagesResponse()
 
         images = []
 
@@ -78,6 +85,9 @@ class K8SImageServicer(ImageServiceServicer):
         nil.
         """
         Services.logger.debug("request: ImageStatus")
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return ImageStatusResponse()
 
         if not request.image:
             return ImageStatusResponse()
@@ -128,6 +138,9 @@ class K8SImageServicer(ImageServiceServicer):
         # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
 
+        if not self.check_plugin_timeout('package:docker', context):
+            return PullImageResponse()
+
         image_name = request.image.image
         if ":" not in image_name:
             image_name += ":latest"
@@ -147,6 +160,9 @@ class K8SImageServicer(ImageServiceServicer):
         """
         Services.logger.debug("request: RemoveImage")
 
+        if not self.check_plugin_timeout('package:docker', context):
+            return RemoveImageResponse()
+
         # not support
 
         response = RemoveImageResponse()
@@ -156,6 +172,9 @@ class K8SImageServicer(ImageServiceServicer):
         """ImageFSInfo returns information of the filesystem that is used to store images.
         """
         Services.logger.debug("request: ImageFsInfo")
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return RemoveImageResponse()
 
         # not support
 
@@ -168,6 +187,22 @@ class K8SImageServicer(ImageServiceServicer):
             )
         )
         return response
+    
+    def check_plugin_timeout(self, plugin_name, context):
+        """
+        Check and wait until plugin status to be ready.
+        If plugin status isn't 'ready', set an error code and a description to the context.
+        """
+        try:
+            Services.daemon.check_wait_plugin_status_ready(plugin_name,
+                                                           Services.loop,
+                                                           K8SImageServicer.TIMEOUT_SEC)
+            return True
+        except concurrent.futures._base.TimeoutError:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Timeout: %s is not ready" % plugin_name)
+            return False
+
 
     async def pull_routine(self, image_name): # pylint: disable=too-many-locals
         """coroutine for pulling images"""

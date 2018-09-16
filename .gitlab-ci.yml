@@ -107,6 +107,36 @@ test:unit:
   script:
    - pytest
 
+test:basic-behavior:
+  stage: test
+  tags:
+   - docker
+  script:
+   - SRC_DIR=$(pwd)
+   - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   - docker-compose ps
+   - docker-compose logs beiran1
+   - |
+     echo "=========================================="
+     echo "waiting until beirand is accessible"
+     times=0
+     until $(docker-compose exec -T beiran1 curl --output /dev/null --silent --fail http://localhost:8888); do
+         printf '.'
+         sleep 3
+         times=$(( $times + 1 ))
+         if [ $times -eq 10 ]; then
+           2>&1 echo "timed out waiting for beirand"
+           exit 1
+         fi
+     done
+   - CONTAINER=$(docker-compose ps -q beiran1)
+   - docker exec ${CONTAINER} python -m beiran info
+   - docker exec ${CONTAINER} python -m beiran node list
+   - docker exec ${CONTAINER} python -m beiran docker image list --all
+   # TODO: Check if output has expected images
+   - docker exec ${CONTAINER} python -m beiran docker layer list --all
+   # TODO: Check if output has expected layers!?
+
 test:api:
   stage: test
   tags:

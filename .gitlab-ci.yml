@@ -53,6 +53,30 @@ checks:lint-plugins:
   script:
    - pylint plugins
 
+checks:mypy-daemon:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - mypy --config-file mypy.ini beirand
+
+checks:mypy-client:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - mypy --config-file mypy.ini beiran
+
+checks:mypy-plugins:
+  stage: checks
+  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
+  tags:
+   - docker
+  script:
+   - mypy --config-file mypy.ini plugins
+
 checks:bandit-daemon:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}

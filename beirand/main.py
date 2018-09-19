@@ -23,7 +23,7 @@ from pyee import EventEmitter
 from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
-from beirand.common import DATA_FOLDER
+from beirand.common import DATA_FOLDER, RUN_FOLDER
 
 from beirand.nodes import Nodes
 from beirand.peer import Peer
@@ -276,7 +276,7 @@ class BeiranDaemon(EventEmitter):
         interface_plugins_enabled = ['k8s']
         for _plugin in interface_plugins_enabled:
             _plugin_obj = await self.get_plugin('interface', 'k8s', {
-                "unix_socket_path": "unix://" + DATA_FOLDER + "/grpc.sock"
+                "unix_socket_path": "unix://" + RUN_FOLDER + "/beiran-cri.sock"
             })
             Services.plugins['interface:' + _plugin] = _plugin_obj
 

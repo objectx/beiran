@@ -65,13 +65,13 @@ export PATH="${VIRTUAL_ENV_DIR}/bin:$PATH"
 
 export LOG_LEVEL=DEBUG
 export LOG_FILE=${DIR}/beirand.log
-export RUN_FOLDER_PATH=/var/run
-export BEIRAN_SOCK=${RUN_FOLDER_PATH}/beirand.sock
+export RUN_DIR_PATH=/var/run
+export BEIRAN_SOCK=${RUN_DIR_PATH}/beirand.sock
 export BEIRAN_PORT=${BEIRAN_PORT:-8888}
 export BEIRAN_URL=http://localhost:${BEIRAN_PORT}
 export BEIRAN_DB_PATH=${DIR}/beiran.db
 export LISTEN_ADDR=0.0.0.0
-export CONFIG_FOLDER_PATH=${DIR}
+export CONFIG_DIR_PATH=${DIR}
 
 function ps1_context {
 	# For any of these bits of context that exist, display them and append

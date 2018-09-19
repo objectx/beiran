@@ -10,7 +10,7 @@ import aiofiles
 from peewee import SQL
 from aiodocker import Docker
 
-from beirand.common import CACHE_FOLDER
+from beirand.common import CACHE_DIR
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
@@ -464,7 +464,7 @@ class DockerUtil:
             repository (str): path of repository (e.g. library/centos)
             layer_hash (str): SHA-256 hash of a blob
         """
-        save_path = CACHE_FOLDER + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
+        save_path = CACHE_DIR + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
         requirements = None
 

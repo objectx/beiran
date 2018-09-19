@@ -37,7 +37,7 @@ def local_node_uuid() -> UUID:
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
 
-    config_folder = os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER)
+    config_folder = os.getenv("CONFIG_DIR_PATH", defaults.CONFIG_DIR)
     uuid_conf_path = "/".join([config_folder, 'uuid.conf'])
     try:
         uuid_file = open(uuid_conf_path)
@@ -174,7 +174,7 @@ def get_hostname() -> str:
 
 def sync_version_file_path() -> str:
     """Return sync_version file path"""
-    path = common.DATA_FOLDER + "/sync_version"
+    path = common.DATA_DIR + "/sync_version"
     return path
 
 async def update_sync_version_file(version: int):

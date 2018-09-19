@@ -32,7 +32,7 @@ class Client:
         self.url = address.location
 
         if address.unix_socket:
-            self.client_connector = aiohttp.UnixConnector(path=address.location)
+            self.client_connector = aiohttp.UnixConnector(path=address.path)
             self.url = address.protocol + '://unixsocket'
         else:
             self.client_connector = None

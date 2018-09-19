@@ -93,8 +93,8 @@ start_test_services:
    - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3
    - sleep 5
    # seed docker daemon (docker1 only)
-   - docker-compose exec -T docker1 docker pull hello-world
-   - docker-compose exec -T docker1 docker pull alpine:latest
+   - docker-compose exec -T docker1 docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+   - docker-compose exec -T docker1 docker pull alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
    - docker-compose exec -T docker1 docker images
    # starting beiran
    - docker-compose up -d beiran1
@@ -106,6 +106,36 @@ test:unit:
    - docker
   script:
    - pytest
+
+test:basic-behavior:
+  stage: test
+  tags:
+   - docker
+  script:
+   - SRC_DIR=$(pwd)
+   - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   - docker-compose ps
+   - docker-compose logs beiran1
+   - |
+     echo "=========================================="
+     echo "waiting until beirand is accessible"
+     times=0
+     until $(docker-compose exec -T beiran1 curl --output /dev/null --silent --fail http://localhost:8888); do
+         printf '.'
+         sleep 3
+         times=$(( $times + 1 ))
+         if [ $times -eq 10 ]; then
+           2>&1 echo "timed out waiting for beirand"
+           exit 1
+         fi
+     done
+   - CONTAINER=$(docker-compose ps -q beiran1)
+   - docker exec ${CONTAINER} python -m beiran node info
+   - docker exec ${CONTAINER} python -m beiran node list
+   - docker exec ${CONTAINER} python -m beiran docker image list --all
+   # TODO: Check if output has expected images
+   - docker exec ${CONTAINER} python -m beiran docker layer list --all
+   # TODO: Check if output has expected layers!?
 
 test:api:
   stage: test
@@ -143,6 +173,8 @@ cleanup:services:
   when: always
   script:
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   # dump logs for debugging
+   - docker-compose logs
    - docker-compose kill || true
    - docker-compose rm -f
    - cd /

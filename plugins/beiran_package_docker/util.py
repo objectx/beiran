@@ -1,28 +1,33 @@
 """Docker Plugin Utility Module"""
 import asyncio
 import os
+import logging
 import re
 import base64
 import aiohttp
 import aiofiles
+
 from peewee import SQL
+from aiodocker import Docker
 
 from beirand.common import CACHE_FOLDER
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
+from beiran.models import Node
+
 from .models import DockerImage, DockerLayer
 
 
 LOGGER = build_logger()
 
 
-async def aio_dirlist(path):
+async def aio_dirlist(path: str):
     """async proxy method for os.listdir"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, os.listdir, path)
 
 
-async def aio_isdir(path):
+async def aio_isdir(path: str):
     """async proxy method for os.isdir"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, os.path.isdir, path)
@@ -43,15 +48,16 @@ class DockerUtil:
         """..."""
         pass
 
-    def __init__(self, storage="/var/lib/docker", aiodocker=None, logger=None):
+    def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
+                 logger: logging.Logger = None) -> None:
         self.storage = storage
-        self.diffid_mapping = {}
-        self.layerdb_mapping = {}
-        self.aiodocker = aiodocker
+        self.diffid_mapping: dict = {}
+        self.layerdb_mapping: dict = {}
+        self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
     @staticmethod
-    def docker_sha_summary(sha):
+    def docker_sha_summary(sha: str) -> str:
         """
         shorten sha to 12 bytes length str as docker uses
 
@@ -67,7 +73,7 @@ class DockerUtil:
         """
         return sha.split(":")[1][0:12]
 
-    def docker_find_layer_dir_by_sha(self, sha):
+    def docker_find_layer_dir_by_sha(self, sha: str):
         """
         try to find local layer directory containing tar archive
         contents pulled from remote repository
@@ -105,7 +111,7 @@ class DockerUtil:
             return local_layer_dir.format(layer_dir_name=file.read())
 
     @staticmethod
-    async def reset_docker_info_of_node(uuid_hex):
+    async def reset_docker_info_of_node(uuid_hex: str):
         """ Delete all (local) layers and images from database """
         for image in list(DockerImage.select(DockerImage.hash_id,
                                              DockerImage.available_at)):
@@ -128,7 +134,7 @@ class DockerUtil:
         DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
 
-    async def fetch_docker_info(self):
+    async def fetch_docker_info(self) -> dict:
         """
         Fetch async docker daemon information
 
@@ -150,7 +156,7 @@ class DockerUtil:
                 "error": str(error)
             }
 
-    async def update_docker_info(self, node):
+    async def update_docker_info(self, node: Node):
         """
         Makes an async call to docker `client` and get info for `node`
 
@@ -177,7 +183,7 @@ class DockerUtil:
             if retry_after < 30:
                 retry_after += 5
 
-    async def get_diffid_mappings(self):
+    async def get_diffid_mappings(self) -> dict:
         """..."""
 
         self.logger.debug("Getting diff-id digest mappings..")
@@ -198,7 +204,7 @@ class DockerUtil:
         except FileNotFoundError:
             return {}
 
-    async def get_layerdb_mappings(self):
+    async def get_layerdb_mappings(self) -> dict:
         """..."""
 
         self.logger.debug("Getting layerdb digest mappings..")
@@ -222,9 +228,8 @@ class DockerUtil:
         except FileNotFoundError:
             return {}
 
-    async def get_image_layers(self, diffid_list):
+    async def get_image_layers(self, diffid_list: list) -> list:
         """Returns an array of DockerLayer objects given diffid array"""
-
         layers = []
         for idx, diffid in enumerate(diffid_list):
             try:
@@ -236,7 +241,7 @@ class DockerUtil:
                                   diffid)
         return layers
 
-    async def get_layer_by_diffid(self, diffid, idx):
+    async def get_layer_by_diffid(self, diffid: str, idx: int) -> DockerLayer:
         """
         Makes an DockerLayer objects using diffid of layer
 
@@ -293,7 +298,7 @@ class DockerUtil:
         #     image.layers.append("<not-found>")
         return layer
 
-    async def fetch_docker_image_info(self, name):
+    async def fetch_docker_image_info(self, name: str):
         """
         Fetch Docker Image manifest specified repository.
         Args:
@@ -468,13 +473,12 @@ class DockerUtil:
         # try to access the server with HTTP HEAD requests
         # there is also a purpose to check the type of authentication
         try:
-            resp = await async_req(url=url, return_json=False, method='HEAD')
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
         except aiohttp.client_exceptions.ClientConnectorSSLError:
             self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
             url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
-            resp = await async_req(url=url, return_json=False, method='HEAD')
-
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:

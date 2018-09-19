@@ -4,10 +4,13 @@ import os
 import sys
 import logging
 
-def build_logger(filename=None, log_level=logging.DEBUG):
+from typing import List, Union # pylint: disable=unused-import
+
+
+def build_logger(filename: str = None, log_level: int = logging.DEBUG) -> logging.Logger:
     """ Build logger class for module """
     stdout_handler = logging.StreamHandler(sys.stdout)
-    handlers = [stdout_handler]
+    handlers = [stdout_handler] # type: List[Union[logging.FileHandler, logging.StreamHandler]]
     if filename:
         file_handler = logging.FileHandler(filename=os.getenv(
             'LOG_FILE', filename))

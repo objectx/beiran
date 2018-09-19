@@ -1,8 +1,9 @@
 """
 Module for Node Data Model
 """
+from typing import Union, Any, Tuple
 from uuid import UUID
-import urllib
+from urllib.parse import urlparse
 import re
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
@@ -22,7 +23,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
     discovery_method = CharField(max_length=32, null=True)
     config = JSONStringField(null=True)  # { "auto-connect": true } ?
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         uuid = kwargs.pop('uuid', None)
 
@@ -53,7 +54,17 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
 
         self.address = addr
 
-    def to_dict(self, **kwargs):
+    def to_dict(self, **kwargs: Any) -> dict:
+        """
+        Serialize PeerAddress object
+
+        Args:
+            **kwargs: extra parameters
+
+        Returns:
+            dict: serialized object
+
+        """
         _dict = super().to_dict(**kwargs)
         _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
         _dict['host'] = self.host
@@ -64,13 +75,24 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return _dict
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs: Any) -> "PeerAddress":
+        """
+        Deserialize PeerAddress object from given `_dict`
+
+        Args:
+            _dict(dict): dict containing model attributes and data
+            **kwargs: extra parameters
+
+        Returns:
+            PeerAddress: deserialized object
+
+        """
         _dict['uuid'] = UUID(_dict['uuid'])
         obj = super().from_dict(_dict, **kwargs)
         return obj
 
     @property
-    def location(self):
+    def location(self) -> str:
         """
         Location string which is used by clients.
 
@@ -84,7 +106,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return "{}+unix://{}".format(self.protocol, self.path)
 
     @staticmethod
-    def validate_address(address):
+    def validate_address(address) -> bool:
         """
         Validate address
 
@@ -101,31 +123,33 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         if not matched:
             LOGGER.error("Address is broken: %s", address)
 
-        return matched
+        return bool(matched)
 
     # pylint: disable=too-many-arguments
-    def build_node_address(self, host, path=None,
-                           uuid=None, port=None, protocol=None, socket=False):
+    def build_node_address(self, host: str, path: str = None,
+                           uuid: str = None, port: int = None,
+                           protocol: str = None, socket: bool = False) -> str:
         """
         Build a node address with given host, port, protocol and uuid
 
         Args:
-            host: hostname
-            uuid: uuid of node
-            path: address path
-            port: service port
-            protocol: protocol, default http
-            socket: is unix socket? default False
+            host (str): hostname
+            uuid (str): uuid of node
+            path (str): address path
+            port (int): service port
+            protocol (str): protocol, default http
+            socket (str): is unix socket? default False
 
         Returns:
+            str: formatted address
 
         """
-        port = ":{}".format(port or 8888)
+        port_str = ":{}".format(port or 8888)
         protocol = protocol or 'http'
         unix_socket = "+unix" if socket else ""
         if unix_socket:
             unix_socket = "+unix"
-            port = ""
+            port_str = ""
             hostname = path
         else:
             hostname = host
@@ -133,7 +157,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         address_format = "beiran+{protocol}{unix_socket}://{hostname}{port}#{uuid}"
         address = address_format.format(
             hostname=hostname,
-            port=port,
+            port=port_str,
             protocol=protocol,
             unix_socket=unix_socket,
             uuid=uuid
@@ -144,15 +168,16 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         return address
 
     @classmethod
-    def add_or_update(cls, uuid, address, discovery=None, config=None):
+    def add_or_update(cls, uuid: str, address: str,
+                      discovery: str = None, config: dict = None) -> None:
         """
         Update with or create a new peer_address object from provided information.
 
         Args:
             uuid (str): uuid
-            address: address
-            discovery: discovery channel
-            config: config dict
+            address (str): address
+            discovery (str): discovery channel
+            config (dict): config dict
 
         Returns:
 
@@ -171,7 +196,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         _self.save()
 
     @staticmethod
-    def parse_address(address):
+    def parse_address(address: str) -> Tuple[str, str, str, str, int, str, bool]:
         """
         Parse beiran address
 
@@ -182,7 +207,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
             (tuple): address details
 
         """
-        parsed = urllib.parse.urlparse(address)
+        parsed = urlparse(address)
         scheme = parsed.scheme
         unix_socket = False
         try:
@@ -198,6 +223,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
         path = parsed.path
         port = parsed.port
         return transport, protocol, hostname, path, port, fragment, unix_socket
+
 
 class Node(BaseModel):
     """Node is a member of Beiran Cluster"""
@@ -241,14 +267,14 @@ class Node(BaseModel):
     os_version = CharField(max_length=255)  # os and version ubuntu 14.04 or output of `uname -a`
     architecture = CharField(max_length=20)  # x86_64
     version = CharField(max_length=10)  # beiran daemon version of node
-    status = CharField(max_length=32, default=STATUS_NEW)
+    status: Union[CharField, str] = CharField(max_length=32, default=STATUS_NEW)
     last_sync_version = IntegerField()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._address = None
         super().__init__(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         fmt = "Node: {hostname}, Address: {ip}:{port}, UUID: {uuid}"
         return fmt.format(hostname=self.hostname,
                           ip=self.ip_address,
@@ -256,28 +282,30 @@ class Node(BaseModel):
                           uuid=self.uuid)
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs: Any) -> "Node":
         _dict['uuid'] = UUID(_dict['uuid'])
         node_address = _dict.pop('address', None)
         node = super().from_dict(_dict, **kwargs)
         node.set_get_address(node_address)
         return node
 
-    def to_dict(self, **kwargs):
+    def to_dict(self, **kwargs) -> dict:
         _dict = super().to_dict(**kwargs)
-        _dict['uuid'] = self.uuid.hex # pylint: disable=no-member
+
+        # pylint: disable=no-member
+        _dict['uuid'] = self.uuid.hex
         _dict['address'] = self.address
         if 'dialect' in kwargs and kwargs['dialect'] == 'api':
             _dict.pop('status')
         return _dict
 
     @property
-    def url(self):
+    def url(self) -> str:
         """Generates node advertise url using ip_address, port and uuid properties"""
         return "http://{}:{}#{}".format(self.ip_address, self.port, self.uuid.hex) # pylint: disable=no-member
 
     @property
-    def url_without_uuid(self):
+    def url_without_uuid(self) -> str:
         """Generates node advertise url using ip_address, port properties"""
         return "http://{}:{}".format(self.ip_address, self.port)
 
@@ -318,7 +346,7 @@ class Node(BaseModel):
         return self.__str__()
 
     @property
-    def address(self, force=False):
+    def address(self, force=False):  # type: ignore
         """
         Returns peer address of node in beiran address format.
 

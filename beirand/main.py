@@ -8,7 +8,9 @@ import asyncio
 import importlib
 import signal
 import logging
+
 from functools import partial
+from typing import Any
 
 from tornado import web
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -45,26 +47,27 @@ class BeiranDaemon(EventEmitter):
     """Beiran Daemon"""
     version = __version__
 
-    def __init__(self, loop=None):
+    # pylint: disable=W0212
+    def __init__(self, loop: asyncio.events.AbstractEventLoop = None) -> None:
         super().__init__()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.nodes = Nodes()
-        self.available_plugins = []
+        self.available_plugins: list = []
         self.search_plugins()
         self.sync_state_version = 0
         self.peer = None
 
-    async def new_node(self, peer_address, **kwargs):  # pylint: disable=unused-argument
+    async def new_node(self, peer_address: PeerAddress, **kwargs):  # pylint: disable=unused-argument
         """
         Discovered new node on beiran network
         Args:
             ip_address (str): ip_address of new node
-            service_port (str): service port of new node
+            service_port (int): service port of new node
         """
         Services.logger.info('New node detected, reached: %s, waiting info',
                              peer_address.address)
         # url = "beiran://{}:{}".format(ip_address, service_port)
-        node = await self.peer.probe_node(peer_address=peer_address)
+        node = await self.peer.probe_node(peer_address=peer_address)  # type: ignore
 
         if not node:
             EVENTS.emit('node.error', peer_address.address)
@@ -72,12 +75,12 @@ class BeiranDaemon(EventEmitter):
 
         EVENTS.emit('node.added', node)
 
-    async def removed_node(self, ip_address, service_port=None):
+    async def removed_node(self, ip_address: str, service_port: int = None):
         """
         Node on beiran network is down
         Args:
             ip_address (str): ip_address of new node
-            service_port (str): service port of new node
+            service_port (int): service port of new node
         """
 
         service_port = service_port or get_listen_port()
@@ -93,15 +96,16 @@ class BeiranDaemon(EventEmitter):
 
         EVENTS.emit('node.removed', node)
 
-    async def on_node_removed(self, node):
+    async def on_node_removed(self, node: Node):
+
         """Placeholder for event on node removed"""
         Services.logger.info("new event: an existing node removed %s", node.uuid)
 
-    async def on_new_node_added(self, node):
+    async def on_new_node_added(self, node: Node):
         """Placeholder for event on node removed"""
         pass
 
-    async def on_plugin_state_update(self, plugin, update):
+    async def on_plugin_state_update(self, plugin: Any, update: dict):
         """
         Track updates on (syncable) plugin states
 
@@ -120,7 +124,7 @@ class BeiranDaemon(EventEmitter):
         Services.logger.info("sync version up: %d", self.nodes.local_node.last_sync_version)
         EVENTS.emit('state.update', update, plugin)
 
-    async def get_plugin(self, plugin_type, plugin_name, config):
+    async def get_plugin(self, plugin_type: str, plugin_name: str, config: dict) -> Any:
         """
         Load and initiate plugin
         Args:
@@ -138,11 +142,11 @@ class BeiranDaemon(EventEmitter):
             config['events'] = EVENTS
             module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
             Services.logger.debug("initializing plugin: %s", plugin_name)
-            instance = module.Plugin(config)
+            instance = module.Plugin(config) # type: ignore
             await instance.init()
             Services.logger.info("plugin initialisation done: %s", plugin_name)
         except ModuleNotFoundError as error:  # pylint: disable=undefined-variable
-            Services.logger.error(error)
+            Services.logger.error(str(error))
             Services.logger.error("Cannot find plugin : %s", plugin_name)
             sys.exit(1)
 
@@ -184,7 +188,7 @@ class BeiranDaemon(EventEmitter):
         self.available_plugins = get_installed_plugins()
         print("Found plugins;", self.available_plugins)
 
-    async def init_db(self, append_new=False):
+    async def init_db(self, append_new: list = None):
         """Initialize database"""
         from peewee import SqliteDatabase, OperationalError
         from beiran.models.base import DB_PROXY
@@ -216,7 +220,7 @@ class BeiranDaemon(EventEmitter):
         for model in list(MODEL_LIST):
             Services.logger.debug("Checking a model")
             try:
-                model.select().limit(0).get()
+                model.select().limit(0).get()  # type: ignore
             except OperationalError as err:
                 Services.logger.info("Database schema is not up-to-date, destroying")
                 # database is somewhat broken (old)
@@ -227,7 +231,8 @@ class BeiranDaemon(EventEmitter):
                 database = SqliteDatabase(beiran_db_path)
                 DB_PROXY.initialize(database)
                 db_file_exists = False
-            except model.DoesNotExist as err:  # pylint: disable=unused-variable
+
+            except model.DoesNotExist as err:  # type: ignore  # pylint: disable=unused-variable
                 # not a problem
                 continue
             except Exception as err:  # pylint: disable=broad-except
@@ -237,7 +242,7 @@ class BeiranDaemon(EventEmitter):
 
         if not db_file_exists:
             Services.logger.info("db hasn't initialized yet, creating tables!..")
-            from beiran.models import create_tables
+            from beiran.models import create_tables # type: ignore
 
             create_tables(database)
 
@@ -288,7 +293,12 @@ class BeiranDaemon(EventEmitter):
             if db_node.uuid.hex == self.nodes.local_node.uuid.hex: # pylint: disable=no-member
                 continue
             probed_locations.update({conn.location for conn in db_node.get_connections()})
-            self.loop.create_task(self.peer.probe_node(peer_address=db_node.address, retries=60))
+            self.loop.create_task(
+                self.peer.probe_node(
+                    peer_address=db_node.get_latest_connection(),
+                    retries=60
+                )
+            )
 
         # Probe Known Nodes
         known_nodes = os.getenv("KNOWN_NODES")
@@ -397,7 +407,7 @@ class BeiranDaemon(EventEmitter):
             Services.daemon.nodes.set_offline(node)
 
 
-    def set_status(self, new_status):
+    def set_status(self, new_status: str):
         """
         Set and emit node's new status
         Args:

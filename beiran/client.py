@@ -5,14 +5,20 @@ Common client for beiran project
 
 import asyncio
 import logging
+
+from typing import Any, List
+
 import aiohttp
 import async_timeout
 
+from beiran.models import Node
+from beiran.models import PeerAddress
 
 class Client:
     """ Beiran Client class
     """
-    def __init__(self, peer_address=None, node=None, version=None):
+    def __init__(self, peer_address: PeerAddress = None,
+                 node: Node = None, version: str = None) -> None:
         """
         Initialization method for client
         Args:
@@ -27,7 +33,10 @@ class Client:
         if not (peer_address or node):
             raise ValueError("Both node and peer_address can not be None")
 
-        address = peer_address or node.get_latest_connection()
+        if not peer_address and node:
+            address = node.get_latest_connection()
+        else:
+            address = peer_address
 
         self.url = address.location
 
@@ -38,17 +47,17 @@ class Client:
             self.client_connector = None
         self.http_client = None
 
-    async def create_client(self):
+    async def create_client(self) -> None:
         """Create aiohttp client session"""
         self.http_client = aiohttp.ClientSession(connector=self.client_connector)
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Closes aiohttp client session"""
         if self.http_client:
             await self.http_client.close()
             self.http_client = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         if not self.http_client:
             return
 
@@ -60,7 +69,7 @@ class Client:
 
     class Error(Exception):
         """Base Exception class for Beiran Client operations"""
-        def __init__(self, message):
+        def __init__(self, message: str) -> None:
             super().__init__(message)
             self.message = message
 
@@ -70,27 +79,32 @@ class Client:
 
     class HTTPError(Error):
         """..."""
-        def __init__(self, status, message, **kwargs):
+        def __init__(self, status: int, message: str, **kwargs) -> None:
             super().__init__(message)
             self.status = status
             self.headers = kwargs.pop('headers', None)
             self.history = kwargs.pop('history', None)
             self.request = kwargs.pop('request', None)
 
-    async def request(self, path="/", **kwargs):
+    async def request(self,
+                      path: str = "/",
+                      **kwargs: Any
+                      ) -> aiohttp.client_reqrep.ClientResponse:
         """
-        Request call to daemon
+        Request call to daemon, return successful repsonses or raises http errors.
 
         Args:
             path: http path to request from daemon
-            parse_json: if return value is JSON from daemon,
-            return_response (bool): determine if the response returns or not
             data (dict): request payload
+            timeout (int): timeout
+            raise_error (bool): raising error
             method (str): request method
-            it returns parsed JSON
 
         Returns:
-            (dict or str) Response from daemon, dict or json string
+            ClientResponse or dict or str: Response from daemon, dict or json string
+
+        Raises:
+            convenient http exception, timeout, bad request, etc.
 
         """
         headers = kwargs['headers'] if 'headers' in kwargs else {}
@@ -102,12 +116,8 @@ class Client:
             headers['Content-Type'] = 'application/json'
 
         kwargs['headers'] = headers
-
         method = kwargs.pop('method', "GET")
-        parse_json = kwargs.pop('parse_json', True)
-
-        return_response = kwargs.pop('return_response', False)
-        raise_error = kwargs.pop('raise_error', not return_response)
+        raise_error = kwargs.pop('raise_error', False)
 
         url = self.url + path
         self.logger.debug("Requesting %s", url)
@@ -120,9 +130,9 @@ class Client:
                 # raises;
                 # asyncio.TimeoutError =? concurrent.futures._base.TimeoutError
                 async with async_timeout.timeout(kwargs['timeout']):
-                    response = await self.http_client.request(method, url, **kwargs)
+                    response = await self.http_client.request(method, url, **kwargs) #type: ignore
             else:
-                response = await self.http_client.request(method, url, **kwargs)
+                response = await self.http_client.request(method, url, **kwargs) #type: ignore
 
             if raise_error:
                 # this only raises if status code is >=400
@@ -137,61 +147,67 @@ class Client:
             raise Client.HTTPError(err.code, err.message, headers=err.headers,
                                    history=err.history, request=err.request_info)
 
-        if return_response:
-            return response
+        return response
 
-        if parse_json:
-            return await response.json()
+    async def request_json(self, path: str, **kwargs: Any) -> dict:
+        """Return json reponse as dict"""
+        response = await self.request(path, **kwargs)
+        return await response.json()
 
-        return response.content
+    async def request_text(self, path: str, **kwargs: Any) -> str:
+        """Return content of response as string"""
+        response = await self.request(path, **kwargs)
+        return await response.content
 
-    async def get_server_info(self, **kwargs):
+    async def get_server_info(self, **kwargs) -> dict:
         """
         Gets root path from daemon for server information
         Returns:
             object: parsed from JSON
 
         """
-        return await self.request(path="/", parse_json=True, **kwargs)
+        return await self.request_json(path="/", **kwargs)
 
-    async def get_server_version(self, **kwargs):
+    async def get_server_version(self, **kwargs) -> str:
         """
         Daemon version retrieve
         Returns:
             str: semantic version
         """
-        return await self.get_server_info(**kwargs)['version']
+        server_info = await self.get_server_info(**kwargs)
+        return server_info['version']
 
-    async def get_node_info(self, uuid=None, **kwargs):
+    async def get_node_info(self, uuid: str = None, **kwargs) -> dict:
         """
         Retrieve information about node
         Returns:
             object: info of node
         """
         path = "/info" if not uuid else "/info/{}".format(uuid)
-        return await self.request(path=path, parse_json=True, **kwargs)
+        return await self.request_json(path=path, **kwargs)
 
-    async def get_status(self, plugin=None, **kwargs):
+    async def get_status(self, plugin: str = None, **kwargs) -> dict:
         """
         Retrieve status information about node or one of it's plugins
         Returns:
             object: status of node or plugin
         """
         path = "/status" if not plugin else "/status/plugins/{}".format(plugin)
-        return await self.request(path=path, parse_json=True, **kwargs)
+        return await self.request_json(path=path, **kwargs)
 
-    async def ping(self, timeout=10, **kwargs):
+    async def ping(self, timeout: int = 10, **kwargs) -> bool:
         """
         Pings the node
         """
-        response = await self.request("/ping", return_response=True, timeout=timeout, **kwargs)
+        response = await self.request("/ping", timeout=timeout, **kwargs)
         if not response or response.status != 200:
+            # todo: should we just log the error and return False?
             raise Exception("Failed to receive ping response from node")
 
         # TODO: Return ping time
         return True
 
-    async def probe_node(self, address, probe_back: bool = True, **kwargs):
+    async def probe_node(self, address: str, probe_back: bool = True, **kwargs) -> dict:
         """
         Connect to a new node
         Returns:
@@ -202,13 +218,12 @@ class Client:
             "address": address,
             "probe_back": probe_back
         }
-        return await self.request(path=path,
-                                  data=new_node,
-                                  parse_json=True,
-                                  method="POST",
-                                  **kwargs)
+        return await self.request_json(path=path,
+                                       data=new_node,
+                                       method="POST",
+                                       **kwargs)
 
-    async def get_nodes(self, all_nodes=False, **kwargs):
+    async def get_nodes(self, all_nodes: bool = False, **kwargs) -> List[dict]:
         """
         Daemon get nodes
         Returns:
@@ -216,11 +231,12 @@ class Client:
         """
         path = '/nodes{}'.format('?all=true' if all_nodes else '')
 
-        resp = await self.request(path=path, **kwargs)
+        resp = await self.request_json(path=path, **kwargs)
 
         return resp.get('nodes', [])
 
-    async def get_images(self, all_nodes=False, node_uuid=None, **kwargs):
+    async def get_images(self, all_nodes: bool = False,
+                         node_uuid: str = None, **kwargs) -> List[dict]:
         """
         Get Image list from beiran API
         Returns:
@@ -237,11 +253,11 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path, **kwargs)
+        resp = await self.request_json(path=path, **kwargs)
         return resp.get('images', [])
 
     #pylint: disable-msg=too-many-arguments
-    async def pull_image(self, imagename, **kwargs):
+    async def pull_image(self, imagename: str, **kwargs) -> aiohttp.client_reqrep.ClientResponse:
         """
         Pull image accross cluster with spesific node support
         Returns:
@@ -265,13 +281,12 @@ class Client:
         resp = await self.request(path,
                                   data=data,
                                   method='POST',
-                                  return_response=True,
                                   timeout=600,
                                   **kwargs)
         return resp
     #pylint: enable-msg=too-many-arguments
 
-    async def stream_image(self, imagename, **kwargs):
+    async def stream_image(self, imagename: str, **kwargs) -> aiohttp.client_reqrep.ClientResponse:
         """
         Stream image from this node
 
@@ -286,11 +301,11 @@ class Client:
 
         resp = await self.request(path,
                                   method='GET',
-                                  return_response=True,
                                   **kwargs)
         return resp
 
-    async def get_layers(self, all_nodes=False, node_uuid=None, **kwargs):
+    async def get_layers(self, all_nodes: bool = False,
+                         node_uuid: str = None, **kwargs) -> List[dict]:
         """
         Get Layer list from beiran API
         Returns:
@@ -306,6 +321,6 @@ class Client:
         elif all_nodes:
             path = path + '?all=true'
 
-        resp = await self.request(path=path, **kwargs)
+        resp = await self.request_json(path=path, **kwargs)
 
         return resp.get('layers', [])

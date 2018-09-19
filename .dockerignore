@@ -10,3 +10,4 @@ run
 !beiran
 !Dockerfile
 !plugins
+!helpers/mypy

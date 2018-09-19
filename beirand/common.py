@@ -14,7 +14,7 @@ CACHE_FOLDER = os.getenv("CACHE_FOLDER_PATH", defaults.CACHE_DIR)
 
 EVENTS = EventEmitter()
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', defaults.LOG_LEVEL))
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', defaults.LOG_LEVEL)) # type: ignore
 LOG_FILE = os.getenv('LOG_FILE', defaults.LOG_FILE)
 
 VERSION = get_version('short', 'daemon')
@@ -23,5 +23,5 @@ VERSION = get_version('short', 'daemon')
 class Services:
     """Conventional class for keeping references to global objects"""
     daemon = None
-    plugins = {}
-    logger = build_logger(LOG_FILE, LOG_LEVEL)
+    plugins = {} # type: dict
+    logger = build_logger(LOG_FILE, LOG_LEVEL) # type: ignore

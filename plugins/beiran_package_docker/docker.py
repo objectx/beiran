@@ -7,6 +7,8 @@ import docker
 from aiodocker import Docker
 
 from beiran.plugin import BasePackagePlugin, History
+from beiran.models import Node
+from beirand.peer import Peer
 
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
@@ -27,14 +29,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(self.config["storage"], self.aiodocker)
+        self.util = DockerUtil(storage=self.config["storage"], aiodocker=self.aiodocker)
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.tar_cache_dir = "tar_cache"
         self.probe_task = None
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST
-        self.history = History()
+        self.history = History() # type: History
         self.last_error = None
 
         ApiDependencies.aiodocker = self.aiodocker
@@ -59,13 +61,13 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         if self.probe_task:
             self.probe_task.cancel()
 
-    async def sync(self, peer):
+    async def sync(self, peer: Peer):
         await DockerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
 
         await self.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
 
-    async def save_image_at_node(self, image, node):
+    async def save_image_at_node(self, image: DockerImage, node: Node):
         """Save an image from a node into db"""
         try:
             image_ = DockerImage.get(DockerImage.hash_id == image.hash_id)
@@ -74,11 +76,11 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("update existing image %s, now available on new node: %s",
                            image.hash_id, node.uuid.hex)
         except DockerImage.DoesNotExist:
-            image.available_at = [node.uuid.hex]
+            image.available_at = [node.uuid.hex] # type: ignore
             image.save(force_insert=True)
             self.log.debug("new image from remote %s", str(image))
 
-    async def save_layer_at_node(self, layer, node):
+    async def save_layer_at_node(self, layer: DockerLayer, node: Node):
         """Save a layer from a node into db"""
         try:
             layer_ = DockerLayer.get(DockerLayer.digest == layer.digest)
@@ -87,11 +89,11 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
-            layer.available_at = [node.uuid.hex]
+            layer.available_at = [node.uuid.hex] # type: ignore
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
 
-    async def fetch_images_from_peer(self, peer):
+    async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""
 
         images = await peer.client.get_images()
@@ -103,7 +105,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             image = DockerImage.from_dict(image_data)
             await self.save_image_at_node(image, peer.node)
 
-    async def fetch_layers_from_peer(self, peer):
+    async def fetch_layers_from_peer(self, peer: Peer):
         """fetch layer list from the node and update local db"""
 
         layers = await peer.client.get_layers()
@@ -115,7 +117,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             layer = DockerLayer.from_dict(layer_data)
             await self.save_layer_at_node(layer, peer.node)
 
-    async def daemon_error(self, error):
+    async def daemon_error(self, error: str):
         """
         Daemon error emitter.
         Args:
@@ -237,15 +239,15 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(str(err))
 
-    async def new_image_saved(self, image_id):
+    async def new_image_saved(self, image_id: str):
         """placeholder method for new_image_saved event"""
         self.log.debug("a new image reported by docker deamon registered...: %s", image_id)
 
-    async def existing_image_deleted(self, image_id):
+    async def existing_image_deleted(self, image_id: str):
         """placeholder method for existing_image_deleted event"""
         self.log.debug("an existing image and its layers deleted...: %s", image_id)
 
-    async def delete_image(self, image_id):
+    async def delete_image(self, image_id: str):
         """
         Unset available image, delete it if no node remains
 
@@ -280,7 +282,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def save_image(self, image_id, skip_updates=False):
+    async def save_image(self, image_id: str, skip_updates: bool = False):
         """
         Save existing image and layers identified by image_id to database.
 
@@ -307,7 +309,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         try:
             layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
-            image.layers = [layer.digest for layer in layers]
+            image.layers = [layer.digest for layer in layers] # type: ignore
 
             for layer in layers:
                 layer.set_available_at(self.node.uuid.hex)

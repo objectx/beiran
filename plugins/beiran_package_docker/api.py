@@ -293,10 +293,9 @@ class ImageList(RPCEndpoint):
             progress = 0.0
             last_progress = 0.0
 
-            chunk = await chunks.get()
-            while chunk:
-                await writer.write(chunk)
+            while True:
                 chunk = await chunks.get()
+                await writer.write(chunk)
 
                 if chunk:
                     self.real_size += len(chunk)
@@ -305,6 +304,19 @@ class ImageList(RPCEndpoint):
                         self.write('{"progress": %.2f, "done": false},' % progress)
                         self.flush()
                         last_progress = progress
+                else:
+                    if show_progress:
+                        self.write('{"progress": %.2f, "done": true}' %
+                                   (self.real_size / float(image.size)))
+                        self.write(']}')
+                        self.finish()
+
+                        # FIXME!
+                        if self.real_size != image.size:
+                            Services.logger.debug(
+                                "WARNING: size of image != sum of chuncks length. [%d, %d]",
+                                self.real_size, image.size)
+                    break
 
 
         try:
@@ -319,18 +331,6 @@ class ImageList(RPCEndpoint):
                 chunks.put_nowait(data)
 
             chunks.put_nowait(None)
-
-            if show_progress:
-                self.write('{"progress": %.2f, "done": true}' %
-                           (self.real_size / float(image.size)))
-                self.write(']}')
-                self.finish()
-
-                # FIXME!
-                if self.real_size != image.size:
-                    Services.logger.debug(
-                        "WARNING: size of image != sum of chuncks length. [%d, %d]",
-                        self.real_size, image.size)
 
             await docker_result
         except Client.Error as error:

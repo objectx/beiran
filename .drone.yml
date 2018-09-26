@@ -94,8 +94,8 @@ pipeline:
               exit 1
             fi
         done
-      - docker pull hello-world
-      - docker pull alpine:latest
+      - docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+      - docker pull alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
       - docker images
 
   beirand1:

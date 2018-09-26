@@ -261,7 +261,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         if image.available_at:
             image.save()
         else:
-            image.delete()
+            image.delete_instance()
 
         # we do not handle deleting layers yet, not sure if they are
         # shared and needed by other images

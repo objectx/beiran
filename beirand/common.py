@@ -8,9 +8,10 @@ from beiran import defaults
 from beiran.log import build_logger
 from beiran.version import get_version
 
-DATA_FOLDER = os.getenv("DATA_FOLDER_PATH", defaults.DATA_FOLDER)
-CONFIG_FOLDER = os.getenv("CONFIG_FOLDER_PATH", defaults.CONFIG_FOLDER)
-CACHE_FOLDER = os.getenv("CACHE_FOLDER_PATH", defaults.CACHE_DIR)
+DATA_DIR = os.getenv("DATA_DIR_PATH", defaults.DATA_DIR)
+CONFIG_DIR = os.getenv("CONFIG_DIR_PATH", defaults.CONFIG_DIR)
+CACHE_DIR = os.getenv("CACHE_DIR_PATH", defaults.CACHE_DIR)
+RUN_DIR = os.getenv("RUN_DIR_PATH", defaults.RUN_DIR)
 
 EVENTS = EventEmitter()
 

@@ -255,13 +255,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             image_id (str): image identifier
 
         """
-        image_data = await self.aiodocker.images.get(name=image_id)
-        image = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+        # image_data = await self.aiodocker.images.get(name=image_id)
+        image = DockerImage.get(DockerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
         if image.available_at:
             image.save()
         else:
-            image.delete()
+            image.delete_instance()
+        self.history.update('removed_image={}'.format(image.hash_id))
 
         # we do not handle deleting layers yet, not sure if they are
         # shared and needed by other images

@@ -153,7 +153,7 @@ class K8SImageServicer(ImageServiceServicer):
                                     loop=Services.loop,
                                     sync=True)
             response = PullImageResponse(image_ref=image_ref)
-        except TypeError:
+        except Exception: # pylint: disable=broad-except
             try:
                 Services.logger.debug("forward a pull request to other CRI endpoint")
                 response = self.cri_fw.PullImage(request)

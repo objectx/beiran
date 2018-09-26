@@ -44,7 +44,7 @@
 - test:
   - name: "Get Image Information"
   - headers: {accept: 'application/json'}
-  - url: "/docker/images/hello-world:latest/info"
+  - url: "/docker/images/$test_docker_image/info"
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}

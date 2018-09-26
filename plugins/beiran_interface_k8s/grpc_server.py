@@ -14,7 +14,7 @@ from peewee import SQL
 
 from beiran.client import Client
 from beiran.util import run_in_loop
-from plugins.beiran_package_docker.models import DockerImage
+from beiran_package_docker.models import DockerImage
 
 from .api_pb2_grpc import ImageServiceServicer
 from .api_pb2 import ImageStatusResponse

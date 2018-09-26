@@ -84,6 +84,33 @@ class ImagesTarHandler(web.RequestHandler):
             raise HTTPError(status_code=404, log_message=str(error))
 
 
+class ImageInfoHandler(web.RequestHandler):
+    """ Image info handler """
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    async def get(self, image_id_or_sha):
+        """
+            Get image information
+        """
+        self.set_header("Content-Type", "application/json")
+
+        if image_id_or_sha.startswith('sha256:'):
+            query = DockerImage.select().where(DockerImage.hash_id == image_id_or_sha)
+            image = query.first()
+        else:
+            query = DockerImage.select().where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
+            image = query.first()
+
+        if image is None:
+            raise HTTPError(status_code=404, log_message='Image is not available in cluster')
+
+        self.write(json.dumps(image.to_dict(dialect="api")))
+        self.finish()
+
+
 class LayerDownload(web.RequestHandler):
     """ Container image layer downloading handler """
 
@@ -436,6 +463,7 @@ class LayerList(web.RequestHandler):
 ROUTES = [
     (r'/docker/images', ImageList),
     (r'/docker/layers', LayerList),
-    (r'/docker/images/(.*)', ImagesTarHandler),
+    (r'/docker/images/([^:]+:[^/]+)', ImagesTarHandler),
+    (r'/docker/images/([^:]+:[^/]+)/info', ImageInfoHandler),
     (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
 ]

@@ -94,10 +94,14 @@ start_test_services:
    - sleep 5
    # seed docker daemon (docker1 only)
    - docker-compose exec -T docker1 docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+   - docker-compose exec -T docker1 docker tag hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788 hello-world:latest
    - docker-compose exec -T docker1 docker pull alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
+   - docker-compose exec -T docker1 docker tag alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528 alpine:latest
    - docker-compose exec -T docker1 docker images
    # starting beiran
-   - docker-compose up -d beiran1
+   - docker-compose up -d beiran1 beiran2
+   # allow beiran to start up (might not be enough)
+   - sleep 5
 
 test:unit:
   stage: test

@@ -16,7 +16,7 @@ from beiran.client import Client
 from beiran.util import run_in_loop
 from plugins.beiran_package_docker.models import DockerImage
 
-from .api_pb2_grpc import ImageServiceServicer
+from .api_pb2_grpc import ImageServiceServicer, ImageServiceStub
 from .api_pb2 import ImageStatusResponse
 from .api_pb2 import ListImagesResponse, Image
 from .api_pb2 import PullImageResponse
@@ -51,6 +51,9 @@ class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
     TIMEOUT_SEC = 5
+
+    def __init__(self):
+        self.cri_fw = CRIForwarder()
 
     def ListImages(self, request, context):
         """ListImages lists existing images.
@@ -144,12 +147,22 @@ class K8SImageServicer(ImageServiceServicer):
         if ":" not in image_name:
             image_name += ":latest"
 
-        # not supporting AuthConfig and PodSandboxConfig now
-        image_ref = run_in_loop(self.pull_routine(image_name),
-                                loop=Services.loop,
-                                sync=True)
+        try:
+            # not supporting AuthConfig and PodSandboxConfig now
+            image_ref = run_in_loop(self.pull_routine(image_name),
+                                    loop=Services.loop,
+                                    sync=True)
+            response = PullImageResponse(image_ref=image_ref)
+        except Exception: # pylint: disable=broad-except
+            try:
+                Services.logger.debug("forward a pull request to other CRI endpoint")
+                response = self.cri_fw.PullImage(request)
+            except grpc._channel._Rendezvous: # pylint: disable=protected-access
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("request was forwarded but the endpoint is unavailable (%s)"
+                                    % self.cri_fw.url)
+                response = PullImageResponse()
 
-        response = PullImageResponse(image_ref=image_ref)
         return response
 
     def RemoveImage(self, request, context):
@@ -248,3 +261,16 @@ class K8SImageServicer(ImageServiceServicer):
             Services.logger.error(error)
 
         return image.hash_id
+
+
+class CRIForwarder():
+    """Super class for forwarder classes"""
+    def __init__(self, url='unix:///var/run/dockershim.sock'):
+        self.url = url
+
+    def PullImage(self, request): # pylint: disable=invalid-name
+        """Send PullImageRequest to CRI service"""
+        channel = grpc.insecure_channel(self.url)
+        stub = ImageServiceStub(channel)
+        response = stub.PullImage(request)
+        return response

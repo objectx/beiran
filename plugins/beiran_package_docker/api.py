@@ -97,10 +97,14 @@ class ImageInfoHandler(web.RequestHandler):
         """
         self.set_header("Content-Type", "application/json")
 
+        image_id_or_sha = image_id_or_sha.rstrip('/info')
+
         if image_id_or_sha.startswith('sha256:'):
             query = DockerImage.select().where(DockerImage.hash_id == image_id_or_sha)
             image = query.first()
         else:
+            if not ":" in image_id_or_sha:
+                image_id_or_sha += ":latest"
             query = DockerImage.select().where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
             image = query.first()
 
@@ -463,7 +467,7 @@ class LayerList(web.RequestHandler):
 ROUTES = [
     (r'/docker/images', ImageList),
     (r'/docker/layers', LayerList),
-    (r'/docker/images/([^:]+:[^/]+)', ImagesTarHandler),
-    (r'/docker/images/([^:]+:[^/]+)/info', ImageInfoHandler),
+    (r'/docker/images/(.*(?<!/info)$)', ImagesTarHandler),
+    (r'/docker/images/(.*/info)', ImageInfoHandler),
     (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
 ]

@@ -95,7 +95,9 @@ pipeline:
             fi
         done
       - docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+      - docker tag hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788 hello-world:latest
       - docker pull alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
+      - docker tag alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528 alpine:latest
       - docker images
 
   beirand1:

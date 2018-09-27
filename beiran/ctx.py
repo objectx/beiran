@@ -28,39 +28,56 @@ class Config:
         if not val is None:
             return val
 
-        if keyname in conf['beiran']:
-            return conf['beiran'][keyname]
-        else:
-            return default
+        keys = keyname.split('.')
+
+        val = conf
+        for key in keys[:-1]:
+            val = val[key] if not val is None and key in val else None
+        return val if not val is None else default
 
         
     @staticmethod
     def get_config_folder():
-        return Config.get_params('CONFIG_FOLDER_PATH', 'config_folder', defaults.CONFIG_FOLDER)
+        return Config.get_params('CONFIG_FOLDER_PATH', 'beiran.config_folder', defaults.CONFIG_FOLDER)
 
     @staticmethod
     def get_data_folder():
-        return Config.get_params('DATA_FOLDER_PATH', 'data_folder', defaults.DATA_FOLDER)
+        return Config.get_params('DATA_FOLDER_PATH', 'beiran.data_folder', defaults.DATA_FOLDER)
 
     @staticmethod
     def get_log_level():
-        return Config.get_params('LOG_LEVEL', 'log_level', defaults.LOG_LEVEL)
+        return Config.get_params('LOG_LEVEL', 'beiran.log_level', defaults.LOG_LEVEL)
 
     @staticmethod
     def get_log_file():
-        return Config.get_params('LOG_FILE', 'log_file', defaults.LOG_FILE)
+        return Config.get_params('LOG_FILE', 'beiran.log_file', defaults.LOG_FILE)
 
     @staticmethod
     def get_discovery_method():
-        return Config.get_params('DISCOVERY_METHOD', 'discovery_method', None)
+        return Config.get_params('DISCOVERY_METHOD', 'beiran.discovery_method', None)
 
     @staticmethod
     def get_package_plugins():
-        return conf['beiran']['package_plugins']
+        if not 'packages' in conf:
+            return []
+
+        l = []
+        for key in conf['packages'].keys():
+            if 'enabled' in conf['packages'][key] and conf['packages'][key]['enabled']:
+                l.append(key)
+        return l
 
     @staticmethod
     def get_interface_plugins():
-        return conf['beiran']['interface_plugins']
+        if not 'interfaces' in conf:
+            return []
+
+        l = []
+        for key in conf['interfaces'].keys():
+            if 'enabled' in conf['interfaces'][key] and conf['interfaces'][key]['enabled']:
+                l.append(key)
+        return l
+
 
     @staticmethod
     def get_plugin_config(name):

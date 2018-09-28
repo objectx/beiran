@@ -251,13 +251,12 @@ class ImageList(RPCEndpoint):
 
     def __init__(self, application: Application, request: HTTPServerRequest, **kwargs) -> None:
         super().__init__(application, request, **kwargs)
-        self.real_size = 0
 
     def data_received(self, chunk):
         pass
 
     @rpc
-    async def pull(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    async def pull(self):
         """
             Pulling image in cluster
 
@@ -269,9 +268,23 @@ class ImageList(RPCEndpoint):
             raise HTTPError(status_code=400, log_message='Image name is not given')
 
         node_identifier = body['node']
+
+        wait = True if 'wait' in body and body['wait'] else False
+        force = True if 'force' in body and body['force'] else False
+        show_progress = True if 'progress' in body and body['progress'] else False
+
+        await self.pull_routine(image_identifier, node_identifier, self, wait, show_progress, force)
+
+
+    @staticmethod
+    async def pull_routine(image_identifier: str, node_identifier: str = None, # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+                           rpc_endpoint: "RPCEndpoint" = None, wait: bool = False,
+                           show_progress: bool = False, force: bool = False) -> str:
+        """Coroutine to pull image in cluster
+        """
         if not node_identifier:
             available_nodes = await DockerImage.get_available_nodes_by_tag(image_identifier)
-            online_nodes = Services.daemon.nodes.all_nodes.keys()
+            online_nodes = Services.daemon.nodes.all_nodes.keys() # type: ignore
             online_availables = [n for n in available_nodes if n in online_nodes]
             if online_availables:
                 node_identifier = random.choice(online_availables)
@@ -279,48 +292,45 @@ class ImageList(RPCEndpoint):
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
-        wait = True if 'wait' in body and body['wait'] else False
-        force = True if 'force' in body and body['force'] else False
-        show_progress = True if 'progress' in body and body['progress'] else False
-
-        image_name = body['image']
-
-        if not ":" in image_name:
-            image_name += ":latest"
+        if not ":" in image_identifier:
+            image_identifier += ":latest"
         query = DockerImage.select()
-        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
+        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
         image = query.first()
 
         if not image:
             raise HTTPError(status_code=404, log_message="Image Not Found")
 
-        if show_progress:
-            self.write('{"image":"%s","progress":[' % image_name)
-            self.flush()
-
-        if not wait and not show_progress:
-            self.write({'started':True})
-            self.finish()
-
         uuid_pattern = re.compile(r'^([a-f0-9]+)$', re.IGNORECASE)
-        Services.logger.debug("Will fetch %s from >>%s<<",
+        Services.logger.debug("Will fetch %s from >>%s<<", # type: ignore
                               image_identifier, node_identifier)
         if uuid_pattern.match(node_identifier):
-            node = await Services.daemon.nodes.get_node_by_uuid(node_identifier)
+            node = await Services.daemon.nodes.get_node_by_uuid(node_identifier) # type: ignore
         else:
             try:
-                node = await Services.daemon.nodes.get_node_by_url(node_identifier)
+                node = await Services.daemon.nodes.get_node_by_url(node_identifier) # type: ignore
             except Node.DoesNotExist as err:
                 if not force:
                     raise err
-                node = await Services.daemon.nodes.fetch_node_info(node_identifier)
+                node = await Services.daemon.nodes.fetch_node_info(node_identifier) # type: ignore
 
         client = Client(node=node)
+        chunks = asyncio.Queue() # type: asyncio.queues.Queue
 
-        chunks = asyncio.Queue()
+        real_size = 0
+
+        if show_progress:
+            rpc_endpoint.write('{"image":"%s","progress":[' % image_identifier) # type: ignore
+            rpc_endpoint.flush() # type: ignore
+
+        if not wait and not show_progress and rpc_endpoint is not None:
+            rpc_endpoint.write({'started':True})
+            rpc_endpoint.finish()
+
         @aiohttp.streamer
-        async def sender(writer, chunks):
+        async def sender(writer, chunks: asyncio.queues.Queue):
             """ async generator data sender for aiodocker """
+            nonlocal real_size
             progress = 0.0
             last_progress = 0.0
 
@@ -329,30 +339,33 @@ class ImageList(RPCEndpoint):
                 await writer.write(chunk)
 
                 if chunk:
-                    self.real_size += len(chunk)
-                    if show_progress and self.real_size/float(image.size) - last_progress > 0.05:
-                        progress = self.real_size/float(image.size)
-                        self.write('{"progress": %.2f, "done": false},' % progress)
-                        self.flush()
+                    real_size += len(chunk)
+                    if show_progress and real_size/float(image.size) - last_progress > 0.05:
+                        progress = real_size/float(image.size)
+                        rpc_endpoint.write( # type: ignore
+                            '{"progress": %.2f, "done": false},' % progress
+                        )
+                        rpc_endpoint.flush() # type: ignore
                         last_progress = progress
                 else:
                     if show_progress:
-                        self.write('{"progress": %.2f, "done": true}' %
-                                   (self.real_size / float(image.size)))
-                        self.write(']}')
-                        self.finish()
+                        rpc_endpoint.write('{"progress": %.2f, "done": true}' % # type: ignore
+                                           (real_size / float(image.size)))
+                        rpc_endpoint.write(']}') # type: ignore
+                        rpc_endpoint.finish() # type: ignore
 
                         # FIXME!
-                        if self.real_size != image.size:
-                            Services.logger.debug(
-                                "WARNING: size of image != sum of chuncks length. [%d, %d]",
-                                self.real_size, image.size)
+                        if real_size != image.size:
+                            Services.logger.debug( # type: ignore
+                                "WARNING: size of image != sum of chunks length. [%d, %d]",
+                                real_size, image.size)
                     break
-
 
         try:
             # pylint: disable=no-value-for-parameter,no-member
-            docker_future = Services.aiodocker.images.import_image(data=sender(chunks))
+            docker_future = Services.aiodocker.images.import_image( # type: ignore
+                data=sender(chunks)
+            )
             # pylint: enable=no-value-for-parameter,no-member
             docker_result = asyncio.ensure_future(docker_future)
 
@@ -365,12 +378,14 @@ class ImageList(RPCEndpoint):
 
             await docker_result
         except Client.Error as error:
-            Services.logger.error(error)
+            Services.logger.error(error) # type: ignore
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
         if wait and not show_progress:
-            self.write({'finished':True})
-            self.finish()
+            rpc_endpoint.write({'finished':True}) # type: ignore
+            rpc_endpoint.finish() # type: ignore
+
+        return image.hash_id
 
     def get(self):  # pylint: disable=arguments-differ
         """

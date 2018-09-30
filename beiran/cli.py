@@ -17,8 +17,9 @@ from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
 from beirand.common import RUN_DIR
+from beiran.ctx import Config
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING')) # type: ignore
+LOG_LEVEL = logging.getLevelName(Config.get_log_level()) # type: ignore
 
 # pylint: disable=invalid-name
 logger = build_logger(None, LOG_LEVEL)  # type: ignore

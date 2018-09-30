@@ -16,6 +16,8 @@ from beiran.version import get_version
 from beiran import defaults
 from beirand import common
 
+from beiran.ctx import Config
+
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
 
@@ -37,7 +39,7 @@ def local_node_uuid() -> UUID:
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
 
-    config_folder = os.getenv("CONFIG_DIR_PATH", defaults.CONFIG_DIR)
+    config_folder = Config.get_config_dir()
     uuid_conf_path = "/".join([config_folder, 'uuid.conf'])
     try:
         uuid_file = open(uuid_conf_path)

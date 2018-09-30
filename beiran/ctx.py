@@ -11,13 +11,14 @@ import pytoml
 from . import defaults
 
 try:
-    with open(path.join(defaults.CONFIG_FOLDER, 'config.toml'), 'r') as f:
+    with open(path.join(defaults.CONFIG_DIR, 'config.toml'), 'r') as f:
         conf = pytoml.load(f)
 except FileNotFoundError:
     print('file not found')
     sys.exit(1)
-except:
+except Exception as e:
     print('something is wrong')
+    print(e)
     sys.exit(1)
 
 
@@ -37,12 +38,20 @@ class Config:
 
         
     @staticmethod
-    def get_config_folder():
-        return Config.get_params('CONFIG_FOLDER_PATH', 'beiran.config_folder', defaults.CONFIG_FOLDER)
+    def get_config_dir():
+        return Config.get_params('CONFIG_DIR_PATH', 'beiran.config_dir', defaults.CONFIG_DIR)
 
     @staticmethod
-    def get_data_folder():
-        return Config.get_params('DATA_FOLDER_PATH', 'beiran.data_folder', defaults.DATA_FOLDER)
+    def get_data_dir():
+        return Config.get_params('DATA_DIR_PATH', 'beiran.data_dir', defaults.DATA_DIR)
+
+    @staticmethod
+    def get_run_dir():
+        return Config.get_params('RUN_DIR_PATH', 'beiran.run_dir', defaults.RUN_DIR)
+
+    @staticmethod
+    def get_cache_dir():
+        return Config.get_params('CACHE_DIR_PATH', 'beiran.cache_dir', defaults.CACHE_DIR)
 
     @staticmethod
     def get_log_level():

@@ -6,33 +6,36 @@ import sys
 import logging
 import importlib
 import pkgutil
+from typing import List
+
 import click
 
 from beiran.models import PeerAddress
-
 from beiran.util import Unbuffered
 from beiran.sync_client import Client
 from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
+from beirand.common import RUN_DIR
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
-logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING')) # type: ignore
+
+# pylint: disable=invalid-name
+logger = build_logger(None, LOG_LEVEL)  # type: ignore
 
 
-sys.stdout = Unbuffered(sys.stdout)
-
+sys.stdout = Unbuffered(sys.stdout) # type: ignore
 
 class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         if 'BEIRAN_SOCK' in os.environ:
             daemon_url = "http+unix://" + os.environ['BEIRAN_SOCK']
         elif 'BEIRAN_URL' in os.environ:
             daemon_url = os.environ['BEIRAN_URL']
         else:
-            daemon_url = "http+unix:///var/run/beirand.sock"
+            daemon_url = "http+unix://{}/beirand.sock".format(RUN_DIR)
 
         peer_address = PeerAddress(address=daemon_url)
         self.beiran_url = peer_address.location
@@ -59,7 +62,7 @@ class BeiranCLI(click.MultiCommand):
 
     installed_plugins = get_installed_plugins()
 
-    def list_commands(self, ctx):
+    def list_commands(self, ctx) -> List[str]:  # type: ignore
         """
         Lists of subcommand names
 
@@ -73,7 +76,7 @@ class BeiranCLI(click.MultiCommand):
         commands = list()
         for beiran_plugin in self.installed_plugins:
             module = importlib.import_module(beiran_plugin)
-            for _, modname, _ in pkgutil.iter_modules(module.__path__):
+            for _, modname, _ in pkgutil.iter_modules(module.__path__):  # type: ignore
                 if modname.startswith('cli_'):
                     commands.append(modname.split('_')[1])
 
@@ -81,7 +84,7 @@ class BeiranCLI(click.MultiCommand):
         commands.sort()
         return commands
 
-    def get_command(self, ctx, cmd_name):
+    def get_command(self, ctx: BeiranContext, cmd_name: str) -> click.group:  # type: ignore
         """
         Load command object
 
@@ -96,13 +99,13 @@ class BeiranCLI(click.MultiCommand):
         if cmd_name == "node":
             cli_module = '{}.cli_{}'.format("beiran", cmd_name)
             module = importlib.import_module(cli_module)
-            return module.cli
+            return module.cli  # type: ignore
 
         for plugin in self.installed_plugins:
             try:
                 cli_module = '{}.cli_{}'.format(plugin, cmd_name)
                 module = importlib.import_module(cli_module)
-                return module.cli
+                return module.cli  # type: ignore
             except ModuleNotFoundError:
                 pass
 

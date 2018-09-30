@@ -23,5 +23,5 @@ VERSION = get_version('short', 'daemon')
 class Services:
     """Conventional class for keeping references to global objects"""
     daemon = None
-    plugins = {}
-    logger = build_logger(LOG_FILE, LOG_LEVEL)
+    plugins = {} # type: dict
+    logger = build_logger(LOG_FILE, LOG_LEVEL) # type: ignore

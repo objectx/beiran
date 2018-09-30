@@ -7,15 +7,16 @@ gRPC server (CRI Version: v1alpha2)
 import json
 import random
 import asyncio
+import grpc
 
 import aiohttp
 from peewee import SQL
 
 from beiran.client import Client
 from beiran.util import run_in_loop
-from plugins.beiran_package_docker.models import DockerImage
+from beiran_package_docker.models import DockerImage
 
-from .api_pb2_grpc import ImageServiceServicer
+from .api_pb2_grpc import ImageServiceServicer, ImageServiceStub
 from .api_pb2 import ImageStatusResponse
 from .api_pb2 import ListImagesResponse, Image
 from .api_pb2 import PullImageResponse
@@ -49,11 +50,19 @@ def get_username_or_uid(username: str):
 class K8SImageServicer(ImageServiceServicer):
     """ImageService defines the public APIs for managing images.
     """
+    TIMEOUT_SEC = 5
+
+    def __init__(self):
+        self.cri_fw = CRIForwarder()
+
     def ListImages(self, request, context):
         """ListImages lists existing images.
         """
-        # don't care ImageFilter like containerd (containerd/cri/pkg/server/image_list.go)
         Services.logger.debug("request: ListImages")
+        # don't care ImageFilter like containerd (containerd/cri/pkg/server/image_list.go)
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return ListImagesResponse()
 
         images = []
 
@@ -78,6 +87,9 @@ class K8SImageServicer(ImageServiceServicer):
         nil.
         """
         Services.logger.debug("request: ImageStatus")
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return ImageStatusResponse()
 
         if not request.image:
             return ImageStatusResponse()
@@ -128,16 +140,29 @@ class K8SImageServicer(ImageServiceServicer):
         # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
 
+        if not self.check_plugin_timeout('package:docker', context):
+            return PullImageResponse()
+
         image_name = request.image.image
         if ":" not in image_name:
             image_name += ":latest"
 
-        # not supporting AuthConfig and PodSandboxConfig now
-        image_ref = run_in_loop(self.pull_routine(image_name),
-                                loop=Services.loop,
-                                sync=True)
+        try:
+            # not supporting AuthConfig and PodSandboxConfig now
+            image_ref = run_in_loop(self.pull_routine(image_name),
+                                    loop=Services.loop,
+                                    sync=True)
+            response = PullImageResponse(image_ref=image_ref)
+        except Exception: # pylint: disable=broad-except
+            try:
+                Services.logger.debug("forward a pull request to other CRI endpoint")
+                response = self.cri_fw.PullImage(request)
+            except grpc._channel._Rendezvous: # pylint: disable=protected-access
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("request was forwarded but the endpoint is unavailable (%s)"
+                                    % self.cri_fw.url)
+                response = PullImageResponse()
 
-        response = PullImageResponse(image_ref=image_ref)
         return response
 
     def RemoveImage(self, request, context):
@@ -146,6 +171,9 @@ class K8SImageServicer(ImageServiceServicer):
         already been removed.
         """
         Services.logger.debug("request: RemoveImage")
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return RemoveImageResponse()
 
         # not support
 
@@ -156,6 +184,9 @@ class K8SImageServicer(ImageServiceServicer):
         """ImageFSInfo returns information of the filesystem that is used to store images.
         """
         Services.logger.debug("request: ImageFsInfo")
+
+        if not self.check_plugin_timeout('package:docker', context):
+            return RemoveImageResponse()
 
         # not support
 
@@ -168,6 +199,22 @@ class K8SImageServicer(ImageServiceServicer):
             )
         )
         return response
+
+    def check_plugin_timeout(self, plugin_name, context):
+        """
+        Check and wait until plugin status to be ready.
+        If plugin status isn't 'ready', set an error code and a description to the context.
+        """
+        try:
+            Services.daemon.check_wait_plugin_status_ready(plugin_name,
+                                                           Services.loop,
+                                                           K8SImageServicer.TIMEOUT_SEC)
+            return True
+        except asyncio.TimeoutError:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Timeout: %s is not ready" % plugin_name)
+            return False
+
 
     async def pull_routine(self, image_name): # pylint: disable=too-many-locals
         """coroutine for pulling images"""
@@ -214,3 +261,16 @@ class K8SImageServicer(ImageServiceServicer):
             Services.logger.error(error)
 
         return image.hash_id
+
+
+class CRIForwarder():
+    """Super class for forwarder classes"""
+    def __init__(self, url='unix:///var/run/dockershim.sock'):
+        self.url = url
+
+    def PullImage(self, request): # pylint: disable=invalid-name
+        """Send PullImageRequest to CRI service"""
+        channel = grpc.insecure_channel(self.url)
+        stub = ImageServiceStub(channel)
+        response = stub.PullImage(request)
+        return response

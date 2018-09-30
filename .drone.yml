@@ -45,6 +45,7 @@ pipeline:
     commands:
       - pylint beirand
       - bandit -r beirand || echo "There are security warnings"
+      - mypy --config-file mypy.ini beirand
 
   check-client:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
@@ -52,6 +53,7 @@ pipeline:
     commands:
       - pylint beiran
       - bandit -r beiran || echo "There are security warnings"
+      - mypy --config-file mypy.ini beiran
 
   check-plugins:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
@@ -59,6 +61,7 @@ pipeline:
     commands:
       - pylint plugins
       - bandit -r plugins || echo "There are security warnings"
+      - mypy --config-file mypy.ini plugins
 
   pytest:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
@@ -91,8 +94,10 @@ pipeline:
               exit 1
             fi
         done
-      - docker pull hello-world
-      - docker pull alpine:latest
+      - docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+      - docker tag hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788 hello-world:latest
+      - docker pull alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
+      - docker tag alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528 alpine:latest
       - docker images
 
   beirand1:

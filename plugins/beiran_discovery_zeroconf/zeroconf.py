@@ -5,6 +5,8 @@ Zeroconf multicast discovery service implementation
 import asyncio
 import socket
 
+from typing import Optional, Coroutine
+
 from aiozeroconf import Zeroconf, ZeroconfServiceTypes, ServiceInfo, ServiceBrowser
 import netifaces
 
@@ -23,7 +25,7 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
 
-    def __init__(self, config):
+    def __init__(self, config: dict) -> None:
         """ Creates an instance of Zeroconf Discovery Service
         """
         super().__init__(config)
@@ -56,7 +58,7 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
         return list_of_services
 
     @property
-    def advertise_name(self):
+    def advertise_name(self) -> str:
         """Return concatenated string as advertise name"""
         return "{}-{}.{}".format(self.hostname, str(self.port), self.domain)
 
@@ -94,23 +96,24 @@ class ZeroconfListener:
     """Listener instance for zeroconf discovery to monitor changes
     """
 
-    def __init__(self, discovery=None):
+    def __init__(self, discovery: "ZeroconfDiscovery") -> None:
         self.discovery = discovery
         self.log = discovery.log
-        self.services = {}
+        self.services = {} # type: dict
 
-    def remove_service(self, zeroconf, typeos, name):
+    def remove_service(self, zeroconf: Zeroconf, typeos: str, name: str):
         """Service removed change receives
         """
         asyncio.ensure_future(self.removed_service(zeroconf, typeos, name))
         self.log.debug("Service %s removed" % (name,))
 
-    def add_service(self, zeroconf, typeos, name):
+    def add_service(self, zeroconf: Zeroconf, typeos: str, name: str):
         """Service added change receives
         """
         asyncio.ensure_future(self.found_service(zeroconf, typeos, name))
 
-    async def found_service(self, zeroconf, typeos, name, retries=5):
+    async def found_service(self, zeroconf: Zeroconf, typeos: str, name: str,
+                            retries: int = 5) -> Optional[Coroutine]:
         """
         Service Info for newly added node
         Args:
@@ -123,7 +126,7 @@ class ZeroconfListener:
             self.log.warning("could not fetch info of discovered service: %s", name)
             if retries == 0:
                 # give up
-                return
+                return None
             retries -= 1
             await asyncio.sleep(5)
             return self.found_service(zeroconf, typeos, name, retries)
@@ -135,7 +138,7 @@ class ZeroconfListener:
             ]
         )
         if is_itself:
-            return  # return here if we discovered ourselves
+            return None # return here if we discovered ourselves
 
         self.services[name] = service_info
         if service_info:
@@ -148,6 +151,7 @@ class ZeroconfListener:
             peer_address = PeerAddress(host=socket.inet_ntoa(service_info.address),
                                        port=service_info.port)
             self.discovery.emit('discovered', peer_address=peer_address)
+
             if service_info.properties:
                 self.log.debug("  Properties are:")
                 for key, value in service_info.properties.items():
@@ -158,7 +162,9 @@ class ZeroconfListener:
             self.log.debug("  No info")
         self.log.debug('\n')
 
-    async def removed_service(self, zeroconf, typeos, name):
+        return None
+
+    async def removed_service(self, zeroconf: Zeroconf, typeos: str, name: str):
         """
         Service Info for removed node
         Args:

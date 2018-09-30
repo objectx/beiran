@@ -11,12 +11,12 @@ import time
 from aiohttp import ClientConnectorError
 from pyee import EventEmitter
 
-from beirand.common import Services
-
 from beiran.client import Client
 from beiran.models import Node
+from beirand.nodes import Nodes
+from beirand.common import Services
 
-PEER_REGISTRY = dict()
+PEER_REGISTRY: dict = dict()
 
 
 class PeerMeta(type):
@@ -35,7 +35,8 @@ class PeerMeta(type):
 # pylint: disable=too-many-instance-attributes
 class Peer(EventEmitter, metaclass=PeerMeta):
     """Peer class"""
-    def __new__(cls, node=None, nodes=None, loop=None, local=False):
+    def __new__(cls, node: Node = None, nodes: Nodes = None,
+                loop: asyncio.events.AbstractEventLoop = None, local: bool = False):
         new_obj = None
         if node:
             cls.node = node
@@ -77,11 +78,10 @@ class Peer(EventEmitter, metaclass=PeerMeta):
 
         self.loop.create_task(self.peerloop())
 
-    async def sync(self, remote_status=None):
+    async def sync(self, remote_status: dict = None):
         """Sync plugin states with other peers"""
-        if not remote_status:
-            remote_status = await self.client.get_status(timeout=10)
-        sync_version = remote_status['sync_state_version']
+        _remote_status = remote_status or await self.client.get_status(timeout=10)
+        sync_version = _remote_status.get('sync_state_version')
         if sync_version == self.last_sync_state_version:
             self.logger.debug("Already in sync (v:%d) with peer, not syncing", sync_version)
             return

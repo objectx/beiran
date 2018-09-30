@@ -1,26 +1,33 @@
 """Docker Plugin Utility Module"""
 import asyncio
 import os
-import json
-
+import logging
+import re
+import base64
+import aiohttp
 import aiofiles
-from peewee import SQL
 
+from peewee import SQL
+from aiodocker import Docker
+
+from beirand.common import CACHE_DIR
 from beiran.log import build_logger
-from beiran.lib import async_req
+from beiran.lib import async_write_file_stream, async_req
+from beiran.models import Node
+
 from .models import DockerImage, DockerLayer
 
 
 LOGGER = build_logger()
 
 
-async def aio_dirlist(path):
+async def aio_dirlist(path: str):
     """async proxy method for os.listdir"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, os.listdir, path)
 
 
-async def aio_isdir(path):
+async def aio_isdir(path: str):
     """async proxy method for os.isdir"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, os.path.isdir, path)
@@ -33,15 +40,24 @@ class DockerUtil:
         """..."""
         pass
 
-    def __init__(self, storage="/var/lib/docker", aiodocker=None, logger=None):
+    class AuthenticationFailed(Exception):
+        """..."""
+        pass
+
+    class LayerDownloadFailed(Exception):
+        """..."""
+        pass
+
+    def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
+                 logger: logging.Logger = None) -> None:
         self.storage = storage
-        self.diffid_mapping = {}
-        self.layerdb_mapping = {}
-        self.aiodocker = aiodocker
+        self.diffid_mapping: dict = {}
+        self.layerdb_mapping: dict = {}
+        self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
     @staticmethod
-    def docker_sha_summary(sha):
+    def docker_sha_summary(sha: str) -> str:
         """
         shorten sha to 12 bytes length str as docker uses
 
@@ -57,7 +73,7 @@ class DockerUtil:
         """
         return sha.split(":")[1][0:12]
 
-    def docker_find_layer_dir_by_sha(self, sha):
+    def docker_find_layer_dir_by_sha(self, sha: str):
         """
         try to find local layer directory containing tar archive
         contents pulled from remote repository
@@ -69,29 +85,33 @@ class DockerUtil:
             string directory path or None
 
         """
+        diff_file_name = ""
 
-        local_diff_dir = self.storage + '/image/overlay2/distribution/v2metadata-by-diffid/sha256'
-        local_cache_id = self.storage + '/image/overlay2/layerdb/sha256/{diff_file_name}/cache-id'
-        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff/'
+        local_digest_dir = self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
+        local_layer_db = self.storage + '/image/overlay2/layerdb/sha256'
+        local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
+        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
 
-        for file_name in os.listdir(local_diff_dir):
-            f_path = '{}/{}'.format(local_diff_dir, file_name)
-            file = open(f_path)
-            try:
-                content = json.load(file)
-                if not content[0].get('Digest', None) == sha:
-                    continue  # next file
+        f_path = local_digest_dir + "/{}".format(sha.replace('sha256:', '', 1))
 
-                file.close()
+        file = open(f_path, 'r')
+        diff_1 = file.read()
+        file.close()
 
-                with open(local_cache_id.format(diff_file_name=file_name)) as file:
-                    return local_layer_dir.format(layer_dir_name=file.read())
+        for layer_dir_name in os.listdir(local_layer_db):
+            f_path = '{}/{}/diff'.format(local_layer_db, layer_dir_name)
 
-            except ValueError:
-                pass
+            with open(f_path, 'r') as file:
+                diff_2 = file.read()
+                if diff_2 == diff_1:
+                    diff_file_name = layer_dir_name
+                    break
+
+        with open(local_cache_id.format(diff_file_name=diff_file_name)) as file:
+            return local_layer_dir.format(layer_dir_name=file.read())
 
     @staticmethod
-    async def reset_docker_info_of_node(uuid_hex):
+    async def reset_docker_info_of_node(uuid_hex: str):
         """ Delete all (local) layers and images from database """
         for image in list(DockerImage.select(DockerImage.hash_id,
                                              DockerImage.available_at)):
@@ -114,8 +134,7 @@ class DockerUtil:
         DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
 
-
-    async def fetch_docker_info(self):
+    async def fetch_docker_info(self) -> dict:
         """
         Fetch async docker daemon information
 
@@ -137,7 +156,7 @@ class DockerUtil:
                 "error": str(error)
             }
 
-    async def update_docker_info(self, node):
+    async def update_docker_info(self, node: Node):
         """
         Makes an async call to docker `client` and get info for `node`
 
@@ -164,7 +183,7 @@ class DockerUtil:
             if retry_after < 30:
                 retry_after += 5
 
-    async def get_diffid_mappings(self):
+    async def get_diffid_mappings(self) -> dict:
         """..."""
 
         self.logger.debug("Getting diff-id digest mappings..")
@@ -185,7 +204,7 @@ class DockerUtil:
         except FileNotFoundError:
             return {}
 
-    async def get_layerdb_mappings(self):
+    async def get_layerdb_mappings(self) -> dict:
         """..."""
 
         self.logger.debug("Getting layerdb digest mappings..")
@@ -209,9 +228,8 @@ class DockerUtil:
         except FileNotFoundError:
             return {}
 
-    async def get_image_layers(self, diffid_list):
+    async def get_image_layers(self, diffid_list: list) -> list:
         """Returns an array of DockerLayer objects given diffid array"""
-
         layers = []
         for idx, diffid in enumerate(diffid_list):
             try:
@@ -223,7 +241,7 @@ class DockerUtil:
                                   diffid)
         return layers
 
-    async def get_layer_by_diffid(self, diffid, idx):
+    async def get_layer_by_diffid(self, diffid: str, idx: int) -> DockerLayer:
         """
         Makes an DockerLayer objects using diffid of layer
 
@@ -280,7 +298,7 @@ class DockerUtil:
         #     image.layers.append("<not-found>")
         return layer
 
-    async def fetch_docker_image_info(self, name):
+    async def fetch_docker_image_info(self, name: str):
         """
         Fetch Docker Image manifest specified repository.
         Args:
@@ -387,3 +405,88 @@ class DockerUtil:
         manifest['hashid'] = resp.headers['Docker-Content-Digest']
 
         DockerImage.from_dict(manifest, dialect="manifest").save()
+
+    async def get_docker_bearer_token(self, realm, service, scope):
+        """
+        Get Bearer token from auth.docker.io
+        """
+        _, data = await async_req(
+            "{}?service={}&scope={}".format(realm, service, scope)
+        )
+        token = data['token']
+        return token
+
+    async def get_auth_requirements(self, headers, **kwargs):
+        """
+        Get requirements for registry authentication.
+        Supporting -> Basic, Bearer token
+
+        Args:
+            headers: async client response header
+        """
+
+        if headers['Www-Authenticate'].startswith('Bearer'):
+            # parse 'Bearer realm="https://auth.docker.io/token",
+            # service="registry.docker.io",scope="repository:google/cadvisor:pull"'
+            values = re.findall('(\w+(?==)|(?<=")[\w.:/]+)',  # pylint: disable=anomalous-backslash-in-string
+                                headers['Www-Authenticate'])
+            val_dict = dict(zip(values[0::2], values[1::2]))
+
+            try:
+                token = await self.get_docker_bearer_token(
+                    val_dict['realm'],
+                    val_dict['service'],
+                    val_dict['scope']
+                )
+            except Exception:
+                raise DockerUtil.AuthenticationFailed("Failed to get Bearer token")
+
+            return 'Bearer ' + token
+
+        if headers['Www-Authenticate'].startswith('Basic'):
+            try:
+                login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
+                login_str = base64.b64encode(login_str.encode('utf-8')).decode('utf-8')
+            except KeyError:
+                raise DockerUtil.AuthenticationFailed("Basic auth required but " \
+                                                      "'user' and 'passwd' wasn't passed")
+
+            return 'Basic ' + login_str
+
+        raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
+                                              % headers['Www-Authenticate'])
+
+    async def download_layer_from_origin(self, host, repository, layer_hash, **kwargs):
+        """
+        Download layer from registry.
+        Args:
+            host (str): registry domain (e.g. index.docker.io)
+            repository (str): path of repository (e.g. library/centos)
+            layer_hash (str): SHA-256 hash of a blob
+        """
+        save_path = CACHE_DIR + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
+        url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+        requirements = None
+
+        self.logger.debug("downloading layer from %s", url)
+
+        # try to access the server with HTTP HEAD requests
+        # there is also a purpose to check the type of authentication
+        try:
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+
+        except aiohttp.client_exceptions.ClientConnectorSSLError:
+            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
+            url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+
+        if resp.status == 401 or resp.status == 200:
+            if resp.status == 401:
+                requirements = await self.get_auth_requirements(resp.headers, **kwargs)
+
+            resp = await async_write_file_stream(url, save_path, Authorization=requirements)
+
+        if resp.status != 200:
+            raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
+
+        self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)

@@ -1,9 +1,8 @@
-# TODO : Move docker models here
-# TODO : Support plugin models on daemon
 """
 Module for DockerLayer and DockerImage Model
 """
 from datetime import datetime
+
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 from beirand.common import Services
@@ -14,17 +13,17 @@ class CommonDockerObjectFunctions:
 
     available_at = JSONStringField(default=list)
 
-    def set_available_at(self, uuid_hex):
+    def set_available_at(self, uuid_hex: str):
         """add uuid of node to available_at list"""
         if uuid_hex in self.available_at:
             return
         self.available_at.append(uuid_hex)
 
-    def unset_available_at(self, uuid_hex):
+    def unset_available_at(self, uuid_hex: str):
         """remove uuid of node from available_at list"""
         if uuid_hex not in self.available_at:
             return
-        self.available_at = [n for n in self.available_at if n != uuid_hex]
+        self.available_at = [n for n in self.available_at if n != uuid_hex] # type: ignore
 
 
 class DockerImage(BaseModel, CommonDockerObjectFunctions):
@@ -46,7 +45,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     has_unknown_layers = BooleanField(default=False)
 
     @classmethod
-    def from_dict(cls, _dict, **kwargs):
+    def from_dict(cls, _dict: dict, **kwargs) -> "DockerImage":
         if 'availability' in _dict:
             del _dict['availability']
 
@@ -112,7 +111,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         return _dict
 
     @classmethod
-    async def get_available_nodes_by_tag(cls, image_name):
+    async def get_available_nodes_by_tag(cls, image_name: str) -> list:
         """
 
         Args:
@@ -136,7 +135,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
                 SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
             return image.available_at
         except DockerImage.DoesNotExist:
-            pass
+            return []
 
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):

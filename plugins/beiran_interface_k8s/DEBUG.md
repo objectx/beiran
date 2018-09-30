@@ -26,8 +26,8 @@ $ vim crictl.yaml
 ```
 
 ```
-runtime-endpoint: unix:///var/lib/beiran/grpc.sock
-image-endpoint: unix:///var/lib/beiran/grpc.sock
+runtime-endpoint: unix:///var/run/beiran-cri.sock
+image-endpoint: unix:///var/run/beiran-cri.sock
 timeout: 10
 debug: true
 ```

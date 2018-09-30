@@ -8,6 +8,8 @@ import socket
 import sys
 import time
 import pkgutil
+
+from typing import Optional, Union, List, Any # pylint: disable=unused-import
 from asyncio import get_event_loop
 from abc import abstractmethod, ABCMeta
 from pyee import EventEmitter
@@ -55,58 +57,18 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
     """BeiranPlugin with EventEmmiter
     """
 
-    async def init(self):
-        pass
-
-    async def start(self):
-        pass
-
-    async def stop(self):
-        pass
-
-    async def sync(self, peer):
-        pass
-
-    def is_available(self):
-        pass
-
-    @property
-    def status(self):
-        """Return plugin status"""
-        return self.__status
-
-    @status.setter
-    def status(self, value):
-        if value == self.__status:
-            return self.__status
-        self.__status = value
-        self.emit('status', value)
-        return self.__status
-
-    # todo: remove if we do not need anymore!
-    # def get_status(self):
-    #     """Get plugin status"""
-    #     return self.__status
-
-    def emit(self, event, *args, **kwargs):
-        if event != 'new_listener':
-            # self.log.debug('[' + self.plugin_type
-            # + ':' + self.plugin_name + ':event] ' + event)
-            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name, event)
-        super().emit(event, *args, **kwargs)
-
-    def __init__(self, config):
+    def __init__(self, config: dict) -> None:
         """
         Initialization of plugin class with async loop
         """
         super().__init__()
-        self.__status = None
-        self.api_routes = []
-        self.model_list = []
+        self.__status = None # type: Optional[str]
+        self.api_routes = [] # type: list
+        self.model_list = [] # type: list
         self.history = None
 
-        self.plugin_name = sys.modules[self.__module__].PLUGIN_NAME
-        self.plugin_type = sys.modules[self.__module__].PLUGIN_TYPE
+        self.plugin_name = sys.modules[self.__module__].PLUGIN_NAME # type: ignore
+        self.plugin_type = sys.modules[self.__module__].PLUGIN_TYPE # type: ignore
         self.node = config.pop('node')
 
         if 'logger' in config:
@@ -124,7 +86,48 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         self.loop = get_event_loop()
         self.status = 'init'
 
-    def set_log_level(self, level: int):
+    async def init(self):
+        pass
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
+
+    async def sync(self, peer):
+        pass
+
+    def is_available(self):
+        pass
+
+    @property
+    def status(self) -> Optional[str]:
+        """Return plugin status"""
+        return self.__status
+
+    @status.setter
+    def status(self, value: str) -> str:
+        if value == self.__status:
+            return self.__status
+        self.__status = value
+        self.emit('status', value)
+        return self.__status
+
+    # todo: remove if we do not need anymore!
+    # def get_status(self):
+    #     """Get plugin status"""
+    #     return self.__status
+
+    def emit(self, event: str, *args: Any, **kwargs: Any) -> None:
+        if event != 'new_listener':
+            # self.log.debug('[' + self.plugin_type
+            # + ':' + self.plugin_name + ':event] ' + event)
+            self.log.debug('[%s:%s:event] %s', self.plugin_type, self.plugin_name,
+                           event)
+        super().emit(event, *args, **kwargs)
+
+    def set_log_level(self, level: int) -> None:
         """
         Setting log level for plugin classes
         Args:
@@ -139,21 +142,21 @@ class BaseDiscoveryPlugin(BasePlugin):
 
     class DiscoveredNode:
         """Beiran node information class"""
-        def __init__(self, hostname=None, ip_address=None, port=None):
+        def __init__(self, hostname: str = None, ip_address: str = None, port: int = None) -> None:
             self.hostname = hostname
             self.ip_address = ip_address
             self.port = port
 
-        def __str__(self):
+        def __str__(self) -> str:
             return 'Node: {} Address: {} Port: {}'.format(self.hostname,
                                                           self.ip_address,
                                                           str(self.port))
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             return self.__str__()
 
     @property
-    def network_interface(self):
+    def network_interface(self) -> str:
         """ Gets listen interface for daemon
         """
         if 'interface' in self.config:
@@ -162,24 +165,24 @@ class BaseDiscoveryPlugin(BasePlugin):
         return netifaces.gateways()['default'][2][1]
 
     @property
-    def port(self):
+    def port(self) -> int:
         """..."""
         if 'port' in self.config:
             return self.config['port']
         return 8888
 
     @property
-    def address(self):
+    def address(self) -> str:
         """ Gets listen address for daemon
         """
         if 'address' in self.config:
             return self.config['address']
 
-        interface = self.get_network_interface()  # todo: fix, no such method pylint: disable=no-member
+        interface = self.network_interface
         return netifaces.ifaddresses(interface)[2][0]['addr']
 
     @property
-    def hostname(self):
+    def hostname(self) -> str:
         """ Gets hostname for discovery
         """
         if 'hostname' in self.config:
@@ -201,13 +204,13 @@ class BaseInterfacePlugin(BasePlugin):
 class History(EventEmitter):
     """Class for keeping update/sync history (of anything)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.version = 0
-        self.updated_at = None
-        self.updates = []
+        self.updated_at = None # type: Union[float, str, None]
+        self.updates = [] # type: list
 
-    def update(self, msg=None):
+    def update(self, msg: str = None) -> None:
         """Append update to history and increment the version"""
         self.version += 1
         new_update = {
@@ -219,23 +222,23 @@ class History(EventEmitter):
         self.updates.append(new_update)
         self.emit('update', new_update)
 
-    def updates_since(self, since_time):
+    def updates_since(self, since_time: float) -> List[dict]:
         """Return updates since `time`"""
         return [u for u in self.updates if u['time'] >= since_time]
 
-    def delete_before(self, before_time):
+    def delete_before(self, before_time: float) -> None:
         """Delete updates before `time`"""
         self.updates = [u for u in self.updates if u['time'] < before_time]
 
     @property
-    def latest(self):
+    def latest(self) -> Optional[dict]:
         """Latest update or None"""
         if not self.updates:
             return None
         return self.updates[-1]
 
 
-def get_installed_plugins():
+def get_installed_plugins() -> List[str]:
     """
     Iterates installed packages and modules to match beiran modules.
 

@@ -74,7 +74,7 @@ export LOG_LEVEL=DEBUG
 export LOG_FILE=$(pwd)/beirand.log
 export BEIRAN_SOCK=$(pwd)/beirand.sock
 export BEIRAN_DB_PATH=$(pwd)/beiran.db
-export CONFIG_FOLDER_PATH=$(pwd)
+export CONFIG_DIR_PATH=$(pwd)
 ```
 
 #### - Start Daemon

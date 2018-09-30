@@ -8,7 +8,7 @@ from tornado.web import HTTPError
 from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 
-from beirand.common import Services
+from beirand.common import Services, RUN_DIR
 from beirand.lib import get_listen_address, get_listen_port
 
 
@@ -22,7 +22,7 @@ define('listen_port',
        help='Listen port')
 define('unix_socket',
        group='webserver',
-       default="/var/run/beirand.sock",
+       default=RUN_DIR + "/beirand.sock",
        help='Path to unix socket to bind')
 
 
@@ -47,7 +47,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
         """
         Services.logger.info("WebSocket opened")
 
-    def on_message(self, message):
+    def on_message(self, message: str):
         """ Received message from websocket
         """
         self.write_message(u"You said: " + message)
@@ -66,7 +66,7 @@ class ApiRootHandler(web.RequestHandler):
 
     def get(self, *args, **kwargs):
         self.set_header("Content-Type", "application/json")
-        self.write('{"version":"' + Services.daemon.version + '"}')
+        self.write('{"version":"' + Services.daemon.nodes.local_node.version + '"}')
         self.finish()
 
 
@@ -78,13 +78,13 @@ class NodeInfo(web.RequestHandler):
 
     # pylint: disable=arguments-differ
     @web.asynchronous
-    async def get(self, uuid=None):
+    async def get(self, uuid: str = None):
         """Retrieve info of the node by `uuid` or the local node"""
 
         if not uuid:
-            node = Services.daemon.nodes.local_node
+            node = Services.daemon.nodes.local_node # type: ignore
         else:
-            node = await Services.daemon.nodes.get_node_by_uuid(uuid)
+            node = await Services.daemon.nodes.get_node_by_uuid(uuid) # type: ignore
 
         if not node:
             raise HTTPError(status_code=404, log_message="Node Not Found")
@@ -222,7 +222,7 @@ class PluginStatusHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    def get(self, plugin_id):
+    def get(self, plugin_id: str):
         if not plugin_id in Services.plugins:
             raise HTTPError(status_code=404, log_message="Plugin Not Found")
 

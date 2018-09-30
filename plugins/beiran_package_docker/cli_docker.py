@@ -35,7 +35,7 @@ def image():
 @click.pass_obj
 @pass_context
 # pylint: disable-msg=too-many-arguments
-def image_pull(ctx, node, wait, force, progress, imagename):
+def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagename: str):
     """Pull a container image from cluster or repository"""
     click.echo('Pulling image %s from %s!' % (imagename, node))
 
@@ -60,7 +60,7 @@ def image_pull(ctx, node, wait, force, progress, imagename):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(_pull_with_progress())
 
-        progbar.render_finish()
+        progbar.render_finish()  # type: ignore  # typing attribute missing error
         click.echo('done!')
 
     else:
@@ -88,7 +88,7 @@ def image_pull(ctx, node, wait, force, progress, imagename):
               help='List images from specific node')
 @click.pass_obj
 @pass_context
-def image_list(ctx, all_nodes, node):
+def image_list(ctx, all_nodes: bool, node: str):
     """List container images across the cluster"""
 
     def _get_availability(i):
@@ -120,7 +120,7 @@ def layer():
               help='List layers from specific node')
 @click.pass_obj
 @pass_context
-def layer_list(ctx, all_nodes, node):
+def layer_list(ctx, all_nodes: bool, node: str):
     """List container layers across the cluster"""
     layers = ctx.beiran_client.get_layers(all_nodes=all_nodes, node_uuid=node)
     table = [

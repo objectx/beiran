@@ -1,24 +1,19 @@
 #!/bin/env python
 """command line client for managing beiran daemon"""
 
-import os
 import sys
-import logging
 import click
 from tabulate import tabulate
 
 from beiran.util import Unbuffered, exit_print
 from beiran.version import get_version
-from beiran.log import build_logger
 from beiran.models import Node
 from beiran.cli import pass_context
 
-LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING'))
-logger = build_logger(None, LOG_LEVEL) # pylint: disable=invalid-name
-
 VERSION = get_version('short', 'library')
 
-sys.stdout = Unbuffered(sys.stdout)
+sys.stdout = Unbuffered(sys.stdout)  #type: ignore
+
 
 @click.group()
 def cli():
@@ -45,7 +40,7 @@ def version(ctx):
               help='List all known nodes (including offline ones)')
 @click.pass_obj
 @pass_context
-def node_list(ctx, all_nodes):
+def node_list(ctx, all_nodes: bool):
     """List known beiran nodes"""
     nodes = ctx.beiran_client.get_nodes(all_nodes=all_nodes)
     table = []
@@ -63,7 +58,7 @@ def node_list(ctx, all_nodes):
 @click.argument('uuid', required=False)
 @click.pass_obj
 @pass_context
-def node_info(ctx, uuid):
+def node_info(ctx, uuid: str):
     """Show information about node"""
     info = ctx.beiran_client.get_node_info(uuid)
     table = []
@@ -79,7 +74,7 @@ def node_info(ctx, uuid):
 @click.argument('address', required=False)
 @click.pass_obj
 @pass_context
-def node_probe(ctx, address):
+def node_probe(ctx, address: str):
     """Probe a non-discovered node"""
     info = ctx.beiran_client.probe_node(address)
     print(info)

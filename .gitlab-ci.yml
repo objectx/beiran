@@ -218,7 +218,7 @@ test:bats:
      done
    - apk add bats
    - CONTAINER=$(docker-compose ps -q beiran2)
-   - docker cp beiran-cli.bats ${CONTAINER}/opt/beiran-cli.bats
+   - docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
    - docker exec ${CONTAINER} /opt/beiran-cli.bats
 
 post-test:error-logs:

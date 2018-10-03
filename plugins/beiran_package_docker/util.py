@@ -314,6 +314,8 @@ class DockerUtil:
         if idx == 0:
             layer.layerdb_diff_id = diffid
         else:
+            if diffid not in self.layerdb_mapping:
+                await self.get_layerdb_mappings()
             layer.layerdb_diff_id = self.layerdb_mapping[diffid]
         # print("layerdb: ", layer.layerdb_diff_id)
 

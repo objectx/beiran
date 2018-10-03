@@ -200,6 +200,7 @@ post-test:error-logs:
   tags:
    - docker
   script: |
+   set -x
    cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    BEIRAN_ERROR_COUNT=$(docker-compose logs | grep '[beiran] ERROR' | wc -l)
    if [ $BEIRAN_ERROR_COUNT -gt 0 ]; then

@@ -51,8 +51,11 @@ class DockerUtil:
     def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
                  logger: logging.Logger = None) -> None:
         self.storage = storage
+
+        # TODO: Persist this mapping cache to disk or database
         self.diffid_mapping: dict = {}
         self.layerdb_mapping: dict = {}
+
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
@@ -184,35 +187,67 @@ class DockerUtil:
                 retry_after += 5
 
     async def get_diffid_mappings(self) -> dict:
-        """..."""
+        """
+        Returns a mapping dict for layers;
+         - keys => diff-id
+         - values => digest (being used for downloading layers!?)
+        """
+
+        # TODO:
+        # - to be able to find digests FOR SPECIFIC diff-id,
+        # see here => /var/lib/docker/image/overlay2/distribution/v2metadata-by-diffid/sha256
+        # Note that these are JSON files, pointing to multiple (POSSIBLY DIFFERENT)
+        # digests (per remote repository)
+
+        # FIXME! There are multiple digests for diff-ids, per remote repository
+        # sometimes they are same, sometimes they are not.
 
         self.logger.debug("Getting diff-id digest mappings..")
-        diffid_mapping = {}
         mapping_dir = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256"
+
+        cached_digests = self.diffid_mapping.values()
 
         try:
             for filename in await aio_dirlist(mapping_dir):
+                digest = 'sha256:' + filename
+                if digest in cached_digests:
+                    continue
+
                 if await aio_isdir(mapping_dir + '/' + filename):
                     continue
 
                 async with aiofiles.open(mapping_dir + '/' + filename, mode='r') as mapping_file:
                     contents = await mapping_file.read()
+
                 contents = contents.strip()
-                diffid_mapping[contents] = 'sha256:' + filename
-            self.diffid_mapping = diffid_mapping
-            return diffid_mapping
+                self.diffid_mapping[contents] = digest
+            return self.diffid_mapping
         except FileNotFoundError:
             return {}
 
     async def get_layerdb_mappings(self) -> dict:
-        """..."""
+        """
+        Returns a mapping dict for layers;
+         - keys => diff-id
+         - values => chain-id
+        """
+
+        # TODO:
+        # - to be able to find digests FOR SPECIFIC diff-id,
+        # we have to enumerate all {chain-in}/diff files in layerdb
+        # since there are no mappings outside...
 
         self.logger.debug("Getting layerdb digest mappings..")
-        layerdb_mapping = {}
         layerdb_path = self.storage + "/image/overlay2/layerdb/sha256"
+
+        cached_chain_ids = self.layerdb_mapping.values()
 
         try:
             for filename in await aio_dirlist(layerdb_path):
+                chain_id = 'sha256:' + filename
+                if chain_id in cached_chain_ids:
+                    continue
+
                 if not await aio_isdir(layerdb_path + '/' + filename):
                     continue
 
@@ -220,11 +255,11 @@ class DockerUtil:
                                          filename + '/diff',
                                          mode='r') as mapping_file:
                     contents = await mapping_file.read()
-                contents = contents.strip()
-                layerdb_mapping[contents] = 'sha256:' + filename
 
-            self.layerdb_mapping = layerdb_mapping
-            return layerdb_mapping
+                contents = contents.strip()
+                self.layerdb_mapping[contents] = chain_id
+
+            return self.layerdb_mapping
         except FileNotFoundError:
             return {}
 

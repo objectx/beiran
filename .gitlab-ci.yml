@@ -200,6 +200,7 @@ test:bats:
   tags:
    - docker
   script:
+   - SRC_DIR=$(pwd)
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    - docker-compose ps
    - docker-compose logs beiran2
@@ -218,6 +219,7 @@ test:bats:
      done
    - apk add bats
    - CONTAINER=$(docker-compose ps -q beiran2)
+   - cd ${SRC_DIR}
    - docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
    - docker exec ${CONTAINER} /opt/beiran-cli.bats
 

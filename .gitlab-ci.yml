@@ -200,6 +200,7 @@ test:bats:
   tags:
    - docker
   script:
+   - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    - docker-compose ps
    - docker-compose logs beiran2
    - |

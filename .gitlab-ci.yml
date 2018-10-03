@@ -195,6 +195,31 @@ test:api:
    - tar c $(find test/rest_api -name "*.yaml") | docker exec -i ${CONTAINER} tar xv -C /opt
    - docker exec ${CONTAINER} pyresttest --url http://localhost:8888 --test /opt/test/rest_api/beirand.yaml
 
+test:bats:
+  stage: test
+  tags:
+   - docker
+  script:
+   - docker-compose ps
+   - docker-compose logs beiran2
+   - |
+     echo "=========================================="
+     echo "waiting until beirand is accessible"
+     times=0
+     until $(docker-compose exec -T beiran2 curl --output /dev/null --silent --fail http://localhost:8888); do
+         printf '.'
+         sleep 3
+         times=$(( $times + 1 ))
+         if [ $times -eq 10 ]; then
+           2>&1 echo "timed out waiting for beirand"
+           exit 1
+         fi
+     done
+   - apk add bats
+   - CONTAINER=$(docker-compose ps -q beiran2)
+   - docker cp beiran-cli.bats ${CONTAINER}/opt/beiran-cli.bats
+   - docker exec ${CONTAINER} /opt/beiran-cli.bats
+
 post-test:error-logs:
   stage: post-test
   tags:

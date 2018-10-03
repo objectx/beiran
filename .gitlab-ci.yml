@@ -3,6 +3,7 @@ stages:
  - checks
  - start_test_services
  - test
+ - post-test
  # - publish
  - cleanup
 
@@ -193,6 +194,18 @@ test:api:
    - cd ${SRC_DIR}
    - tar c $(find test/rest_api -name "*.yaml") | docker exec -i ${CONTAINER} tar xv -C /opt
    - docker exec ${CONTAINER} pyresttest --url http://localhost:8888 --test /opt/test/rest_api/beirand.yaml
+
+post-test:error-logs:
+  stage: post-test
+  tags:
+   - docker
+  script: |
+   cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   BEIRAN_ERROR_COUNT=$(docker-compose logs | grep '[beiran] ERROR' | wc -l)
+   if [ $BEIRAN_ERROR_COUNT -gt 0 ]; then
+     echo "Errors in beiran logs, please check"
+     exit 1
+   fi
 
 cleanup:services:
   stage: cleanup

@@ -410,4 +410,4 @@ class Node(BaseModel):
             # https://github.com/coleifer/peewee/blob/0ed129baf1d6a0855afa1fa27cde5614eb9b2e57/peewee.py#L5103
             node_.save(force_insert=True)
 
-        return node_
+        return node

@@ -219,8 +219,11 @@ test:bats:
      done
    - CONTAINER=$(docker-compose ps -q beiran2)
    - cd ${SRC_DIR}
+   - |
+     git clone https://github.com/sstephenson/bats.git
+     bats/install.sh /usr/local
    - docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
-   - docker exec ${CONTAINER} sh -c "apt update && apt install bats"
+   - docker cp /usr/local/bin/bats ${CONTAINER}:/usr/bin/bats
    - docker exec ${CONTAINER} /opt/beiran-cli.bats
 
 post-test:error-logs:

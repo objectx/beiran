@@ -140,8 +140,7 @@ class NodesHandler(RPCEndpoint):
         else:
             await Services.daemon.peer.probe_node(peer_address=peer_address,
                                                   extra_addr=[remote_ip,])
-            self.write({"status": "OK"})
-
+        self.write({"status": "OK"})
         self.finish()
 
     # pylint: disable=arguments-differ

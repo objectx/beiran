@@ -200,7 +200,8 @@ test:bats:
   tags:
    - docker
   script:
-   - SRC_DIR=$(pwd)
+   - |
+     SRC_DIR=$(pwd)
      mkdir ${SRC_DIR}/temp
      git clone https://github.com/sstephenson/bats.git
      bats/install.sh ${SRC_DIR}/temp

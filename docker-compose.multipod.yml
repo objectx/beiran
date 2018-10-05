@@ -74,5 +74,29 @@ services:
       - DISCOVERY_METHOD=zeroconf
       - LISTEN_ADDR=0.0.0.0
 
+  pod4:
+    image: gcr.io/google_containers/pause:0.8.0
+    volumes:
+      - /var/run
+      - /var/lib/docker
+      - /var/lib/beiran
+    networks:
+      - test
+  docker4:
+    image: docker:18.03.0-ce-dind
+    privileged: true
+    command:  [ "-D" ]
+    volumes_from:
+      - pod4
+    network_mode: "service:pod4"
+  beiran4:
+    image: dkr.beiran.io/beiran/beiran:dev
+    volumes_from:
+      - pod4
+    network_mode: "service:pod4"
+    environment:
+      - DISCOVERY_METHOD=zeroconf
+      - LISTEN_ADDR=0.0.0.0
+
 networks:
   test:

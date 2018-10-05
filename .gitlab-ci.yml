@@ -115,7 +115,7 @@ start_test_services:
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    - cp $SRC_DIR/docker-compose.multipod.yml ./docker-compose.yml
    - sed -i "s#dkr\.beiran\.io\/beiran\/beiran:dev#${CI_REGISTRY_IMAGE}:ci-${CI_PIPELINE_ID}#g" docker-compose.yml
-   - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3
+   - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3 pod4 docker4
    - sleep 5
    # seed docker daemon (docker1 only)
    - docker-compose exec -T docker1 docker pull hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
@@ -124,7 +124,7 @@ start_test_services:
    - docker-compose exec -T docker1 docker tag alpine@sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528 alpine:latest
    - docker-compose exec -T docker1 docker images
    # starting beiran
-   - docker-compose up -d beiran1 beiran2
+   - docker-compose up -d beiran1 beiran2 beiran3 beiran4
    # allow beiran to start up (might not be enough)
    - sleep 5
 
@@ -201,34 +201,37 @@ test:bats:
    - docker
   script:
    - SRC_DIR=$(pwd)
-   - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
-   - docker-compose ps
-   - docker-compose logs beiran2
-   - |
-     echo "=========================================="
-     echo "waiting until beirand is accessible"
-     times=0
-     until $(docker-compose exec -T beiran2 curl --output /dev/null --silent --fail http://localhost:8888); do
-         printf '.'
-         sleep 3
-         times=$(( $times + 1 ))
-         if [ $times -eq 10 ]; then
-           2>&1 echo "timed out waiting for beirand"
-           exit 1
-         fi
-     done
-   - |
-     CONTAINER=$(docker-compose ps -q beiran2)
-     cd ${SRC_DIR}
      mkdir ${SRC_DIR}/temp
      git clone https://github.com/sstephenson/bats.git
      bats/install.sh ${SRC_DIR}/temp
-     docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
-     docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
+   - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
+   - docker-compose ps
+   - docker-compose logs beiran2 beiran3 beiran4
    - |
      echo "=========================================="
-     echo "start bats test"
-     docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
+     echo "waiting until beirand is accessible"
+     for node in beiran2 beiran3 beiran4
+     do
+       times=0
+       until $(docker-compose exec -T $node curl --output /dev/null --silent --fail http://localhost:8888); do
+           printf '.'
+           sleep 3
+           times=$(( $times + 1 ))
+           if [ $times -eq 10 ]; then
+             2>&1 echo "timed out waiting for beirand"
+             exit 1
+           fi
+       done
+     done
+   - |
+     for node in beiran2 beiran3 beiran4
+     do
+       CONTAINER=$(docker-compose ps -q $node)
+       docker cp ${SRC_DIR}/test/bats/beiran-cli-$node.bats ${CONTAINER}:/opt/beiran-cli.bats
+       docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
+       echo "============== start bats test ($node) =============="
+       docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
+     done
 
 post-test:error-logs:
   stage: post-test

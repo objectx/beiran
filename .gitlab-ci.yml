@@ -217,14 +217,15 @@ test:bats:
            exit 1
          fi
      done
-   - CONTAINER=$(docker-compose ps -q beiran2)
-   - cd ${SRC_DIR}
    - |
+     CONTAINER=$(docker-compose ps -q beiran2)
+     cd ${SRC_DIR}
+     mkdir ${SRC_DIR}/temp
      git clone https://github.com/sstephenson/bats.git
-     bats/install.sh /usr/local
-   - docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
-   - docker cp /usr/local/bin/bats ${CONTAINER}:/usr/bin/bats
-   - docker exec ${CONTAINER} /usr/bin/bats /opt/beiran-cli.bats
+     bats/install.sh ${SRC_DIR}/temp
+     docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
+     docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
+     docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
 
 post-test:error-logs:
   stage: post-test

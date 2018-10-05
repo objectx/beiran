@@ -225,6 +225,9 @@ test:bats:
      bats/install.sh ${SRC_DIR}/temp
      docker cp beiran-cli.bats ${CONTAINER}:/opt/beiran-cli.bats
      docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
+   - |
+     echo "=========================================="
+     echo "start bats test"
      docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
 
 post-test:error-logs:

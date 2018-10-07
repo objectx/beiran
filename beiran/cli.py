@@ -16,7 +16,6 @@ from beiran.sync_client import Client
 from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
-from beirand.common import RUN_DIR
 from beiran.ctx import config
 
 LOG_LEVEL = logging.getLevelName(config.log_level) # type: ignore
@@ -36,7 +35,7 @@ class BeiranContext:
         elif 'BEIRAN_URL' in os.environ:
             daemon_url = os.environ['BEIRAN_URL']
         else:
-            daemon_url = "http+unix://{}/beirand.sock".format(RUN_DIR)
+            daemon_url = "http+unix://{}/beirand.sock".format(config.run_dir)
 
         peer_address = PeerAddress(address=daemon_url)
         self.beiran_url = peer_address.location

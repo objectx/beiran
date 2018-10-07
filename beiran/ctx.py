@@ -34,7 +34,7 @@ class Config:
         ps = key.split('.')
 
         val = self.conf
-        for p in ps[:-1]:
+        for p in ps:
             if not p in val:
                 return None
             val = val[p]
@@ -119,7 +119,7 @@ class Config:
             return []
 
         l = []
-        for key, val in d:
+        for key, val in d.items():
             if 'enabled' in val and val['enabled']:
                 l.append(key)
         return l
@@ -132,7 +132,7 @@ class Config:
             return []
 
         l = []
-        for key, val in d:
+        for key, val in d.items():
             if 'enabled' in val and val['enabled']:
                 l.append(key)
         return l
@@ -140,6 +140,7 @@ class Config:
 
     def get_plugin_config(self, key):
         return self.get_config('packages.%s' % key, None)
+
 
     def get_interface_config(self, key):
         return self.get_config('packages.%s' % key, None)

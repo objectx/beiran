@@ -8,8 +8,10 @@ from tornado.web import HTTPError
 from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 
-from beirand.common import Services, RUN_DIR
+from beirand.common import Services
 from beirand.lib import get_listen_address, get_listen_port
+
+from beiran.ctx import config
 
 
 define('listen_address',
@@ -22,7 +24,7 @@ define('listen_port',
        help='Listen port')
 define('unix_socket',
        group='webserver',
-       default=RUN_DIR + "/beirand.sock",
+       default=config.run_dir + "/beirand.sock",
        help='Path to unix socket to bind')
 
 

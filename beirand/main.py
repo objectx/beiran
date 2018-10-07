@@ -23,7 +23,6 @@ from pyee import EventEmitter
 from beirand.common import VERSION
 from beirand.common import EVENTS
 from beirand.common import Services
-from beirand.common import DATA_DIR, RUN_DIR
 
 from beirand.nodes import Nodes
 from beirand.peer import Peer
@@ -199,7 +198,7 @@ class BeiranDaemon(EventEmitter):
         logger.setLevel(logging.INFO)
 
         # check database file exists
-        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(DATA_DIR))
+        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(config.data_dir))
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:
@@ -277,7 +276,7 @@ class BeiranDaemon(EventEmitter):
         interface_plugins_enabled = config.interface_plugins
         for _plugin in interface_plugins_enabled:
             _plugin_obj = await self.get_plugin('interface', 'k8s', {
-                "unix_socket_path": "unix://" + RUN_DIR + "/beiran-cri.sock"
+                "unix_socket_path": "unix://" + config.run_dir + "/beiran-cri.sock"
             })
             Services.plugins['interface:' + _plugin] = _plugin_obj
 
@@ -318,12 +317,12 @@ class BeiranDaemon(EventEmitter):
     async def main(self):
         """ Main function """
 
-        # ensure the DATA_DIR exists
+        # ensure the config.data_dir exists
         Services.logger.info("Checking the data folder...")
-        if not os.path.exists(DATA_DIR):
-            Services.logger.debug("create the folder '%s'", DATA_DIR)
-            os.makedirs(DATA_DIR)
-        elif not os.path.isdir(DATA_DIR):
+        if not os.path.exists(config.data_dir):
+            Services.logger.debug("create the folder '%s'", config.data_dir)
+            os.makedirs(config.data_dir)
+        elif not os.path.isdir(config.data_dir):
             raise RuntimeError("Unexpected file exists")
 
         # set database

@@ -175,7 +175,7 @@ def get_hostname() -> str:
 
 def sync_version_file_path() -> str:
     """Return sync_version file path"""
-    path = common.DATA_DIR + "/sync_version"
+    path = config.data_dir + "/sync_version"
     return path
 
 async def update_sync_version_file(version: int):

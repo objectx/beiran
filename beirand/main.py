@@ -38,7 +38,7 @@ from beirand.version import __version__
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
 from beiran.plugin import get_installed_plugins
-from beiran.ctx import Config
+from beiran.ctx import config
 from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()
@@ -251,7 +251,7 @@ class BeiranDaemon(EventEmitter):
         """Initialize configured plugins"""
 
         # Initialize discovery
-        discovery_mode = Config.get_discovery_method() or 'zeroconf'
+        discovery_mode = config.discovery_method
         if discovery_mode != "none":
             Services.logger.debug("Discovery method is %s", discovery_mode)
             discovery = await self.get_plugin('discovery', discovery_mode, {
@@ -264,7 +264,7 @@ class BeiranDaemon(EventEmitter):
             Services.plugins['discovery'] = discovery
 
         # Initialize package plugins
-        package_plugins_enabled = Config.get_package_plugins()
+        package_plugins_enabled = config.package_plugins
 
         for _plugin in package_plugins_enabled:
             _plugin_obj = await self.get_plugin('package', _plugin, {
@@ -274,7 +274,7 @@ class BeiranDaemon(EventEmitter):
             Services.plugins['package:' + _plugin] = _plugin_obj
 
         # Initialize interface plugins
-        interface_plugins_enabled = Config.get_interface_plugins()
+        interface_plugins_enabled = config.interface_plugins
         for _plugin in interface_plugins_enabled:
             _plugin_obj = await self.get_plugin('interface', 'k8s', {
                 "unix_socket_path": "unix://" + RUN_DIR + "/beiran-cri.sock"

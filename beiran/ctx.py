@@ -17,6 +17,7 @@ defaults = {
     'DATA_DIR': '/var/lib/beiran',
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
+    'DISCOVERY_METHOD': 'zeroconf',
 }
 
 
@@ -32,29 +33,29 @@ class Config:
     def get_config_from_file(self, key):
         ps = key.split('.')
 
-        val = conf
+        val = self.conf
         for p in ps[:-1]:
-            val = val[p]
-            if val is None
+            if not p in val:
                 return None
+            val = val[p]
         return val
 
 
-    def get_config(ckey, ekey):
+    def get_config(self, ckey, ekey):
         """
         get the value which associated with ckey or ekey.
         ckey is a key which is used in config.toml
         ekey is a key which is used in environment variables
         """
-        val = get_config_from_env(ekey) if ekey != None else None
+        val = self.get_config_from_env(ekey) if ekey != None else None
         if val != None:
             return val
 
-        val = get_config_from_config(ckey) if ckey != None else None
+        val = self.get_config_from_file(ckey) if ckey != None else None
         if val != None:
             return val
 
-        val = get_config_from_defaults(ekey) if ekey != None else None
+        val = self.get_config_from_defaults(ekey) if ekey != None else None
         if val != None:
             return val
 
@@ -65,7 +66,7 @@ class Config:
         if 'path' in kwargs:
             config_path = kwargs['path']
         else:
-            config_path = path.join(self.config_dir, 'config.toml'
+            config_path = path.join(self.config_dir, 'config.toml')
             
         with open(config_path, 'r') as f:
             self.conf = pytoml.load(f)
@@ -78,17 +79,17 @@ class Config:
 
     @property
     def data_dir(self):
-        return self.get_config('beiran.data_dir', 'DATA_DIR_PATH')
+        return self.get_config('beiran.data_dir', 'DATA_DIR')
 
 
     @property
     def run_dir(self):
-        return self.get_config('beiran.run_dir', 'RUN_DIR_PATH')
+        return self.get_config('beiran.run_dir', 'RUN_DIR')
 
 
     @property
     def cache_dir(self):
-        return self.get_config('beiran.cache_dir', 'CACHE_DIR_PATH')
+        return self.get_config('beiran.cache_dir', 'CACHE_DIR')
 
 
     @property
@@ -98,17 +99,22 @@ class Config:
 
     @property
     def log_file(self):
-        return self.get_params('beiran.log_file', 'LOG_FILE')
+        return self.get_config('beiran.log_file', 'LOG_FILE')
 
 
     @property
     def discovery_method(self):
-        return self.get_params('beiran.discovery_method', 'DISCOVERY_METHOD')
+        return self.get_config('beiran.discovery_method', 'DISCOVERY_METHOD')
+
+
+    @property
+    def listen_port(self):
+        return self.get_config('beiran.listen_port', 'LISTEN_PORT')
 
 
     @property
     def package_plugins(self):
-        d = self.get_params('packages')
+        d = self.get_config('packages', None)
         if d is None:
             return []
 
@@ -121,7 +127,7 @@ class Config:
 
     @property
     def interface_plugins(self):
-        d = self.get_params('interfaces')
+        d = self.get_config('interfaces', None)
         if d is None:
             return []
 
@@ -132,13 +138,11 @@ class Config:
         return l
 
 
-    @staticmethod
-    def get_plugin_config(key):
-        return self.get_params('packages.%s' % key, None)
+    def get_plugin_config(self, key):
+        return self.get_config('packages.%s' % key, None)
 
-    @staticmethod
-    def get_interface_config(key):
-        return self.get_params('packages.%s' % key, None)
+    def get_interface_config(self, key):
+        return self.get_config('packages.%s' % key, None)
 
 
 config = Config()

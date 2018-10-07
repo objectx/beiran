@@ -13,10 +13,9 @@ from beiran.log import build_logger
 from beiran.models import PeerAddress
 from beiran.version import get_version
 
-from beiran import defaults
 from beirand import common
 
-from beiran.ctx import Config
+from beiran.ctx import config
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None
@@ -39,7 +38,7 @@ def local_node_uuid() -> UUID:
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
 
-    config_folder = Config.get_config_dir()
+    config_folder = config.config_dir
     uuid_conf_path = "/".join([config_folder, 'uuid.conf'])
     try:
         uuid_file = open(uuid_conf_path)
@@ -105,7 +104,7 @@ def get_listen_port() -> int:
 
     """
     try:
-        return int(os.environ.get('LISTEN_PORT', defaults.LISTEN_PORT))
+        return int(os.environ.get('LISTEN_PORT', config.listen_port))
     except ValueError:
         raise ValueError('LISTEN_PORT must be a valid port number!')
 

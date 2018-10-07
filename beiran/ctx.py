@@ -8,91 +8,137 @@ import sys
 
 import pytoml
 
-from . import defaults
 
-try:
-    with open(path.join(defaults.CONFIG_DIR, 'config.toml'), 'r') as f:
-        conf = pytoml.load(f)
-except FileNotFoundError:
-    print('file not found')
-    sys.exit(1)
-except Exception as e:
-    print('something is wrong')
-    print(e)
-    sys.exit(1)
+defaults = {
+    'LISTEN_PORT': 8888,
+    'LOG_FILE': '/var/log/beirand.log', 
+    'LOG_LEVEL': 'DEBUG',
+    'CONFIG_DIR': '/etc/beiran',
+    'DATA_DIR': '/var/lib/beiran',
+    'CACHE_DIR': '/var/cache/beiran',
+    'RUN_DIR': '/var/run',
+}
 
 
 class Config:
-    @staticmethod
-    def get_params(envname, keyname, default):
-        val = os.getenv(envname)
-        if not val is None:
-            return val
+    def get_config_from_defaults(self, key):
+        return defaults[key]
 
-        keys = keyname.split('.')
+
+    def get_config_from_env(self, key):
+        return os.getenv(key)
+
+
+    def get_config_from_file(self, key):
+        ps = key.split('.')
 
         val = conf
-        for key in keys[:-1]:
-            val = val[key] if not val is None and key in val else None
-        return val if not val is None else default
+        for p in ps[:-1]:
+            val = val[p]
+            if val is None
+                return None
+        return val
 
-        
-    @staticmethod
-    def get_config_dir():
-        return Config.get_params('CONFIG_DIR_PATH', 'beiran.config_dir', defaults.CONFIG_DIR)
 
-    @staticmethod
-    def get_data_dir():
-        return Config.get_params('DATA_DIR_PATH', 'beiran.data_dir', defaults.DATA_DIR)
+    def get_config(ckey, ekey):
+        """
+        get the value which associated with ckey or ekey.
+        ckey is a key which is used in config.toml
+        ekey is a key which is used in environment variables
+        """
+        val = get_config_from_env(ekey) if ekey != None else None
+        if val != None:
+            return val
 
-    @staticmethod
-    def get_run_dir():
-        return Config.get_params('RUN_DIR_PATH', 'beiran.run_dir', defaults.RUN_DIR)
+        val = get_config_from_config(ckey) if ckey != None else None
+        if val != None:
+            return val
 
-    @staticmethod
-    def get_cache_dir():
-        return Config.get_params('CACHE_DIR_PATH', 'beiran.cache_dir', defaults.CACHE_DIR)
+        val = get_config_from_defaults(ekey) if ekey != None else None
+        if val != None:
+            return val
 
-    @staticmethod
-    def get_log_level():
-        return Config.get_params('LOG_LEVEL', 'beiran.log_level', defaults.LOG_LEVEL)
+        return None
 
-    @staticmethod
-    def get_log_file():
-        return Config.get_params('LOG_FILE', 'beiran.log_file', defaults.LOG_FILE)
 
-    @staticmethod
-    def get_discovery_method():
-        return Config.get_params('DISCOVERY_METHOD', 'beiran.discovery_method', None)
+    def __init__(self, **kwargs):
+        if 'path' in kwargs:
+            config_path = kwargs['path']
+        else:
+            config_path = path.join(self.config_dir, 'config.toml'
+            
+        with open(config_path, 'r') as f:
+            self.conf = pytoml.load(f)
 
-    @staticmethod
-    def get_package_plugins():
-        if not 'packages' in conf:
+
+    @property
+    def config_dir(self):
+        return self.get_config(None, 'CONFIG_DIR')
+
+
+    @property
+    def data_dir(self):
+        return self.get_config('beiran.data_dir', 'DATA_DIR_PATH')
+
+
+    @property
+    def run_dir(self):
+        return self.get_config('beiran.run_dir', 'RUN_DIR_PATH')
+
+
+    @property
+    def cache_dir(self):
+        return self.get_config('beiran.cache_dir', 'CACHE_DIR_PATH')
+
+
+    @property
+    def log_level(self):
+        return self.get_config('beiran.log_level', 'LOG_LEVEL')
+
+
+    @property
+    def log_file(self):
+        return self.get_params('beiran.log_file', 'LOG_FILE')
+
+
+    @property
+    def discovery_method(self):
+        return self.get_params('beiran.discovery_method', 'DISCOVERY_METHOD')
+
+
+    @property
+    def package_plugins(self):
+        d = self.get_params('packages')
+        if d is None:
             return []
 
         l = []
-        for key in conf['packages'].keys():
-            if 'enabled' in conf['packages'][key] and conf['packages'][key]['enabled']:
+        for key, val in d:
+            if 'enabled' in val and val['enabled']:
                 l.append(key)
         return l
 
-    @staticmethod
-    def get_interface_plugins():
-        if not 'interfaces' in conf:
+
+    @property
+    def interface_plugins(self):
+        d = self.get_params('interfaces')
+        if d is None:
             return []
 
         l = []
-        for key in conf['interfaces'].keys():
-            if 'enabled' in conf['interfaces'][key] and conf['interfaces'][key]['enabled']:
+        for key, val in d:
+            if 'enabled' in val and val['enabled']:
                 l.append(key)
         return l
 
 
     @staticmethod
-    def get_plugin_config(name):
-        return conf['package:%s' % name]
+    def get_plugin_config(key):
+        return self.get_params('packages.%s' % key, None)
 
     @staticmethod
-    def get_interface_config(name):
-        return conf['interface:%s' % name]
+    def get_interface_config(key):
+        return self.get_params('packages.%s' % key, None)
 
+
+config = Config()

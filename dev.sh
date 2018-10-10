@@ -4,7 +4,7 @@ DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 NAME=$(basename $DIR)
 export VIRTUAL_ENV_DIR="${DIR}/env"
 unset PYTHON_HOME
-# export PYTHONPATH=${DIR}
+export PYTHONPATH=${DIR}:${DIR}/plugins
 export PYTHON_BINARY=python3.6
 export PKG_DIR=${VIRTUAL_ENV_DIR}/lib/${PYTHON_BINARY}/site-packages
 

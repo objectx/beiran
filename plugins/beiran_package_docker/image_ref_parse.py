@@ -53,13 +53,28 @@ def split_name_suffix(string: str) -> Tuple[str, str, str]:
 
 
 def is_domain(string: str) -> bool:
-    """Judge whether or not the character string is a domain.
+    """Judge whether or not string is domain.
     Args:
         string (str): prefix of reference (if reference is p1/p2/r/nginx, arg must be 'p1')
     """
     if ":" in string or "." in string:
         return True
     return False
+
+
+def is_digest(string: str):
+    """Judge whether or not string is digest.
+    """
+    if "@" in string:
+        return True
+    return False
+
+
+def add_default_tag(name: str) -> str:
+    """Return <name>:DEFAULT_TAG"""
+    if ":" in name:
+        return name
+    return name + ":" + DEFAULT_TAG
 
 
 def marshal(domain: str, path_comp: str, name: str, sign: str, suffix: str) -> str:

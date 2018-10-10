@@ -7,6 +7,7 @@ from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 from beirand.common import Services
 
+from .image_ref_parse import add_default_tag
 
 class CommonDockerObjectFunctions:
     """..."""
@@ -121,14 +122,8 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             (list) list of available nodes of image object
 
         """
-
         # image must have a tag, default is latest
-        try:
-            image_name, tag = image_name.split(":")
-        except ValueError:
-            tag = "latest"
-
-        image_tag = "{image_name}:{tag}".format(image_name=image_name, tag=tag)
+        image_tag = add_default_tag(image_name)
 
         try:
             image = cls.select().where(

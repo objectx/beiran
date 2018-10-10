@@ -16,6 +16,7 @@ from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
+from .image_ref_parse import add_default_tag
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -66,8 +67,7 @@ class ImagesTarHandler(web.RequestHandler):
             if image_id_or_sha.startswith("sha256:"):
                 image = DockerImage.get(DockerImage.hash_id == image_id_or_sha)
             else:
-                if not ":" in image_id_or_sha:
-                    image_id_or_sha += ":latest"
+                image_id_or_sha = add_default_tag(image_id_or_sha)
                 query = DockerImage.select()
                 query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
                 image = query.first()
@@ -103,8 +103,7 @@ class ImageInfoHandler(web.RequestHandler):
             query = DockerImage.select().where(DockerImage.hash_id == image_id_or_sha)
             image = query.first()
         else:
-            if not ":" in image_id_or_sha:
-                image_id_or_sha += ":latest"
+            image_id_or_sha = add_default_tag(image_id_or_sha)
             query = DockerImage.select().where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
             image = query.first()
 
@@ -292,8 +291,7 @@ class ImageList(RPCEndpoint):
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
-        if not ":" in image_identifier:
-            image_identifier += ":latest"
+        image_identifier = add_default_tag(image_identifier)
         query = DockerImage.select()
         query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
         image = query.first()

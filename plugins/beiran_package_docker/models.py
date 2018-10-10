@@ -7,7 +7,7 @@ from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 from beirand.common import Services
 
-from .image_ref_parse import add_default_tag
+from .image_ref import add_default_tag
 
 class CommonDockerObjectFunctions:
     """..."""

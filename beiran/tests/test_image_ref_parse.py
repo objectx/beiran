@@ -1,5 +1,5 @@
 import pytest
-from beiran_package_docker.image_ref_parse import normalize_ref
+from beiran_package_docker.image_ref import normalize_ref
 
 @pytest.mark.parametrize('ref,normalized', [
     ('ubuntu', 'docker.io/library/ubuntu:latest'),

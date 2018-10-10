@@ -16,7 +16,7 @@ from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
-from .image_ref_parse import add_default_tag
+from .image_ref import add_default_tag
 
 class Services:
     """These needs to be injected from the plugin init code"""

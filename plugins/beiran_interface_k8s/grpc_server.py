@@ -11,7 +11,7 @@ from peewee import SQL
 
 from beiran.util import run_in_loop
 from beiran_package_docker.models import DockerImage
-from beiran_package_docker.image_ref_parse import add_default_tag, is_digest
+from beiran_package_docker.image_ref import add_default_tag, is_digest
 from beiran_package_docker.api import ImageList
 
 from .api_pb2_grpc import ImageServiceServicer, ImageServiceStub

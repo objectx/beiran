@@ -95,20 +95,20 @@ class K8SImageServicer(ImageServiceServicer):
         # This is for supporting RepoDigest included in request message.
         # RepoDigest is a string value and includes @
         # (e.g. docker.io/library/redis@sha256:61e089bc75e6bd6650a63d8962e3601698115fee26ada4ff1b166b37bf7a7153) # pylint: disable=line-too-long
+
+        query = DockerImage.select()
+
         if is_digest(request.image.image):
-            images = DockerImage.select()
-            images = images.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % request.image.image))
-            image = images.first()
+            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % request.image.image))
 
         elif request.image.image.startswith("sha256:"):
-            image = DockerImage.get(DockerImage.hash_id == request.image.image)
+            query = query.where(DockerImage.hash_id == request.image.image)
 
         else:
-            image_name = add_default_tag(request.image.image)
+            image_identifier = add_default_tag(request.image.image)
+            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
 
-            images = DockerImage.select()
-            images = images.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
-            image = images.first()
+        image = query.first()
 
         if not image:
             return ImageStatusResponse()
@@ -133,7 +133,6 @@ class K8SImageServicer(ImageServiceServicer):
         """PullImage pulls an image with authentication config.
         """
         # This method operates like "beiran image pull".
-        # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
 
         if not self.check_plugin_timeout('package:docker', context):

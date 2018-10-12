@@ -16,7 +16,7 @@ from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
-from .image_ref import add_default_tag
+from .image_ref import add_default_tag, is_digest
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -36,13 +36,13 @@ class ImagesTarHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    async def get(self, image_id_or_sha: str):
+    async def get(self, image_identifier: str):
         """
             Get image as a tarball
         """
         try:
             # pylint: disable=no-member
-            content = await Services.aiodocker.images.export_image(image_id_or_sha) # type: ignore
+            content = await Services.aiodocker.images.export_image(image_identifier) # type: ignore
             # pylint: enable=no-member
             self.set_header("Content-Type", "application/x-tar")
 
@@ -59,29 +59,31 @@ class ImagesTarHandler(web.RequestHandler):
             Services.logger.error("Image Stream failed: %s", str(error)) # type: ignore
             raise HTTPError(status_code=500, log_message=str(error))
 
-    async def head(self, image_id_or_sha: str):
+    async def head(self, image_identifier: str):
         """
             HEAD endpoint
         """
-        try:
-            if image_id_or_sha.startswith("sha256:"):
-                image = DockerImage.get(DockerImage.hash_id == image_id_or_sha)
-            else:
-                image_id_or_sha = add_default_tag(image_id_or_sha)
-                query = DockerImage.select()
-                query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
-                image = query.first()
-                if not image:
-                    raise HTTPError(status_code=404, log_message="Image Not Found")
+        
+        query = DockerImage.select()
 
-            self.set_header("Docker-Image-HashID", image.hash_id)
-            self.set_header("Docker-Image-CreatedAt", image.created_at)
-            self.set_header("Docker-Image-Size", image.size)
+        if is_digest(image_identifier):
+            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
+        elif image_identifier.startswith("sha256:"):
+            query = query.where(DockerImage.hash_id == image_identifier)
+        else:
+            image_identifier = add_default_tag(image_identifier)
+            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
 
-            self.finish()
+        image = query.first()
 
-        except DockerImage.DoesNotExist as error:
-            raise HTTPError(status_code=404, log_message=str(error))
+        if not image:
+            raise HTTPError(status_code=404, log_message="Image Not Found")
+
+        self.set_header("Docker-Image-HashID", image.hash_id)
+        self.set_header("Docker-Image-CreatedAt", image.created_at)
+        self.set_header("Docker-Image-Size", image.size)
+
+        self.finish()
 
 
 class ImageInfoHandler(web.RequestHandler):
@@ -91,21 +93,24 @@ class ImageInfoHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    async def get(self, image_id_or_sha):
+    async def get(self, image_identifier):
         """
             Get image information
         """
         self.set_header("Content-Type", "application/json")
 
-        image_id_or_sha = image_id_or_sha.rstrip('/info')
+        image_identifier = image_identifier.rstrip('/info')
+        query = DockerImage.select()
 
-        if image_id_or_sha.startswith('sha256:'):
-            query = DockerImage.select().where(DockerImage.hash_id == image_id_or_sha)
-            image = query.first()
+        if is_digest(image_identifier):
+            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
+        elif image_identifier.startswith("sha256:"):
+            query = query.where(DockerImage.hash_id == image_identifier)
         else:
-            image_id_or_sha = add_default_tag(image_id_or_sha)
-            query = DockerImage.select().where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
-            image = query.first()
+            image_identifier = add_default_tag(image_identifier)
+            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
+
+        image = query.first()
 
         if image is None:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
@@ -291,9 +296,14 @@ class ImageList(RPCEndpoint):
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
-        image_identifier = add_default_tag(image_identifier)
         query = DockerImage.select()
-        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
+
+        if is_digest(image_identifier):
+            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
+        else:
+            image_identifier = add_default_tag(image_identifier)
+            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
+
         image = query.first()
 
         if not image:

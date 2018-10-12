@@ -103,16 +103,17 @@ def image_list(ctx, all_nodes: bool, digests: bool, node: str):
 
     if digests:
         table = [
-            [",\n".join(i['tags']), ",\n".join(i['repo_digests']), sizeof_fmt(i['size']), _get_availability(i)]
+            [",\n".join(i['tags']), ",\n".join(i['repo_digests']),
+             sizeof_fmt(i['size']), _get_availability(i)]
             for i in images
         ]
-        headers=["Tags", "Digests", "Size", "Availability"]
+        headers = ["Tags", "Digests", "Size", "Availability"]
     else:
         table = [
             [",\n".join(i['tags']), sizeof_fmt(i['size']), _get_availability(i)]
             for i in images
         ]
-        headers=["Tags", "Size", "Availability"]
+        headers = ["Tags", "Size", "Availability"]
 
     click.echo(tabulate(table, headers=headers))
 

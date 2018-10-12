@@ -69,6 +69,12 @@ def is_digest(string: str):
         return True
     return False
 
+def is_id(string: str):
+    """Judge whether or not string is image id.
+    """
+    if string.startswith("sha256:"):
+        return True
+    return False
 
 def add_default_tag(name: str) -> str:
     """Return <name>:DEFAULT_TAG"""

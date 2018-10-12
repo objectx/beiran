@@ -16,7 +16,6 @@ from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
-from .image_ref import add_default_tag, is_digest
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -63,21 +62,10 @@ class ImagesTarHandler(web.RequestHandler):
         """
             HEAD endpoint
         """
-        
-        query = DockerImage.select()
-
-        if is_digest(image_identifier):
-            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
-        elif image_identifier.startswith("sha256:"):
-            query = query.where(DockerImage.hash_id == image_identifier)
-        else:
-            image_identifier = add_default_tag(image_identifier)
-            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
-
-        image = query.first()
-
-        if not image:
-            raise HTTPError(status_code=404, log_message="Image Not Found")
+        try:
+            image = DockerImage.get_image_data(image_identifier)
+        except DockerImage.DoesNotExist:
+            raise HTTPError(status_code=404, log_message='Image Not Found')
 
         self.set_header("Docker-Image-HashID", image.hash_id)
         self.set_header("Docker-Image-CreatedAt", image.created_at)
@@ -100,20 +88,10 @@ class ImageInfoHandler(web.RequestHandler):
         self.set_header("Content-Type", "application/json")
 
         image_identifier = image_identifier.rstrip('/info')
-        query = DockerImage.select()
-
-        if is_digest(image_identifier):
-            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
-        elif image_identifier.startswith("sha256:"):
-            query = query.where(DockerImage.hash_id == image_identifier)
-        else:
-            image_identifier = add_default_tag(image_identifier)
-            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
-
-        image = query.first()
-
-        if image is None:
-            raise HTTPError(status_code=404, log_message='Image is not available in cluster')
+        try:
+            image = DockerImage.get_image_data(image_identifier)
+        except DockerImage.DoesNotExist:
+            raise HTTPError(status_code=404, log_message='Image Not Found')
 
         self.write(json.dumps(image.to_dict(dialect="api")))
         self.finish()
@@ -287,7 +265,7 @@ class ImageList(RPCEndpoint):
         """Coroutine to pull image in cluster
         """
         if not node_identifier:
-            available_nodes = await DockerImage.get_available_nodes_by_tag(image_identifier)
+            available_nodes = await DockerImage.get_available_nodes(image_identifier)
             online_nodes = Services.daemon.nodes.all_nodes.keys() # type: ignore
             online_availables = [n for n in available_nodes if n in online_nodes]
             if online_availables:
@@ -296,18 +274,10 @@ class ImageList(RPCEndpoint):
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
-        query = DockerImage.select()
-
-        if is_digest(image_identifier):
-            query = query.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
-        else:
-            image_identifier = add_default_tag(image_identifier)
-            query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
-
-        image = query.first()
-
-        if not image:
-            raise HTTPError(status_code=404, log_message="Image Not Found")
+        try:
+            image = DockerImage.get_image_data(image_identifier)
+        except DockerImage.DoesNotExist:
+            raise HTTPError(status_code=404, log_message='Image Not Found')
 
         uuid_pattern = re.compile(r'^([a-f0-9]+)$', re.IGNORECASE)
         Services.logger.debug("Will fetch %s from >>%s<<", # type: ignore

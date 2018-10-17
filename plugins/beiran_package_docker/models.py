@@ -7,7 +7,7 @@ from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 from beirand.common import Services
 
-from .image_ref import add_default_tag
+from .image_ref import add_default_tag, is_digest, is_id
 
 class CommonDockerObjectFunctions:
     """..."""
@@ -112,25 +112,43 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         return _dict
 
     @classmethod
-    async def get_available_nodes_by_tag(cls, image_name: str) -> list:
+    async def get_available_nodes(cls, image_identifier: str) -> list:
         """
 
         Args:
-            image_name: image name
+            image_identifier: image tag or digest
 
         Returns:
             (list) list of available nodes of image object
 
         """
-        # image must have a tag, default is latest
-        image_tag = add_default_tag(image_name)
-
         try:
-            image = cls.select().where(
-                SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
-            return image.available_at
+            image = cls.get_image_data(image_identifier)
         except DockerImage.DoesNotExist:
             return []
+
+        return image.available_at
+
+
+    @classmethod
+    def get_image_data(cls, image_identifier: str) -> "DockerImage":
+        """
+        get a image data. search with `hash_id`, `repo_digests` or `tags`
+        """
+        if is_digest(image_identifier):
+            # search with digest
+            image = cls.get(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
+
+        elif is_id(image_identifier):
+            # search with hash_id
+            image = cls.get(cls.hash_id == image_identifier)
+
+        else:
+            # search with tag
+            image_identifier = add_default_tag(image_identifier)
+            image = cls.get(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
+
+        return image
 
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):

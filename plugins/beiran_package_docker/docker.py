@@ -180,15 +180,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("Getting docker image list..")
             image_list = await self.aiodocker.images.list()
             for image_data in image_list:
-                if not image_data['RepoTags']:
-                    continue
-
-                # remove the non-tag tag from tag list
-                image_data['RepoTags'] = [t for t in image_data['RepoTags'] if t != '<none>:<none>']
-
-                if not image_data['RepoTags']:
-                    continue
-
                 self.log.debug("existing image..%s", image_data)
                 await self.save_image(image_data['Id'], skip_updates=True)
 

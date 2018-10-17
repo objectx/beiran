@@ -21,6 +21,8 @@ DEFAULTS = {
 
 
 class Config:
+    """Config class"""
+
     def get_config_from_defaults(self, key):
         """get config from default values"""
         return DEFAULTS[key]
@@ -39,7 +41,7 @@ class Config:
         for key in keys:
             if not key in val:
                 return None
-            val = val[p]
+            val = val[key]
         return val
 
 
@@ -67,13 +69,13 @@ class Config:
     def __init__(self, **kwargs):
         """construct config object"""
 
-        if 'path' in kwargs:
+        if 'path' in kwargs: # pylint: disable=consider-using-get
             config_path = kwargs['path']
         else:
             config_path = path.join(self.config_dir, 'config.toml')
 
-        with open(config_path, 'r') as f:
-            self.conf = pytoml.load(f)
+        with open(config_path, 'r') as config_file:
+            self.conf = pytoml.load(config_file)
 
 
     @property

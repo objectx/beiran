@@ -5,13 +5,13 @@ from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
+from beiran.ctx import config
 from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 
 from beirand.common import Services
 from beirand.lib import get_listen_address, get_listen_port
 
-from beiran.ctx import config
 
 
 define('listen_address',

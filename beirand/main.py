@@ -34,10 +34,10 @@ from beirand.lib import update_sync_version_file
 from beirand.http_ws import ROUTES
 from beirand.version import __version__
 
+from beiran.ctx import config
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
 from beiran.plugin import get_installed_plugins
-from beiran.ctx import config
 from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()
@@ -124,6 +124,7 @@ class BeiranDaemon(EventEmitter):
         Services.logger.info("sync version up: %d", self.nodes.local_node.last_sync_version)
         EVENTS.emit('state.update', update, plugin)
 
+    # pylint: disable=redefined-outer-name
     async def get_plugin(self, plugin_type: str, plugin_name: str, config: dict) -> Any:
         """
         Load and initiate plugin

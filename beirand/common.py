@@ -1,6 +1,5 @@
 """Shared objects of beiran daemon"""
 import logging
-import os
 
 from pyee import EventEmitter
 

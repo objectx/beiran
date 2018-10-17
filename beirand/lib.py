@@ -9,13 +9,10 @@ from uuid import uuid4, UUID
 
 import netifaces
 
+from beiran.ctx import config
 from beiran.log import build_logger
 from beiran.models import PeerAddress
 from beiran.version import get_version
-
-from beirand import common
-
-from beiran.ctx import config
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None

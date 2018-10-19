@@ -5,6 +5,7 @@ Docker packaging plugin
 import asyncio
 import docker
 from aiodocker import Docker
+from peewee import SQL
 
 from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
@@ -178,7 +179,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
             # Get Images
             self.log.debug("Getting docker image list..")
-            image_list = await self.aiodocker.images.list()
+            image_list = await self.aiodocker.images.list(all=1)
             for image_data in image_list:
                 self.log.debug("existing image..%s", image_data)
                 await self.save_image(image_data['Id'], skip_updates=True)
@@ -202,7 +203,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         to emit the lost event.
         """
 
-        new_image_events = ['pull', 'load', 'tag']
+        new_image_events = ['pull', 'load', 'tag', 'commit']
         remove_image_events = ['untag']
 
         try:
@@ -217,6 +218,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 # log the event
                 self.log.debug("docker event: %s[%s] %s",
                                event['Action'], event['Type'], event.get('id', 'event has no id'))
+
+                # handle commit container (and build new image)
+                if event['Type'] == 'container' and event['Action'] in new_image_events:
+                    await self.save_image(event['Actor']['Attributes']['imageID'])
 
                 # handle new image events
                 if event['Type'] == 'image' and event['Action'] in new_image_events:
@@ -321,3 +326,25 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         if not skip_updates:
             self.history.update('new_image={}'.format(image.hash_id))
         self.emit('docker_daemon.new_image_saved', image.hash_id)
+
+        if image_data['RepoTags']:
+            await self.tag_image(image_id, image_data['RepoTags'][0])
+
+    async def tag_image(self, image_identifier: str, tag: str):
+        """
+        Tag an image existing in database. If already same tag exists, 
+        move it from old image to new image.
+        """
+        target = DockerImage.get_image_data(image_identifier)
+        if tag not in target.tags:
+            target.tags = [tag]
+            target.save()
+
+        images = DockerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
+
+        for image in images:
+            if image.hash_id == target.hash_id:
+                continue
+
+            image.tags.remove(tag)
+            image.save()

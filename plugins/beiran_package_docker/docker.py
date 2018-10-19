@@ -204,7 +204,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         to emit the lost event.
         """
 
-        new_image_events = ['pull', 'load', 'tag', 'commit']
+        new_image_events = ['pull', 'load', 'tag', 'commit', 'import']
         remove_image_events = ['delete']
 
         try:

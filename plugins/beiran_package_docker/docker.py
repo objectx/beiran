@@ -342,7 +342,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         """
         target = DockerImage.get_image_data(image_identifier)
         if tag not in target.tags:
-            target.tags = [tag]
+            target.tags = [tag] # type: ignore
             target.save()
 
         images = DockerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))

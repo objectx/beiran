@@ -5,6 +5,7 @@ Docker packaging plugin
 import asyncio
 import docker
 from aiodocker import Docker
+from aiodocker.exceptions import DockerError
 from peewee import SQL
 
 from beiran.plugin import BasePackagePlugin, History
@@ -204,7 +205,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         """
 
         new_image_events = ['pull', 'load', 'tag', 'commit']
-        remove_image_events = ['untag']
+        remove_image_events = ['delete']
 
         try:
             # await until docker is unavailable
@@ -226,6 +227,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 # handle new image events
                 if event['Type'] == 'image' and event['Action'] in new_image_events:
                     await self.save_image(event['id'])
+
+                # handle untagging image
+                if event['Type'] == 'image' and event['Action'] == 'untag':
+                    await self.untag_image(event['id'])
 
                 # handle delete existing image events
                 if event['Type'] == 'image' and event['Action'] in remove_image_events:
@@ -332,8 +337,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def tag_image(self, image_identifier: str, tag: str):
         """
-        Tag an image existing in database. If already same tag exists, 
-        move it from old image to new image.
+        Tag an image existing in database. If already same tag exists,
+        move it from old one to new one.
         """
         target = DockerImage.get_image_data(image_identifier)
         if tag not in target.tags:
@@ -348,3 +353,17 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
             image.tags.remove(tag)
             image.save()
+
+    async def untag_image(self, image_identifier: str):
+        """
+        Remove a tag from an image.
+        """
+        # aiodocker.events.subscribe() can't get information about what tag will be removed...
+        try:
+            image_data = await self.aiodocker.images.get(name=image_identifier)
+            image = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+            image.tags = image_data['RepoTags']
+            image.save()
+        except DockerError:
+            # if the image was deleted by `docker rmi`, no image information was found
+            pass

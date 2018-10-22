@@ -84,11 +84,13 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagenam
 @image.command('list')
 @click.option('--all', 'all_nodes', default=False, is_flag=True,
               help='List images from all known nodes')
+@click.option('--digests', default=False, is_flag=True,
+              help='Show image digests')
 @click.option('--node', default=None,
               help='List images from specific node')
 @click.pass_obj
 @pass_context
-def image_list(ctx, all_nodes: bool, node: str):
+def image_list(ctx, all_nodes: bool, digests: bool, node: str):
     """List container images across the cluster"""
 
     def _get_availability(i):
@@ -98,11 +100,22 @@ def image_list(ctx, all_nodes: bool, node: str):
         return i['availability']
 
     images = ctx.beiran_client.get_images(all_nodes=all_nodes, node_uuid=node)
-    table = [
-        [",\n".join(i['tags']), sizeof_fmt(i['size']), _get_availability(i)]
-        for i in images
-    ]
-    click.echo(tabulate(table, headers=["Tags", "Size", "Availability"]))
+
+    if digests:
+        table = [
+            [",\n".join(i['tags']), ",\n".join(i['repo_digests']), i['hash_id'],
+             sizeof_fmt(i['size']), _get_availability(i)]
+            for i in images
+        ]
+        headers = ["Tags", "Digests", "ID", "Size", "Availability"]
+    else:
+        table = [
+            [",\n".join(i['tags']), i['hash_id'], sizeof_fmt(i['size']), _get_availability(i)]
+            for i in images
+        ]
+        headers = ["Tags", "ID", "Size", "Availability"]
+
+    click.echo(tabulate(table, headers=headers))
 
 
 # ##########  Layer management commands

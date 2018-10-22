@@ -35,13 +35,13 @@ class ImagesTarHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    async def get(self, image_id_or_sha: str):
+    async def get(self, image_identifier: str):
         """
             Get image as a tarball
         """
         try:
             # pylint: disable=no-member
-            content = await Services.aiodocker.images.export_image(image_id_or_sha) # type: ignore
+            content = await Services.aiodocker.images.export_image(image_identifier) # type: ignore
             # pylint: enable=no-member
             self.set_header("Content-Type", "application/x-tar")
 
@@ -58,30 +58,20 @@ class ImagesTarHandler(web.RequestHandler):
             Services.logger.error("Image Stream failed: %s", str(error)) # type: ignore
             raise HTTPError(status_code=500, log_message=str(error))
 
-    async def head(self, image_id_or_sha: str):
+    async def head(self, image_identifier: str):
         """
             HEAD endpoint
         """
         try:
-            if image_id_or_sha.startswith("sha256:"):
-                image = DockerImage.get(DockerImage.hash_id == image_id_or_sha)
-            else:
-                if not ":" in image_id_or_sha:
-                    image_id_or_sha += ":latest"
-                query = DockerImage.select()
-                query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
-                image = query.first()
-                if not image:
-                    raise HTTPError(status_code=404, log_message="Image Not Found")
+            image = DockerImage.get_image_data(image_identifier)
+        except DockerImage.DoesNotExist:
+            raise HTTPError(status_code=404, log_message='Image Not Found')
 
-            self.set_header("Docker-Image-HashID", image.hash_id)
-            self.set_header("Docker-Image-CreatedAt", image.created_at)
-            self.set_header("Docker-Image-Size", image.size)
+        self.set_header("Docker-Image-HashID", image.hash_id)
+        self.set_header("Docker-Image-CreatedAt", image.created_at)
+        self.set_header("Docker-Image-Size", image.size)
 
-            self.finish()
-
-        except DockerImage.DoesNotExist as error:
-            raise HTTPError(status_code=404, log_message=str(error))
+        self.finish()
 
 
 class ImageInfoHandler(web.RequestHandler):
@@ -91,25 +81,17 @@ class ImageInfoHandler(web.RequestHandler):
         pass
 
     # pylint: disable=arguments-differ
-    async def get(self, image_id_or_sha):
+    async def get(self, image_identifier):
         """
             Get image information
         """
         self.set_header("Content-Type", "application/json")
 
-        image_id_or_sha = image_id_or_sha.rstrip('/info')
-
-        if image_id_or_sha.startswith('sha256:'):
-            query = DockerImage.select().where(DockerImage.hash_id == image_id_or_sha)
-            image = query.first()
-        else:
-            if not ":" in image_id_or_sha:
-                image_id_or_sha += ":latest"
-            query = DockerImage.select().where(SQL('tags LIKE \'%%"%s"%%\'' % image_id_or_sha))
-            image = query.first()
-
-        if image is None:
-            raise HTTPError(status_code=404, log_message='Image is not available in cluster')
+        image_identifier = image_identifier.rstrip('/info')
+        try:
+            image = DockerImage.get_image_data(image_identifier)
+        except DockerImage.DoesNotExist:
+            raise HTTPError(status_code=404, log_message='Image Not Found')
 
         self.write(json.dumps(image.to_dict(dialect="api")))
         self.finish()
@@ -283,7 +265,7 @@ class ImageList(RPCEndpoint):
         """Coroutine to pull image in cluster
         """
         if not node_identifier:
-            available_nodes = await DockerImage.get_available_nodes_by_tag(image_identifier)
+            available_nodes = await DockerImage.get_available_nodes(image_identifier)
             online_nodes = Services.daemon.nodes.all_nodes.keys() # type: ignore
             online_availables = [n for n in available_nodes if n in online_nodes]
             if online_availables:
@@ -292,14 +274,10 @@ class ImageList(RPCEndpoint):
         if not node_identifier:
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
-        if not ":" in image_identifier:
-            image_identifier += ":latest"
-        query = DockerImage.select()
-        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_identifier))
-        image = query.first()
-
-        if not image:
-            raise HTTPError(status_code=404, log_message="Image Not Found")
+        try:
+            image = DockerImage.get_image_data(image_identifier)
+        except DockerImage.DoesNotExist:
+            raise HTTPError(status_code=404, log_message='Image Not Found')
 
         uuid_pattern = re.compile(r'^([a-f0-9]+)$', re.IGNORECASE)
         Services.logger.debug("Will fetch %s from >>%s<<", # type: ignore

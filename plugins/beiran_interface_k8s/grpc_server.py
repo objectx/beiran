@@ -7,7 +7,6 @@ gRPC server (CRI Version: v1alpha2)
 import json
 import asyncio
 import grpc
-from peewee import SQL
 
 from beiran.util import run_in_loop
 from beiran_package_docker.models import DockerImage
@@ -91,27 +90,9 @@ class K8SImageServicer(ImageServiceServicer):
         if not request.image:
             return ImageStatusResponse()
 
-        # This is for supporting RepoDigest included in request message.
-        # RepoDigest is a string value and includes @
-        # (e.g. docker.io/library/redis@sha256:61e089bc75e6bd6650a63d8962e3601698115fee26ada4ff1b166b37bf7a7153) # pylint: disable=line-too-long
-        if "@" in request.image.image:
-            images = DockerImage.select()
-            images = images.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % request.image.image))
-            image = images.first()
-
-        elif request.image.image.startswith("sha256:"):
-            image = DockerImage.get(DockerImage.hash_id == request.image.image)
-
-        else:
-            image_name = request.image.image
-            if ":" not in image_name:
-                image_name += ":latest"
-
-            images = DockerImage.select()
-            images = images.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
-            image = images.first()
-
-        if not image:
+        try:
+            image = DockerImage.get_image_data(request.image.image)
+        except DockerImage.DoesNotExist:
             return ImageStatusResponse()
 
         info = {}
@@ -134,7 +115,6 @@ class K8SImageServicer(ImageServiceServicer):
         """PullImage pulls an image with authentication config.
         """
         # This method operates like "beiran image pull".
-        # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
 
         if not self.check_plugin_timeout('package:docker', context):

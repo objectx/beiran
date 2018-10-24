@@ -14,6 +14,16 @@ Welcome to Beiran's documentation!
   - :doc:`Configuration Guide <configuration>`
   - :doc:`How to contibute <contribute>`
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Beiran Documentation
+   :hidden:
+
+   Installation Guide <installation>
+   Configuration Guide <configuration>
+   Manage Beiran Cluster <manage_cluster>
+   How to contibute <contribute>
+   Beiran Refernece <reference>
 
 Beiran is a set of tools for replacing distribution layer
 of package management systems.
@@ -22,20 +32,35 @@ of package management systems.
  announcing an alpha release soon.
 
 It aims provide out-of-box experience to fit along with
-existing tools, focuses on security, decentralization and availability. Beiran
-creates a cluster of nodes on an underlying p2p network to share ``packages``.
-Package refers to any binary objects like docker images or layers, deb or tar archives.
+existing tools, focuses on security, decentralization and availability.
 
-Beiran ``package`` plugins allows cluster to manage packages of many systems like
-docker, apt, npm or pip. By version alpha, only docker, apt and npm
-systems will be supported. We expect to support more with help of community. If you
-are interested in starting a plugin, please follow our
-:doc:`contribution guide </contribute>` document.
+Beiran creates a cluster of nodes on an underlying p2p network to share
+``packages``. Package refers to any binary objects like docker images,
+docker layers, apt's deb archives or tar archives.
 
-More About Beiran
-+++++++++++++++++
+By version alpha, only docker, apt and npm systems will be supported.
+We expect to support more with help of community. If you are interested
+in starting a plugin, please follow our :doc:`contribution guide </contribute>`
+document.
 
-  - :doc:`Beiran Refernece <reference>` (Auto generated inline doc strings)
+Getting Started
++++++++++++++++
+
+Installation, configuration and how to manage a Beiran cluster documents
+are for you, if you are interested in just trying or starting to
+use Beiran on your environment:
+
+  - :doc:`How to install Beiran <installation>`
   - :doc:`Manage Beiran Cluster <manage_cluster>`
   - :doc:`Configuration Guide <configuration>`
+
+And you can go on with contribution guide, if you want to help with current
+codebase, issues, and documentation or starting a new package plugin:
+
   - :doc:`How to contibute <contribute>`
+
+While developing, you may want to check Beiran Reference which is generated
+from inline doc strings and gives detailed information about codebase:
+
+  - :doc:`Beiran Refernece <reference>` (Auto generated inline doc strings)
+

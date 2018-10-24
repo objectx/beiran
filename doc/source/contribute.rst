@@ -13,4 +13,13 @@ of contribution. You can:
 
 Creating a Plugin
 -----------------
+Beiran's modular architecture allows adding new capabilities,
+such as new package systems, different network discovery methods or
+new interfaces for k8s like cluster orchestration systems.
+
+Till now, we have 3 kinds of plugins and implementations are followings:
+
+    - package plugins   (docker, apt, npm)
+    - discovery plugins (dns, zeroconf)
+    - interface plugins (k8s)
 

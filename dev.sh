@@ -29,7 +29,7 @@ fi
 STAMP=$(date +%s)
 INSTALLED=0
 LAST_INSTALL=$(date -r ${VIRTUAL_ENV_DIR}/.last_install +%s 2>/dev/null || echo "0")
-packages="beiran beiran/daemon plugins/*"
+packages="beiran plugins/*"
 for package in $packages; do
 	package_name=$(basename $package)
 	if [ ! -h ${PKG_DIR}/$package_name ]; then

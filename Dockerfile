@@ -10,9 +10,6 @@ WORKDIR /opt
 ADD beiran/requirements.txt /opt/beiran/r-lib.txt
 RUN pip install -r /opt/beiran/r-lib.txt
 
-ADD beiran/daemon/requirements.txt /opt/beiran/r-daemon.txt
-RUN pip install -r /opt/beiran/r-daemon.txt
-
 ADD plugins/beiran_discovery_dns/requirements.txt /opt/beiran/r-dns.txt
 RUN pip install -r /opt/beiran/r-dns.txt
 

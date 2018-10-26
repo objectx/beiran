@@ -29,7 +29,7 @@ fi
 STAMP=$(date +%s)
 INSTALLED=0
 LAST_INSTALL=$(date -r ${VIRTUAL_ENV_DIR}/.last_install +%s 2>/dev/null || echo "0")
-packages="beiran beirand plugins/*"
+packages="beiran beiran/daemon plugins/*"
 for package in $packages; do
 	package_name=$(basename $package)
 	if [ ! -h ${PKG_DIR}/$package_name ]; then
@@ -56,7 +56,7 @@ EOF
 
 cat > ${VIRTUAL_ENV_DIR}/bin/beirand <<EOF
 #!/bin/sh -e
-exec ${PYTHON_BINARY} -m beirand "\$@"
+exec ${PYTHON_BINARY} -m beiran.daemon "\$@"
 EOF
 
 chmod +x ${VIRTUAL_ENV_DIR}/bin/beiran*

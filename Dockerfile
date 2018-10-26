@@ -10,7 +10,7 @@ WORKDIR /opt
 ADD beiran/requirements.txt /opt/beiran/r-lib.txt
 RUN pip install -r /opt/beiran/r-lib.txt
 
-ADD beirand/requirements.txt /opt/beiran/r-daemon.txt
+ADD beiran/daemon/requirements.txt /opt/beiran/r-daemon.txt
 RUN pip install -r /opt/beiran/r-daemon.txt
 
 ADD plugins/beiran_discovery_dns/requirements.txt /opt/beiran/r-dns.txt
@@ -28,7 +28,6 @@ RUN pip install -r /opt/beiran/r-k8s.txt
 # ADD plugins/beiran_package_npm/requirements.txt /opt/beiran/r-npm.txt
 # RUN pip install -r /opt/beiran/r-npm.txt
 
-ADD [ "beirand", "/opt/beiran/beirand" ]
 ADD [ "beiran", "/opt/beiran/beiran" ]
 
 ADD [ "plugins", "/opt/beiran/plugins" ]
@@ -38,4 +37,4 @@ ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran
 
-CMD [ "python3", "-m", "beirand" ]
+CMD [ "python3", "-m", "beiran.daemon" ]

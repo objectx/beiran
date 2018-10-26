@@ -8,7 +8,7 @@ from aiodocker import Docker
 
 from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
-from beirand.peer import Peer
+from beiran.daemon.peer import Peer
 
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST

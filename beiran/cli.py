@@ -16,7 +16,7 @@ from beiran.sync_client import Client
 from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
-from beirand.common import RUN_DIR
+from beiran.daemon.common import RUN_DIR
 
 LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'WARNING')) # type: ignore
 

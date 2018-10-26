@@ -13,8 +13,8 @@ from pyee import EventEmitter
 
 from beiran.client import Client
 from beiran.models import Node
-from beirand.nodes import Nodes
-from beirand.common import Services
+from beiran.daemon.nodes import Nodes
+from beiran.daemon.common import Services
 
 PEER_REGISTRY: dict = dict()
 

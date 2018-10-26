@@ -30,15 +30,7 @@ pre_build:checker:
    - docker push $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
    - docker push $CI_REGISTRY_IMAGE/checks:latest
 
-checks:lint-daemon:
-  stage: checks
-  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
-  tags:
-   - docker
-  script:
-   - pylint beirand
-
-checks:lint-client:
+checks:lint-beiran:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
   tags:
@@ -54,15 +46,7 @@ checks:lint-plugins:
   script:
    - pylint plugins
 
-checks:mypy-daemon:
-  stage: checks
-  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
-  tags:
-   - docker
-  script:
-   - mypy --config-file mypy.ini beirand
-
-checks:mypy-client:
+checks:mypy-beiran:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
   tags:
@@ -78,16 +62,7 @@ checks:mypy-plugins:
   script:
    - mypy --config-file mypy.ini plugins
 
-checks:bandit-daemon:
-  stage: checks
-  image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
-  tags:
-   - docker
-  script:
-   - bandit -r beirand
-  allow_failure: true
-
-checks:bandit-client:
+checks:bandit-beiran:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
   tags:

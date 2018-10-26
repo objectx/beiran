@@ -14,7 +14,7 @@ from beiran.models import PeerAddress
 from beiran.version import get_version
 
 from beiran import defaults
-from beirand import common
+from beiran.daemon import common
 
 LOGGER = build_logger()
 LOCAL_NODE_UUID_CACHED = None

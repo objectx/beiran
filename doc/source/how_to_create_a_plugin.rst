@@ -3,8 +3,9 @@ How to create a Beiran Plugin
 =============================
 Before starting, please check our contribution guidelines.
 
-    - Coding conventions <>
-    - Git practices <>
+    - :doc:`Coding conventions <coding_style_guide>`
+    - :doc:`Git practices <git_practices>`
+    - :doc:`How to create an issue <issue>`
 
 
 Creating a Plugin
@@ -79,6 +80,5 @@ purposes. For example docker plugin cli modlue `cli_docker.py` has method below:
     def cli():
         """Main subcommand method."""
         pass
-
 
 Other modules are arbitrary and depends on how your implementation is structured.

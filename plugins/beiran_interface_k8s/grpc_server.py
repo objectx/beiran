@@ -5,16 +5,12 @@ gRPC server (CRI Version: v1alpha2)
 
 
 import json
-import random
 import asyncio
 import grpc
 
-import aiohttp
-from peewee import SQL
-
-from beiran.client import Client
 from beiran.util import run_in_loop
 from beiran_package_docker.models import DockerImage
+from beiran_package_docker.api import ImageList
 
 from .api_pb2_grpc import ImageServiceServicer, ImageServiceStub
 from .api_pb2 import ImageStatusResponse
@@ -94,27 +90,9 @@ class K8SImageServicer(ImageServiceServicer):
         if not request.image:
             return ImageStatusResponse()
 
-        # This is for supporting RepoDigest included in request message.
-        # RepoDigest is a string value and includes @
-        # (e.g. docker.io/library/redis@sha256:61e089bc75e6bd6650a63d8962e3601698115fee26ada4ff1b166b37bf7a7153) # pylint: disable=line-too-long
-        if "@" in request.image.image:
-            images = DockerImage.select()
-            images = images.where(SQL('repo_digests LIKE \'%%"%s"%%\'' % request.image.image))
-            image = images.first()
-
-        elif request.image.image.startswith("sha256:"):
-            image = DockerImage.get(DockerImage.hash_id == request.image.image)
-
-        else:
-            image_name = request.image.image
-            if ":" not in image_name:
-                image_name += ":latest"
-
-            images = DockerImage.select()
-            images = images.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
-            image = images.first()
-
-        if not image:
+        try:
+            image = DockerImage.get_image_data(request.image.image)
+        except DockerImage.DoesNotExist:
             return ImageStatusResponse()
 
         info = {}
@@ -137,19 +115,14 @@ class K8SImageServicer(ImageServiceServicer):
         """PullImage pulls an image with authentication config.
         """
         # This method operates like "beiran image pull".
-        # Can not pull an image from registry server.
         Services.logger.debug("request: PullImage")
 
         if not self.check_plugin_timeout('package:docker', context):
             return PullImageResponse()
 
-        image_name = request.image.image
-        if ":" not in image_name:
-            image_name += ":latest"
-
         try:
             # not supporting AuthConfig and PodSandboxConfig now
-            image_ref = run_in_loop(self.pull_routine(image_name),
+            image_ref = run_in_loop(ImageList.pull_routine(request.image.image),
                                     loop=Services.loop,
                                     sync=True)
             response = PullImageResponse(image_ref=image_ref)
@@ -214,53 +187,6 @@ class K8SImageServicer(ImageServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("Timeout: %s is not ready" % plugin_name)
             return False
-
-
-    async def pull_routine(self, image_name): # pylint: disable=too-many-locals
-        """coroutine for pulling images"""
-        available_nodes = await DockerImage.get_available_nodes_by_tag(image_name)
-        online_nodes = Services.daemon.nodes.all_nodes.keys()
-        online_availables = [n for n in available_nodes if n in online_nodes]
-        if online_availables:
-            node_identifier = random.choice(online_availables)
-
-        query = DockerImage.select()
-        query = query.where(SQL('tags LIKE \'%%"%s"%%\'' % image_name))
-        image = query.first()
-
-        Services.logger.debug("Will fetch %s from >>%s<<",
-                              image_name, node_identifier)
-        node = await Services.daemon.nodes.get_node_by_uuid(node_identifier)
-
-        client = Client(node=node)
-        chunks = asyncio.Queue()
-
-        @aiohttp.streamer
-        async def sender(writer, chunks):
-            """ async generator data sender for aiodocker """
-            chunk = await chunks.get()
-            while chunk:
-                await writer.write(chunk)
-                chunk = await chunks.get()
-
-        try:
-            # pylint: disable=no-value-for-parameter,no-member
-            docker_future = Services.aiodocker.images.import_image(data=sender(chunks))
-            # pylint: enable=no-value-for-parameter,no-member
-            docker_result = asyncio.ensure_future(docker_future)
-
-            image_response = await client.stream_image(image_name)
-            async for data in image_response.content.iter_chunked(64*1024):
-                # Services.logger.debug("Pull: Chunk received with length: %s", len(data))
-                chunks.put_nowait(data)
-
-            chunks.put_nowait(None)
-
-            await docker_result
-        except Client.Error as error:
-            Services.logger.error(error)
-
-        return image.hash_id
 
 
 class CRIForwarder():

@@ -15,9 +15,6 @@ RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4
 ADD beiran/requirements.txt /root/r-lib.txt
 RUN pip3 install -r /root/r-lib.txt
 
-ADD beirand/requirements.txt /root/r-daemon.txt
-RUN pip3 install -r /root/r-daemon.txt
-
 ADD plugins/beiran_discovery_dns/requirements.txt /opt/beiran/r-dns.txt
 RUN pip install -r /opt/beiran/r-dns.txt
 

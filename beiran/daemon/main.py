@@ -20,19 +20,19 @@ from tornado import httpserver
 
 from pyee import EventEmitter
 
-from beirand.common import VERSION
-from beirand.common import EVENTS
-from beirand.common import Services
+from beiran.daemon.common import VERSION
+from beiran.daemon.common import EVENTS
+from beiran.daemon.common import Services
 
-from beirand.nodes import Nodes
-from beirand.peer import Peer
+from beiran.daemon.nodes import Nodes
+from beiran.daemon.peer import Peer
 
-from beirand.lib import collect_node_info
-from beirand.lib import get_listen_port, get_advertise_address
-from beirand.lib import update_sync_version_file
+from beiran.daemon.lib import collect_node_info
+from beiran.daemon.lib import get_listen_port, get_advertise_address
+from beiran.daemon.lib import update_sync_version_file
 
-from beirand.http_ws import ROUTES
-from beirand.version import __version__
+from beiran.daemon.http_ws import ROUTES
+from beiran.daemon.version import __version__
 
 from beiran.ctx import config
 from beiran.models import Node, PeerAddress

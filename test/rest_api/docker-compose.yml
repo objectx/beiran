@@ -9,7 +9,7 @@ services:
     privileged: true
 #    volumes:
 #      - /var/run/:/var/run/
-    command: python3.6 -u beirand/main.py
+    command: python3.6 -u beiran/daemon/main.py
     networks:
       - test
     environment:

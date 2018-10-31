@@ -9,9 +9,8 @@ from beiran.ctx import config
 from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 
-from beirand.common import Services
-from beirand.lib import get_listen_address, get_listen_port
-
+from beiran.daemon.common import Services
+from beiran.daemon.lib import get_listen_address, get_listen_port
 
 
 define('listen_address',
@@ -142,8 +141,7 @@ class NodesHandler(RPCEndpoint):
         else:
             await Services.daemon.peer.probe_node(peer_address=peer_address,
                                                   extra_addr=[remote_ip,])
-            self.write({"status": "OK"})
-
+        self.write({"status": "OK"})
         self.finish()
 
     # pylint: disable=arguments-differ

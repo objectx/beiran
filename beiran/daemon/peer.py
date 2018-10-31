@@ -13,8 +13,8 @@ from pyee import EventEmitter
 
 from beiran.client import Client
 from beiran.models import Node
-from beirand.nodes import Nodes
-from beirand.common import Services
+from beiran.daemon.nodes import Nodes
+from beiran.daemon.common import Services
 
 PEER_REGISTRY: dict = dict()
 
@@ -193,7 +193,6 @@ class Peer(EventEmitter, metaclass=PeerMeta):
         Args:
             peer_address (PeerAddress): peer address to be asked to probe back
             probe_back (bool): whether to be asked to probe back
-            extra_addr (list): additional addresses we should check
 
         Returns:
             (Node): node object
@@ -298,6 +297,8 @@ class Peer(EventEmitter, metaclass=PeerMeta):
             self.logger.info(
                 'Probed node, uuid, address: %s, %s',
                 node.uuid.hex, node.address)
+
+            return node
 
     async def fetch_node_info(self, peer_address):
         """

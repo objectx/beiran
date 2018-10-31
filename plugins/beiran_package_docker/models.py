@@ -5,8 +5,9 @@ from datetime import datetime
 
 from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
-from beirand.common import Services
+from beiran.daemon.common import Services
 
+from .image_ref import add_default_tag, is_digest, add_id_prefix
 
 class CommonDockerObjectFunctions:
     """..."""
@@ -111,31 +112,50 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         return _dict
 
     @classmethod
-    async def get_available_nodes_by_tag(cls, image_name: str) -> list:
+    async def get_available_nodes(cls, image_identifier: str) -> list:
         """
 
         Args:
-            image_name: image name
+            image_identifier: image tag or digest
 
         Returns:
             (list) list of available nodes of image object
 
         """
-
-        # image must have a tag, default is latest
         try:
-            image_name, tag = image_name.split(":")
-        except ValueError:
-            tag = "latest"
-
-        image_tag = "{image_name}:{tag}".format(image_name=image_name, tag=tag)
-
-        try:
-            image = cls.select().where(
-                SQL('tags LIKE \'%%"%s"%%\'' % image_tag)).get()
-            return image.available_at
+            image = cls.get_image_data(image_identifier)
         except DockerImage.DoesNotExist:
             return []
+
+        return image.available_at
+
+
+    @classmethod
+    def get_image_data(cls, image_identifier: str) -> "DockerImage":
+        """
+        get a image data. search with `hash_id`, `repo_digests` or `tags`
+        """
+        if is_digest(image_identifier):
+            # search with digest
+            image = cls.get(SQL('repo_digests LIKE \'%%"%s"%%\'' % image_identifier))
+
+        else:
+            # search with tag
+            try:
+                image = cls.get(SQL('tags LIKE \'%%"%s"%%\'' % add_default_tag(image_identifier)))
+
+            except DockerImage.DoesNotExist:
+                # search with hash_id
+                images = cls.select().where((SQL('hash_id LIKE \'%s%%\'' %
+                                                 add_id_prefix(image_identifier))))
+
+                # if found 0 or a few images
+                if len(images) != 1:
+                    raise DockerImage.DoesNotExist()
+
+                image = images.first()
+
+        return image
 
 
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):

@@ -5,10 +5,12 @@ Docker packaging plugin
 import asyncio
 import docker
 from aiodocker import Docker
+from aiodocker.exceptions import DockerError
+from peewee import SQL
 
 from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
-from beirand.peer import Peer
+from beiran.daemon.peer import Peer
 
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
@@ -178,17 +180,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
             # Get Images
             self.log.debug("Getting docker image list..")
-            image_list = await self.aiodocker.images.list()
+            image_list = await self.aiodocker.images.list(all=1)
             for image_data in image_list:
-                if not image_data['RepoTags']:
-                    continue
-
-                # remove the non-tag tag from tag list
-                image_data['RepoTags'] = [t for t in image_data['RepoTags'] if t != '<none>:<none>']
-
-                if not image_data['RepoTags']:
-                    continue
-
                 self.log.debug("existing image..%s", image_data)
                 await self.save_image(image_data['Id'], skip_updates=True)
 
@@ -211,8 +204,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         to emit the lost event.
         """
 
-        new_image_events = ['pull', 'load', 'tag']
-        remove_image_events = ['untag']
+        new_image_events = ['pull', 'load', 'tag', 'commit', 'import']
+        remove_image_events = ['delete']
 
         try:
             # await until docker is unavailable
@@ -227,9 +220,17 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 self.log.debug("docker event: %s[%s] %s",
                                event['Action'], event['Type'], event.get('id', 'event has no id'))
 
+                # handle commit container (and build new image)
+                if event['Type'] == 'container' and event['Action'] in new_image_events:
+                    await self.save_image(event['Actor']['Attributes']['imageID'])
+
                 # handle new image events
                 if event['Type'] == 'image' and event['Action'] in new_image_events:
                     await self.save_image(event['id'])
+
+                # handle untagging image
+                if event['Type'] == 'image' and event['Action'] == 'untag':
+                    await self.untag_image(event['id'])
 
                 # handle delete existing image events
                 if event['Type'] == 'image' and event['Action'] in remove_image_events:
@@ -330,3 +331,39 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         if not skip_updates:
             self.history.update('new_image={}'.format(image.hash_id))
         self.emit('docker_daemon.new_image_saved', image.hash_id)
+
+        if image_data['RepoTags']:
+            await self.tag_image(image_id, image_data['RepoTags'][0])
+
+    async def tag_image(self, image_identifier: str, tag: str):
+        """
+        Tag an image existing in database. If already same tag exists,
+        move it from old one to new one.
+        """
+        target = DockerImage.get_image_data(image_identifier)
+        if tag not in target.tags:
+            target.tags = [tag] # type: ignore
+            target.save()
+
+        images = DockerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
+
+        for image in images:
+            if image.hash_id == target.hash_id:
+                continue
+
+            image.tags.remove(tag)
+            image.save()
+
+    async def untag_image(self, image_identifier: str):
+        """
+        Remove a tag from an image.
+        """
+        # aiodocker.events.subscribe() can't get information about what tag will be removed...
+        try:
+            image_data = await self.aiodocker.images.get(name=image_identifier)
+            image = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+            image.tags = image_data['RepoTags']
+            image.save()
+        except DockerError:
+            # if the image was deleted by `docker rmi`, no image information was found
+            pass

@@ -39,15 +39,7 @@ pipeline:
       # temporarily pushing all docs for now
       - docker push dkr.rsnc.io/poc/beiran/docs:drone-build-${DRONE_BUILD_NUMBER}
 
-  check-daemon:
-    image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
-    group: checks
-    commands:
-      - pylint beirand
-      - bandit -r beirand || echo "There are security warnings"
-      - mypy --config-file mypy.ini beirand
-
-  check-client:
+  check-beiran:
     image: dkr.rsnc.io/poc/beiran/checks:drone-build-${DRONE_BUILD_NUMBER}
     group: checks
     commands:
@@ -113,7 +105,7 @@ pipeline:
     commands:
       - date
       - ip addr show
-      - python3 -m beirand
+      - python3 -m beiran.daemon
 
   rest_test:
     image: dkr.rsnc.io/poc/beiran/pyresttest

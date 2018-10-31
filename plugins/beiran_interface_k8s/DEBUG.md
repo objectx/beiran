@@ -13,7 +13,7 @@ Install the command referencing [https://github.com/kubernetes-incubator/cri-too
 
 
 ```
-$ python -m beirand
+$ python -m beiran.daemon
 ```
 
 

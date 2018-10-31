@@ -6,7 +6,6 @@ pip-delete-this-directory.txt
 run
 .git
 *
-!beirand
 !beiran
 !Dockerfile
 !plugins

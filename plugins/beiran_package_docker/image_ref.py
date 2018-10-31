@@ -8,6 +8,8 @@ DEFAULT_DOMAIN = "docker.io"
 OFFICIAL_REPO = "library"
 DEFAULT_TAG = "latest"
 
+ID_PREFIX = "sha256:"
+
 
 def normalize_ref(ref: str) -> str:
     """Parse and normalize image reference.
@@ -69,12 +71,12 @@ def is_digest(string: str):
         return True
     return False
 
-def is_id(string: str):
-    """Judge whether or not string is image id.
-    """
-    if string.startswith("sha256:"):
-        return True
-    return False
+# def is_id(string: str):
+#     """Judge whether or not string is image id.
+#     """
+#     if string.startswith(ID_PREFIX):
+#         return True
+#     return False
 
 def add_default_tag(name: str) -> str:
     """Return <name>:DEFAULT_TAG"""
@@ -82,6 +84,11 @@ def add_default_tag(name: str) -> str:
         return name
     return name + ":" + DEFAULT_TAG
 
+def add_id_prefix(image_id: str) -> str:
+    """Return sha256:<image id>"""
+    if image_id.startswith(ID_PREFIX):
+        return image_id
+    return ID_PREFIX + image_id
 
 def marshal(domain: str, path_comp: str, name: str, sign: str, suffix: str) -> str:
     """

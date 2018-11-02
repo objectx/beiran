@@ -16,10 +16,10 @@ def normalize_ref(ref: str, **kwargs) -> Any:
     """Parse and normalize image reference.
     """
     domain = DEFAULT_DOMAIN
-    if 'index' in kwargs and kwargs['index'] == True:
+    if 'index' in kwargs and kwargs['index']:
         domain = DEFAULT_INDEX_DOMAIN
     path_comp = OFFICIAL_REPO
-    
+
     splitted_ref = ref.split("/")
     if len(splitted_ref) == 1: # nginx, nginx:0.1
         name, sign, suffix = split_name_suffix(splitted_ref[0])
@@ -39,8 +39,8 @@ def normalize_ref(ref: str, **kwargs) -> Any:
             path_comp = "/".join(splitted_ref[0:-1])
 
         name, sign, suffix = split_name_suffix(splitted_ref[-1])
-    
-    if 'marshal' in kwargs and kwargs['marshal'] == True:
+
+    if 'marshal' in kwargs and kwargs['marshal']:
         marshal(domain, path_comp, name, sign, suffix)
     return (domain, path_comp, name, sign, suffix)
 

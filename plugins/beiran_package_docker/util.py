@@ -559,7 +559,7 @@ class DockerUtil:
             resp, data = await async_req(url=url, return_json=True, Authorization=requirements)
 
         if resp.status != 200:
-            raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d" % resp.status)
+            raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
+                                                  % resp.status)
 
         return data
-

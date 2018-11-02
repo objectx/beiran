@@ -330,10 +330,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                        self.node.uuid.hex, image.to_dict(dialect="docker"))
 
 
-        domain, path_comp, name, _, _ = normalize_ref(image_data['RepoTags'][0], index=True)
+        normalized = normalize_ref(image_data['RepoTags'][0], index=True)
         try:
             config = await self.util.download_config_from_origin(
-                domain, path_comp + '/' + name, image_id
+                normalized[0], normalized[1] + '/' + normalized[2], image_id
             )
         except DockerUtil.ConfigDownloadFailed as err:
             self.log.warning(err)

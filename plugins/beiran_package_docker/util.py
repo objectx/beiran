@@ -48,6 +48,10 @@ class DockerUtil:
         """..."""
         pass
 
+    class ConfigDownloadFailed(Exception):
+        """..."""
+        pass
+
     def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
                  logger: logging.Logger = None) -> None:
         self.storage = storage
@@ -503,7 +507,7 @@ class DockerUtil:
         """
         save_path = config.cache_dir + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
-        requirements = None
+        requirements = ''
 
         self.logger.debug("downloading layer from %s", url)
 
@@ -527,3 +531,35 @@ class DockerUtil:
             raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
+
+
+    async def download_config_from_origin(self, host, repository, image_id, **kwargs) -> str:
+        """
+        Download config file of docker image and save it to database.
+        """
+        url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, image_id)
+        requirements = ''
+
+        self.logger.debug("downloading config from %s", url)
+
+        # try to access the server with HTTP HEAD requests
+        # there is also a purpose to check the type of authentication
+        try:
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+
+        except aiohttp.client_exceptions.ClientConnectorSSLError:
+            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
+            url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, image_id)
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+
+        if resp.status == 401 or resp.status == 200:
+            if resp.status == 401:
+                requirements = await self.get_auth_requirements(resp.headers, **kwargs)
+
+            resp, data = await async_req(url=url, return_json=True, Authorization=requirements)
+
+        if resp.status != 200:
+            raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d" % resp.status)
+
+        return data
+

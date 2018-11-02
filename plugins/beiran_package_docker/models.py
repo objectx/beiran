@@ -47,6 +47,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
 
     @classmethod
     def from_dict(cls, _dict: dict, **kwargs) -> "DockerImage":
+        config = kwargs.pop('config', None)
         if 'availability' in _dict:
             del _dict['availability']
 

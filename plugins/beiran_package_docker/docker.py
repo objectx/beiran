@@ -12,6 +12,7 @@ from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
+from .image_ref import normalize_ref
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
 from .util import DockerUtil
@@ -328,6 +329,17 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.log.debug("set availability and save image %s \n %s \n\n",
                        self.node.uuid.hex, image.to_dict(dialect="docker"))
 
+
+        domain, path_comp, name, _, _ = normalize_ref(image_data['RepoTags'][0], index=True)
+        try:
+            config = await self.util.download_config_from_origin(
+                domain, path_comp + '/' + name, image_id
+            )
+        except DockerUtil.ConfigDownloadFailed as err:
+            self.log.warning(err)
+            config = None
+
+        image.config = config
         image.set_available_at(self.node.uuid.hex)
         image.save(force_insert=not image_exists_in_db)
 

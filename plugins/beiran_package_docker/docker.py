@@ -240,6 +240,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 if event['Type'] == 'image' and event['Action'] in remove_image_events:
                     await self.delete_image(event['id'])
 
+                # handle pull image
+                if event['Type'] == 'image' and event['Action'] in 'pull':
+                    await self.save_config(event['id'])
+
             await self.daemon_lost()
         except Exception as err:  # pylint: disable=broad-except
             await self.daemon_error(str(err))
@@ -329,17 +333,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.log.debug("set availability and save image %s \n %s \n\n",
                        self.node.uuid.hex, image.to_dict(dialect="docker"))
 
-
-        normalized = normalize_ref(image_data['RepoTags'][0], index=True)
-        try:
-            config = await self.util.download_config_from_origin(
-                normalized[0], normalized[1] + '/' + normalized[2], image_id
-            )
-        except DockerUtil.ConfigDownloadFailed as err:
-            self.log.warning(err)
-            config = None
-
-        image.config = config
         image.set_available_at(self.node.uuid.hex)
         image.save(force_insert=not image_exists_in_db)
 
@@ -382,3 +375,32 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except DockerError:
             # if the image was deleted by `docker rmi`, no image information was found
             pass
+    
+    async def save_config(self, tag: str):
+        """
+        Save image config.
+        """
+        normalized = normalize_ref(tag, index=True)
+
+        manifest = await self.util.fetch_docker_image_manifest(
+            normalized[0], normalized[1] + '/' + normalized[2], normalized[4])
+
+        # get manifest version
+        manifest_v = await self.util.analyze_schema_version(manifest)
+
+        if manifest_v == 1:
+            # create config from version 1 manifest
+            config = None
+
+        elif manifest_v == 2:
+            image_id = manifest['config']['digest']
+
+            config = await self.util.download_config_from_origin(
+                normalized[0], normalized[1] + '/' + normalized[2], image_id
+            )
+
+        # acutually, config is saved before downloading image
+        # save config only in the database for now
+        image = DockerImage.get(DockerImage.hash_id == image_id)
+        image.config = config
+        image.save()

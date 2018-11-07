@@ -56,6 +56,10 @@ class DockerUtil:
         """..."""
         pass
 
+    class ManifestError(Exception):
+        """..."""
+        pass
+
     def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
                  logger: logging.Logger = None) -> None:
         self.storage = storage
@@ -495,3 +499,17 @@ class DockerUtil:
                                                   % resp.status)
 
         return data
+    
+    async def analyze_schema_version(self, manifest: str):
+        """
+        Read manifest (json data), and return its version.
+        """
+        key = 'schemaVersion'
+
+        if key not in manifest:
+            raise DockerUtil.ManifestError('Invalid manifest.')
+
+        if manifest[key] == 1 or manifest[key] == 2:
+            return manifest[key]
+        else:
+            raise DockerUtil.ManifestError('Invalid schema version: %d', manifest[key])

@@ -52,6 +52,10 @@ class DockerUtil:
         """..."""
         pass
 
+    class FetchManifestFailed(Exception):
+        """..."""
+        pass
+
     def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
                  logger: logging.Logger = None) -> None:
         self.storage = storage
@@ -339,113 +343,41 @@ class DockerUtil:
         #     image.layers.append("<not-found>")
         return layer
 
-    async def fetch_docker_image_info(self, name: str):
+    async def fetch_docker_image_manifest(self, host, repository, tag, **kwargs) -> str:
         """
         Fetch Docker Image manifest specified repository.
-        Args:
-            name (str): image name (e.g. dkr.rsnc.io/beiran/beirand:v0.1, beirand:latest)
         """
+        url = 'https://{}/v2/{}/manifests/{}'.format(host, repository, tag)
+        requirements = ''
 
-        default_elem = {
-            "host": "index.docker.io",
-            "repository": "library",
-            "tag": "latest"
-        }
+        self.logger.debug("fetch config from %s", url)
 
-        url_elem = {
-            "host": "",
-            "port": "",
-            "repository": "",
-            "image": "",
-            "tag": ""
-        }
+        # about header, see below URL
+        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
+        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json"
 
-        # 'name' --- 5 patterns
-        # # - beirand
-        # # - beirand:v0.1
-        # # - beiran/beirand:v0.1
-        # # - dkr.rsnc.io/beirand:v0.1
-        # # - dkr.rsnc.io/beiran/beirand:v0.1
-        #
+        # try to access the server with HTTP HEAD requests
+        # there is also a purpose to check the type of authentication
+        try:
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
-        #
-        # # divide into Domain and Repository and Image
-        #
-        name_list = name.split("/")
+        except aiohttp.client_exceptions.ClientConnectorSSLError:
+            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
+            url = 'http://{}/v2/{}/manifests/{}'.format(host, repository, tag)
+            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
-        # nginx:latest
-        url_elem['host'] = default_elem['host']
-        url_elem['repository'] = default_elem['repository'] + "/"
-        img_tag = name_list[0]
+        if resp.status == 401 or resp.status == 200:
+            if resp.status == 401:
+                requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-        if len(name_list) == 2:
-            # openshift/origin:latest, dkr.rsnc.io/nginx:latest
-            # determine host name and repository name with "."
-            url_elem['host'] = default_elem['host']
-            url_elem['repository'] = name_list[0] + "/"
-            if "." in name_list[0]:
-                url_elem['host'] = name_list[0]
-                url_elem['repository'] = ""
-            img_tag = name_list[1]
+            resp, data = await async_req(url=url, return_json=True, Authorization=requirements,
+                                         Accept=schema_v2_header)
 
-        elif len(name_list) == 3:
-            # dkr.rsnc.io/beiran/beirand:v0.1
-            url_elem['host'] = name_list[0]
-            url_elem['repository'] = name_list[1] + "/"
-            img_tag = name_list[2]
+        if resp.status != 200:
+            raise DockerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
+                                                  % resp.status)
+        return data
 
-        #
-        # # divide into Host and Port
-        #
-        host_list = url_elem['host'].split(":")
-        url_elem['host'] = host_list[0]
-        url_elem['port'] = ""
-        if len(host_list) == 2:
-            url_elem['host'], url_elem['port'] = host_list
-            url_elem['host'] += ":"
-
-        #
-        # # divide into Host and Port
-        #
-        url_elem['image'] = img_tag
-        url_elem['tag'] = default_elem['tag']
-        if ":" in img_tag:
-            url_elem['image'], url_elem['tag'] = img_tag.split(":")
-
-        url = 'https://{}{}/v2/{}{}/manifests/{}'.format(
-            url_elem['host'], url_elem['port'],
-            url_elem['repository'], url_elem['image'],
-            url_elem['tag']
-        )
-
-        if url_elem['host'] == default_elem['host']:
-            resp, token = await async_req(
-                "https://auth.docker.io/" + \
-                "token?service=registry.docker.io&scope=repository:{}{}:pull" \
-                .format(url_elem['repository'], url_elem['image'])
-            )
-            if resp.status != 200:
-                raise Exception("Failed to get token")
-
-            resp, manifest = await async_req(url, Authorization="Bearer " + token["token"])
-            self.logger.debug("fetching Docker Image manifest: %s", url)
-            if resp.status != 200:
-                raise Exception("Cannnot fetch Docker image")
-
-            self.logger.debug("fetched Docker Image %s", str(manifest))
-
-        else:
-            resp, manifest = await async_req(url)
-            self.logger.debug("fetching Docker Image manifest: %s", url)
-
-            if resp.status != 200:
-                raise Exception("Cannot fetch Docker Image")
-
-            self.logger.debug("fetched Docker Image %s", str(manifest))
-
-        manifest['hashid'] = resp.headers['Docker-Content-Digest']
-
-        DockerImage.from_dict(manifest, dialect="manifest").save()
 
     async def get_docker_bearer_token(self, realm, service, scope):
         """

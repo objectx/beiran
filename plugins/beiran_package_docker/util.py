@@ -6,6 +6,10 @@ import re
 import base64
 import aiohttp
 import aiofiles
+import json
+import gzip
+import hashlib
+from collections import OrderedDict
 
 from peewee import SQL
 from aiodocker import Docker
@@ -347,18 +351,21 @@ class DockerUtil:
         #     image.layers.append("<not-found>")
         return layer
 
-    async def fetch_docker_image_manifest(self, host, repository, tag, **kwargs) -> str:
+    async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> str:
         """
         Fetch Docker Image manifest specified repository.
         """
-        url = 'https://{}/v2/{}/manifests/{}'.format(host, repository, tag)
+        url = 'https://{}/v2/{}/manifests/{}'.format(host, repository, tag_or_digest)
         requirements = ''
 
         self.logger.debug("fetch config from %s", url)
 
         # about header, see below URL
         # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
-        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json"
+        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
+                           "application/vnd.docker.distribution.manifest.list.v2+json, " \
+                           "application/vnd.docker.distribution.manifest.v1+prettyjws", \
+                           "application/json"
 
         # try to access the server with HTTP HEAD requests
         # there is also a purpose to check the type of authentication
@@ -367,7 +374,7 @@ class DockerUtil:
 
         except aiohttp.client_exceptions.ClientConnectorSSLError:
             self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
-            url = 'http://{}/v2/{}/manifests/{}'.format(host, repository, tag)
+            url = 'http://{}/v2/{}/manifests/{}'.format(host, repository, tag_or_digest)
             resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
@@ -461,12 +468,28 @@ class DockerUtil:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp = await async_write_file_stream(url, save_path, Authorization=requirements)
+            resp = await async_write_file_stream(url, save_path, timeout=10, Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
+
+
+        # TODO! move tar file to library folder and untar it
+        with gzip.open(save_path, 'rb') as gzfile:
+            data = gzfile.read()
+            with open(save_path.rstrip('.gz'), "wb") as tarfile:
+                tarfile.write(data)
+
+        with open(save_path.rstrip('.gz'),'rb') as tarfile:
+            diff_id = hashlib.sha256(tarfile.read()).hexdigest()
+        
+        os.remove(save_path)
+        os.remove(save_path.rstrip('.gz'))
+        
+        return 'sha256:' + diff_id
+
 
 
     async def download_config_from_origin(self, host, repository, image_id, **kwargs) -> str:
@@ -499,17 +522,92 @@ class DockerUtil:
                                                   % resp.status)
 
         return data
-    
-    async def analyze_schema_version(self, manifest: str):
-        """
-        Read manifest (json data), and return its version.
-        """
-        key = 'schemaVersion'
 
-        if key not in manifest:
-            raise DockerUtil.ManifestError('Invalid manifest.')
 
-        if manifest[key] == 1 or manifest[key] == 2:
-            return manifest[key]
-        else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d', manifest[key])
+    async def pull_schema_v1(self, host: str, repository: str, manifest: str):
+        """
+        Image pulling process with image manifest version 1
+        """
+        fs_layers = manifest['fsLayers']
+
+        descriptors = []
+        history = []
+
+        for i in range(len(fs_layers) - 1, -1, -1):
+
+            compatibility = json.loads(manifest['history'][i]['v1Compatibility'])
+
+            # do not chenge key order
+            layer_h = OrderedDict() # history of a layer
+            if 'created' in compatibility:
+                layer_h['created'] = compatibility['created']
+            if 'author' in compatibility:
+                layer_h['author'] = compatibility['author']
+            if 'container_config' in compatibility:
+                layer_h['created_by'] = " ".join(compatibility['container_config']['Cmd'])
+            if 'comment' in compatibility:
+                layer_h['comment'] = compatibility['comment']
+            if 'throwaway' in compatibility:
+                layer_h['empty_layer'] = True
+
+            history.append(layer_h)
+
+            if 'throwaway' in compatibility:
+                continue
+
+            layer_descriptor = {
+                'digest': fs_layers[i]['blobSum'],
+                # 'repoinfo': manifest['name'] + ':' + manifest['tag'] 
+                # 'repo':
+                # 'v2metadataservice': 
+            }
+            descriptors.append(layer_descriptor)
+
+
+        rootfs = await self.download_layers(host, repository, descriptors)  
+
+        config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
+
+        if 'id' in config_json:
+            del config_json['id']
+        if 'parent' in config_json:
+            del config_json['parent']
+        if 'Size' in config_json:
+            del config_json['Size']    
+        if 'parent_id' in config_json:
+            del config_json['parent_id']
+        if 'layer_id' in config_json:
+            del config_json['layer_id']
+        if 'throwaway' in config_json:
+            del config_json['throwaway']
+
+        config_json['rootfs'] = rootfs
+        config_json['history'] = history
+
+        # calc RepoDigest
+        del manifest['signatures']
+        manifest = json.dumps(manifest, indent=3)
+        repo_digest = hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+
+        # replace, shape, then calc digest
+        config_json = OrderedDict(sorted(config_json.items(), key = lambda x:x[0]))
+        config_json = json.dumps(config_json, separators=(',', ':'))
+        config_json = config_json.replace('&', r'\u0026') \
+                                 .replace('<', r'\u003c') \
+                                 .replace('>', r'\u003e')
+
+        config_digest = hashlib.sha256(config_json.encode('utf-8')).hexdigest()
+
+        return config_json, config_digest, repo_digest
+
+
+
+    async def download_layers(self, host, repository, descriptors: list):
+        """Download and allocate layers included in an image."""
+        tasks = [
+            self.download_layer_from_origin(host, repository, layer_d['digest'])
+            for layer_d in descriptors
+        ]
+        results = await asyncio.gather(*tasks)
+
+        return OrderedDict(type='layers', diff_ids=results)

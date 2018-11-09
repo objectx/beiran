@@ -364,7 +364,7 @@ class DockerUtil:
         # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
         schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
                            "application/vnd.docker.distribution.manifest.list.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.v1+prettyjws", \
+                           "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
                            "application/json"
 
         # try to access the server with HTTP HEAD requests
@@ -526,7 +526,7 @@ class DockerUtil:
 
     async def pull_schema_v1(self, host: str, repository: str, manifest: str):
         """
-        Image pulling process with image manifest version 1
+        Pull image using image manifest version 1
         """
         fs_layers = manifest['fsLayers']
 
@@ -599,6 +599,22 @@ class DockerUtil:
         config_digest = hashlib.sha256(config_json.encode('utf-8')).hexdigest()
 
         return config_json, config_digest, repo_digest
+
+
+    async def pull_schema_v2(self, host: str, repository: str, manifest: str):
+        """
+        Pull image using image manifest version 2
+        """
+        config_digest = manifest['config']['digest']
+        config_json = await self.download_config_from_origin(
+            host, repository, config_digest
+        )
+
+        manifest = json.dumps(manifest, indent=3)
+        repo_digest = hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+
+        return config_json, config_digest, repo_digest
+
 
 
 

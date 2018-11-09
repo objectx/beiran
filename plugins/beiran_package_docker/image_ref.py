@@ -41,8 +41,14 @@ def normalize_ref(ref: str, **kwargs) -> Any:
         name, sign, suffix = split_name_suffix(splitted_ref[-1])
 
     if 'marshal' in kwargs and kwargs['marshal']:
-        marshal(domain, path_comp, name, sign, suffix)
-    return (domain, path_comp, name, sign, suffix)
+        return marshal(domain, path_comp, name, sign, suffix)
+
+    return {
+        'domain': domain,
+        'repo': path_comp + '/' + name,
+        'sign': sign,
+        'suffix': suffix
+    }
 
 
 def split_name_suffix(string: str) -> Tuple[str, str, str]:

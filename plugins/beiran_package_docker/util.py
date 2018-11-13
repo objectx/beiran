@@ -13,7 +13,7 @@ from aiodocker import Docker
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
-from beiran.ctx import config
+from beiran.config import config
 
 from .models import DockerImage, DockerLayer
 

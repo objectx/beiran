@@ -16,7 +16,7 @@ from beiran.sync_client import Client
 from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.plugin import get_installed_plugins
-from beiran.ctx import config
+from beiran.config import config
 
 LOG_LEVEL = logging.getLevelName(config.log_level) # type: ignore
 

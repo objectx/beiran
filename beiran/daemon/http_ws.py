@@ -5,7 +5,7 @@ from tornado import websocket, web
 from tornado.options import options, define
 from tornado.web import HTTPError
 
-from beiran.ctx import config
+from beiran.config import config
 from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 

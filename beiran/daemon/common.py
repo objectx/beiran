@@ -3,7 +3,7 @@ import logging
 
 from pyee import EventEmitter
 
-from beiran.ctx import config
+from beiran.config import config
 from beiran.log import build_logger
 from beiran.version import get_version
 

@@ -34,7 +34,7 @@ from beiran.daemon.lib import update_sync_version_file
 from beiran.daemon.http_ws import ROUTES
 from beiran.daemon.version import __version__
 
-from beiran.ctx import config
+from beiran.config import config
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
 from beiran.plugin import get_installed_plugins

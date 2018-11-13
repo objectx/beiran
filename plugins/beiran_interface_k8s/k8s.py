@@ -7,6 +7,7 @@ from concurrent import futures
 import grpc
 
 from beiran.plugin import BaseInterfacePlugin
+from beiran.config import config
 from .grpc_server import K8SImageServicer
 from .api_pb2_grpc import add_ImageServiceServicer_to_server
 

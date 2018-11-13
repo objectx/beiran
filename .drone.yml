@@ -113,6 +113,7 @@ pipeline:
       - LOG=True
       - LOG_LEVEL=DEBUG
       - PRINT_BODIES=True
+      - BEIRAN_PLUGINS=package.docker
     commands: 
       - date
       - |

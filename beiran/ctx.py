@@ -74,8 +74,17 @@ class Config:
         else:
             config_path = path.join(self.config_dir, 'config.toml')
 
-        with open(config_path, 'r') as config_file:
-            self.conf = pytoml.load(config_file)
+        try:
+            with open(config_path, 'r') as config_file:
+                self.conf = pytoml.load(config_file)
+        except FileNotFoundError as e:
+            if 'path' not in kwargs:
+                # Configuration file is not specificly requested
+                # we tried the default path, and could not find the
+                # file. means no config file.
+                self.conf = dict()
+                return
+            raise e
 
 
     @property

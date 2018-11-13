@@ -24,10 +24,13 @@ def main() -> None:
     result_lines = result.stdout.decode().strip().split('\n')
     error_lines = [
         line for line in result_lines
-        if not any(path in line for path in ignore_paths)
+        if not any(path in line for path in ignore_paths) and line
     ]
-    print('\n'.join(error_lines))
-    sys.exit(int(bool(error_lines)))
+    if error_lines:
+        print('\n'.join(error_lines))
+        sys.exit(1)
+    else:
+        print("Clean")
 
 
 if __name__ == '__main__':

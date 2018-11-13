@@ -157,7 +157,8 @@ class Config:
 
     @property
     def plugin_types(self):
-        return [ 'package', 'interface', 'discovery' ]
+        """Return the list of supported plugin types"""
+        return ['package', 'interface', 'discovery']
 
     def get_enabled_plugins(self):
         """Get the list of the enabled plugins"""
@@ -175,7 +176,7 @@ class Config:
                         "name": p_name,
                         "package": 'beiran_%s_%s' % (p_type, p_name)
                     })
-            except Exception as e:
+            except Exception:
                 raise Exception("Cannot parse BEIRAN_PLUGINS variable from environment")
 
             return plugins
@@ -187,7 +188,7 @@ class Config:
 
             for p_name, p_conf in conf.items():
                 if 'enabled' in p_conf and p_conf['enabled']:
-                    keys.append({
+                    plugins.append({
                         'type': p_type,
                         'name': p_name,
                         'package': 'beiran_%s_%s' % (p_type, p_name)

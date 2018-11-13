@@ -19,10 +19,10 @@ PLUGIN_TYPE = 'interface'
 # pylint: disable=attribute-defined-outside-init
 class K8SInterface(BaseInterfacePlugin):
     """cri support for Beiran"""
-    def __init__(self, config = {}):
-        super().__init__(config)
-        if 'unix_socket_path' in config:
-            self.unix_socket_path = config['unix_socket_path']
+    def __init__(self, plugin_config=dict()):
+        super().__init__(plugin_config)
+        if 'unix_socket_path' in plugin_config:
+            self.unix_socket_path = plugin_config['unix_socket_path']
         else:
             self.unix_socket_path = "unix://" + config.run_dir + "/beiran-cri.sock"
 

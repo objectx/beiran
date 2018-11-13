@@ -254,24 +254,24 @@ class BeiranDaemon(EventEmitter):
         shared_config_for_plugins = {
             "version": VERSION,
         }
-        for p in config.get_enabled_plugins():
+        for plugin in config.get_enabled_plugins():
             type_specific_config = dict()
-            if p['type'] == 'discovery':
+            if plugin['type'] == 'discovery':
                 type_specific_config = {
                     "address": get_advertise_address(),
                     "port": get_listen_port()
                 }
-            _plugin_obj = await self.get_plugin(p['type'], p['name'], {
+            _plugin_obj = await self.get_plugin(plugin['type'], plugin['name'], {
                 **shared_config_for_plugins,
                 **type_specific_config,
-                **config.get_plugin_config(p['type'], p['name'])
+                **config.get_plugin_config(plugin['type'], plugin['name'])
             })
 
             # Only one discovery plugin at a time is supported (for now)
-            if p['type'] == 'discovery':
+            if plugin['type'] == 'discovery':
                 Services.plugins['discovery'] = _plugin_obj
             else:
-                Services.plugins['%s:%s' % (p_type, p_name)] = _plugin_obj
+                Services.plugins['%s:%s' % (plugin['type'], plugin['name'])] = _plugin_obj
 
     async def probe_without_discovery(self):
         """Bootstrapping peer without discovery"""

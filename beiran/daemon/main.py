@@ -250,36 +250,28 @@ class BeiranDaemon(EventEmitter):
     async def init_plugins(self):
         """Initialize configured plugins"""
 
-        # Initialize discovery
-        discovery_mode = config.discovery_method
-        if discovery_mode != "none":
-            Services.logger.debug("Discovery method is %s", discovery_mode)
-            discovery = await self.get_plugin('discovery', discovery_mode, {
-                "address": get_advertise_address(),
-                "port": get_listen_port(),
-                "version": VERSION
+        # Enable plugins
+        shared_config_for_plugins = {
+            "version": VERSION,
+        }
+        for p in config.get_enabled_plugins():
+            type_specific_config = dict()
+            if p['type'] == 'discovery':
+                type_specific_config = {
+                    "address": get_advertise_address(),
+                    "port": get_listen_port()
+                }
+            _plugin_obj = await self.get_plugin(p['type'], p['name'], {
+                **shared_config_for_plugins,
+                **type_specific_config,
+                **config.get_plugin_config(p['type'], p['name'])
             })
 
             # Only one discovery plugin at a time is supported (for now)
-            Services.plugins['discovery'] = discovery
-
-        # Initialize package plugins
-        package_plugins_enabled = config.package_plugins
-
-        for _plugin in package_plugins_enabled:
-            _plugin_obj = await self.get_plugin('package', _plugin, {
-                "storage": "/var/lib/docker",
-                "url": None # default
-            })
-            Services.plugins['package:' + _plugin] = _plugin_obj
-
-        # Initialize interface plugins
-        interface_plugins_enabled = config.interface_plugins
-        for _plugin in interface_plugins_enabled:
-            _plugin_obj = await self.get_plugin('interface', 'k8s', {
-                "unix_socket_path": "unix://" + config.run_dir + "/beiran-cri.sock"
-            })
-            Services.plugins['interface:' + _plugin] = _plugin_obj
+            if p['type'] == 'discovery':
+                Services.plugins['discovery'] = _plugin_obj
+            else:
+                Services.plugins['%s:%s' % (p_type, p_name)] = _plugin_obj
 
     async def probe_without_discovery(self):
         """Bootstrapping peer without discovery"""
@@ -313,7 +305,6 @@ class BeiranDaemon(EventEmitter):
                 # try forever
                 self.loop.create_task(self.peer.probe_node(peer_address=peer_address, retries=-1))
                 # todo: does not iterate until the task above is not finished
-
 
     async def main(self):
         """ Main function """
@@ -406,7 +397,6 @@ class BeiranDaemon(EventEmitter):
         )
         for node in nodes:
             Services.daemon.nodes.set_offline(node)
-
 
     def set_status(self, new_status: str):
         """

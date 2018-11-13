@@ -6,7 +6,6 @@ from concurrent import futures
 
 import grpc
 
-from aiodocker import Docker
 from beiran.plugin import BaseInterfacePlugin
 from .grpc_server import K8SImageServicer
 from .api_pb2_grpc import add_ImageServiceServicer_to_server
@@ -19,15 +18,17 @@ PLUGIN_TYPE = 'interface'
 # pylint: disable=attribute-defined-outside-init
 class K8SInterface(BaseInterfacePlugin):
     """cri support for Beiran"""
-    def __init__(self, config):
+    def __init__(self, config = {}):
         super().__init__(config)
-        self.unix_socket_path = config['unix_socket_path']
+        if 'unix_socket_path' in config:
+            self.unix_socket_path = config['unix_socket_path']
+        else:
+            self.unix_socket_path = "unix://" + config.run_dir + "/beiran-cri.sock"
 
     async def init(self):
         ApiDependencies.logger = self.log
         ApiDependencies.loop = self.loop
         ApiDependencies.daemon = self.daemon
-        ApiDependencies.aiodocker = Docker()
 
         self.servicer = K8SImageServicer()
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

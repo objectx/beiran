@@ -1,5 +1,5 @@
 aiohttp==3.0.6
 aiofiles==0.3.2
-git+https://github.com/alkimake/aiodocker.git@7940f457fc9c1b912e8e68158800190ecc882a00#egg=aiodocker
+aiodocker==0.14.0
 docker==2.7.0
 docker-pycreds==0.2.1

@@ -155,43 +155,50 @@ class Config:
         """
         return self.get_config('beiran.listen_port', 'LISTEN_PORT')
 
-
     @property
-    def package_plugins(self):
-        """Get the list of the package plugins enabled"""
-        conf = self.get_config('packages', None)
-        if conf is None:
-            return []
+    def plugin_types(self):
+        return [ 'package', 'interface', 'discovery' ]
 
-        keys = []
-        for key, val in conf.items():
-            if 'enabled' in val and val['enabled']:
-                keys.append(key)
-        return keys
+    def get_enabled_plugins(self):
+        """Get the list of the enabled plugins"""
 
+        plugins = []
+        env_config = self.get_config_from_env('BEIRAN_PLUGINS')
+        if env_config:
+            try:
+                for p_package in env_config.split(','):
+                    (p_type, p_name) = p_package.split('.')
+                    if p_type not in self.plugin_types:
+                        raise Exception("Unknown plugin type: %s" % (p_type))
+                    plugins.append({
+                        "type": p_type,
+                        "name": p_name,
+                        "package": 'beiran_%s_%s' % (p_type, p_name)
+                    })
+            except Exception as e:
+                raise Exception("Cannot parse BEIRAN_PLUGINS variable from environment")
 
-    @property
-    def interface_plugins(self):
-        """Get the list of the interface plugins enabled"""
-        conf = self.get_config('interfaces', None)
-        if conf is None:
-            return []
+            return plugins
 
-        keys = []
-        for key, val in conf.items():
-            if 'enabled' in val and val['enabled']:
-                keys.append(key)
-        return keys
+        for p_type in self.plugin_types:
+            conf = self.get_config(p_type, None)
+            if conf is None:
+                return []
 
+            for p_name, p_conf in conf.items():
+                if 'enabled' in p_conf and p_conf['enabled']:
+                    keys.append({
+                        'type': p_type,
+                        'name': p_name,
+                        'package': 'beiran_%s_%s' % (p_type, p_name)
+                    })
+        return plugins
 
-    def get_package_config(self, key):
+    def get_plugin_config(self, p_type, name):
         """Get params of package plugin"""
-        return self.get_config('packages.%s' % key, None)
-
-
-    def get_interface_config(self, key):
-        """Get params of interface plugin"""
-        return self.get_config('interfaces.%s' % key, None)
-
+        conf = self.get_config('%s.%s' % (p_type, name), None)
+        if not conf:
+            return dict()
+        return conf
 
 config = Config() # pylint: disable=invalid-name

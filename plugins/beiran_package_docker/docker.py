@@ -26,8 +26,11 @@ PLUGIN_TYPE = 'package'
 class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
 
-    # def __init__(self, config):
-    #     super().__init__(config)
+    def __init__(self, config: dict) -> None:
+        super().__init__({
+            "storage": "/var/lib/docker",
+            **config
+        })
 
     async def init(self):
         self.aiodocker = Docker()

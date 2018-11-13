@@ -100,6 +100,7 @@ pipeline:
       - LOG_LEVEL=INFO
       - DOCKER_HOST=tcp://dockerd1:2375
       - LISTEN_ADDR=0.0.0.0
+      - BEIRAN_PLUGINS=package.docker
     volumes:
       - /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}:/var/lib/docker
     commands:
@@ -113,7 +114,6 @@ pipeline:
       - LOG=True
       - LOG_LEVEL=DEBUG
       - PRINT_BODIES=True
-      - BEIRAN_PLUGINS=package.docker
     commands: 
       - date
       - |

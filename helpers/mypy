@@ -1,11 +1,16 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import subprocess
 import sys
 
 
 def main() -> None:
-    args = ['mypy', '--no-check-untyped-defs', sys.argv[1]]
+    argv = list(sys.argv)
+    module = argv.pop()
+    argv.pop(0)
+    args = ['mypy', '--no-check-untyped-defs' ] + argv
+    args.append(module)
+
     ignore_paths = {
         # Ignore errors in other's packages, we don't care
         '/site-packages/',
@@ -14,7 +19,7 @@ def main() -> None:
         'No library stub',
         'Stub files are',
     }
-    print("mypy: checking", sys.argv[1])
+    print("mypy: checking", module)
     result = subprocess.run(args=args, stdout=subprocess.PIPE)
     result_lines = result.stdout.decode().strip().split('\n')
     error_lines = [

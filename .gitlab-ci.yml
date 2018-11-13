@@ -52,7 +52,7 @@ checks:mypy-beiran:
   tags:
    - docker
   script:
-   - mypy --config-file mypy.ini beiran
+   - helpers/mypy --config-file mypy.ini beiran
 
 checks:mypy-plugins:
   stage: checks
@@ -60,7 +60,7 @@ checks:mypy-plugins:
   tags:
    - docker
   script:
-   - mypy --config-file mypy.ini plugins
+   - helpers/mypy --config-file mypy.ini plugins
 
 checks:bandit-beiran:
   stage: checks

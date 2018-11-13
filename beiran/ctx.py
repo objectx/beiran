@@ -77,14 +77,14 @@ class Config:
         try:
             with open(config_path, 'r') as config_file:
                 self.conf = pytoml.load(config_file)
-        except FileNotFoundError as e:
+        except FileNotFoundError as err:
             if 'path' not in kwargs:
                 # Configuration file is not specificly requested
                 # we tried the default path, and could not find the
                 # file. means no config file.
                 self.conf = dict()
                 return
-            raise e
+            raise err
 
 
     @property

@@ -7,6 +7,7 @@ from beiran_package_docker.image_ref import normalize_ref
     ('repo/ubuntu', 'docker.io/repo/ubuntu:latest'),
     ('repo/ubuntu:14.04', 'docker.io/repo/ubuntu:14.04'),
     ('path/repo/ubuntu:14.04', 'docker.io/path/repo/ubuntu:14.04'),
+    ('domain.com/ubuntu', 'domain.com/ubuntu:latest'),
 
     ('domain.com/repo/ubuntu', 'domain.com/repo/ubuntu:latest'),
     ('domain.com/repo/ubuntu:14.04', 'domain.com/repo/ubuntu:14.04'),
@@ -29,5 +30,5 @@ from beiran_package_docker.image_ref import normalize_ref
 ])
 
 def test_normalize_ref(ref, normalized):
-    assert normalize_ref(ref) == normalized
+    assert normalize_ref(ref, marshal=True) == normalized
 

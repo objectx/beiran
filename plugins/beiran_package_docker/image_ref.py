@@ -18,15 +18,20 @@ def normalize_ref(ref: str, **kwargs) -> Any:
     domain = DEFAULT_DOMAIN
     if 'index' in kwargs and kwargs['index']:
         domain = DEFAULT_INDEX_DOMAIN
-    path_comp = OFFICIAL_REPO
+    path_comp = ''
 
     splitted_ref = ref.split("/")
     if len(splitted_ref) == 1: # nginx, nginx:0.1
         name, sign, suffix = split_name_suffix(splitted_ref[0])
+        path_comp = OFFICIAL_REPO
 
     elif len(splitted_ref) == 2: # repo/nginx, repo/nginx:0.1, domain/nginx
         if is_domain(splitted_ref[0]):
             domain = splitted_ref[0]
+
+            if domain == DEFAULT_DOMAIN:
+                path_comp = OFFICIAL_REPO
+
         else:
             path_comp = splitted_ref[0]
         name, sign, suffix = split_name_suffix(splitted_ref[1])
@@ -40,12 +45,18 @@ def normalize_ref(ref: str, **kwargs) -> Any:
 
         name, sign, suffix = split_name_suffix(splitted_ref[-1])
 
+
+    if path_comp == '':
+        repo = name
+    else:
+        repo = path_comp + '/' + name
+
     if 'marshal' in kwargs and kwargs['marshal']:
-        return marshal(domain, path_comp, name, sign, suffix)
+        return marshal(domain, repo, sign, suffix)
 
     return {
         'domain': domain,
-        'repo': path_comp + '/' + name,
+        'repo': repo,
         'sign': sign,
         'suffix': suffix
     }
@@ -103,8 +114,8 @@ def add_id_prefix(image_id: str) -> str:
         return image_id
     return ID_PREFIX + image_id
 
-def marshal(domain: str, path_comp: str, name: str, sign: str, suffix: str) -> str:
+def marshal(domain: str, repo: str, sign: str, suffix: str) -> str:
     """
     Marshall components of reference, and return normalized reference
     """
-    return domain + "/" + path_comp + "/" + name + sign + suffix
+    return domain + "/" + repo + sign + suffix

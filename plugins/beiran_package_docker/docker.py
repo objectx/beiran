@@ -242,9 +242,9 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 if event['Type'] == 'image' and event['Action'] in remove_image_events:
                     await self.delete_image(event['id'])
 
-                # handle pull image
-                if event['Type'] == 'image' and event['Action'] in 'pull':
-                    await self.pull_schemas(event['id'])
+                # # handle pull image 
+                # if event['Type'] == 'image' and event['Action'] in 'pull':
+                #     await self.pull_schemas(event['id'])
 
             await self.daemon_lost()
         except Exception as err:  # pylint: disable=broad-except
@@ -421,6 +421,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             raise DockerUtil.ManifestError('Invalid schema version: %d', schema_v)
 
         # acutually, config must be saved before downloading image
-        image = DockerImage.get(DockerImage.hash_id == image_id)
+        image = DockerImage.get(DockerImage.hash_id == config_digest)
         image.config = config_json
         image.save()

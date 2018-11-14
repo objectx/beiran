@@ -4,14 +4,15 @@ import os
 import logging
 import re
 import base64
-import aiohttp
-import aiofiles
 import json
 import gzip
 import hashlib
 import platform
-
+from typing import Tuple
 from collections import OrderedDict
+
+import aiohttp
+import aiofiles
 
 from peewee import SQL
 from aiodocker import Docker
@@ -39,7 +40,7 @@ async def aio_isdir(path: str):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 
-class DockerUtil:
+class DockerUtil: # pylint: disable=too-many-public-methods
     """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):
@@ -353,7 +354,7 @@ class DockerUtil:
         #     image.layers.append("<not-found>")
         return layer
 
-    async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> str:
+    async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> dict:
         """
         Fetch Docker Image manifest specified repository.
         """
@@ -388,7 +389,7 @@ class DockerUtil:
 
         if resp.status != 200:
             raise DockerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
-                                                  % resp.status)
+                                                 % resp.status)
         return data
 
 
@@ -470,7 +471,8 @@ class DockerUtil:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp = await async_write_file_stream(url, save_path, timeout=10, Authorization=requirements)
+            resp = await async_write_file_stream(url, save_path, timeout=10,
+                                                 Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
@@ -484,17 +486,17 @@ class DockerUtil:
             with open(save_path.rstrip('.gz'), "wb") as tarfile:
                 tarfile.write(data)
 
-        with open(save_path.rstrip('.gz'),'rb') as tarfile:
+        with open(save_path.rstrip('.gz'), 'rb') as tarfile:
             diff_id = hashlib.sha256(tarfile.read()).hexdigest()
-        
+
         os.remove(save_path)
         os.remove(save_path.rstrip('.gz'))
-        
+
         return 'sha256:' + diff_id
 
 
 
-    async def download_config_from_origin(self, host, repository, image_id, **kwargs) -> str:
+    async def download_config_from_origin(self, host, repository, image_id, **kwargs) -> dict:
         """
         Download config file of docker image and save it to database.
         """
@@ -526,7 +528,8 @@ class DockerUtil:
         return data
 
 
-    async def pull_schema_v1(self, host: str, repository: str, manifest: dict):
+    async def pull_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
+                             manifest: dict) -> Tuple[dict, str, str]:
         """
         Pull image using image manifest version 1
         """
@@ -540,7 +543,7 @@ class DockerUtil:
             compatibility = json.loads(manifest['history'][i]['v1Compatibility'])
 
             # do not chenge key order
-            layer_h = OrderedDict() # history of a layer
+            layer_h = OrderedDict() # type: dict # history of a layer
             if 'created' in compatibility:
                 layer_h['created'] = compatibility['created']
             if 'author' in compatibility:
@@ -561,14 +564,14 @@ class DockerUtil:
 
             layer_descriptor = {
                 'digest': fs_layers[i]['blobSum'],
-                # 'repoinfo': manifest['name'] + ':' + manifest['tag'] 
+                # 'repoinfo': manifest['name'] + ':' + manifest['tag']
                 # 'repo':
-                # 'v2metadataservice': 
+                # 'v2metadataservice':
             }
             descriptors.append(layer_descriptor)
 
 
-        rootfs = await self.download_layers(host, repository, descriptors)  
+        rootfs = await self.download_layers(host, repository, descriptors)
 
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
 
@@ -577,7 +580,7 @@ class DockerUtil:
         if 'parent' in config_json:
             del config_json['parent']
         if 'Size' in config_json:
-            del config_json['Size']    
+            del config_json['Size']
         if 'parent_id' in config_json:
             del config_json['parent_id']
         if 'layer_id' in config_json:
@@ -590,22 +593,23 @@ class DockerUtil:
 
         # calc RepoDigest
         del manifest['signatures']
-        manifest = json.dumps(manifest, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+        manifest_str = json.dumps(manifest, indent=3)
+        repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
 
         # replace, shape, then calc digest
-        config_json = OrderedDict(sorted(config_json.items(), key = lambda x:x[0]))
-        config_json = json.dumps(config_json, separators=(',', ':'))
-        config_json = config_json.replace('&', r'\u0026') \
-                                 .replace('<', r'\u003c') \
-                                 .replace('>', r'\u003e')
+        config_json = OrderedDict(sorted(config_json.items(), key=lambda x: x[0]))
+        config_json_str = json.dumps(config_json, separators=(',', ':'))
+        config_json_str = config_json_str.replace('&', r'\u0026') \
+                                         .replace('<', r'\u003c') \
+                                         .replace('>', r'\u003e')
 
-        config_digest = 'sha256:' + hashlib.sha256(config_json.encode('utf-8')).hexdigest()
+        config_digest = 'sha256:' + hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
 
         return config_json, config_digest, repo_digest
 
 
-    async def pull_schema_v2(self, host: str, repository: str, manifest: dict):
+    async def pull_schema_v2(self, host: str, repository: str,
+                             manifest: dict)-> Tuple[dict, str, str]:
         """
         Pull image using image manifest version 2
         """
@@ -614,15 +618,16 @@ class DockerUtil:
             host, repository, config_digest
         )
 
-        manifest = json.dumps(manifest, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+        manifest_str = json.dumps(manifest, indent=3)
+        repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
 
         #TODO! layer downloding
 
         return config_json, config_digest, repo_digest
 
 
-    async def pull_manifest_list(self, host: str, repository: str, manifestlist: dict):
+    async def pull_manifest_list(self, host: str, repository: str,
+                                 manifestlist: dict)-> Tuple[dict, str, str]:
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
@@ -633,8 +638,8 @@ class DockerUtil:
         for manifest in manifestlist['manifests']:
             if manifest['platform']['architecture'] == host_arch and \
                manifest['platform']['os'] == host_os:
-               manifest_digest = manifest['digest']
-               break
+                manifest_digest = manifest['digest']
+                break
 
         if manifest_digest is None:
             raise DockerUtil.ManifestError('No supported platform found in manifest list')
@@ -651,26 +656,24 @@ class DockerUtil:
             )
 
         elif schema_v == 2:
-            media_type = manifest['mediaType']
-
-            if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
+            if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
                 # pull layers using version 2 manifest
                 config_json, config_digest, _ = await self.pull_schema_v2(
                     host, repository, manifest
                 )
             else:
-                raise DockerUtil.ManifestError('Invalid media type: %d', media_type)
+                raise DockerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
         else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d', schema_v)   
+            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
-        manifestlist = json.dumps(manifestlist, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifestlist.encode('utf-8')).hexdigest()
+        manifestlist_str = json.dumps(manifestlist, indent=3)
+        repo_digest = 'sha256:' + hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest()
 
         return config_json, config_digest, repo_digest
 
 
 
-    async def download_layers(self, host, repository, descriptors: list):
+    async def download_layers(self, host, repository, descriptors: list)-> dict:
         """Download and allocate layers included in an image."""
         tasks = [
             self.download_layer_from_origin(host, repository, layer_d['digest'])
@@ -681,7 +684,7 @@ class DockerUtil:
         return OrderedDict(type='layers', diff_ids=results)
 
 
-    async def get_go_python_arch(self):
+    async def get_go_python_arch(self)-> str:
         """
         In order to compare architecture name of the image (runtime.GOARCH), convert
         platform.machine() and return it.
@@ -691,13 +694,13 @@ class DockerUtil:
         go_python_arch_mapping = {
             'x86_64': 'amd64',  # linux amd64
             'AMD64' : 'amd64',  # windows amd64
-            
+
             # TODO
         }
         return go_python_arch_mapping[arch]
 
 
-    async def get_go_python_os(self):
+    async def get_go_python_os(self)-> str:
         """
         In order to compare OS name of the image (runtime.GOOS), convert
         platform.machine() and return it.
@@ -713,12 +716,3 @@ class DockerUtil:
         # return go_python_os_mapping[os_name]
 
         return os_name.lower() # I don't know if this is the right way
-
-        
-
-
-
-
-
-
-

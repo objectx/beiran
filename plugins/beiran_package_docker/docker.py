@@ -4,8 +4,6 @@ Docker packaging plugin
 
 import asyncio
 import docker
-import hashlib
-import json
 from aiodocker import Docker
 from aiodocker.exceptions import DockerError
 from peewee import SQL
@@ -242,7 +240,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 if event['Type'] == 'image' and event['Action'] in remove_image_events:
                     await self.delete_image(event['id'])
 
-                # # handle pull image 
+                # # handle pull image
                 # if event['Type'] == 'image' and event['Action'] in 'pull':
                 #     await self.pull_schemas(event['id'])
 
@@ -377,10 +375,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except DockerError:
             # if the image was deleted by `docker rmi`, no image information was found
             pass
-    
+
     async def pull_schemas(self, tag: str):
         """
-        Save image config.
+        Pull image for each layer (and save image config).
         """
         ref = normalize_ref(tag, index=True)
 
@@ -393,7 +391,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         if schema_v == 1:
 
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, repo_digest = await self.util.pull_schema_v1(
+            # config_json, config_digest, repo_digest = await self.util.pull_schema_v1(
+            config_json, config_digest, _ = await self.util.pull_schema_v1(
                 ref['domain'], ref['repo'], manifest
             )
 
@@ -401,9 +400,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             media_type = manifest['mediaType']
 
             if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
-                
+
                 # pull layers using version 2 manifest
-                config_json, config_digest, repo_digest = await self.util.pull_schema_v2(
+                # config_json, config_digest, repo_digest = await self.util.pull_schema_v2(
+                config_json, config_digest, _ = await self.util.pull_schema_v2(
                     ref['domain'], ref['repo'], manifest
                 )
 
@@ -411,16 +411,17 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
                 # pull_schema_list
                 # pull layers using version 2 manifest
-                config_json, config_digest, repo_digest = await self.util.pull_manifest_list(
+                # config_json, config_digest, repo_digest = await self.util.pull_manifest_list(
+                config_json, config_digest, _ = await self.util.pull_manifest_list(
                     ref['domain'], ref['repo'], manifest
                 )
 
             else:
-                raise DockerUtil.ManifestError('Invalid media type: %d', media_type)
+                raise DockerUtil.ManifestError('Invalid media type: %d' % media_type)
         else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d', schema_v)
+            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
-        # acutually, config must be saved before downloading image
+        #FIXME! acutually, config must be saved before downloading image
         image = DockerImage.get(DockerImage.hash_id == config_digest)
         image.config = config_json
         image.save()

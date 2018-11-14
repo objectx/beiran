@@ -9,6 +9,8 @@ import aiofiles
 import json
 import gzip
 import hashlib
+import platform
+
 from collections import OrderedDict
 
 from peewee import SQL
@@ -358,7 +360,7 @@ class DockerUtil:
         url = 'https://{}/v2/{}/manifests/{}'.format(host, repository, tag_or_digest)
         requirements = ''
 
-        self.logger.debug("fetch config from %s", url)
+        self.logger.debug("fetch manifest from %s", url)
 
         # about header, see below URL
         # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
@@ -412,7 +414,7 @@ class DockerUtil:
         if headers['Www-Authenticate'].startswith('Bearer'):
             # parse 'Bearer realm="https://auth.docker.io/token",
             # service="registry.docker.io",scope="repository:google/cadvisor:pull"'
-            values = re.findall('(\w+(?==)|(?<=")[\w.:/]+)',  # pylint: disable=anomalous-backslash-in-string
+            values = re.findall('(\w+(?==)|(?<==")[^"]+(?="))',  # pylint: disable=anomalous-backslash-in-string
                                 headers['Www-Authenticate'])
             val_dict = dict(zip(values[0::2], values[1::2]))
 
@@ -524,7 +526,7 @@ class DockerUtil:
         return data
 
 
-    async def pull_schema_v1(self, host: str, repository: str, manifest: str):
+    async def pull_schema_v1(self, host: str, repository: str, manifest: dict):
         """
         Pull image using image manifest version 1
         """
@@ -544,7 +546,9 @@ class DockerUtil:
             if 'author' in compatibility:
                 layer_h['author'] = compatibility['author']
             if 'container_config' in compatibility:
-                layer_h['created_by'] = " ".join(compatibility['container_config']['Cmd'])
+                if compatibility['container_config']['Cmd']:
+                    layer_h['created_by'] = " ".join(compatibility['container_config']['Cmd'])
+
             if 'comment' in compatibility:
                 layer_h['comment'] = compatibility['comment']
             if 'throwaway' in compatibility:
@@ -587,7 +591,7 @@ class DockerUtil:
         # calc RepoDigest
         del manifest['signatures']
         manifest = json.dumps(manifest, indent=3)
-        repo_digest = hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+        repo_digest = 'sha256:' + hashlib.sha256(manifest.encode('utf-8')).hexdigest()
 
         # replace, shape, then calc digest
         config_json = OrderedDict(sorted(config_json.items(), key = lambda x:x[0]))
@@ -596,12 +600,12 @@ class DockerUtil:
                                  .replace('<', r'\u003c') \
                                  .replace('>', r'\u003e')
 
-        config_digest = hashlib.sha256(config_json.encode('utf-8')).hexdigest()
+        config_digest = 'sha256:' + hashlib.sha256(config_json.encode('utf-8')).hexdigest()
 
         return config_json, config_digest, repo_digest
 
 
-    async def pull_schema_v2(self, host: str, repository: str, manifest: str):
+    async def pull_schema_v2(self, host: str, repository: str, manifest: dict):
         """
         Pull image using image manifest version 2
         """
@@ -611,10 +615,58 @@ class DockerUtil:
         )
 
         manifest = json.dumps(manifest, indent=3)
-        repo_digest = hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+        repo_digest = 'sha256:' + hashlib.sha256(manifest.encode('utf-8')).hexdigest()
+
+        #TODO! layer downloding
 
         return config_json, config_digest, repo_digest
 
+
+    async def pull_manifest_list(self, host: str, repository: str, manifestlist: dict):
+        """
+        Read manifest list and call appropriate pulling image function for the machine.
+        """
+        host_arch = await self.get_go_python_arch()
+        host_os = await self.get_go_python_os()
+        manifest_digest = None
+
+        for manifest in manifestlist['manifests']:
+            if manifest['platform']['architecture'] == host_arch and \
+               manifest['platform']['os'] == host_os:
+               manifest_digest = manifest['digest']
+               break
+
+        if manifest_digest is None:
+            raise DockerUtil.ManifestError('No supported platform found in manifest list')
+
+
+        # get manifest
+        manifest = await self.fetch_docker_image_manifest(host, repository, manifest_digest)
+        schema_v = manifest['schemaVersion']
+
+        if schema_v == 1:
+            # pull layers and create config from version 1 manifest
+            config_json, config_digest, _ = await self.pull_schema_v1(
+                host, repository, manifest
+            )
+
+        elif schema_v == 2:
+            media_type = manifest['mediaType']
+
+            if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
+                # pull layers using version 2 manifest
+                config_json, config_digest, _ = await self.pull_schema_v2(
+                    host, repository, manifest
+                )
+            else:
+                raise DockerUtil.ManifestError('Invalid media type: %d', media_type)
+        else:
+            raise DockerUtil.ManifestError('Invalid schema version: %d', schema_v)   
+
+        manifestlist = json.dumps(manifestlist, indent=3)
+        repo_digest = 'sha256:' + hashlib.sha256(manifestlist.encode('utf-8')).hexdigest()
+
+        return config_json, config_digest, repo_digest
 
 
 
@@ -627,3 +679,46 @@ class DockerUtil:
         results = await asyncio.gather(*tasks)
 
         return OrderedDict(type='layers', diff_ids=results)
+
+
+    async def get_go_python_arch(self):
+        """
+        In order to compare architecture name of the image (runtime.GOARCH), convert
+        platform.machine() and return it.
+        """
+        arch = platform.machine()
+
+        go_python_arch_mapping = {
+            'x86_64': 'amd64',  # linux amd64
+            'AMD64' : 'amd64',  # windows amd64
+            
+            # TODO
+        }
+        return go_python_arch_mapping[arch]
+
+
+    async def get_go_python_os(self):
+        """
+        In order to compare OS name of the image (runtime.GOOS), convert
+        platform.machine() and return it.
+        """
+        os_name = platform.system()
+
+        # go_python_os_mapping = {
+        #     'Linux': 'linux',
+        #     'Windows' : 'windows',
+        #     'Darwin' : 'darwin',
+        #     # TODO
+        # }
+        # return go_python_os_mapping[os_name]
+
+        return os_name.lower() # I don't know if this is the right way
+
+        
+
+
+
+
+
+
+

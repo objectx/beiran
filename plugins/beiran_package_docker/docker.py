@@ -4,6 +4,8 @@ Docker packaging plugin
 
 import asyncio
 import docker
+import hashlib
+import json
 from aiodocker import Docker
 from aiodocker.exceptions import DockerError
 from peewee import SQL
@@ -242,7 +244,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
                 # handle pull image
                 if event['Type'] == 'image' and event['Action'] in 'pull':
-                    await self.save_config(event['id'])
+                    await self.pull_schemas(event['id'])
 
             await self.daemon_lost()
         except Exception as err:  # pylint: disable=broad-except
@@ -376,31 +378,49 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             # if the image was deleted by `docker rmi`, no image information was found
             pass
     
-    async def save_config(self, tag: str):
+    async def pull_schemas(self, tag: str):
         """
         Save image config.
         """
-        normalized = normalize_ref(tag, index=True)
+        ref = normalize_ref(tag, index=True)
 
+        # get manifest
         manifest = await self.util.fetch_docker_image_manifest(
-            normalized[0], normalized[1] + '/' + normalized[2], normalized[4])
+            ref['domain'], ref['repo'], ref['suffix'])
 
-        # get manifest version
-        manifest_v = await self.util.analyze_schema_version(manifest)
+        schema_v = manifest['schemaVersion']
 
-        if manifest_v == 1:
-            # create config from version 1 manifest
-            config = None
+        if schema_v == 1:
 
-        elif manifest_v == 2:
-            image_id = manifest['config']['digest']
-
-            config = await self.util.download_config_from_origin(
-                normalized[0], normalized[1] + '/' + normalized[2], image_id
+            # pull layers and create config from version 1 manifest
+            config_json, config_digest, repo_digest = await self.util.pull_schema_v1(
+                ref['domain'], ref['repo'], manifest
             )
 
-        # acutually, config is saved before downloading image
-        # save config only in the database for now
+        elif schema_v == 2:
+            media_type = manifest['mediaType']
+
+            if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
+                
+                # pull layers using version 2 manifest
+                config_json, config_digest, repo_digest = await self.util.pull_schema_v2(
+                    ref['domain'], ref['repo'], manifest
+                )
+
+            elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
+
+                # pull_schema_list
+                # pull layers using version 2 manifest
+                config_json, config_digest, repo_digest = await self.util.pull_manifest_list(
+                    ref['domain'], ref['repo'], manifest
+                )
+
+            else:
+                raise DockerUtil.ManifestError('Invalid media type: %d', media_type)
+        else:
+            raise DockerUtil.ManifestError('Invalid schema version: %d', schema_v)
+
+        # acutually, config must be saved before downloading image
         image = DockerImage.get(DockerImage.hash_id == image_id)
-        image.config = config
+        image.config = config_json
         image.save()

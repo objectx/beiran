@@ -134,8 +134,8 @@ class DockerUtil:
     @staticmethod
     async def delete_unavailable_objects():
         """Delete unavailable layers and images"""
-        DockerImage.delete().where(SQL('available_at = \'[]\'')).execute()
-        DockerLayer.delete().where(SQL('available_at = \'[]\'')).execute()
+        DockerImage.delete().where(SQL('available_at = \'[]\' AND download_progress = NULL')).execute()
+        DockerLayer.delete().where(SQL('available_at = \'[]\' AND download_progress = NULL')).execute()
 
     async def fetch_docker_info(self) -> dict:
         """

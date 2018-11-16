@@ -22,6 +22,7 @@ from beiran.models import Node
 from beiran.config import config
 
 from .models import DockerImage, DockerLayer
+from .image_ref import normalize_ref
 
 
 LOGGER = build_logger()
@@ -438,11 +439,12 @@ class DockerUtil:
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
-    def layer_storage_path(self, layer_hash):
+    def layer_storage_path(self, layer_hash: str)-> str:
         """Where to storage layer downloads (temporarily)"""
         return config.cache_dir + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
 
-    async def download_layer_from_origin(self, host, repository, layer_hash, **kwargs):
+    async def download_layer_from_origin(self, host: str, repository: str,
+                                         layer_hash: str, **kwargs):
         """
         Download layer from registry.
         Args:
@@ -464,7 +466,7 @@ class DockerUtil:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp = await async_write_file_stream(url, save_path, timeout=10,
+            resp = await async_write_file_stream(url, save_path, timeout=60,
                                                  Authorization=requirements)
 
         if resp.status != 200:
@@ -472,31 +474,83 @@ class DockerUtil:
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
 
-    async def ensure_having_layer_from(self, host, repository, layer_hash, **kwargs):
+    async def download_layer_from_node(self, host: str, diff_id: str):
+        """
+        Download layer from other node.
+        """
+        save_path = self.layer_storage_path(diff_id)
+        save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
+        url = host + '/docker/layers/' + diff_id
+
+        self.logger.debug("downloading layer from %s", url)
+        await async_write_file_stream(url, save_path, timeout=60)
+        self.logger.debug("downloaded layer %s to %s", diff_id, save_path)
+
+    async def ensure_having_layer_from(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally"""
-        # TODO: Don't download if you already have it
+
+        # check wheteher the layer exists
+        # docker
+        layer_path = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256/" \
+                                  + layer_hash.lstrip('sha256:')
+
+        if os.path.exists(layer_path):
+            return 'docker', layer_path
+
+        # beiran cache directory
+        layer_path = self.layer_storage_path(layer_hash)
+        ungzip_layer_path = layer_path.rstrip('.gz')
+
+        if os.path.exists(ungzip_layer_path):
+            return 'cache', ungzip_layer_path # .tar file exists
+
+        if os.path.exists(layer_path):
+            return 'cache-gz', layer_path # .tar.gz file exists
+
+
+        # other node (download from other node)
+        try:
+            layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+            node_id = layer.available_at[0]
+            node = Node.get(Node.uuid == node_id)
+            await self.download_layer_from_node(node.url_without_uuid, layer.digest)
+
+        except (DockerLayer.DoesNotExist, IndexError):
+            pass
+
+
         # TODO: Download from another beiran node if somebody has it
         # TODO: Wait for finish if another beiran is currently downloading it
         # TODO:  -- or ask for simultaneous streaming download
         await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
+        return 'cache-gz', layer_path
 
-    async def get_layer_diffid(self, host, repository, layer_hash, **kwargs):
+    async def get_layer_diffid(self, host: str, repository: str, layer_hash: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
-        await self.ensure_having_layer_from(host, repository, layer_hash, **kwargs)
+        storage, layer_path = await self.ensure_having_layer_from(host, repository,
+                                                                  layer_hash, **kwargs)
 
-        # TODO! move tar file to library folder and untar it
-        layer_path = self.layer_storage_path(layer_hash)
-        with gzip.open(layer_path, 'rb') as gzfile:
-            data = gzfile.read()
-            with open(layer_path.rstrip('.gz'), "wb") as tarfile:
-                tarfile.write(data)
+        if storage == 'docker':
+            with open(layer_path)as file:
+                diff_id = file.read()
+            return diff_id
 
-        with open(layer_path.rstrip('.gz'), 'rb') as tarfile:
+        if storage == 'cache-gz':
+            # decompress .tar.gz
+            with gzip.open(layer_path, 'rb') as gzfile:
+                data = gzfile.read()
+                layer_path = layer_path.rstrip('.gz')
+
+                with open(layer_path, "wb") as tarfile:
+                    tarfile.write(data)
+
+        with open(layer_path, 'rb') as tarfile:
             diff_id = hashlib.sha256(tarfile.read()).hexdigest()
 
         return 'sha256:' + diff_id
 
-    async def download_config_from_origin(self, host, repository, image_id, **kwargs) -> dict:
+    async def download_config_from_origin(self, host: str, repository: str,
+                                          image_id: str, **kwargs) -> dict:
         """
         Download config file of docker image and save it to database.
         """
@@ -530,8 +584,8 @@ class DockerUtil:
                 del dict_[key]
 
 
-    async def fetch_config_using_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
-                                           manifest: dict) -> Tuple[dict, str, str]:
+    async def fetch_config_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
+                                     manifest: dict) -> Tuple[dict, str, str]:
         """
         Pull image using image manifest version 1
         """
@@ -598,8 +652,8 @@ class DockerUtil:
         return config_json, config_digest, repo_digest
 
 
-    async def fetch_config_using_schema_v2(self, host: str, repository: str,
-                                           manifest: dict)-> Tuple[dict, str, str]:
+    async def fetch_config_schema_v2(self, host: str, repository: str,
+                                     manifest: dict)-> Tuple[dict, str, str]:
         """
         Pull image using image manifest version 2
         """
@@ -616,8 +670,8 @@ class DockerUtil:
         return config_json, config_digest, repo_digest
 
 
-    async def fetch_config_using_manifest_list(self, host: str, repository: str,
-                                               manifestlist: dict)-> Tuple[dict, str, str]:
+    async def fetch_config_manifest_list(self, host: str, repository: str,
+                                         manifestlist: dict)-> Tuple[dict, str, str]:
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
@@ -641,14 +695,14 @@ class DockerUtil:
 
         if schema_v == 1:
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, _ = await self.fetch_config_using_schema_v1(
+            config_json, config_digest, _ = await self.fetch_config_schema_v1(
                 host, repository, manifest
             )
 
         elif schema_v == 2:
             if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
                 # pull layers using version 2 manifest
-                config_json, config_digest, _ = await self.fetch_config_using_schema_v2(
+                config_json, config_digest, _ = await self.fetch_config_schema_v2(
                     host, repository, manifest
                 )
             else:
@@ -663,7 +717,8 @@ class DockerUtil:
 
 
 
-    async def get_layer_diffids_of_image(self, host, repository, descriptors: list)-> dict:
+    async def get_layer_diffids_of_image(self, host: str, repository: str,
+                                         descriptors: list)-> dict:
         """Download and allocate layers included in an image."""
         tasks = [
             self.get_layer_diffid(host, repository, layer_d['digest'])
@@ -706,3 +761,56 @@ class DockerUtil:
         # return go_python_os_mapping[os_name]
 
         return os_name.lower() # I don't know if this is the right way
+
+    async def create_or_download_config(self, tag: str):
+        """
+        Create or download image config.
+
+        Depend on manifest version;
+            - schema v1: create config
+            - schema v2: download config
+            - manifest list: v1 or v2
+        """
+        ref = normalize_ref(tag, index=True)
+
+        # get manifest
+        manifest = await self.fetch_docker_image_manifest(
+            ref['domain'], ref['repo'], ref['suffix'])
+
+        schema_v = manifest['schemaVersion']
+
+        if schema_v == 1:
+
+            # pull layers and create config from version 1 manifest
+            config_json, config_digest, repo_digest = await self.fetch_config_schema_v1(
+                ref['domain'], ref['repo'], manifest
+            )
+
+        elif schema_v == 2:
+            media_type = manifest['mediaType']
+
+            if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
+
+                # pull layers using version 2 manifest
+                config_json, config_digest, repo_digest = await self.fetch_config_schema_v2(
+                    ref['domain'], ref['repo'], manifest
+                )
+
+            elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
+
+                # pull_schema_list
+                config_json, config_digest, repo_digest = await self.fetch_config_manifest_list(
+                    ref['domain'], ref['repo'], manifest
+                )
+
+            else:
+                raise DockerUtil.ManifestError('Invalid media type: %d' % media_type)
+        else:
+            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
+
+        #FIXME! acutually, config must be saved before downloading image
+        # image = DockerImage.get(DockerImage.hash_id == config_digest)
+        # image.config = config_json
+        # image.save()
+
+        return config_json, config_digest, repo_digest

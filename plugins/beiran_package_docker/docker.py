@@ -12,7 +12,6 @@ from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
-from .image_ref import normalize_ref
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
 from .util import DockerUtil
@@ -375,52 +374,3 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except DockerError:
             # if the image was deleted by `docker rmi`, no image information was found
             pass
-
-    async def pull_schemas(self, tag: str):
-        """
-        Pull image for each layer (and save image config).
-        """
-        ref = normalize_ref(tag, index=True)
-
-        # get manifest
-        manifest = await self.util.fetch_docker_image_manifest(
-            ref['domain'], ref['repo'], ref['suffix'])
-
-        schema_v = manifest['schemaVersion']
-
-        if schema_v == 1:
-
-            # pull layers and create config from version 1 manifest
-            # config_json, config_digest, repo_digest = await self.util.pull_schema_v1(
-            config_json, config_digest, _ = await self.util.fetch_config_using_schema_v1(
-                ref['domain'], ref['repo'], manifest
-            )
-
-        elif schema_v == 2:
-            media_type = manifest['mediaType']
-
-            if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
-
-                # pull layers using version 2 manifest
-                # config_json, config_digest, repo_digest = await self.util.pull_schema_v2(
-                config_json, config_digest, _ = await self.util.fetch_config_using_schema_v2(
-                    ref['domain'], ref['repo'], manifest
-                )
-
-            elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
-
-                # pull_schema_list
-                # config_json, config_digest, repo_digest = await self.util.pull_manifest_list(
-                config_json, config_digest, _ = await self.util.fetch_config_using_manifest_list(
-                    ref['domain'], ref['repo'], manifest
-                )
-
-            else:
-                raise DockerUtil.ManifestError('Invalid media type: %d' % media_type)
-        else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
-
-        #FIXME! acutually, config must be saved before downloading image
-        image = DockerImage.get(DockerImage.hash_id == config_digest)
-        image.config = config_json
-        image.save()

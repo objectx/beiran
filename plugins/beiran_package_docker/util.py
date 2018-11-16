@@ -531,8 +531,8 @@ class DockerUtil:
                 del dict_[key]
 
 
-    async def pull_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
-                             manifest: dict) -> Tuple[dict, str, str]:
+    async def fetch_config_using_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
+                                           manifest: dict) -> Tuple[dict, str, str]:
         """
         Pull image using image manifest version 1
         """
@@ -599,8 +599,8 @@ class DockerUtil:
         return config_json, config_digest, repo_digest
 
 
-    async def pull_schema_v2(self, host: str, repository: str,
-                             manifest: dict)-> Tuple[dict, str, str]:
+    async def fetch_config_using_schema_v2(self, host: str, repository: str,
+                                           manifest: dict)-> Tuple[dict, str, str]:
         """
         Pull image using image manifest version 2
         """
@@ -617,8 +617,8 @@ class DockerUtil:
         return config_json, config_digest, repo_digest
 
 
-    async def pull_manifest_list(self, host: str, repository: str,
-                                 manifestlist: dict)-> Tuple[dict, str, str]:
+    async def fetch_config_using_manifest_list(self, host: str, repository: str,
+                                               manifestlist: dict)-> Tuple[dict, str, str]:
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
@@ -642,14 +642,14 @@ class DockerUtil:
 
         if schema_v == 1:
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, _ = await self.pull_schema_v1(
+            config_json, config_digest, _ = await self.fetch_config_using_schema_v1(
                 host, repository, manifest
             )
 
         elif schema_v == 2:
             if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
                 # pull layers using version 2 manifest
-                config_json, config_digest, _ = await self.pull_schema_v2(
+                config_json, config_digest, _ = await self.fetch_config_using_schema_v2(
                     host, repository, manifest
                 )
             else:

@@ -12,7 +12,7 @@ DEFAULT_TAG = "latest"
 ID_PREFIX = "sha256:"
 
 
-def normalize_ref(ref: str) -> dict:
+def normalize_ref(ref: str, **kwargs) -> dict:
     """Parse and normalize image reference as a dictionaly
     """
     domain = DEFAULT_DOMAIN
@@ -58,12 +58,12 @@ def normalize_ref(ref: str) -> dict:
         'suffix': suffix
     }
 
-def marshal_normalize_ref(ref: str) -> str:
+def marshal_normalize_ref(ref: str, **kwargs) -> str:
     """Parse and normalize image reference as a string
     """
-    normalized = normalize_ref(ref)
+    normalized = normalize_ref(ref, **kwargs)
     return marshal(normalized['domain'], normalized['repo'],
-                   normalized['sign'], normalized'[suffix'])
+                   normalized['sign'], normalized['suffix'])
 
 
 def split_name_suffix(string: str) -> Tuple[str, str, str]:

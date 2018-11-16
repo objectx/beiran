@@ -372,15 +372,9 @@ class DockerUtil:
                            "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
                            "application/json"
 
-        # try to access the server with HTTP HEAD requests
-        # there is also a purpose to check the type of authentication
-        try:
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
-
-        except aiohttp.client_exceptions.ClientConnectorSSLError:
-            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
-            url = 'http://{}/v2/{}/manifests/{}'.format(host, repository, tag_or_digest)
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        # try to access the server with HEAD requests
+        # there is a purpose to check the type of authentication
+        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
@@ -463,15 +457,9 @@ class DockerUtil:
 
         self.logger.debug("downloading layer from %s", url)
 
-        # try to access the server with HTTP HEAD requests
-        # there is also a purpose to check the type of authentication
-        try:
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
-
-        except aiohttp.client_exceptions.ClientConnectorSSLError:
-            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
-            url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        # try to access the server with HEAD requests
+        # there is a purpose to check the type of authentication
+        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
@@ -518,15 +506,9 @@ class DockerUtil:
 
         self.logger.debug("downloading config from %s", url)
 
-        # try to access the server with HTTP HEAD requests
-        # there is also a purpose to check the type of authentication
-        try:
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
-
-        except aiohttp.client_exceptions.ClientConnectorSSLError:
-            self.logger.debug("the server %s may not support HTTPS. retry with HTTP", host)
-            url = 'http://{}/v2/{}/blobs/{}'.format(host, repository, image_id)
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        # try to access the server with HEAD requests
+        # there is a purpose to check the type of authentication
+        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:

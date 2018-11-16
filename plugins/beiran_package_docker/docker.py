@@ -392,7 +392,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
             # pull layers and create config from version 1 manifest
             # config_json, config_digest, repo_digest = await self.util.pull_schema_v1(
-            config_json, config_digest, _ = await self.util.pull_schema_v1(
+            config_json, config_digest, _ = await self.util.fetch_config_using_schema_v1(
                 ref['domain'], ref['repo'], manifest
             )
 
@@ -403,16 +403,15 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
                 # pull layers using version 2 manifest
                 # config_json, config_digest, repo_digest = await self.util.pull_schema_v2(
-                config_json, config_digest, _ = await self.util.pull_schema_v2(
+                config_json, config_digest, _ = await self.util.fetch_config_using_schema_v2(
                     ref['domain'], ref['repo'], manifest
                 )
 
             elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
 
                 # pull_schema_list
-                # pull layers using version 2 manifest
                 # config_json, config_digest, repo_digest = await self.util.pull_manifest_list(
-                config_json, config_digest, _ = await self.util.pull_manifest_list(
+                config_json, config_digest, _ = await self.util.fetch_config_using_manifest_list(
                     ref['domain'], ref['repo'], manifest
                 )
 

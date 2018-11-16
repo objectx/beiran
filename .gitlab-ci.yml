@@ -216,7 +216,7 @@ post-test:error-logs:
   script: |
    set -x
    cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
-   BEIRAN_ERROR_COUNT=$(docker-compose logs | grep '[beiran] ERROR' | wc -l)
+   BEIRAN_ERROR_COUNT=$(docker-compose logs | grep '[beiran] ERROR' || true | wc -l)
    if [ $BEIRAN_ERROR_COUNT -gt 0 ]; then
      echo "Errors in beiran logs, please check"
      exit 1

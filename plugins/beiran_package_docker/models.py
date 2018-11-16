@@ -41,6 +41,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     available_at = JSONStringField(default=list)
     repo_digests = JSONStringField(default=list)
     config = JSONStringField(default=list)
+    download_progress = JSONStringField(null=True)
 
     has_not_found_layers = BooleanField(default=False)
     has_unknown_layers = BooleanField(default=False)
@@ -166,6 +167,7 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     layerdb_diff_id = CharField(max_length=128)
     size = IntegerField()
     available_at = JSONStringField(default=list)
+    download_progress = JSONStringField(null=True)
 
 
 MODEL_LIST = [DockerImage, DockerLayer]  # we may discover dynamically

@@ -40,7 +40,7 @@ async def aio_isdir(path: str):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 
-class DockerUtil: # pylint: disable=too-many-public-methods
+class DockerUtil:
     """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):

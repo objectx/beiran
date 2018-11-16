@@ -493,7 +493,6 @@ class DockerUtil:
         # docker
         layer_path = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256/" \
                                   + layer_hash.lstrip('sha256:')
-
         if os.path.exists(layer_path):
             return 'docker', layer_path
 
@@ -507,8 +506,7 @@ class DockerUtil:
         if os.path.exists(layer_path):
             return 'cache-gz', layer_path # .tar.gz file exists
 
-
-        # other node (download from other node)
+        # other node
         try:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
             node_id = layer.available_at[0]
@@ -518,8 +516,6 @@ class DockerUtil:
         except (DockerLayer.DoesNotExist, IndexError):
             pass
 
-
-        # TODO: Download from another beiran node if somebody has it
         # TODO: Wait for finish if another beiran is currently downloading it
         # TODO:  -- or ask for simultaneous streaming download
         await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)

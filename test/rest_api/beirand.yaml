@@ -87,3 +87,11 @@
      - compare: {header: "Docker-Content-Digest", comparator: contains, expected: {template: "$test_docker_layer"}}
      - compare: {header: "Etag", comparator: contains, expected: {template: "$test_docker_layer"}}
      - compare: {header: "Content-Length", comparator: equals, expected: '10240'}
+
+- test:
+  - name: "Download or create image config"
+  - headers: {accept: 'application/json'}
+  - url: {template: "/docker/images/$test_docker_image/config"}
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}

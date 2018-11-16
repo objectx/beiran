@@ -11,7 +11,6 @@ import platform
 from typing import Tuple
 from collections import OrderedDict
 
-import aiohttp
 import aiofiles
 
 from peewee import SQL
@@ -522,7 +521,7 @@ class DockerUtil:
 
         return data
 
-    def clean_keys(dict_: dict, keys: list):
+    def clean_keys(self, dict_: dict, keys: list):
         """
         Remove keys from the dictionary.
         """

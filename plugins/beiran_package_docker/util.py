@@ -446,6 +446,7 @@ class DockerUtil:
                                               % headers['Www-Authenticate'])
 
     def layer_storage_path(self, layer_hash):
+        """Where to storage layer downloads (temporarily)"""
         return config.cache_dir + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
 
     async def download_layer_from_origin(self, host, repository, layer_hash, **kwargs):
@@ -456,7 +457,7 @@ class DockerUtil:
             repository (str): path of repository (e.g. library/centos)
             layer_hash (str): SHA-256 hash of a blob
         """
-        save_path = self.layer_path(layer_hash)
+        save_path = self.layer_storage_path(layer_hash)
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
         requirements = ''
 
@@ -485,6 +486,7 @@ class DockerUtil:
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
 
     async def ensure_having_layer_from(self, host, repository, layer_hash, **kwargs):
+        """Download a layer if it doesnt exist locally"""
         # TODO: Don't download if you already have it
         # TODO: Download from another beiran node if somebody has it
         # TODO: Wait for finish if another beiran is currently downloading it
@@ -492,10 +494,11 @@ class DockerUtil:
         await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
 
     async def get_layer_diffid(self, host, repository, layer_hash, **kwargs):
+        """Calculate layer's diffid, using it's tar file"""
         await self.ensure_having_layer_from(host, repository, layer_hash, **kwargs)
 
         # TODO! move tar file to library folder and untar it
-        layer_path = self.layer_path(layer_hash)
+        layer_path = self.layer_storage_path(layer_hash)
         with gzip.open(layer_path, 'rb') as gzfile:
             data = gzfile.read()
             with open(layer_path.rstrip('.gz'), "wb") as tarfile:

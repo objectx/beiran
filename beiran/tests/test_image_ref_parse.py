@@ -29,6 +29,6 @@ from beiran_package_docker.image_ref import normalize_ref
      'localhost:8000/path/repo/ubuntu@sha256:cb96ec8eb632c873d5130053cf5e2548234e5275d8115a39394289d96c9963a6'),
 ])
 
-def test_normalize_ref(ref, normalized):
-    assert normalize_ref(ref, marshal=True) == normalized
+def test_marshal_normalize_ref(ref, normalized):
+    assert marshal_normalize_ref(ref) == normalized
 

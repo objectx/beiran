@@ -2,7 +2,7 @@
 Parse and normalize image reference
 """
 
-from typing import Tuple, Any
+from typing import Tuple
 
 DEFAULT_DOMAIN = "docker.io"
 DEFAULT_INDEX_DOMAIN = "index.docker.io"
@@ -12,8 +12,8 @@ DEFAULT_TAG = "latest"
 ID_PREFIX = "sha256:"
 
 
-def normalize_ref(ref: str, **kwargs) -> Any:
-    """Parse and normalize image reference.
+def normalize_ref(ref: str) -> dict:
+    """Parse and normalize image reference as a dictionaly
     """
     domain = DEFAULT_DOMAIN
     if 'index' in kwargs and kwargs['index']:
@@ -51,15 +51,19 @@ def normalize_ref(ref: str, **kwargs) -> Any:
     else:
         repo = path_comp + '/' + name
 
-    if 'marshal' in kwargs and kwargs['marshal']:
-        return marshal(domain, repo, sign, suffix)
-
     return {
         'domain': domain,
         'repo': repo,
         'sign': sign,
         'suffix': suffix
     }
+
+def marshal_normalize_ref(ref: str) -> str:
+    """Parse and normalize image reference as a string
+    """
+    normalized = normalize_ref(ref)
+    return marshal(normalized['domain'], normalized['repo'],
+                   normalized['sign'], normalized'[suffix'])
 
 
 def split_name_suffix(string: str) -> Tuple[str, str, str]:

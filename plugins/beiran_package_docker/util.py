@@ -522,6 +522,14 @@ class DockerUtil:
 
         return data
 
+    def clean_keys(dict_: dict, keys: list):
+        """
+        Remove keys from the dictionary.
+        """
+        for key in keys:
+            if key in dict_:
+                del dict_[key]
+
 
     async def pull_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
                              manifest: dict) -> Tuple[dict, str, str]:
@@ -569,19 +577,7 @@ class DockerUtil:
         rootfs = await self.get_layer_diffids_of_image(host, repository, descriptors)
 
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
-
-        if 'id' in config_json:
-            del config_json['id']
-        if 'parent' in config_json:
-            del config_json['parent']
-        if 'Size' in config_json:
-            del config_json['Size']
-        if 'parent_id' in config_json:
-            del config_json['parent_id']
-        if 'layer_id' in config_json:
-            del config_json['layer_id']
-        if 'throwaway' in config_json:
-            del config_json['throwaway']
+        self.clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
 
         config_json['rootfs'] = rootfs
         config_json['history'] = history

@@ -445,6 +445,9 @@ class DockerUtil:
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
+    def layer_storage_path(self, layer_hash):
+        return config.cache_dir + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
+
     async def download_layer_from_origin(self, host, repository, layer_hash, **kwargs):
         """
         Download layer from registry.
@@ -453,7 +456,7 @@ class DockerUtil:
             repository (str): path of repository (e.g. library/centos)
             layer_hash (str): SHA-256 hash of a blob
         """
-        save_path = config.cache_dir + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
+        save_path = self.layer_path(layer_hash)
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
         requirements = ''
 
@@ -481,22 +484,27 @@ class DockerUtil:
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
 
+    async def ensure_having_layer_from(self, host, repository, layer_hash, **kwargs):
+        # TODO: Don't download if you already have it
+        # TODO: Download from another beiran node if somebody has it
+        # TODO: Wait for finish if another beiran is currently downloading it
+        # TODO:  -- or ask for simultaneous streaming download
+        await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
+
+    async def get_layer_diffid(self, host, repository, layer_hash, **kwargs):
+        await self.ensure_having_layer_from(host, repository, layer_hash, **kwargs)
 
         # TODO! move tar file to library folder and untar it
-        with gzip.open(save_path, 'rb') as gzfile:
+        layer_path = self.layer_path(layer_hash)
+        with gzip.open(layer_path, 'rb') as gzfile:
             data = gzfile.read()
-            with open(save_path.rstrip('.gz'), "wb") as tarfile:
+            with open(layer_path.rstrip('.gz'), "wb") as tarfile:
                 tarfile.write(data)
 
-        with open(save_path.rstrip('.gz'), 'rb') as tarfile:
+        with open(layer_path.rstrip('.gz'), 'rb') as tarfile:
             diff_id = hashlib.sha256(tarfile.read()).hexdigest()
 
-        os.remove(save_path)
-        os.remove(save_path.rstrip('.gz'))
-
         return 'sha256:' + diff_id
-
-
 
     async def download_config_from_origin(self, host, repository, image_id, **kwargs) -> dict:
         """
@@ -573,7 +581,7 @@ class DockerUtil:
             descriptors.append(layer_descriptor)
 
 
-        rootfs = await self.download_layers(host, repository, descriptors)
+        rootfs = await self.get_layer_diffids_of_image(host, repository, descriptors)
 
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
 
@@ -675,10 +683,10 @@ class DockerUtil:
 
 
 
-    async def download_layers(self, host, repository, descriptors: list)-> dict:
+    async def get_layer_diffids_of_image(self, host, repository, descriptors: list)-> dict:
         """Download and allocate layers included in an image."""
         tasks = [
-            self.download_layer_from_origin(host, repository, layer_d['digest'])
+            self.get_layer_diffid(host, repository, layer_d['digest'])
             for layer_d in descriptors
         ]
         results = await asyncio.gather(*tasks)

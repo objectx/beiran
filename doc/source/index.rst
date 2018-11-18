@@ -7,23 +7,20 @@
 Welcome to Beiran's documentation!
 ==================================
 
-.. sidebar:: Quicklinks
-
-  - :doc:`Beiran Refernece <reference>` (Auto generated inline doc strings)
-  - :doc:`Manage Beiran Cluster <manage_cluster>`
-  - :doc:`Configuration Guide <configuration>`
-  - :doc:`How to contibute <contribute>`
-
 .. toctree::
    :maxdepth: 2
    :caption: Beiran Documentation
    :hidden:
+   :includehidden:
 
+   Home <self>
    Installation Guide <installation>
    Configuration Guide <configuration>
    Manage Beiran Cluster <manage_cluster>
    How to contibute <contribute>
    Beiran Refernece <reference>
+
+   Index <genindex>
 
 Beiran is a set of tools for replacing distribution layer
 of package management systems.
@@ -64,3 +61,9 @@ from inline doc strings and gives detailed information about codebase:
 
   - :doc:`Beiran Refernece <reference>` (Auto generated inline doc strings)
 
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

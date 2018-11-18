@@ -16,16 +16,8 @@ Beiran Project is composed of 4 main parts:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :hidden:
 
    beiran
    beirand
    plugins
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

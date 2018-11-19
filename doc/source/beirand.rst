@@ -1,31 +1,31 @@
 Beiran Daemon
 =============
 
-.. automodule:: beirand.main
+.. automodule:: beiran.daemon.main
     :members:
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
 
-.. automodule:: beirand.lib
+.. automodule:: beiran.daemon.lib
     :members:
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
 
-.. automodule:: beirand.nodes
+.. automodule:: beiran.daemon.nodes
     :members:
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
 
-.. automodule:: beirand.peer
+.. automodule:: beiran.daemon.peer
     :members:
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
 
-.. automodule:: beirand.http_ws
+.. automodule:: beiran.daemon.http_ws
     :members:
     :undoc-members:
     :show-inheritance:

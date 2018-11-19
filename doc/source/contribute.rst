@@ -24,6 +24,15 @@ guidelines.
     - :doc:`Git practices <git_practices>`
     - :doc:`How to create an issue <issue>`
 
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :titlesonly:
+
+   Coding conventions <coding_style_guide>
+   Git practices <git_practices>
+   How to create an issue <issue>
+
 Creating a Plugin
 -----------------
 Beiran's modular architecture allows adding new capabilities,
@@ -37,3 +46,11 @@ Till now, we have 3 kinds of plugins and implementations are followings:
     - interface plugins (k8s)
 
 Please continue with :doc:`How to Create A plugin<how_to_create_a_plugin>`
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :titlesonly:
+
+   How to Create A plugin<how_to_create_a_plugin>
+

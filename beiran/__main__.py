@@ -1,4 +1,4 @@
 """Main script for beiran cli"""
-from .cli import main
+from beiran.cli import main
 
 main()

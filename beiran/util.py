@@ -7,6 +7,7 @@ import tarfile
 import asyncio
 import time
 import io
+import gzip
 from typing import Any
 
 class Unbuffered:
@@ -345,3 +346,18 @@ async def wait_event(emitter, event_name, timeout=None):
 
     emitter.once(event_name, _handler)
     return await asyncio.wait_for(future, timeout)
+
+def gunzip(path: str):
+    """Decompress .gz file"""
+    with gzip.open(path, 'rb') as gzfile:
+        data = gzfile.read()
+        path = path.rstrip('.gz')
+
+        with open(path, "wb") as tarfile:
+            tarfile.write(data)
+
+def clean_keys(dict_: dict, keys: list):
+    """Remove keys from the dictionary"""
+    for key in keys:
+        if key in dict_:
+            del dict_[key]

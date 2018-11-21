@@ -327,21 +327,21 @@ class DockerUtil:
             layer = DockerLayer()
             layer.digest = digest
 
-        layer.local_diff_id = diffid
+        layer.diff_id = diffid
         # print("--- Processing layer", idx, "of", image_details['RepoTags'])
         # print("Diffid: ", diffid)
         # print("Digest: ", layer.digest)
 
         if idx == 0:
-            layer.layerdb_diff_id = diffid
+            layer.chain_id = diffid
         else:
             if diffid not in self.layerdb_mapping:
                 await self.get_layerdb_mappings()
-            layer.layerdb_diff_id = self.layerdb_mapping[diffid]
-        # print("layerdb: ", layer.layerdb_diff_id)
+            layer.chain_id = self.layerdb_mapping[diffid]
+        # print("layerdb: ", layer.chain_id)
 
         # try:
-        layer_meta_folder = layer_storage_path + '/' + layer.layerdb_diff_id.replace(':', '/')
+        layer_meta_folder = layer_storage_path + '/' + layer.chain_id.replace(':', '/')
         async with aiofiles.open(layer_meta_folder + '/size', mode='r') as layer_size_file:
             size_str = await layer_size_file.read()
 

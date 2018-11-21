@@ -163,8 +163,8 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     """DockerLayer"""
 
     digest = CharField(max_length=128)
-    local_diff_id = CharField(max_length=128)
-    layerdb_diff_id = CharField(max_length=128)
+    diff_id = CharField(max_length=128)
+    chain_id = CharField(max_length=128)
     size = IntegerField()
     available_at = JSONStringField(default=list)
     download_progress = JSONStringField(null=True)

@@ -487,38 +487,44 @@ class DockerUtil:
         self.logger.debug("downloaded layer %s to %s", diff_id, save_path)
 
     async def ensure_having_layer_from(self, host: str, repository: str, layer_hash: str, **kwargs):
-        """Download a layer if it doesnt exist locally"""
+        """Download a layer if it doesnt exist locally
+        This function returns the path of .tar.gz file, .tar file file or the layer directory
+        """
 
         # beiran cache directory
-        layer_path = self.layer_storage_path(layer_hash)
-        ungzip_layer_path = layer_path.rstrip('.gz')
+        gs_layer_path = self.layer_storage_path(layer_hash)
+        tar_layer_path = gs_layer_path.rstrip('.gz')
 
-        if os.path.exists(ungzip_layer_path):
-            return 'cache', ungzip_layer_path # .tar file exists
+        if os.path.exists(tar_layer_path):
+            return 'cache', tar_layer_path # .tar file exists
 
-        if os.path.exists(layer_path):
-            return 'cache-gz', layer_path # .tar.gz file exists
+        if os.path.exists(gs_layer_path):
+            return 'cache-gz', gs_layer_path # .tar.gz file exists
 
         # docker library or other node
         try:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
 
             # check local storage
-            docker_layer_path = self.storage + "/image/overlay2/layerdb/sha256/" + layer.chain_id.replace('sha256:', '')
-            if os.path.exists(docker_layer_path):
-                return 'docker', docker_layer_path
+            layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" + layer.chain_id.replace('sha256:', '')
+            if os.path.exists(layerdb_path):
+                cache_id = ""
+                with open(layerdb_path + '/cache-id')as file:
+                    cache_id = file.read()
+
+                return 'docker', self.storage + "/overlay2/" + cache_id + "/diff"
 
             node_id = layer.available_at[0]
             node = Node.get(Node.uuid == node_id)
 
             await self.download_layer_from_node(node.url_without_uuid, layer.digest)
+            return 'cache', tar_layer_path
 
         except (DockerLayer.DoesNotExist, IndexError):
             # TODO: Wait for finish if another beiran is currently downloading it
             # TODO:  -- or ask for simultaneous streaming download
             await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
-
-        return 'cache-gz', layer_path
+            return 'cache-gz', gs_layer_path
 
     async def get_layer_diffid(self, host: str, repository: str, layer_hash: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
@@ -526,6 +532,7 @@ class DockerUtil:
                                                                   layer_hash, **kwargs)
 
         if storage == 'docker':
+            # TODO: do something using path of the layer directory ?
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
             return layer.diff_id
 

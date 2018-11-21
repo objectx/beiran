@@ -653,8 +653,6 @@ class DockerUtil:
         manifest_str = json.dumps(manifest, indent=3)
         repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
 
-        #TODO! layer downloding
-
         return config_json, config_digest, repo_digest
 
 

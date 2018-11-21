@@ -5,7 +5,6 @@ import logging
 import re
 import base64
 import json
-import gzip
 import hashlib
 import platform
 from typing import Tuple
@@ -20,6 +19,7 @@ from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
 from beiran.config import config
+from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
 from .image_ref import normalize_ref
@@ -441,7 +441,7 @@ class DockerUtil:
 
     def layer_storage_path(self, layer_hash: str)-> str:
         """Where to storage layer downloads (temporarily)"""
-        return config.cache_dir + '/layers/sha256/' + layer_hash.lstrip("sha256:") + ".tar.gz"
+        return config.cache_dir + '/layers/sha256/' + layer_hash.replace("sha256:", '') + ".tar.gz"
 
     async def download_layer_from_origin(self, host: str, repository: str,
                                          layer_hash: str, **kwargs):
@@ -489,13 +489,6 @@ class DockerUtil:
     async def ensure_having_layer_from(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally"""
 
-        # check wheteher the layer exists
-        # docker
-        layer_path = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256/" \
-                                  + layer_hash.lstrip('sha256:')
-        if os.path.exists(layer_path):
-            return 'docker', layer_path
-
         # beiran cache directory
         layer_path = self.layer_storage_path(layer_hash)
         ungzip_layer_path = layer_path.rstrip('.gz')
@@ -506,19 +499,25 @@ class DockerUtil:
         if os.path.exists(layer_path):
             return 'cache-gz', layer_path # .tar.gz file exists
 
-        # other node
+        # docker library or other node
         try:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+
+            # check local storage
+            docker_layer_path = self.storage + "/image/overlay2/layerdb/sha256/" + layer.chain_id.replace('sha256:', '')
+            if os.path.exists(docker_layer_path):
+                return 'docker', docker_layer_path
+
             node_id = layer.available_at[0]
             node = Node.get(Node.uuid == node_id)
+
             await self.download_layer_from_node(node.url_without_uuid, layer.digest)
 
         except (DockerLayer.DoesNotExist, IndexError):
-            pass
+            # TODO: Wait for finish if another beiran is currently downloading it
+            # TODO:  -- or ask for simultaneous streaming download
+            await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
 
-        # TODO: Wait for finish if another beiran is currently downloading it
-        # TODO:  -- or ask for simultaneous streaming download
-        await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
         return 'cache-gz', layer_path
 
     async def get_layer_diffid(self, host: str, repository: str, layer_hash: str, **kwargs)-> str:
@@ -527,18 +526,12 @@ class DockerUtil:
                                                                   layer_hash, **kwargs)
 
         if storage == 'docker':
-            with open(layer_path)as file:
-                diff_id = file.read()
-            return diff_id
+            layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+            return layer.diff_id
 
         if storage == 'cache-gz':
             # decompress .tar.gz
-            with gzip.open(layer_path, 'rb') as gzfile:
-                data = gzfile.read()
-                layer_path = layer_path.rstrip('.gz')
-
-                with open(layer_path, "wb") as tarfile:
-                    tarfile.write(data)
+            gunzip(layer_path)
 
         with open(layer_path, 'rb') as tarfile:
             diff_id = hashlib.sha256(tarfile.read()).hexdigest()
@@ -570,15 +563,6 @@ class DockerUtil:
                                                   % resp.status)
 
         return data
-
-    def clean_keys(self, dict_: dict, keys: list):
-        """
-        Remove keys from the dictionary.
-        """
-        for key in keys:
-            if key in dict_:
-                del dict_[key]
-
 
     async def fetch_config_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
                                      manifest: dict) -> Tuple[dict, str, str]:
@@ -626,7 +610,7 @@ class DockerUtil:
         rootfs = await self.get_layer_diffids_of_image(host, repository, descriptors)
 
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
-        self.clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
+        clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
 
         config_json['rootfs'] = rootfs
         config_json['history'] = history

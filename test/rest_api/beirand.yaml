@@ -3,7 +3,8 @@
 ---
 - config:
   - testset: "Beiran"
-  - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce', test_docker_image: 'hello-world'}
+  - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce', test_docker_image: 'hello-world',
+                     test_docker_image_id: 'sha256:4ab4c602aa5eed5528a6620ff18a1dc4faef0e1ab3a5eddeddb410714478c67f', test_docker_repo_digest: 'sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788'}
 
 - test:
   - name: "Version from root handler"
@@ -95,4 +96,6 @@
   - expected_status: [200]
   - validators:
      - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
-     - compare: {raw_body: "", comparator: "eq", expected: '{"architecture":"amd64","config":{"Hostname":"","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":false,"OpenStdin":false,"StdinOnce":false,"Env":["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],"Cmd":["/hello"],"ArgsEscaped":true,"Image":"sha256:9a5813f1116c2426ead0a44bbec252bfc5c3d445402cc1442ce9194fc1397027","Volumes":null,"WorkingDir":"","Entrypoint":null,"OnBuild":null,"Labels":null},"container":"15c5544a385127276a51553acb81ed24a9429f9f61d6844db1fa34f46348e420","container_config":{"Hostname":"15c5544a3851","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":false,"OpenStdin":false,"StdinOnce":false,"Env":["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],"Cmd":["/bin/sh","-c","#(nop) ","CMD [\"/hello\"]"],"ArgsEscaped":true,"Image":"sha256:9a5813f1116c2426ead0a44bbec252bfc5c3d445402cc1442ce9194fc1397027","Volumes":null,"WorkingDir":"","Entrypoint":null,"OnBuild":null,"Labels":{}},"created":"2018-09-07T19:25:39.809797627Z","docker_version":"17.06.2-ce","history":[{"created":"2018-09-07T19:25:39.611062956Z","created_by":"/bin/sh -c #(nop) COPY file:9824c33ef192ac944822908370af9f04ab049bfa5c10724e4f727206f5167094 in / "},{"created":"2018-09-07T19:25:39.809797627Z","created_by":"/bin/sh -c #(nop)  CMD [\"/hello\"]","empty_layer":true}],"os":"linux","rootfs":{"type":"layers","diff_ids":["sha256:428c97da766c4c13b19088a471de6b622b038f3ae8efa10ec5a37d6d31a2df0b"]}}'}
+     - compare: {jsonpath_mini: 'image_id', comparator: equals, expected: {template: "$test_docker_image_id"}}
+     - compare: {jsonpath_mini: 'repo_digest', comparator: equals, expected: {template: "$test_docker_repo_digest"}}
+ 

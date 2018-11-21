@@ -759,6 +759,21 @@ class DockerUtil:
             - schema v2: download config
             - manifest list: v1 or v2
         """
+
+        try:
+            image = DockerImage.get_image_data(tag)
+            config_path = self.storage + '/image/overlay2/imagedb/content/sha256/' \
+                                       + image.hash_id.replace('sha256:', '')
+            content = ""
+            with open(config_path)as file:
+                content = file.read()
+
+            return json.loads(content), image.hash_id, image.repo_digests[0].split('@')[1]
+
+        except (DockerImage.DoesNotExist, FileNotFoundError):
+            pass
+
+
         ref = normalize_ref(tag, index=True)
 
         # get manifest

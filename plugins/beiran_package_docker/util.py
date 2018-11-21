@@ -486,7 +486,7 @@ class DockerUtil:
         await async_write_file_stream(url, save_path, timeout=60)
         self.logger.debug("downloaded layer %s to %s", diff_id, save_path)
 
-    async def ensure_having_layer_from(self, host: str, repository: str, layer_hash: str, **kwargs):
+    async def ensure_having_layer(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
         """
@@ -506,7 +506,8 @@ class DockerUtil:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
 
             # check local storage
-            layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" + layer.chain_id.replace('sha256:', '')
+            layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" \
+                                        + layer.chain_id.replace('sha256:', '')
             if os.path.exists(layerdb_path):
                 cache_id = ""
                 with open(layerdb_path + '/cache-id')as file:
@@ -528,8 +529,8 @@ class DockerUtil:
 
     async def get_layer_diffid(self, host: str, repository: str, layer_hash: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
-        storage, layer_path = await self.ensure_having_layer_from(host, repository,
-                                                                  layer_hash, **kwargs)
+        storage, layer_path = await self.ensure_having_layer(host, repository,
+                                                             layer_hash, **kwargs)
 
         if storage == 'docker':
             # TODO: do something using path of the layer directory ?

@@ -347,16 +347,16 @@ async def wait_event(emitter, event_name, timeout=None):
     emitter.once(event_name, _handler)
     return await asyncio.wait_for(future, timeout)
 
-def gunzip(path: str):
+def gunzip(path: str) -> None:
     """Decompress .gz file"""
     with gzip.open(path, 'rb') as gzfile:
         data = gzfile.read()
         path = path.rstrip('.gz')
 
-        with open(path, "wb") as tarfile:
-            tarfile.write(data)
+        with open(path, "wb") as tarf:
+            tarf.write(data)
 
-def clean_keys(dict_: dict, keys: list):
+def clean_keys(dict_: dict, keys: list) -> None:
     """Remove keys from the dictionary"""
     for key in keys:
         if key in dict_:

@@ -12,11 +12,11 @@ from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
-from .models import DockerImage, DockerLayer
-from .models import MODEL_LIST
-from .util import DockerUtil
-from .api import ROUTES
-from .api import Services as ApiDependencies
+from beiran_package_docker.models import DockerImage, DockerLayer
+from beiran_package_docker.models import MODEL_LIST
+from beiran_package_docker.util import DockerUtil
+from beiran_package_docker.api import ROUTES
+from beiran_package_docker.api import Services as ApiDependencies
 
 
 PLUGIN_NAME = 'docker'

@@ -106,8 +106,9 @@ class BeiranCLI(click.MultiCommand):
                 cli_module = '{}.cli_{}'.format(plugin, cmd_name)
                 module = importlib.import_module(cli_module)
                 return module.cli  # type: ignore
-            except ModuleNotFoundError:
-                pass
+            except ModuleNotFoundError as error:
+                logger.info("This plugin has no cli, skipping..: %s",
+                            plugin)
 
 
 @click.command(cls=BeiranCLI)

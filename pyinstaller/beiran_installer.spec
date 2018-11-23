@@ -3,17 +3,20 @@
 block_cipher = None
 
 
-a = Analysis(['beiran/__main__.py'],
+a = Analysis(['../beiran/__main__.py'],
              pathex=[
-                './beiran',
+                '../beiran',
+                '../plugins/beiran_package_docker',
                 ],
              binaries=[],
              datas=[],
              hiddenimports=[
                 'beiran.cli_node',
+                'beiran_package_docker.docker',
+                'beiran_package_docker.cli_docker',
              ],
              hookspath=[],
-             runtime_hooks=[],
+             runtime_hooks=['./hooks/hook-beiran.plugin.py'],
              excludes=[],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,

@@ -3,9 +3,14 @@ A config loader
 """
 
 import os
-from os import path
+import pkgutil
+
+from typing import List
 
 import pytoml
+
+import logging
+logger = logging.getLogger()
 
 
 DEFAULTS = {
@@ -20,21 +25,32 @@ DEFAULTS = {
 }
 
 
-class Config:
+class ConfigMeta(type):
+    _instances = {}
+
+    def __new__(mcs, *args, **kwargs):
+        if mcs not in mcs._instances:
+            mcs._instances[mcs] = super(
+                ConfigMeta, mcs).__new__(mcs, *args, **kwargs)
+
+        return mcs._instances[mcs]
+
+
+class Config(metaclass=ConfigMeta):
     """Config class"""
 
-    def get_config_from_defaults(self, key):
-        """get config from default values"""
-        return DEFAULTS[key]
+    def __init__(self, config_file=None):
+        """construct config object"""
+        self.conf = dict()
 
+        if config_file:
+            self.conf = self.load_from_file(config_file)
 
-    def get_config_from_env(self, ekey):
-        """get config from environment variables"""
-        return os.getenv(ekey)
-
-
-    def get_config_from_file(self, ckey):
+    def get_config_from_file(self, ckey=None):
         """get config from config.toml"""
+        if ckey is None:
+            return
+
         keys = ckey.split('.')
 
         val = self.conf
@@ -44,47 +60,34 @@ class Config:
             val = val[key]
         return val
 
-
     def get_config(self, ckey, ekey):
         """
         get the value which associated with ckey or ekey.
         ckey is a key which is used in config.toml
         ekey is the name of environment variables
         """
-        val = self.get_config_from_env(ekey) if ekey is not None else None
-        if val is not None:
-            return val
+        if not any([ckey, ekey]):
+            return None
 
-        val = self.get_config_from_file(ckey) if ckey is not None else None
-        if val is not None:
-            return val
+        return \
+            os.getenv(ekey) or \
+            self.get_config_from_file(ckey) or \
+            DEFAULTS.get(ekey, None)
 
-        val = self.get_config_from_defaults(ekey) if ekey is not None else None
-        if val is not None:
-            return val
-
-        return None
-
-
-    def __init__(self, **kwargs):
-        """construct config object"""
-
-        if 'path' in kwargs: # pylint: disable=consider-using-get
-            config_path = kwargs['path']
-        else:
-            config_path = path.join(self.config_dir, 'config.toml')
-
+    @staticmethod
+    def load_from_file(config_file):
         try:
-            with open(config_path, 'r') as config_file:
-                self.conf = pytoml.load(config_file)
+            with open(config_file, 'r') as config_file:
+                return pytoml.load(config_file)
         except FileNotFoundError as err:
-            if 'path' not in kwargs:
-                # Configuration file is not specificly requested
-                # we tried the default path, and could not find the
-                # file. means no config file.
-                self.conf = dict()
-                return
-            raise err
+            logger.error(
+                "Could not found config file at location: %s",
+                config_file)
+        except pytoml.core.TomlError:
+            logger.error(
+                "Could not load config toml file, "
+                "please check your config file syntax"
+            )
 
 
     @property
@@ -164,7 +167,7 @@ class Config:
         """Get the list of the enabled plugins"""
 
         plugins = []
-        env_config = self.get_config_from_env('BEIRAN_PLUGINS')
+        env_config = os.getenv('BEIRAN_PLUGINS')
         if env_config:
             try:
                 for p_package in env_config.split(','):
@@ -201,5 +204,37 @@ class Config:
         if not conf:
             return dict()
         return conf
+
+    @staticmethod
+    def get_installed_plugins() -> List[str]:
+        """
+        Iterates installed packages and modules to match beiran modules.
+
+        Returns:
+            list: list of package name of installed beiran plugins.
+
+        """
+        print("original!..")
+
+        return [
+            name
+            for finder, name, ispkg
+            in pkgutil.iter_modules()
+            if name.startswith('beiran_')
+        ]
+
+    def __call__(self, config_file=None):
+        """
+        Allow reinitialize instance with a new config file
+
+        Args:
+            config_file: config file path
+
+        Returns:
+            self: reinitialized instance
+
+        """
+        return self.__init__(config_file)
+
 
 config = Config() # pylint: disable=invalid-name

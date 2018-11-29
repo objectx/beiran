@@ -184,9 +184,16 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             # Get Images
             self.log.debug("Getting docker image list..")
             image_list = await self.aiodocker.images.list(all=1)
+            not_intermediates = await self.aiodocker.images.list()
+
             for image_data in image_list:
                 self.log.debug("existing image..%s", image_data)
-                await self.save_image(image_data['Id'], skip_updates=True)
+
+                if image_data in not_intermediates:
+                    await self.save_image(image_data['Id'], skip_updates=True)
+                else:
+                    await self.save_image(image_data['Id'], skip_updates=True,
+                                          skip_updating_layer=True)
 
             # This will be converted to something like
             #   daemon.plugins['docker'].setReady(true)
@@ -287,7 +294,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def save_image(self, image_id: str, skip_updates: bool = False):
+    async def save_image(self, image_id: str, skip_updates: bool = False, 
+                         skip_updating_layer: bool = False):
         """
         Save existing image and layers identified by image_id to database.
 
@@ -315,10 +323,12 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
         image.layers = [layer.digest for layer in layers] # type: ignore
 
-        for layer in layers:
-            layer.set_available_at(self.node.uuid.hex)
-            layer.save()
-            self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
+        # skip verbose updates of records
+        if not skip_updating_layer:
+            for layer in layers:
+                layer.set_available_at(self.node.uuid.hex)
+                layer.save()
+                self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
 
         self.log.debug("set availability and save image %s \n %s \n\n",
                        self.node.uuid.hex, image.to_dict(dialect="docker"))

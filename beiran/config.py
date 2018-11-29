@@ -5,7 +5,7 @@ A config loader
 import os
 import pkgutil
 
-from typing import List
+from typing import List, Union
 
 import pytoml
 
@@ -42,6 +42,7 @@ class Config(metaclass=ConfigMeta):
     def __init__(self, config_file=None):
         """construct config object"""
         self.conf = dict()
+        self._enabled_plugins = list()
 
         if config_file:
             self.conf = self.load_from_file(config_file)
@@ -60,11 +61,20 @@ class Config(metaclass=ConfigMeta):
             val = val[key]
         return val
 
-    def get_config(self, ckey, ekey):
+    def get_config(self, ckey: str = '', ekey: str = '') -> Union[str, dict, None]:
         """
-        get the value which associated with ckey or ekey.
-        ckey is a key which is used in config.toml
-        ekey is the name of environment variables
+        Seek for config val through environment and config depending
+        on given keys.
+
+        One of the args `ckey`, `ekey` must be specified.
+
+        Args:
+            ckey: key in config file
+            ekey: key in environment
+
+        Returns:
+            str, dict: value
+
         """
         if not any([ckey, ekey]):
             return None
@@ -163,6 +173,17 @@ class Config(metaclass=ConfigMeta):
         """Return the list of supported plugin types"""
         return ['package', 'interface', 'discovery']
 
+    @property
+    def enabled_plugins(self) -> List[str]:
+        """
+        Returns enabled plugin list.
+
+        Returns:
+            (list): enabled plugins specified in config file or env
+
+        """
+        return self._enabled_plugins or self.get_enabled_plugins()
+
     def get_enabled_plugins(self):
         """Get the list of the enabled plugins"""
 
@@ -182,12 +203,13 @@ class Config(metaclass=ConfigMeta):
             except Exception:
                 raise Exception("Cannot parse BEIRAN_PLUGINS variable from environment")
 
+            self._enabled_plugins = plugins  # cache it!
             return plugins
 
         for p_type in self.plugin_types:
-            conf = self.get_config(p_type, None)
-            if conf is None:
-                return []
+            conf = self.get_config(ckey=p_type)
+            if not conf:
+                continue
 
             for p_name, p_conf in conf.items():
                 if 'enabled' in p_conf and p_conf['enabled']:
@@ -196,11 +218,12 @@ class Config(metaclass=ConfigMeta):
                         'name': p_name,
                         'package': 'beiran_%s_%s' % (p_type, p_name)
                     })
+        self._enabled_plugins = plugins
         return plugins
 
     def get_plugin_config(self, p_type, name):
         """Get params of package plugin"""
-        conf = self.get_config('%s.%s' % (p_type, name), None)
+        conf = self.get_config(ckey='%s.%s' % (p_type, name))
         if not conf:
             return dict()
         return conf
@@ -214,7 +237,6 @@ class Config(metaclass=ConfigMeta):
             list: list of package name of installed beiran plugins.
 
         """
-        print("original!..")
 
         return [
             name

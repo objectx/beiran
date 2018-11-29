@@ -108,9 +108,13 @@ class BeiranCLI(click.MultiCommand):
 @click.command(chain=True, cls=BeiranCLI, invoke_without_command=True,
                no_args_is_help=True)
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
-@click.option('--config', "config_file", default=None, required=False,
-              help='Config File TOML')
-def main(debug: bool = False, config_file: str = None):
+@click.option('--config', "config_file", metavar="path to config file",
+              default=None, required=False, help='Config File TOML')
+
+# https://github.com/pallets/click/issues/108#issuecomment-324837239
+@click.option('--start_daemon', "start_daemon", is_flag=True, default=False,
+              required=False, help='Starts Beiran Daemon')
+def main(debug: bool = False, start_daemon: bool=False, config_file: str = None):
     """Main entrypoint."""
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -118,6 +122,13 @@ def main(debug: bool = False, config_file: str = None):
     if config_file:
         from beiran.config import config
         config(config_file=config_file)
+
+    if start_daemon:
+        from beiran.daemon.main import BeiranDaemon
+        from beiran.daemon.common import Services
+
+        Services.daemon = BeiranDaemon()  # type: ignore
+        Services.daemon.run()  # type: ignore
 
 
 if __name__ == '__main__':

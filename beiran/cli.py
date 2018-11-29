@@ -5,7 +5,6 @@ import os
 import sys
 import logging
 import importlib
-import pkgutil
 from typing import List
 
 import click
@@ -15,7 +14,6 @@ from beiran.util import Unbuffered
 from beiran.sync_client import Client
 from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
-from beiran.plugin import get_installed_plugins
 from beiran.config import config
 
 LOG_LEVEL = logging.getLevelName(config.log_level) # type: ignore
@@ -25,6 +23,7 @@ logger = build_logger(None, LOG_LEVEL)  # type: ignore
 
 
 sys.stdout = Unbuffered(sys.stdout) # type: ignore
+
 
 class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
@@ -60,8 +59,6 @@ class BeiranCLI(click.MultiCommand):
     """BeiranCLI loads dynamically commands from installed plugins
     and appends commands of `beiran` itself as `node` group"""
 
-    installed_plugins = get_installed_plugins()
-
     def list_commands(self, ctx) -> List[str]:  # type: ignore
         """
         Lists of subcommand names
@@ -74,11 +71,17 @@ class BeiranCLI(click.MultiCommand):
 
         """
         commands = list()
-        for beiran_plugin in self.installed_plugins:
-            module = importlib.import_module(beiran_plugin)
-            for _, modname, _ in pkgutil.iter_modules(module.__path__):  # type: ignore
-                if modname.startswith('cli_'):
-                    commands.append(modname.split('_')[1])
+        for plugin in config.enabled_plugins:
+            cli_module_path = "{}.cli_{}".format(
+                plugin['package'],
+                plugin['name']
+            )
+            try:
+                importlib.import_module(cli_module_path)
+                commands.append(plugin['name'])
+            except ModuleNotFoundError or ImportError:
+                logger.info("This plugin has no cli, skipping..: %s",
+                            plugin['package'])
 
         commands.append("node")
         commands.sort()
@@ -101,14 +104,14 @@ class BeiranCLI(click.MultiCommand):
             module = importlib.import_module(cli_module)
             return module.cli  # type: ignore
 
-        for plugin in self.installed_plugins:
+        for plugin in config.enabled_plugins:
             try:
-                cli_module = '{}.cli_{}'.format(plugin, cmd_name)
+                cli_module = '{}.cli_{}'.format(plugin['package'], cmd_name)
                 module = importlib.import_module(cli_module)
                 return module.cli  # type: ignore
             except ModuleNotFoundError as error:
-                logger.info("This plugin has no cli, skipping..: %s",
-                            plugin)
+                logger.info("This plugin has no cli, skipping..: %s \n\n %s",
+                            plugin, error)
 
 
 @click.command(cls=BeiranCLI)

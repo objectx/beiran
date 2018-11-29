@@ -106,7 +106,7 @@ class Config(metaclass=ConfigMeta):
         CONFIG_DIR:
           A directory used to store configuration files.
         """
-        return self.get_config(None, 'CONFIG_DIR')
+        return self.get_config('beiran.config_dir', 'CONFIG_DIR')
 
 
     @property

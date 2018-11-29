@@ -321,7 +321,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("not an existing one, creating a new record..")
 
         layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
-        image.layers = [layer.digest for layer in layers] # type: ignore
+        image.layers = [layer.diff_id for layer in layers] # type: ignore
 
         # skip verbose updates of records
         if not skip_updating_layer:

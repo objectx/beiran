@@ -105,12 +105,19 @@ class BeiranCLI(click.MultiCommand):
                             plugin, error)
 
 
-@click.command(cls=BeiranCLI)
+@click.command(chain=True, cls=BeiranCLI, invoke_without_command=True,
+               no_args_is_help=True)
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
-def main(debug=False):
+@click.option('--config', "config_file", default=None, required=False,
+              help='Config File TOML')
+def main(debug: bool = False, config_file: str = None):
     """Main entrypoint."""
     if debug:
         logger.setLevel(logging.DEBUG)
+        logger.info("set debug level")
+    if config_file:
+        from beiran.config import config
+        config(config_file=config_file)
 
 
 if __name__ == '__main__':

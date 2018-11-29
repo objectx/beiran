@@ -312,18 +312,13 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except DockerImage.DoesNotExist:
             self.log.debug("not an existing one, creating a new record..")
 
-        try:
-            layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
-            image.layers = [layer.digest for layer in layers] # type: ignore
+        layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
+        image.layers = [layer.digest for layer in layers] # type: ignore
 
-            for layer in layers:
-                layer.set_available_at(self.node.uuid.hex)
-                layer.save()
-                self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
-
-        except DockerUtil.CannotFindLayerMappingError:
-            self.log.debug("Unexpected error, layers of image %s could not found..",
-                           image_data['Id'])
+        for layer in layers:
+            layer.set_available_at(self.node.uuid.hex)
+            layer.save()
+            self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
 
         self.log.debug("set availability and save image %s \n %s \n\n",
                        self.node.uuid.hex, image.to_dict(dialect="docker"))

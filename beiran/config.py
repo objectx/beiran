@@ -5,12 +5,12 @@ A config loader
 import os
 import pkgutil
 
-from typing import List, Union
+from typing import List, Union, Any
+import logging
 
 import pytoml
 
-import logging
-logger = logging.getLogger()
+LOGGER = logging.getLogger()
 
 
 DEFAULTS = {
@@ -26,7 +26,10 @@ DEFAULTS = {
 
 
 class ConfigMeta(type):
-    _instances = {}
+    """
+    Metaclass for config object.
+    """
+    _instances: dict = {}
 
     def __new__(mcs, *args, **kwargs):
         if mcs not in mcs._instances:
@@ -50,7 +53,7 @@ class Config(metaclass=ConfigMeta):
     def get_config_from_file(self, ckey=None):
         """get config from config.toml"""
         if ckey is None:
-            return
+            return None
 
         keys = ckey.split('.')
 
@@ -61,7 +64,7 @@ class Config(metaclass=ConfigMeta):
             val = val[key]
         return val
 
-    def get_config(self, ckey: str = '', ekey: str = '') -> Union[str, dict, None]:
+    def get_config(self, ckey: str = '', ekey: str = '') -> Union[Any, object]:
         """
         Seek for config val through environment and config depending
         on given keys.
@@ -85,18 +88,26 @@ class Config(metaclass=ConfigMeta):
             DEFAULTS.get(ekey, None)
 
     @staticmethod
-    def load_from_file(config_file):
+    def load_from_file(config_file: str):
+        """
+        Load config values from given file
+        Args:
+            config_file (str): file path
+
+        Returns:
+
+        """
         try:
-            with open(config_file, 'r') as config_file:
-                return pytoml.load(config_file)
-        except FileNotFoundError as err:
-            logger.error(
+            with open(config_file, 'r') as cfile:
+                return pytoml.load(cfile)
+        except FileNotFoundError:
+            LOGGER.error(
                 "Could not found config file at location: %s",
                 config_file)
-        except pytoml.core.TomlError:
-            logger.error(
+        except pytoml.core.TomlError as err:
+            LOGGER.error(
                 "Could not load config toml file, "
-                "please check your config file syntax"
+                "please check your config file syntax. %s", err
             )
 
 
@@ -174,7 +185,7 @@ class Config(metaclass=ConfigMeta):
         return ['package', 'interface', 'discovery']
 
     @property
-    def enabled_plugins(self) -> List[str]:
+    def enabled_plugins(self) -> List[dict]:
         """
         Returns enabled plugin list.
 

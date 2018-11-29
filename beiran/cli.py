@@ -70,7 +70,7 @@ class BeiranCLI(click.MultiCommand):
             try:
                 importlib.import_module(cli_module_path)
                 commands.append(plugin['name'])
-            except ModuleNotFoundError or ImportError:
+            except(ModuleNotFoundError, ImportError):
                 logger.info("This plugin has no cli, skipping..: %s",
                             plugin['package'])
 
@@ -105,8 +105,7 @@ class BeiranCLI(click.MultiCommand):
                             plugin, error)
 
 
-@click.command(chain=True, cls=BeiranCLI, invoke_without_command=True,
-               no_args_is_help=True)
+@click.group(cls=BeiranCLI, chain=True, invoke_without_command=True, no_args_is_help=True)
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
 @click.option('--config', "config_file", metavar="path to config file",
               default=None, required=False, help='Config File TOML')
@@ -114,13 +113,12 @@ class BeiranCLI(click.MultiCommand):
 # https://github.com/pallets/click/issues/108#issuecomment-324837239
 @click.option('--start_daemon', "start_daemon", is_flag=True, default=False,
               required=False, help='Starts Beiran Daemon')
-def main(debug: bool = False, start_daemon: bool=False, config_file: str = None):
+def main(debug: bool = False, start_daemon: bool = False, config_file: str = None):
     """Main entrypoint."""
     if debug:
         logger.setLevel(logging.DEBUG)
         logger.info("set debug level")
     if config_file:
-        from beiran.config import config
         config(config_file=config_file)
 
     if start_daemon:

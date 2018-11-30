@@ -116,7 +116,11 @@ class DockerUtil:
 
         f_path = local_digest_dir + "/{}".format(sha.replace('sha256:', '', 1))
 
-        file = open(f_path, 'r')
+        try:
+            file = open(f_path, 'r')
+        except FileNotFoundError:
+            return None
+
         diff_1 = file.read()
         file.close()
 

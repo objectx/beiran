@@ -493,6 +493,9 @@ class DockerUtil:
     async def ensure_having_layer(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
+
+        Args:
+            layer_hash(str): digest of layer
         """
 
         # beiran cache directory
@@ -500,9 +503,11 @@ class DockerUtil:
         tar_layer_path = gs_layer_path.rstrip('.gz')
 
         if os.path.exists(tar_layer_path):
+            self.logger.debug("Found layer (%s)", tar_layer_path)
             return 'cache', tar_layer_path # .tar file exists
 
         if os.path.exists(gs_layer_path):
+            self.logger.debug("Found layer (%s)", gs_layer_path)
             return 'cache-gz', gs_layer_path # .tar.gz file exists
 
         # docker library or other node
@@ -517,7 +522,9 @@ class DockerUtil:
                 with open(layerdb_path + '/cache-id')as file:
                     cache_id = file.read()
 
-                return 'docker', self.storage + "/overlay2/" + cache_id + "/diff"
+                docker_layer_path = self.storage + "/overlay2/" + cache_id + "/diff"
+                self.logger.debug("Found layer (%s)", docker_layer_path)
+                return 'docker', docker_layer_path
 
             node_id = layer.available_at[0]
             node = Node.get(Node.uuid == node_id)

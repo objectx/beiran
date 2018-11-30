@@ -294,7 +294,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def save_image(self, image_id: str, skip_updates: bool = False, 
+    async def save_image(self, image_id: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):
         """
         Save existing image and layers identified by image_id to database.

@@ -12,16 +12,13 @@ daemon_url = ''
 
 # docker plugin settings
 [package.docker]
-enable = true
+enabled = true
 cache_dir = '/var/cache/beiran/docker'
 
 # dns discovery settings
 [discovery.dns]
-enable = true
+enabled = true
 
 # zeroconf discovery settings
 [discovery.zeroconf]
-enable = true
-
-https://git.rsnc.io/rlab/beiran/issues?state=open&milestone=11
-
+enabled = true

@@ -207,7 +207,7 @@ class Config:
         """Get the list of the enabled plugins"""
 
         plugins = []
-        env_config = self.get_config_from_env('BEIRAN_PLUGINS')
+        env_config = self.get_config_from_env('PLUGINS')
         if env_config:
             try:
                 for p_package in env_config.split(','):

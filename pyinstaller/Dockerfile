@@ -1,4 +1,4 @@
-FROM python:3.6-alpine
+FROM python:3.6-alpine AS builder
 
 RUN apk add --no-cache \
     git \
@@ -35,7 +35,7 @@ RUN pip install pyinstaller
 
 ADD beiran /opt/beiran/beiran
 ADD plugins /opt/beiran/plugins
-ADD pyinstaller /opt/beiran/installer
+ADD pyinstaller /opt/beiran/pyinstaller
 
 ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
 WORKDIR /opt/beiran/pyinstaller
@@ -43,7 +43,13 @@ WORKDIR /opt/beiran/pyinstaller
 RUN pyinstaller beiran_installer.spec   --clean --log-level DEBUG -y
 RUN cp /opt/beiran/pyinstaller/build/beiran_installer/beiran /usr/local/bin/beiran
 
+FROM alpine:3.8
+
+COPY --from=builder /opt/beiran/pyinstaller/build/beiran_installer/beiran /bin/
+
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran
 
-CMD ["beiran", "--help"]
+ENTRYPOINT ["/bin/beiran"]
+
+CMD ["--help"]

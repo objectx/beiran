@@ -56,5 +56,9 @@ setup(
             "beirand = beiran.daemon.__main__:main"
         ]
     },
-    data_files=[(REQUIREMENTS_PATH)],
+    data_files=[
+        (REQUIREMENTS_PATH),
+        ('', 'beiran/config.toml')
+    ],
+
 )

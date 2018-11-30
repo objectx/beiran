@@ -33,12 +33,6 @@ Various reusable classes and methods.
     :show-inheritance:
     :special-members: __init__
 
-.. automodule:: beiran.defaults
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :special-members: __init__
-
 .. automodule:: beiran.version
     :members:
     :undoc-members:

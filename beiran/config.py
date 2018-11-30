@@ -1,5 +1,5 @@
 """
-A config loader
+Beiran Configuration Module
 """
 
 import os
@@ -21,7 +21,9 @@ DEFAULTS = {
 
 
 class Config:
-    """Config class"""
+    """Configuration object holds configuration parameters as
+    class properties. It overrides default values by values from
+    config toml file or environment."""
 
     def get_config_from_defaults(self, key):
         """get config from default values"""
@@ -30,7 +32,7 @@ class Config:
 
     def get_config_from_env(self, ekey):
         """get config from environment variables"""
-        return os.getenv(ekey)
+        return os.getenv("BEIRAN_{}".format(ekey))
 
 
     def get_config_from_file(self, ckey):
@@ -86,12 +88,16 @@ class Config:
                 return
             raise err
 
-
     @property
     def config_dir(self):
         """
-        CONFIG_DIR:
-          A directory used to store configuration files.
+        A directory is used to store configuration files. The default
+        value is ``/etc/beiran``.
+
+        config.toml: section ``beiran``, key ``config_dir``
+
+        Environment variable: ``BEIRAN_CONFIG_DIR``
+
         """
         return self.get_config(None, 'CONFIG_DIR')
 
@@ -99,8 +105,13 @@ class Config:
     @property
     def data_dir(self):
         """
-        DATA_DIR:
-          A directory used to store some data.
+        A directory is used to store miscellaneous beiran data. The
+        default value is ``/var/lib/beiran``.
+
+        config.toml: section ``beiran``, key ``data_dir``
+
+        Environment variable: ``BEIRAN_DATA_DIR``
+
         """
         return self.get_config('beiran.data_dir', 'DATA_DIR')
 
@@ -108,42 +119,68 @@ class Config:
     @property
     def run_dir(self):
         """
-        RUN_DIR:
-          A directory used to store beirand.sock.
+        A directory used to store beirand.sock. The default value is
+        ``/var/run``.
+
+        config.toml: section ``beiran``, key ``run_dir``
+
+        Environment variable: ``BEIRAN_RUN_DIR``
+
         """
         return self.get_config('beiran.run_dir', 'RUN_DIR')
-
 
     @property
     def cache_dir(self):
         """
-        CACHE_DIR:
-          A directory used to store cached files.
+        A directory used to store cached files. The default value is
+        ``/var/cache/beiran``.
+
+        config.toml: section ``beiran``, key ``cache_dir``
+
+        Environment variable: ``BEIRAN_CACHE_DIR``
+
         """
         return self.get_config('beiran.cache_dir', 'CACHE_DIR')
-
 
     @property
     def log_level(self):
         """
-        LOG_LEVEL:
+        Logging level. The default value is ``DEBUG``. Beiran use
+        Python Standard Lib's logging module. Standard logging level
+        strings are valid. Please see logging module in standard
+        library further details.
+
+        config.toml: section ``beiran``, key ``log_level``
+
+        Environment variable: ``BEIRAN_LOG_LEVEL``
+
         """
         return self.get_config('beiran.log_level', 'LOG_LEVEL')
-
 
     @property
     def log_file(self):
         """
-        LOG_FILE:
-          A path where beirand will store log files
+        A file path for storing logs. The default value is
+        ``/var/log/beirand.log``.
+
+        config.toml: section ``beiran``, key ``log_file``
+
+        Environment variable: ``BEIRAN_LOG_FILE``
+
         """
         return self.get_config('beiran.log_file', 'LOG_FILE')
-
 
     @property
     def discovery_method(self):
         """
-        DISCOVERY_METHOD:
+        Service discovery method for beiran daemons to find each
+        others. The default value is ``zeroconf``. It can be eighter
+        ``zeroconf``, ``dns`` or any other discovery plugins name.
+
+        config.toml: section ``beiran``, key ``discovery_method``
+
+        Environment variable: ``BEIRAN_DISCOVERY_METHOD``
+
         """
         return self.get_config('beiran.discovery_method', 'DISCOVERY_METHOD')
 
@@ -151,7 +188,13 @@ class Config:
     @property
     def listen_port(self):
         """
-        LISTEN_PORT:
+        Beiran daemon's running port. It can be any available tcp
+        port on host. The default value is ``8888``
+
+        config.toml: section ``beiran``, key ``listen_port``
+
+        Environment variable: ``BEIRAN_LISTEN_PORT``
+
         """
         return self.get_config('beiran.listen_port', 'LISTEN_PORT')
 

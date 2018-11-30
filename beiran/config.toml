@@ -1,0 +1,27 @@
+# beiran configuration file
+
+# general settings which is valid all parts, lib, daemon and all plugins
+[beiran]
+log_level = 'DEBUG'
+log_file = '/var/log/beirand.log'
+config_folder = '/etc/beiran'
+data_folder = '/var/lib/beiran'
+listen_port = 8888
+socket_path = '/var/run/beirand.sock'
+daemon_url = ''
+
+# docker plugin settings
+[package.docker]
+enable = true
+cache_dir = '/var/cache/beiran/docker'
+
+# dns discovery settings
+[discovery.dns]
+enable = true
+
+# zeroconf discovery settings
+[discovery.zeroconf]
+enable = true
+
+https://git.rsnc.io/rlab/beiran/issues?state=open&milestone=11
+

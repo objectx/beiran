@@ -162,7 +162,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
 class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     """DockerLayer"""
 
-    digest = CharField(max_length=128)
+    digest = CharField(max_length=128, null=True)
     diff_id = CharField(max_length=128)
     chain_id = CharField(max_length=128)
     size = IntegerField()

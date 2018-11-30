@@ -311,7 +311,7 @@ class DockerUtil:
 
         layer_storage_path = self.storage + "/image/overlay2/layerdb"
         if diffid not in self.diffid_mapping:
-            raise DockerUtil.CannotFindLayerMappingError()
+            self.diffid_mapping[diffid] = None
             # image.has_unknown_layers = True
             # # This layer is not pulled from a registry
             # # It's built on this machine and we're **currently** not interested
@@ -322,7 +322,7 @@ class DockerUtil:
 
         digest = self.diffid_mapping[diffid]
         try:
-            layer = DockerLayer.get(DockerLayer.digest == digest)
+            layer = DockerLayer.get(DockerLayer.diff_id == diffid)
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
             layer.digest = digest

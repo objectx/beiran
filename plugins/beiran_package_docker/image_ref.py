@@ -5,24 +5,35 @@ Parse and normalize image reference
 from typing import Tuple
 
 DEFAULT_DOMAIN = "docker.io"
+DEFAULT_INDEX_DOMAIN = "index.docker.io"
 OFFICIAL_REPO = "library"
 DEFAULT_TAG = "latest"
 
 ID_PREFIX = "sha256:"
 
 
-def normalize_ref(ref: str) -> str:
-    """Parse and normalize image reference.
+def normalize_ref(ref: str, **kwargs) -> dict:
+    """Parse and normalize image reference as a dictionaly
     """
+    domain = DEFAULT_DOMAIN
+    if 'index' in kwargs and kwargs['index']:
+        domain = DEFAULT_INDEX_DOMAIN
+    path_comp = ''
+
     splitted_ref = ref.split("/")
     if len(splitted_ref) == 1: # nginx, nginx:0.1
-        domain = DEFAULT_DOMAIN
-        path_comp = OFFICIAL_REPO
         name, sign, suffix = split_name_suffix(splitted_ref[0])
+        path_comp = OFFICIAL_REPO
 
-    elif len(splitted_ref) == 2: # repo/nginx, repo/nginx:0.1
-        domain = DEFAULT_DOMAIN
-        path_comp = splitted_ref[0]
+    elif len(splitted_ref) == 2: # repo/nginx, repo/nginx:0.1, domain/nginx
+        if is_domain(splitted_ref[0]):
+            domain = splitted_ref[0]
+
+            if domain == DEFAULT_DOMAIN:
+                path_comp = OFFICIAL_REPO
+
+        else:
+            path_comp = splitted_ref[0]
         name, sign, suffix = split_name_suffix(splitted_ref[1])
 
     else:
@@ -30,12 +41,29 @@ def normalize_ref(ref: str) -> str:
             domain = splitted_ref[0]
             path_comp = "/".join(splitted_ref[1:-1])
         else:
-            domain = DEFAULT_DOMAIN
             path_comp = "/".join(splitted_ref[0:-1])
 
         name, sign, suffix = split_name_suffix(splitted_ref[-1])
 
-    return marshal(domain, path_comp, name, sign, suffix)
+
+    if path_comp == '':
+        repo = name
+    else:
+        repo = path_comp + '/' + name
+
+    return {
+        'domain': domain,
+        'repo': repo,
+        'sign': sign,
+        'suffix': suffix
+    }
+
+def marshal_normalize_ref(ref: str, **kwargs) -> str:
+    """Parse and normalize image reference as a string
+    """
+    normalized = normalize_ref(ref, **kwargs)
+    return marshal(normalized['domain'], normalized['repo'],
+                   normalized['sign'], normalized['suffix'])
 
 
 def split_name_suffix(string: str) -> Tuple[str, str, str]:
@@ -90,8 +118,8 @@ def add_id_prefix(image_id: str) -> str:
         return image_id
     return ID_PREFIX + image_id
 
-def marshal(domain: str, path_comp: str, name: str, sign: str, suffix: str) -> str:
+def marshal(domain: str, repo: str, sign: str, suffix: str) -> str:
     """
     Marshall components of reference, and return normalized reference
     """
-    return domain + "/" + path_comp + "/" + name + sign + suffix
+    return domain + "/" + repo + sign + suffix

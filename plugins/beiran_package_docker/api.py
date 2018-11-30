@@ -96,6 +96,32 @@ class ImageInfoHandler(web.RequestHandler):
         self.write(json.dumps(image.to_dict(dialect="api")))
         self.finish()
 
+class ImageConfigHandler(web.RequestHandler):
+    """ Image config handler (for testing)"""
+
+    def data_received(self, chunk):
+        pass
+
+    # pylint: disable=arguments-differ
+    async def get(self, image_identifier):
+        """
+            Create or download config (this endpoint for test)
+        """
+        self.set_header("Content-Type", "application/json")
+
+        image_identifier = image_identifier.rstrip('/config')
+        config, image_id, repo_digest = \
+            await Services.docker_util.create_or_download_config(image_identifier)
+
+        dict_ = {
+            'config': config,
+            'image_id': image_id,
+            'repo_digest': repo_digest
+        }
+
+        self.write(json.dumps(dict_))
+        self.finish()
+
 
 class LayerDownload(web.RequestHandler):
     """ Container image layer downloading handler """
@@ -460,7 +486,8 @@ class LayerList(web.RequestHandler):
 ROUTES = [
     (r'/docker/images', ImageList),
     (r'/docker/layers', LayerList),
-    (r'/docker/images/(.*(?<!/info)$)', ImagesTarHandler),
+    (r'/docker/images/(.*(?<![/config|/info])$)', ImagesTarHandler),
     (r'/docker/images/(.*/info)', ImageInfoHandler),
+    (r'/docker/images/(.*/config)', ImageConfigHandler),
     (r'/docker/layers/([0-9a-fsh:]+)', LayerDownload),
 ]

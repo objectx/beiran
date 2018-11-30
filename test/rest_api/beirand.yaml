@@ -3,7 +3,8 @@
 ---
 - config:
   - testset: "Beiran"
-  - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce', test_docker_image: 'hello-world'}
+  - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce', test_docker_image: 'hello-world',
+                     test_docker_image_id: 'sha256:4ab4c602aa5eed5528a6620ff18a1dc4faef0e1ab3a5eddeddb410714478c67f', test_docker_repo_digest: 'sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788'}
 
 - test:
   - name: "Version from root handler"
@@ -87,3 +88,14 @@
      - compare: {header: "Docker-Content-Digest", comparator: contains, expected: {template: "$test_docker_layer"}}
      - compare: {header: "Etag", comparator: contains, expected: {template: "$test_docker_layer"}}
      - compare: {header: "Content-Length", comparator: equals, expected: '10240'}
+
+- test:
+  - name: "Download or create image config"
+  - headers: {accept: 'application/json'}
+  - url: {template: "/docker/images/$test_docker_image/config"}
+  - expected_status: [200]
+  - validators:
+     - compare: {header: "content-type", comparator: contains, expected: 'application/json'}
+     - compare: {jsonpath_mini: 'image_id', comparator: equals, expected: {template: "$test_docker_image_id"}}
+     - compare: {jsonpath_mini: 'repo_digest', comparator: equals, expected: {template: "$test_docker_repo_digest"}}
+ 

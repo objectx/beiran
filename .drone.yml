@@ -106,6 +106,7 @@ pipeline:
     commands:
       - date
       - ip addr show
+      - env
       - python3 -m beiran.daemon
 
   rest_test:

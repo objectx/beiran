@@ -1,17 +1,14 @@
-FROM python:3.6-alpine AS builder
+FROM dkr.beiran.io/beiran/pyinstaller:alpine3.6-pyinstaller3.4 AS pyinstaller
 
 RUN apk add --no-cache \
-    git \
     openssh-client \
     python-dev \
-    gcc \
     g++ \
     linux-headers \
-    musl-dev \
     python3-dev \
     make
 
-RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy pyinstaller
+RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy
 
 RUN mkdir -p /opt/beiran/beiran
 WORKDIR /opt
@@ -31,21 +28,36 @@ RUN pip install -r /opt/beiran/r-docker.txt
 #ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
 #RUN pip install -r /opt/beiran/r-k8s.txt
 
-RUN pip install pyinstaller
-
 ADD beiran /opt/beiran/beiran
 ADD plugins /opt/beiran/plugins
 ADD pyinstaller /opt/beiran/pyinstaller
-
 ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
+
+#RUN mkdir /etc/ld.so.conf.d
+#RUN echo "/usr/lib" > /etc/ld.so.conf.d/python36.conf
+
 WORKDIR /opt/beiran/pyinstaller
 
-RUN pyinstaller beiran_installer.spec   --clean --log-level DEBUG -y
-RUN cp /opt/beiran/pyinstaller/build/beiran_installer/beiran /usr/local/bin/beiran
+RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
+                               --clean --log-level DEBUG --noconfirm \
+                               --hidden-import  beiran.cli_node \
+                               --hidden-import  beiran_package_docker.cli_docker \
+                               --hidden-import  beiran_discovery_dns \
+                               --hidden-import  beiran_discovery_dns.dns \
+                               --hidden-import  beiran_discovery_zeroconf \
+                               --hidden-import  beiran_discovery_zeroconf.zeroconf \
+                               --paths /opt/beiran/pyinstaller \
+                               --paths ../beiran \
+                               --paths ../plugins/beiran_package_docker \
+                               --exclude-module pycrypto \
+                               --exclude-module PyInstaller \
+                               --additional-hooks-dir ./hooks/ \
+                               --runtime-hook ./hooks/hook-beiran.plugin.py \
+                               ../beiran/__main__.py
 
 FROM alpine:3.8
 
-COPY --from=builder /opt/beiran/pyinstaller/build/beiran_installer/beiran /bin/
+COPY --from=pyinstaller /opt/beiran/pyinstaller/dist/beiran /bin/
 
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran

@@ -1,4 +1,4 @@
-FROM dkr.beiran.io/beiran/pyinstaller:alpine3.6-pyinstaller3.4 AS pyinstaller
+FROM dkr.beiran.io/beiran/pyinstaller:alpine-3.6-pyinstaller-v3.4 AS pyinstaller
 
 RUN apk add --no-cache \
     openssh-client \

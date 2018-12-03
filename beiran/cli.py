@@ -50,6 +50,7 @@ class BeiranCLI(click.MultiCommand):
     """BeiranCLI loads dynamically commands from installed plugins
     and appends commands of `beiran` itself as `node` group"""
 
+
     def list_commands(self, ctx) -> List[str]:  # type: ignore
         """
         Lists of subcommand names
@@ -71,7 +72,7 @@ class BeiranCLI(click.MultiCommand):
                 importlib.import_module(cli_module_path)
                 commands.append(plugin['name'])
             except(ModuleNotFoundError, ImportError):
-                logger.info("This plugin has no cli, skipping..: %s",
+                logger.debug("This plugin has no cli, skipping..: %s",
                             plugin['package'])
 
         commands.append("node")
@@ -96,12 +97,14 @@ class BeiranCLI(click.MultiCommand):
             return module.cli  # type: ignore
 
         for plugin in config.enabled_plugins:
+            if plugin['name'] != cmd_name:
+                continue
             try:
-                cli_module = '{}.cli_{}'.format(plugin['package'], cmd_name)
+                cli_module = '{}.cli_{}'.format(plugin['package'], plugin['name'])
                 module = importlib.import_module(cli_module)
                 return module.cli  # type: ignore
             except ModuleNotFoundError as error:
-                logger.info("This plugin has no cli, skipping..: %s \n\n %s",
+                logger.debug("This plugin has no cli, skipping..: %s \n\n %s",
                             plugin, error)
 
 

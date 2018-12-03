@@ -9,10 +9,10 @@ services:
     volumes:
      - .:/src
     environment:
-      - DISCOVERY_METHOD=dns
+      - BEIRAN_DISCOVERY_METHOD=dns
       - DISCOVERY_SERVICE_ADDRESS=beiran_dns
-      - LISTEN_ADDR=0.0.0.0
-      - LOG_LEVEL=INFO
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LOG_LEVEL=INFO
 
 networks:
   test:

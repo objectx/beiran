@@ -14,7 +14,7 @@ services:
      - /etc/beiran
     network_mode: host
     environment:
-      - DISCOVERY_METHOD=zeroconf
-      - LISTEN_ADDR=0.0.0.0
+      - BEIRAN_DISCOVERY_METHOD=zeroconf
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
       - DISCOVERY_SERVICE_ADDRESS=beirand
-      - LOG_LEVEL=INFO
+      - BEIRAN_LOG_LEVEL=INFO

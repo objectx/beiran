@@ -186,10 +186,11 @@ test:bats:
    - |
      echo "=========================================="
      echo "waiting until beirand is accessible"
-     for node in beiran2 beiran3 beiran4
+     for node in beiran1 beiran2 beiran3 beiran4
      do
        times=0
        until $(docker-compose exec -T $node curl --output /dev/null --silent --fail http://localhost:8888); do
+           docker exec beiran_$node\_1 apt-get install sqlite3 -y
            printf '.'
            sleep 3
            times=$(( $times + 1 ))
@@ -204,9 +205,11 @@ test:bats:
      do
        CONTAINER=$(docker-compose ps -q $node)
        docker cp ${SRC_DIR}/test/bats/beiran-cli-$node.bats ${CONTAINER}:/opt/beiran-cli.bats
+       docker cp ${SRC_DIR}/test/bats/beiran-node-discovery.bats ${CONTAINER}:/opt/beiran-node-discovery.bats
        docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
        echo "============== start bats test ($node) =============="
        docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
+       docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-node-discovery.bats
      done
 
 post-test:error-logs:

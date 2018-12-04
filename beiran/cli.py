@@ -108,7 +108,7 @@ class BeiranCLI(click.MultiCommand):
                             plugin, error)
 
 
-@click.group(cls=BeiranCLI, chain=True, invoke_without_command=True, no_args_is_help=True)
+@click.group(cls=BeiranCLI, chain=False, invoke_without_command=True, no_args_is_help=True)
 @click.option('--debug', is_flag=True, default=False, help='Debug log enable')
 @click.option('--config', "config_file", metavar="path to config file",
               default=None, required=False, help='Config File TOML')
@@ -133,4 +133,20 @@ def main(debug: bool = False, start_daemon: bool = False, config_file: str = Non
 
 
 if __name__ == '__main__':
+
+    # workaround for click's chained commands wired bug.
+    # somehow chain is broken after 3rd parameter, such as:
+    # although `beiran docker image --help ` works, on the other hand
+    # `beiran docker image list --help` doesn't.
+    # for now make main method accept general parameters,
+    # such as config, debug, etc
+    # and handle them here..
+    try:
+        import sys
+        index = sys.argv.index('--config')
+        if index:
+            config(config_file=sys.argv[index+1])
+            logger.debug(config.enabled_plugins)
+    except ValueError:
+        logger.debug("No config file specified, default config in use")
     main()

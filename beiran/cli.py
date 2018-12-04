@@ -73,7 +73,7 @@ class BeiranCLI(click.MultiCommand):
                 commands.append(plugin['name'])
             except(ModuleNotFoundError, ImportError):
                 logger.debug("This plugin has no cli, skipping..: %s",
-                            plugin['package'])
+                             plugin['package'])
 
         commands.append("node")
         commands.sort()
@@ -105,7 +105,7 @@ class BeiranCLI(click.MultiCommand):
                 return module.cli  # type: ignore
             except ModuleNotFoundError as error:
                 logger.debug("This plugin has no cli, skipping..: %s \n\n %s",
-                            plugin, error)
+                             plugin, error)
 
 
 @click.group(cls=BeiranCLI, chain=False, invoke_without_command=True, no_args_is_help=True)
@@ -134,7 +134,7 @@ def main(debug: bool = False, start_daemon: bool = False, config_file: str = Non
 
 if __name__ == '__main__':
 
-    # workaround for click's chained commands wired bug.
+    # workaround for click's chained commands weird bug.
     # somehow chain is broken after 3rd parameter, such as:
     # although `beiran docker image --help ` works, on the other hand
     # `beiran docker image list --help` doesn't.
@@ -142,7 +142,6 @@ if __name__ == '__main__':
     # such as config, debug, etc
     # and handle them here..
     try:
-        import sys
         index = sys.argv.index('--config')
         if index:
             config(config_file=sys.argv[index+1])

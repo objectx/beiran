@@ -2,5 +2,5 @@
 
 @test "Check if nodes discover each other correctly" {
     python -m beiran.cli node list |  wc -l
-    [ "$output" -eq 6 ]
+    [ $output -eq 6 ]
 }

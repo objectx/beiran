@@ -165,9 +165,11 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     digest = CharField(max_length=128, null=True)
     diff_id = CharField(max_length=128)
     chain_id = CharField(max_length=128)
-    size = IntegerField()
+    size = IntegerField() # the size difference of the top layer from parent layer
     available_at = JSONStringField(default=list)
     download_progress = JSONStringField(null=True)
 
+    cache_path = CharField(null=True) # .tar file in cache dir
+    docker_path = CharField(null=True) # layer's directory under /var/lib/docker
 
 MODEL_LIST = [DockerImage, DockerLayer]  # we may discover dynamically

@@ -7,6 +7,7 @@ import base64
 import json
 import hashlib
 import platform
+import tarfile
 from typing import Tuple
 from collections import OrderedDict
 
@@ -68,8 +69,9 @@ class DockerUtil:
         pass
 
     def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
-                 logger: logging.Logger = None) -> None:
+                 logger: logging.Logger = None, local_node: Node = None) -> None:
         self.storage = storage
+        self.local_node = local_node
 
         # TODO: Persist this mapping cache to disk or database
         self.diffid_mapping: dict = {}
@@ -350,6 +352,7 @@ class DockerUtil:
             size_str = await layer_size_file.read()
 
         layer.size = int(size_str.strip())
+        layer.docker_path = layer_meta_folder + '/diff'
 
         # except FileNotFoundError as e:
         #     # Actually some other layers refers to this layer
@@ -478,17 +481,17 @@ class DockerUtil:
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
 
-    async def download_layer_from_node(self, host: str, diff_id: str):
+    async def download_layer_from_node(self, host: str, digest: str):
         """
         Download layer from other node.
         """
-        save_path = self.layer_storage_path(diff_id)
+        save_path = self.layer_storage_path(digest)
         save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
-        url = host + '/docker/layers/' + diff_id
+        url = host + '/docker/layers/' + digest
 
         self.logger.debug("downloading layer from %s", url)
         await async_write_file_stream(url, save_path, timeout=60)
-        self.logger.debug("downloaded layer %s to %s", diff_id, save_path)
+        self.logger.debug("downloaded layer %s to %s", digest, save_path)
 
     async def ensure_having_layer(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally
@@ -551,6 +554,7 @@ class DockerUtil:
         if storage == 'cache-gz':
             # decompress .tar.gz
             gunzip(layer_path)
+            layer_path = layer_path.rstrip('.gz')
 
         with open(layer_path, 'rb') as tarfile:
             diff_id = hashlib.sha256(tarfile.read()).hexdigest()
@@ -628,6 +632,29 @@ class DockerUtil:
 
         rootfs = await self.get_layer_diffids_of_image(host, repository, descriptors)
 
+        # save layer records
+        chain_id = rootfs['diff_ids'][0]
+        top = True
+        for i, layer_d in enumerate(descriptors):
+            layer_ = DockerLayer()
+
+            if top:
+                top = False
+            else:
+                chain_id = self.calc_chain_id(chain_id, rootfs['diff_ids'][i])
+
+            layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
+
+            layer_.set_available_at(self.local_node.uuid.hex)
+            layer_.digest = layer_d['digest']
+            layer_.diff_id = rootfs['diff_ids'][i]
+            layer_.chain_id = chain_id
+            layer_.size = self.get_diff_size(layer_tar_path)
+            layer_.cache_path = layer_tar_path
+
+            layer_.save()
+
+        # create base of image config
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
         clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
 
@@ -826,3 +853,31 @@ class DockerUtil:
         # image.save()
 
         return config_json, config_digest, repo_digest
+    
+    def get_diff_size(self, tar_path: str) -> int:
+        """Get the total size of files in a tarball"""
+        total = 0
+        with tarfile.open(tar_path, 'r:') as tar:
+            for tarinfo in tar:
+                if tarinfo.isreg():
+                    total += tarinfo.size
+        return total
+
+    def calc_chain_id(self, parent_chain_id: str, diff_id: str)-> str:
+        """calculate chain id"""
+        string = parent_chain_id + ' ' + diff_id
+        return 'sha256:' + hashlib.sha256(string.encode('utf-8')).hexdigest()
+
+    # async def load_image(self):
+    #     # remove tar file Y or N
+    #     pass
+    # async def create_image_from_tar(self, config_path, digest_list, tags=None, repo_digests=None):
+    #     """
+    #     Collect layers, get config json, create manifest for loading image and create
+    #     image tarball
+    #     """
+    #     work_path = config.cache_dir + '/work'
+    #     if not os.path.isdir(work_path):
+    #         os.makedirs(work_path)
+
+    #     with open(config_path):

@@ -315,7 +315,7 @@ class DockerUtil:
             (DockerLayer): `layer` object
         """
 
-        layer_storage_path = self.storage + "/image/overlay2/layerdb"
+        layerdb_path = self.storage + "/image/overlay2/layerdb"
         if diffid not in self.diffid_mapping:
             self.diffid_mapping[diffid] = None
             # image.has_unknown_layers = True
@@ -347,12 +347,18 @@ class DockerUtil:
         # print("layerdb: ", layer.chain_id)
 
         # try:
-        layer_meta_folder = layer_storage_path + '/' + layer.chain_id.replace(':', '/')
+        layer_meta_folder = layerdb_path + '/' + layer.chain_id.replace(':', '/')
         async with aiofiles.open(layer_meta_folder + '/size', mode='r') as layer_size_file:
             size_str = await layer_size_file.read()
 
         layer.size = int(size_str.strip())
         layer.docker_path = layer_meta_folder + '/diff'
+
+        if digest:
+            # ignore .tar.gz
+            chache_path = self.layer_storage_path(digest).split('.gz')[0]
+            if os.path.exists(chache_path):
+                layer.cache_path = chache_path
 
         # except FileNotFoundError as e:
         #     # Actually some other layers refers to this layer

@@ -562,8 +562,8 @@ class DockerUtil:
             gunzip(layer_path)
             layer_path = layer_path.rstrip('.gz')
 
-        with open(layer_path, 'rb') as tarfile:
-            diff_id = hashlib.sha256(tarfile.read()).hexdigest()
+        with open(layer_path, 'rb') as file:
+            diff_id = hashlib.sha256(file.read()).hexdigest()
 
         return 'sha256:' + diff_id
 
@@ -651,7 +651,7 @@ class DockerUtil:
 
             layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
 
-            layer_.set_available_at(self.local_node.uuid.hex)
+            layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
             layer_.digest = layer_d['digest']
             layer_.diff_id = rootfs['diff_ids'][i]
             layer_.chain_id = chain_id
@@ -859,7 +859,7 @@ class DockerUtil:
         # image.save()
 
         return config_json, config_digest, repo_digest
-    
+
     def get_diff_size(self, tar_path: str) -> int:
         """Get the total size of files in a tarball"""
         total = 0

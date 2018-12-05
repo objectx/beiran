@@ -298,7 +298,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def delete_layer(self, diff_id_list):
+    async def delete_layer(self, diff_id_list: list)-> None:
         """
         Unset available layer
         """

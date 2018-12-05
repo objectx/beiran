@@ -8,6 +8,7 @@ from aiodocker import Docker
 from aiodocker.exceptions import DockerError
 from peewee import SQL
 
+from beiran.config import config
 from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
@@ -34,7 +35,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(storage=self.config["storage"], aiodocker=self.aiodocker,
+        self.util = DockerUtil(cache_dir=config.cache_dir + '/docker',
+                               storage=self.config["storage"], aiodocker=self.aiodocker,
                                local_node=self.node)
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()

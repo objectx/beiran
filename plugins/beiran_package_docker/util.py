@@ -19,7 +19,6 @@ from aiodocker import Docker
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
-from beiran.config import config
 from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
@@ -68,8 +67,10 @@ class DockerUtil:
         """..."""
         pass
 
-    def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
-                 logger: logging.Logger = None, local_node: Node = None) -> None:
+    def __init__(self, cache_dir: str, storage: str = "/var/lib/docker",
+                 aiodocker: Docker = None, logger: logging.Logger = None,
+                 local_node: Node = None) -> None:
+        self.cache_dir = cache_dir
         self.storage = storage
         self.local_node = local_node
 
@@ -454,7 +455,7 @@ class DockerUtil:
 
     def layer_storage_path(self, layer_hash: str)-> str:
         """Where to storage layer downloads (temporarily)"""
-        return config.cache_dir + '/layers/sha256/' + layer_hash.replace("sha256:", '') + ".tar.gz"
+        return self.cache_dir + '/layers/sha256/' + layer_hash.replace("sha256:", '') + ".tar.gz"
 
     async def download_layer_from_origin(self, host: str, repository: str,
                                          layer_hash: str, **kwargs):

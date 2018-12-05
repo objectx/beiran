@@ -270,6 +270,9 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # image_data = await self.aiodocker.images.get(name=image_id)
         image = DockerImage.get(DockerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
+
+        # unset layers
+        await self.delete_layer(image.layers)
         if image.available_at:
             image.save()
         else:
@@ -294,6 +297,20 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         #                    image_data['Id'])
 
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
+
+    async def delete_layer(self, diff_id_list):
+        """
+        Unset available layer
+        """
+        layers = DockerLayer.select() \
+                            .where(DockerLayer.diff_id.in_(diff_id_list)) \
+                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
+
+        for layer in layers:
+            layer.unset_available_at(self.node.uuid.hex)
+            layer.docker_path = None
+            layer.save()
+
 
     async def save_image(self, image_id: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):

@@ -1,12 +1,7 @@
 =============================
 How to create a Beiran Plugin
 =============================
-Before starting, please check our contribution guidelines.
-
-    - :doc:`Coding conventions <coding_style_guide>`
-    - :doc:`Git practices <git_practices>`
-    - :doc:`How to create an issue <issue>`
-
+Before starting, please check our :doc:`contribution guideline <contribution>`.
 
 Creating a Plugin
 -----------------

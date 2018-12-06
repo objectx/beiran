@@ -18,6 +18,7 @@ Welcome to Beiran's documentation!
    Configuration Guide <configuration>
    Manage Beiran Cluster <manage_cluster>
    How to contibute <contribute>
+   How to create a plugin <how_to_create_a_plugin>
    Beiran Refernece <reference>
 
    Index <genindex>

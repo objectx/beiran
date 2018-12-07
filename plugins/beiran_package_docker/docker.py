@@ -353,6 +353,13 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                        self.node.uuid.hex, image.to_dict(dialect="docker"))
 
         image.set_available_at(self.node.uuid.hex)
+
+        # save config
+        config_path = self.util.storage + '/image/overlay2/imagedb/content/sha256/' \
+                                        + image.hash_id.replace('sha256:', '')
+        with open(config_path)as file:
+            image.config = file.read()
+
         image.save(force_insert=not image_exists_in_db)
 
         if not skip_updates:

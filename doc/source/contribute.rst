@@ -79,7 +79,9 @@ type hinting
     general, it is a must for those which are supposed to be used
     by other objects or lib like objects.
 
-    please use `mypy` for type checking
+    please run `mypy` for type checking, there is a configuration file
+    named `mypy.ini` in root folder.
+
 
 
 Sign Your Commits
@@ -91,7 +93,13 @@ If you haven't done already, please configure your git client to sign
 your commits.
 
 You can find detailed guide here:
-https://docs.gitlab.com/ee/user/project/merge_requests/#adding-patches-when-creating-a-merge-request-via-e-mail
+
+https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work
+
+After configuring git client, paste your **public key** of your gpg pair
+to your gitlab profile. See here for more details:
+
+https://docs.gitlab.com/ce/user/project/repository/gpg_signed_commits/
 
 Copyright
 ---------

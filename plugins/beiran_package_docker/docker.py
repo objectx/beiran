@@ -90,7 +90,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
     async def save_layer_at_node(self, layer: DockerLayer, node: Node):
         """Save a layer from a node into db"""
         try:
-            layer_ = DockerLayer.get(DockerLayer.digest == layer.digest)
+            layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",

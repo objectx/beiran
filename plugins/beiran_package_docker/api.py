@@ -23,7 +23,6 @@ class Services:
     logger = None
     aiodocker = None
     docker_util = None
-    tar_cache_dir = "tar_cache"
     loop = None
     daemon = None
 
@@ -156,21 +155,20 @@ class LayerDownload(web.RequestHandler):
             404 if layer not found
 
         """
-        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id) # type: ignore
-        if not layer_path:
+        # layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id) # type: ignore
+
+        try:
+            layer = DockerLayer.select().where(DockerLayer.digest == layer_id).get()
+        except DockerLayer.DoesNotExist:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
-        tar_path = "{cache_dir}/{cache_tar_name}" \
-            .format(cache_dir=Services.tar_cache_dir,
-                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id)) # type: ignore
+        if not layer.cache_path:
+            layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0]
+            if not os.path.isfile(layer.cache_path):
+                create_tar_archive(layer.docker_path, layer.cache_path)
+            layer.save()
 
-        if not os.path.isdir(Services.tar_cache_dir):
-            os.makedirs(Services.tar_cache_dir)
-
-        if not os.path.isfile(tar_path):
-            create_tar_archive(layer_path, tar_path)
-
-        return tar_path
+        return layer.cache_path
 
     # pylint: disable=arguments-differ
     def head(self, layer_id: str):

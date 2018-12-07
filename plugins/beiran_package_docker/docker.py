@@ -40,7 +40,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                                local_node=self.node)
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
-        self.tar_cache_dir = "tar_cache"
         self.probe_task = None
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST

@@ -47,8 +47,7 @@ package:docs:
     paths:
     - doc/
   only:
-    variables:
-    - $CI_COMMIT_REF_NAME =~ dev-[0-9]\.[0-9]\.[0-9]
+  - /^dev-.*&/
 
 publish:docs:
   stage: publish
@@ -67,8 +66,7 @@ publish:docs:
     paths:
     - doc/
   only:
-    variables:
-    - $CI_COMMIT_REF_NAME =~ dev-[0-9]\.[0-9]\.[0-9]
+  - /^dev-.*&/
 
 checks:lint-beiran:
   stage: checks

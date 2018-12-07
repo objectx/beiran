@@ -236,6 +236,7 @@ cleanup:services:
    - docker-compose logs
    - docker-compose kill || true
    - docker-compose rm -f
+   - docker network rm beirantest-${CI_PIPELINE_ID}_test
    - cd /
    - rm -rf /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
 

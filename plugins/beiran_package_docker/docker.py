@@ -27,7 +27,7 @@ PLUGIN_TYPE = 'package'
 class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict) -> None: # pylint: disable=redefined-outer-name
         super().__init__({
             "storage": "/var/lib/docker",
             **config

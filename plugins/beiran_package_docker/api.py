@@ -163,7 +163,7 @@ class LayerDownload(web.RequestHandler):
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         if not layer.cache_path:
-            layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0]
+            layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0] # type: ignore # pylint: disable=line-too-long
             if not os.path.isfile(layer.cache_path):
                 create_tar_archive(layer.docker_path, layer.cache_path)
             layer.save()

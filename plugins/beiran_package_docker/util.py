@@ -67,7 +67,7 @@ class DockerUtil:
         """..."""
         pass
 
-    def __init__(self, cache_dir: str, storage: str = "/var/lib/docker",
+    def __init__(self, cache_dir: str, storage: str = "/var/lib/docker", # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir

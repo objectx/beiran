@@ -71,6 +71,11 @@ class DockerUtil:
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir
+
+        layer_chache_dir = self.cache_dir + '/layers/sha256'
+        if not os.path.isdir(layer_chache_dir):
+            os.makedirs(layer_chache_dir)
+
         self.storage = storage
         self.local_node = local_node
 

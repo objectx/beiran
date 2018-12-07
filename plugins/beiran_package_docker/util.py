@@ -353,7 +353,11 @@ class DockerUtil:
             size_str = await layer_size_file.read()
 
         layer.size = int(size_str.strip())
-        layer.docker_path = layer_meta_folder + '/diff'
+        cache_id_path = layer_meta_folder + '/cache-id'
+
+        with open(cache_id_path)as file:
+            local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
+            layer.docker_path = local_layer_dir.format(layer_dir_name=file.read())
 
         if digest:
             # ignore .tar.gz

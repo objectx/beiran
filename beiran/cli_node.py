@@ -71,7 +71,7 @@ def node_info(ctx, uuid: str):
 
 
 @cli.command('probe')
-@click.argument('address', required=False)
+@click.argument('address', required=True)
 @click.pass_obj
 @pass_context
 def node_probe(ctx, address: str):

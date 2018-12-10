@@ -2,5 +2,7 @@
 Manage Beiran Cluster
 =====================
 
-.. TODO::
-  this page is coming soon!
+.. click:: beiran.cli:main
+   :prog: beiran
+   :show-nested:
+

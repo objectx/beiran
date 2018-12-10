@@ -20,17 +20,17 @@ create an issue to report a bug, make a feature request or start any kind
 of technical discussions. You can access Issue Dashboard by visiting
 address below:
 
-https://gitlab.com/beiran/beiran/issues
+|beiran_issues|
 
 You can join our email list to follow and join design and implementation
 discussions. You can ask your questions to get help. Please subscribe it
 by sending an email to:
 
-subscribe+developers@lists.beiran.io
+|email_list_subscribe_link|
 
 Where is the source code?
 -------------------------
-Here it is: https://gitlab.com/beiran/beiran. Please fork it and start coding!
+Here it is: |beiran_gitlab_main|. Please fork it and start coding!
 
 We accept code contributions via Merge Requests. It is very similar with github's
 pull requests. Simply you should do:

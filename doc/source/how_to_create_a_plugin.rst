@@ -1,7 +1,7 @@
 =============================
 How to create a Beiran Plugin
 =============================
-Before starting, please check our :doc:`contribution guideline <contribution>`.
+Before starting, please check our :doc:`contribution guideline <contribute>`.
 
 Creating a Plugin
 -----------------

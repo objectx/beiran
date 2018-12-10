@@ -40,7 +40,9 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
               'sphinx.ext.autodoc',
-              'sphinxcontrib.napoleon']
+              'sphinxcontrib.napoleon',
+              'sphinx_click.ext',
+             ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

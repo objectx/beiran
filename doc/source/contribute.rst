@@ -101,11 +101,11 @@ type hinting
     The command above gives no output if there is nothing wrong.
 
 
-Git Forkflow
+Git Workflow
 ------------
 Please create a topic branch using an explicit name including issue number::
 
-    $ git checkuot -b 258-build-docs-using-gitlab-ci
+    $ git checkout -b 258-build-docs-using-gitlab-ci
 
 Change the code and commit them with a message explaining enough::
 

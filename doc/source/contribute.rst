@@ -22,6 +22,10 @@ address below:
 
 |beiran_issues|
 
+You need to create an account on |beiran_gitlab_main|. It's easy. Click
+**Sign in / Register** button. Fill the registration form. Approve your
+email address. That's it.
+
 You can join our email list to follow and join design and implementation
 discussions. You can ask your questions to get help. Please subscribe it
 by sending an email to:
@@ -58,7 +62,7 @@ Beiran is written in Python. We follow some general coding conventions which
 is known and used widely in Python communities.
 
 pep8
-    Please follow pep8 rules.
+    Please follow pep8 rules. See here: https://www.python.org/dev/peps/pep-0008/
 
 documentation
     We use sphinx to generate documentation. Do not forget inline docstrings.
@@ -66,9 +70,19 @@ documentation
     to learn how to write docstrings:
     http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 
+    Or browse the samples through current source code.
+
 pylint
     check your code with **pylint** using our `.pylintrc` configuration
     file which can be found in root folder of project.
+
+    All you need to do is run `pylint` and check the console output for results::
+
+        $ pylint beiran/
+
+        -------------------------------------------------------------------
+        Your code has been rated at 10.00/10 (previous run: 8.88/10, +1.12)
+
 
 requirements
     if you use a new 3rd party library, please do not forget adding
@@ -77,12 +91,28 @@ requirements
 type hinting
     please add type hints to your objects as much as possible in
     general, it is a must for those which are supposed to be used
-    by other objects or lib like objects.
+    by other objects or the ones in lib modules.
 
     please run `mypy` for type checking, there is a configuration file
-    named `mypy.ini` in root folder.
+    named `mypy.ini` in root folder::
+
+        $ mypy beiran/
+
+    The command above gives no output if there is nothing wrong.
 
 
+Git Forkflow
+------------
+Please create a topic branch using an explicit name including issue number::
+
+    $ git checkuot -b 258-build-docs-using-gitlab-ci
+
+Change the code and commit them with a message explaining enough::
+
+    $ git add docs/source/contribute.rst
+    $ git add ..   # other changes
+    $ git commit -S -m 'documentation, adds new page, how to create plugin'
+    $ git push -u origin 258-build-docs-using-gitlab-ci
 
 Sign Your Commits
 -----------------
@@ -97,7 +127,11 @@ You can find detailed guide here:
 https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work
 
 After configuring git client, paste your **public key** of your gpg pair
-to your gitlab profile. See here for more details:
+to your gitlab profile:
+
+|beiran_gitlab_gpg|
+
+See here for more details:
 
 https://docs.gitlab.com/ce/user/project/repository/gpg_signed_commits/
 

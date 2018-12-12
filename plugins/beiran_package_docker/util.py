@@ -22,7 +22,7 @@ from beiran.models import Node
 from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
-from .image_ref import normalize_ref
+from .image_ref import normalize_ref, is_tag
 
 
 LOGGER = build_logger()
@@ -40,7 +40,7 @@ async def aio_isdir(path: str):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 
-class DockerUtil:
+class DockerUtil: # pylint: disable=too-many-instance-attributes
     """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):
@@ -67,14 +67,18 @@ class DockerUtil:
         """..."""
         pass
 
+    class ConfigError(Exception):
+        """..."""
+        pass
+
     def __init__(self, cache_dir: str, storage: str = "/var/lib/docker", # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir
 
-        layer_chache_dir = self.cache_dir + '/layers/sha256'
-        if not os.path.isdir(layer_chache_dir):
-            os.makedirs(layer_chache_dir)
+        self.layer_chache_dir = self.cache_dir + '/layers/sha256'
+        if not os.path.isdir(self.layer_chache_dir):
+            os.makedirs(self.layer_chache_dir)
 
         self.storage = storage
         self.local_node = local_node
@@ -397,7 +401,7 @@ class DockerUtil:
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=10, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
@@ -578,7 +582,7 @@ class DockerUtil:
         return 'sha256:' + diff_id
 
     async def download_config_from_origin(self, host: str, repository: str,
-                                          image_id: str, **kwargs) -> dict:
+                                          image_id: str, **kwargs) -> str:
         """
         Download config file of docker image and save it to database.
         """
@@ -589,22 +593,21 @@ class DockerUtil:
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=10, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp, data = await async_req(url=url, return_json=True, Authorization=requirements)
+            resp, _ = await async_req(url=url, Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
                                                   % resp.status)
-
-        return data
+        return await resp.text(encoding='utf-8')
 
     async def fetch_config_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
-                                     manifest: dict) -> Tuple[dict, str, str]:
+                                     manifest: dict) -> Tuple[str, str, str]:
         """
         Pull image using image manifest version 1
         """
@@ -670,6 +673,8 @@ class DockerUtil:
 
             layer_.save()
 
+            self.diffid_mapping[rootfs['diff_ids'][i]] = layer_d['digest']
+
         # create base of image config
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
         clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
@@ -691,27 +696,30 @@ class DockerUtil:
 
         config_digest = 'sha256:' + hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
 
-        return config_json, config_digest, repo_digest
+        return config_json_str, config_digest, repo_digest
 
 
     async def fetch_config_schema_v2(self, host: str, repository: str,
-                                     manifest: dict)-> Tuple[dict, str, str]:
+                                     manifest: dict)-> Tuple[str, str, str]:
         """
         Pull image using image manifest version 2
         """
         config_digest = manifest['config']['digest']
-        config_json = await self.download_config_from_origin(
+        config_json_str = await self.download_config_from_origin(
             host, repository, config_digest
         )
 
         manifest_str = json.dumps(manifest, indent=3)
         repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
 
-        return config_json, config_digest, repo_digest
+        # set mapping
+        for i, diff_id in enumerate(json.loads(config_json_str)['rootfs']['diff_ids']):
+            self.diffid_mapping[diff_id] = manifest['layers'][i]['digest']
 
+        return config_json_str, config_digest, repo_digest
 
     async def fetch_config_manifest_list(self, host: str, repository: str,
-                                         manifestlist: dict)-> Tuple[dict, str, str]:
+                                         manifestlist: dict)-> Tuple[str, str, str]:
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
@@ -735,14 +743,14 @@ class DockerUtil:
 
         if schema_v == 1:
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, _ = await self.fetch_config_schema_v1(
+            config_json_str, config_digest, _ = await self.fetch_config_schema_v1(
                 host, repository, manifest
             )
 
         elif schema_v == 2:
             if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
                 # pull layers using version 2 manifest
-                config_json, config_digest, _ = await self.fetch_config_schema_v2(
+                config_json_str, config_digest, _ = await self.fetch_config_schema_v2(
                     host, repository, manifest
                 )
             else:
@@ -753,7 +761,7 @@ class DockerUtil:
         manifestlist_str = json.dumps(manifestlist, indent=3)
         repo_digest = 'sha256:' + hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest()
 
-        return config_json, config_digest, repo_digest
+        return config_json_str, config_digest, repo_digest
 
 
 
@@ -814,13 +822,9 @@ class DockerUtil:
 
         try:
             image = DockerImage.get_image_data(tag)
-            config_path = self.storage + '/image/overlay2/imagedb/content/sha256/' \
-                                       + image.hash_id.replace('sha256:', '')
-            content = ""
-            with open(config_path)as file:
-                content = file.read()
-
-            return json.loads(content), image.hash_id, image.repo_digests[0].split('@')[1]
+            if image.repo_digests:
+                return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
+            return image.config, image.hash_id, None
 
         except (DockerImage.DoesNotExist, FileNotFoundError):
             pass
@@ -837,7 +841,7 @@ class DockerUtil:
         if schema_v == 1:
 
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, repo_digest = await self.fetch_config_schema_v1(
+            config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v1(
                 ref['domain'], ref['repo'], manifest
             )
 
@@ -847,14 +851,14 @@ class DockerUtil:
             if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
 
                 # pull layers using version 2 manifest
-                config_json, config_digest, repo_digest = await self.fetch_config_schema_v2(
+                config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v2(
                     ref['domain'], ref['repo'], manifest
                 )
 
             elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
 
                 # pull_schema_list
-                config_json, config_digest, repo_digest = await self.fetch_config_manifest_list(
+                config_json_str, config_digest, repo_digest = await self.fetch_config_manifest_list(
                     ref['domain'], ref['repo'], manifest
                 )
 
@@ -868,7 +872,7 @@ class DockerUtil:
         # image.config = config_json
         # image.save()
 
-        return config_json, config_digest, repo_digest
+        return config_json_str, config_digest, repo_digest
 
     def get_diff_size(self, tar_path: str) -> int:
         """Get the total size of files in a tarball"""
@@ -884,16 +888,68 @@ class DockerUtil:
         string = parent_chain_id + ' ' + diff_id
         return 'sha256:' + hashlib.sha256(string.encode('utf-8')).hexdigest()
 
-    # async def load_image(self):
-    #     # remove tar file Y or N
-    #     pass
-    # async def create_image_from_tar(self, config_path, digest_list, tags=None, repo_digests=None):
-    #     """
-    #     Collect layers, get config json, create manifest for loading image and create
-    #     image tarball
-    #     """
-    #     work_path = config.cache_dir + '/work'
-    #     if not os.path.isdir(work_path):
-    #         os.makedirs(work_path)
+    async def create_image_from_tar(self, tag_or_digest: str, config_json_str: str,
+                                    image_id: str)-> str:
+        """
+        Collect layers, download or create config json, create manifest for loading image
+        and create image tarball
+        """
+        work_path = self.cache_dir + '/work'
+        if not os.path.isdir(work_path):
+            os.makedirs(work_path)
 
-    #     with open(config_path):
+        image_id = image_id.split('sha256:')[1]
+
+        config_digest = hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
+        if config_digest != image_id:
+            raise DockerUtil.ConfigError(
+                'Invalid config. The digest is wrong (expect: %s, actual: %s)'
+                % (image_id, config_digest))
+
+        # create config file
+        config_file_name = image_id + '.json'
+        with open(work_path + '/' + config_file_name, 'w')as file:
+            file.write(config_json_str)
+
+        # get layer files
+        digest_f_name_list = [
+            self.diffid_mapping[diff_id].split('sha256:')[1] + '.tar'
+            for diff_id in json.loads(config_json_str)['rootfs']['diff_ids']
+        ]
+
+        # create manifest
+        manifest = [
+            {
+                "Config": config_file_name,
+                "RepoTags": [tag_or_digest] if is_tag(tag_or_digest) else None,
+                "Layers": digest_f_name_list,
+            }
+        ]
+        with open(work_path + '/' + 'manifest.json', 'w')as file:
+            file.write(json.dumps(manifest))
+
+        # create tarball
+        tar_path = work_path + '/' + 'image.tar'
+        with tarfile.open(tar_path, 'w')as tar:
+            tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
+            tar.add(work_path + '/' + 'manifest.json', arcname='manifest.json')
+            for f_name in digest_f_name_list:
+                tar.add(self.layer_chache_dir + '/' + f_name, arcname=f_name)
+
+        return tar_path
+
+    async def load_image(self, tar_path: str):
+        """
+        Load image tarball.
+        """
+        self.logger.debug("loading image...")
+        # load image
+        tar_data = bytes()
+        with open(tar_path, mode='rb') as file:
+            while True:
+                chunk = file.read(51200)
+                if not chunk:
+                    break
+                tar_data += chunk
+
+        await self.aiodocker.images.import_image(data=tar_data, stream=True)

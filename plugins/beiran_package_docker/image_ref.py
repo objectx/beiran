@@ -99,6 +99,13 @@ def is_digest(string: str):
         return True
     return False
 
+def is_tag(string: str):
+    """Judge whether or not string is tag.
+    """
+    if ":" in string:
+        return True
+    return False
+
 # def is_id(string: str):
 #     """Judge whether or not string is image id.
 #     """

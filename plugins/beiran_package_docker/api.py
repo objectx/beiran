@@ -109,11 +109,11 @@ class ImageConfigHandler(web.RequestHandler):
         self.set_header("Content-Type", "application/json")
 
         image_identifier = image_identifier.rstrip('/config')
-        config, image_id, repo_digest = \
+        config_str, image_id, repo_digest = \
             await Services.docker_util.create_or_download_config(image_identifier)
 
         dict_ = {
-            'config': config,
+            'config': json.loads(config_str),
             'image_id': image_id,
             'repo_digest': repo_digest
         }

@@ -17,7 +17,12 @@ sys.stdout = Unbuffered(sys.stdout)  #type: ignore
 
 @click.group()
 def cli():
-    """cli command set of node itself."""
+    """Node operations.
+
+    List nodes in cluster, learn information about them.
+
+    Please see sub-commands help.
+    """
     pass
 
 
@@ -25,7 +30,7 @@ def cli():
 @click.pass_obj
 @pass_context
 def version(ctx):
-    """prints the versions of each component"""
+    """Prints the versions of components of current node."""
     print("CLI Version: " + VERSION)
     print("Library Version: " + get_version('short', 'library'))
     print("Server Socket: " + ctx.beiran_url)
@@ -35,13 +40,17 @@ def version(ctx):
         exit_print(1, "Cannot connect to server")
 
 
-@cli.command('list')
+@cli.command('list', short_help="List cluster nodes")
 @click.option('--all', 'all_nodes', default=False, is_flag=True,
               help='List all known nodes (including offline ones)')
 @click.pass_obj
 @pass_context
 def node_list(ctx, all_nodes: bool):
-    """List known beiran nodes"""
+    """List known beiran nodes.
+
+    Use `--all` options to include offline ones.
+    """
+
     nodes = ctx.beiran_client.get_nodes(all_nodes=all_nodes)
     table = []
     for node_ in nodes:
@@ -54,12 +63,19 @@ def node_list(ctx, all_nodes: bool):
     print(tabulate(table, headers=["UUID", "IP:Port", "Version", "Status?"]))
 
 
-@cli.command('info')
+@cli.command('info', short_help="Print node details")
 @click.argument('uuid', required=False)
 @click.pass_obj
 @pass_context
 def node_info(ctx, uuid: str):
-    """Show information about node"""
+    """Prints detailed information of specified node,
+    the current node, if no one is specified.
+
+    Specify node by providing node's UUID:
+
+    beiran node info <UUID>
+    """
+
     info = ctx.beiran_client.get_node_info(uuid)
     table = []
     for key, value in info.items():
@@ -70,11 +86,42 @@ def node_info(ctx, uuid: str):
     print(tabulate(table, headers=["Item", "Value"]))
 
 
-@cli.command('probe')
+@cli.command('probe', short_help="Probe a non-discovered node")
 @click.argument('address', required=True)
 @click.pass_obj
 @pass_context
 def node_probe(ctx, address: str):
-    """Probe a non-discovered node"""
+    """Probe a non-discovered node.
+
+    Probing node is useful when you need a manual discovery.
+
+    'address' is required argument and it is the beiran url of the node which will be probed.
+    All the following formats are supported.
+
+    \b
+    node probe http://10.0.1.108:8888
+    node probe beiran+http://10.0.1.108:8888
+    node probe http://10.0.1.108          # default port is used
+    node probe beiran+http://10.0.1.108   # default port is used
+
+    """
     info = ctx.beiran_client.probe_node(address)
     print(info)
+
+
+@cli.command("start_daemon")
+@click.pass_obj
+@pass_context
+def start_daemon(ctx):
+    """Starts the beiran daemon on current node.
+
+    If you need, please specify --config as below:
+
+    beiran --config /path/to/config.toml node start_daemon
+
+    """
+    from beiran.daemon.main import BeiranDaemon
+    from beiran.daemon.common import Services
+
+    Services.daemon = BeiranDaemon()  # type: ignore
+    Services.daemon.run()  # type: ignore

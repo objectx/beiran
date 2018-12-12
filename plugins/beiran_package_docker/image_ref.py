@@ -119,11 +119,23 @@ def add_default_tag(name: str) -> str:
         return name
     return name + ":" + DEFAULT_TAG
 
-def add_id_prefix(image_id: str) -> str:
-    """Return sha256:<image id>"""
-    if image_id.startswith(ID_PREFIX):
-        return image_id
-    return ID_PREFIX + image_id
+def add_idpref(image_or_layer_id: str) -> str:
+    """Return sha256:<image or layer id>"""
+    if image_or_layer_id.startswith(ID_PREFIX):
+        return image_or_layer_id
+    return ID_PREFIX + image_or_layer_id
+
+def del_idpref(image_or_layer_id: str) -> str:
+    """
+    Args:
+        image_or_layer_id (str): 'sha256:<image or layer id>'
+
+    Return:
+        <image or layer id> (str)
+    """
+    if not image_or_layer_id.startswith(ID_PREFIX):
+        return image_or_layer_id
+    return image_or_layer_id.split(ID_PREFIX)[1]
 
 def marshal(domain: str, repo: str, sign: str, suffix: str) -> str:
     """

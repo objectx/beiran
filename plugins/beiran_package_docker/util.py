@@ -22,7 +22,7 @@ from beiran.models import Node
 from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
-from .image_ref import normalize_ref, is_tag
+from .image_ref import normalize_ref, is_tag, add_idpref, del_idpref
 
 
 LOGGER = build_logger()
@@ -126,7 +126,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
         local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
 
-        f_path = local_digest_dir + "/{}".format(sha.replace('sha256:', '', 1))
+        f_path = local_digest_dir + "/{}".format(del_idpref(sha))
 
         try:
             file = open(f_path, 'r')
@@ -246,7 +246,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         try:
             for filename in await aio_dirlist(mapping_dir):
-                digest = 'sha256:' + filename
+                digest = add_idpref(filename)
                 if digest in cached_digests:
                     continue
 
@@ -281,7 +281,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         try:
             for filename in await aio_dirlist(layerdb_path):
-                chain_id = 'sha256:' + filename
+                chain_id = add_idpref(filename)
                 if chain_id in cached_chain_ids:
                     continue
 
@@ -362,11 +362,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             size_str = await layer_size_file.read()
 
         layer.size = int(size_str.strip())
-        cache_id_path = layer_meta_folder + '/cache-id'
 
-        with open(cache_id_path)as file:
-            local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
-            layer.docker_path = local_layer_dir.format(layer_dir_name=file.read())
+        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
+        layer.docker_path = local_layer_dir.format(
+            layer_dir_name=self.get_cache_id_from_chain_id(layer.chain_id))
 
         if digest:
             # ignore .tar.gz
@@ -382,6 +381,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         #     print(" -- Result: Cannot find layer folder")
         #     image.layers.append("<not-found>")
         return layer
+
+    def get_cache_id_from_chain_id(self, chain_id: str)-> str:
+        """Read cache id file and return the content (cache id)"""
+        with open(self.storage + '/image/overlay2/layerdb/' + \
+                  chain_id.replace(':', '/') + '/cache-id') as file:
+            return file.read()
 
     async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> dict:
         """
@@ -468,7 +473,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
     def layer_storage_path(self, layer_hash: str)-> str:
         """Where to storage layer downloads (temporarily)"""
-        return self.cache_dir + '/layers/sha256/' + layer_hash.replace("sha256:", '') + ".tar.gz"
+        return self.layer_chache_dir + '/' + del_idpref(layer_hash) + ".tar.gz"
 
     async def download_layer_from_origin(self, host: str, repository: str,
                                          layer_hash: str, **kwargs):
@@ -539,7 +544,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
             # check local storage
             layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" \
-                                        + layer.chain_id.replace('sha256:', '')
+                                        + del_idpref(layer.chain_id)
             if os.path.exists(layerdb_path):
                 cache_id = ""
                 with open(layerdb_path + '/cache-id')as file:
@@ -579,7 +584,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         with open(layer_path, 'rb') as file:
             diff_id = hashlib.sha256(file.read()).hexdigest()
 
-        return 'sha256:' + diff_id
+        return add_idpref(diff_id)
 
     async def download_config_from_origin(self, host: str, repository: str,
                                           image_id: str, **kwargs) -> str:
@@ -655,25 +660,26 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         chain_id = rootfs['diff_ids'][0]
         top = True
         for i, layer_d in enumerate(descriptors):
-            layer_ = DockerLayer()
+            # layer_ = DockerLayer()
 
             if top:
                 top = False
             else:
                 chain_id = self.calc_chain_id(chain_id, rootfs['diff_ids'][i])
 
-            layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
+            # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
 
-            layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
-            layer_.digest = layer_d['digest']
-            layer_.diff_id = rootfs['diff_ids'][i]
-            layer_.chain_id = chain_id
-            layer_.size = self.get_diff_size(layer_tar_path)
-            layer_.cache_path = layer_tar_path
+            # layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
+            # layer_.digest = layer_d['digest']
+            # layer_.diff_id = rootfs['diff_ids'][i]
+            # layer_.chain_id = chain_id
+            # layer_.size = self.get_diff_size(layer_tar_path)
+            # layer_.cache_path = layer_tar_path
 
-            layer_.save()
+            # layer_.save()
 
             self.diffid_mapping[rootfs['diff_ids'][i]] = layer_d['digest']
+            self.layerdb_mapping[rootfs['diff_ids'][i]] = chain_id
 
         # create base of image config
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
@@ -685,7 +691,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         # calc RepoDigest
         del manifest['signatures']
         manifest_str = json.dumps(manifest, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
+        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
 
         # replace, shape, then calc digest
         config_json = OrderedDict(sorted(config_json.items(), key=lambda x: x[0]))
@@ -694,7 +700,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                          .replace('<', r'\u003c') \
                                          .replace('>', r'\u003e')
 
-        config_digest = 'sha256:' + hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
+        config_digest = add_idpref(hashlib.sha256(config_json_str.encode('utf-8')).hexdigest())
 
         return config_json_str, config_digest, repo_digest
 
@@ -710,11 +716,23 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         )
 
         manifest_str = json.dumps(manifest, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
+        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
 
         # set mapping
-        for i, diff_id in enumerate(json.loads(config_json_str)['rootfs']['diff_ids']):
+        diff_id_list = json.loads(config_json_str)['rootfs']['diff_ids']
+
+        chain_id = diff_id_list[0]
+        top = True
+        for i, diff_id in enumerate(diff_id_list):
+            if top:
+                top = False
+            else:
+                chain_id = self.calc_chain_id(chain_id, diff_id_list[i])
             self.diffid_mapping[diff_id] = manifest['layers'][i]['digest']
+            self.layerdb_mapping[diff_id] = chain_id
+
+        # download layers
+        await self.get_layer_diffids_of_image(host, repository, manifest['layers'])
 
         return config_json_str, config_digest, repo_digest
 
@@ -759,7 +777,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         manifestlist_str = json.dumps(manifestlist, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest()
+        repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
 
         return config_json_str, config_digest, repo_digest
 
@@ -886,9 +904,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     def calc_chain_id(self, parent_chain_id: str, diff_id: str)-> str:
         """calculate chain id"""
         string = parent_chain_id + ' ' + diff_id
-        return 'sha256:' + hashlib.sha256(string.encode('utf-8')).hexdigest()
+        return add_idpref(hashlib.sha256(string.encode('utf-8')).hexdigest())
 
-    async def create_image_from_tar(self, tag_or_digest: str, config_json_str: str,
+    async def create_image_from_tar(self, tag_or_digest: str, config_json_str: str, # pylint: disable=too-many-locals
                                     image_id: str)-> str:
         """
         Collect layers, download or create config json, create manifest for loading image
@@ -898,7 +916,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         if not os.path.isdir(work_path):
             os.makedirs(work_path)
 
-        image_id = image_id.split('sha256:')[1]
+        image_id = del_idpref(image_id)
 
         config_digest = hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
         if config_digest != image_id:
@@ -912,9 +930,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             file.write(config_json_str)
 
         # get layer files
+        diff_id_list = json.loads(config_json_str)['rootfs']['diff_ids']
         digest_f_name_list = [
-            self.diffid_mapping[diff_id].split('sha256:')[1] + '.tar'
-            for diff_id in json.loads(config_json_str)['rootfs']['diff_ids']
+            del_idpref(self.diffid_mapping[diff_id]) + '.tar'
+            for diff_id in diff_id_list
         ]
 
         # create manifest
@@ -933,7 +952,18 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         with tarfile.open(tar_path, 'w')as tar:
             tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
             tar.add(work_path + '/' + 'manifest.json', arcname='manifest.json')
-            for f_name in digest_f_name_list:
+
+            for i, f_name in enumerate(digest_f_name_list):
+                # If the layer is already in docker storage but the tarball isn't
+                # in cache directory, create tarball from entity of layer
+                if not os.path.exists(self.layer_chache_dir + '/' + f_name):
+                    with tarfile.open(self.layer_chache_dir + '/' + f_name, "w") as layer_tar:
+                        chain_id = self.layerdb_mapping[diff_id_list[i]]
+
+                        layer_tar.add(
+                            self.storage + '/overlay2/{layer_dir_name}/diff'.format(
+                                layer_dir_name=self.get_cache_id_from_chain_id(chain_id)))
+
                 tar.add(self.layer_chache_dir + '/' + f_name, arcname=f_name)
 
         return tar_path

@@ -7,7 +7,7 @@ from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 from beiran.daemon.common import Services
 
-from .image_ref import add_default_tag, is_digest, add_id_prefix
+from .image_ref import add_default_tag, is_digest, add_idpref
 
 class CommonDockerObjectFunctions:
     """..."""
@@ -146,7 +146,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             except DockerImage.DoesNotExist:
                 # search with hash_id
                 images = cls.select().where((SQL('hash_id LIKE \'%s%%\'' %
-                                                 add_id_prefix(image_identifier))))
+                                                 add_idpref(image_identifier))))
 
                 # if found 0 or a few images
                 if len(images) != 1:

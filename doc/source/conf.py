@@ -31,6 +31,10 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
+from sphinx.ext import autodoc
+
+
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
               'sphinx.ext.intersphinx',
@@ -213,3 +217,30 @@ rst_epilog = """
 .. |beiran_gitlab_main| replace:: https://gitlab.beiran.io
 .. |beiran_gitlab_gpg| replace:: https://gitlab.beiran.io/profile/gpg_keys
 """
+
+# https://stackoverflow.com/questions/7825263/including-docstring-in-sphinx-documentation
+class SimpleDocumenter(autodoc.MethodDocumenter):
+    """
+    SimpleDocumenter includes only docstrings of specified object.
+
+    Usage:
+        .. autosimple:: mod.MyClass.my_method
+
+    """
+    objtype = "simple"
+
+    # do not indent the content
+    content_indent = u"    "
+
+    # do not add a header to the docstring
+    def add_directive_header(self, sig):
+        pass
+
+    def format_args(self):
+        return None
+
+
+# add SimpleDocumenter to available documenters.
+def setup(app):
+    app.add_autodocumenter(SimpleDocumenter)
+

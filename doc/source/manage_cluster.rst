@@ -84,6 +84,96 @@ Please see :doc:`configuration <configuration>` for details.
 
 Node Operations
 ---------------
-Listing nodes is one of the most used commands. It is easy:
+
+Listing Cluster Nodes
++++++++++++++++++++++
+Listing nodes is one of the most used commands. It is easy::
+
     $ beiran node list
+    UUID                              IP:Port          Version    Status?
+    --------------------------------  ---------------  ---------  ---------
+    84ae8786b9244c4fa53ecf0ca75e922d  172.18.0.4:8888  0.0.8d     ready
+    b878fb07bb21449a85b6b108b48c11b6  172.18.0.3:8888  0.0.8d     online
+    1a28428bf4e74901bbfabf9fec808e00  172.18.0.2:8888  0.0.8d     online
+    1c5caefbfb114d7495da01f82bfcf113  172.18.0.5:8888  0.0.8d     online
+    
+
+UUID is the unique identifier of each node.
+
+Status column indicates the current status of nodes. Status can be one of the
+following: ``new``, ``init``, ``ready``, ``online``, ``offline``, ``connecting``,
+``syncing``, ``closing``, ``lost``, ``unknown``.
+
+Although ``ready`` means ``online``, it is there to distinguish the node on which 
+you are and running the command.
+
+Please see ``beiran.models.Node`` object in beiran reference for futher details.
+
+Node Information
+++++++++++++++++
+You can get information about any node with help of ``info`` sub-command::
+    
+    $ beiran node info b878fb07bb21449a85b6b108b48c11b6
+    Item               Value
+    -----------------  ------------------------------------------
+    uuid               b878fb07bb21449a85b6b108b48c11b6
+    hostname           02a381c2e904
+    ip_address         172.18.0.3
+    ip_address_6
+    port               8888
+    os_type            Linux
+    os_version         #1 SMP PREEMPT Sat Dec 8 13:49:11 UTC 2018
+    architecture       x86_64
+    version            0.0.8d
+    status             online
+    last_sync_version  2
+    address            beiran+http://172.18.0.3:8888
+    
+If you do not specift a node UUID, it print outs the information of current node::
+
+    $ beiran node info
+    Item               Value
+    -----------------  --------------------------------------------------------------
+    uuid               84ae8786b9244c4fa53ecf0ca75e922d
+    hostname           bb6536043849
+    ip_address         172.18.0.4
+    ip_address_6
+    port               8888
+    os_type            Linux
+    os_version         #1 SMP PREEMPT Sat Dec 8 13:49:11 UTC 2018
+    architecture       x86_64
+    version            0.0.8d
+    status             ready
+    last_sync_version  2
+    address            beiran+http://172.18.0.4:8888#84ae8786b9244c4fa53ecf0ca75e922d
+
+
+Version of Node Components
+++++++++++++++++++++++++++
+Sometimes you want to know the versions of beiran and its components to
+verify installation or while investigating a problem::
+
+    $ beiran node version
+    CLI Version: 0.0.8d
+    Library Version: 0.0.8d
+    Server Socket: http+unix:///var/run/beirand.sock
+    Daemon Version: 0.0.8d
+
+This command is also useful to check berian node after fresh installation.
+
+Probe Node
+++++++++++
+Manually probing node is necessary when things go wrong. Generally, **Beiran**
+nodes should be able to discover themselves automatically and it musn't require
+any manual intervention.
+
+It is not only in case of a failure, also in some test / development cases,
+manually probing a node can be necessary. In these cases you can use probe
+sub-command, such below::
+
+    $ beiran node probe beiran+http://172.18.0.4:8888
+    Node is already synchronized!
+
+    $ beiran node probe beiran+http://172.18.0.4:8888
+    Status: OK
 

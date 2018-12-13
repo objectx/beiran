@@ -112,7 +112,7 @@ def node_probe(ctx, address: str):
 @cli.command("start_daemon")
 @click.pass_obj
 @pass_context
-def start_daemon(ctx):
+def start_daemon():
     """Starts the beiran daemon on current node.
 
     If you need, please specify --config as below:

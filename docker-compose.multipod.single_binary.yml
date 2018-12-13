@@ -16,7 +16,8 @@ services:
       - pod1
     network_mode: "service:pod1"
   beiran1:
-    image: dkr.beiran.io/beiran/beiran:dev
+    image: dkr.beiran.io/beiran/beiran:alpine-single-binary
+    command:  [ "--start_daemon" ]
     volumes_from:
       - pod1
     network_mode: "service:pod1"
@@ -42,7 +43,8 @@ services:
       - pod2
     network_mode: "service:pod2"
   beiran2:
-    image: dkr.beiran.io/beiran/beiran:dev
+    image: dkr.beiran.io/beiran/beiran:alpine-single-binary
+    command:  [ "--start_daemon" ]
     volumes_from:
       - pod2
     network_mode: "service:pod2"
@@ -68,7 +70,8 @@ services:
       - pod3
     network_mode: "service:pod3"
   beiran3:
-    image: dkr.beiran.io/beiran/beiran:dev
+    image: dkr.beiran.io/beiran/beiran:alpine-single-binary
+    command:  [ "--start_daemon" ]
     volumes_from:
       - pod3
     network_mode: "service:pod3"
@@ -93,7 +96,8 @@ services:
       - pod4
     network_mode: "service:pod4"
   beiran4:
-    image: dkr.beiran.io/beiran/beiran:dev
+    image: dkr.beiran.io/beiran/beiran:alpine-single-binary
+    command:  [ "--start_daemon" ]
     volumes_from:
       - pod4
     network_mode: "service:pod4"

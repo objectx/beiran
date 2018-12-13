@@ -57,7 +57,9 @@ publish:dev-docs:
   - echo -e "FROM nginx:latest\nADD . /usr/share/nginx/html/\n" > Dockerfile
   - docker build -t ${CI_REGISTRY_IMAGE}/docs:${CI_COMMIT_REF_SLUG} -t ${CI_REGISTRY_IMAGE}/docs:dev .
   # temporarily pushing all docs for now
-  - docker push ${CI_REGISTRY_IMAGE}/docs:${CI_COMMIT_REF_SLUG} ${CI_REGISTRY_IMAGE}/docs:dev
+  - docker push ${CI_REGISTRY_IMAGE}/docs:${CI_COMMIT_REF_SLUG}
+  # TODO: Only if latest dev version?
+  - docker push ${CI_REGISTRY_IMAGE}/docs:dev
   - curl --insecure https://gitlab.beiran.io:16434
   cache:
     key: doc-build-cache

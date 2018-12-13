@@ -204,3 +204,10 @@ html_theme_options = {
 
     'titles_only': False
 }
+
+rst_epilog = """
+.. |beiran_issues| replace:: https://gitlab.beiran.io/beiran/beiran/issues
+.. |email_list_subscribe_link| replace:: subscribe+developers [at] lists.beiran.io
+.. |beiran_gitlab_main| replace:: https://gitlab.beiran.io
+.. |beiran_gitlab_gpg| replace:: https://gitlab.beiran.io/profile/gpg_keys
+"""

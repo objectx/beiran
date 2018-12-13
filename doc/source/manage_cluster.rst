@@ -8,6 +8,7 @@ installation and cluster.
 - Learn Beiran CLI and getting help
 - Start / Configure Daemon
 - Node Operations
+- Docker Operations
 
 Beiran CLI
 ----------
@@ -164,7 +165,7 @@ This command is also useful to check berian node after fresh installation.
 Probe Node
 ++++++++++
 Manually probing node is necessary when things go wrong. Generally, **Beiran**
-nodes should be able to discover themselves automatically and it musn't require
+nodes should be able to discover themselves automatically and it must not require
 any manual intervention.
 
 It is not only in case of a failure, also in some test / development cases,
@@ -177,3 +178,52 @@ sub-command, such below::
     $ beiran node probe beiran+http://172.18.0.4:8888
     Status: OK
 
+
+Docker Operations
+-----------------
+You can manage docker images and layers with docker plugins cli commands. To
+list available commands simple type::
+
+    $ beiran docker --help
+    Usage: beiran docker [OPTIONS] COMMAND [ARGS]...
+
+    Docker Commands.
+
+    Manage your docker images and layers in cluster.
+
+    Please see sub-commands help texts.
+
+    Options:
+      --help  Show this message and exit.
+
+    Commands:
+      image  Manage Docker Images
+      layer  Manage Docker Layers
+
+
+List / Pull Images
+++++++++++++++++++
+Get a list of downloaded images::
+
+    $ beiran docker image list
+    Tags    ID    Size    Availability
+    ------  ----  ------  --------------
+
+``Tags``, ``ID`` and ``Size`` are properties originated from docker daemon, while
+``Availability`` is from Beiran indicating the nodes on which the image exists.
+
+
+Pull an image::
+
+    $ beiran docker image pull redis
+
+You can use options ``--from`` and ``--force`` if you want to force client pull
+from specific node and ``--progress`` to show download progress.
+
+
+List downloaded image::
+
+    $ beiran docker image list
+    Tags          ID                                                                       Size     Availability
+    ------------  -----------------------------------------------------------------------  -------  --------------
+    redis:latest  sha256:5958914cc55880091b005658a79645a90fd44ac6a33abef25d6be87658eb9599  90.5MiB  local

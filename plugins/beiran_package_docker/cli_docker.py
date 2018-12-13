@@ -13,14 +13,22 @@ from beiran.cli import pass_context
 
 @click.group()
 def cli():
-    """Main subcommand method."""
+    """Docker Commands
+
+    Manage your docker images and layers in cluster.
+
+    Please see sub-commands help texts."""
     pass
 
 
 @cli.group("image", short_help="docker image subcommand")
 def image():
-    """Group command for image management"""
+    """Manage Docker Images
+
+    List and pull docker images.
+    """
     pass
+
 
 @image.command('pull')
 @click.option('--from', 'node', default=None,
@@ -36,7 +44,7 @@ def image():
 @pass_context
 # pylint: disable-msg=too-many-arguments
 def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagename: str):
-    """Pull a container image from cluster or repository"""
+    """Pull a docker image from cluster or repository"""
     click.echo('Pulling image %s from %s!' % (imagename, node))
 
     if progress:
@@ -120,9 +128,9 @@ def image_list(ctx, all_nodes: bool, digests: bool, node: str):
 
 # ##########  Layer management commands
 
-@cli.group("layer", short_help="docker layer subcommand")
+@cli.group("layer")
 def layer():
-    """group command for layer management"""
+    """Manage Docker Layers"""
     pass
 
 

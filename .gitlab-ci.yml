@@ -65,7 +65,7 @@ publish:dev-docs:
     paths:
     - doc/
   only:
-    - ^dev-.*
+    - /^dev-.*/
 
 publish:docs:
   stage: publish

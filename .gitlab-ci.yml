@@ -58,13 +58,14 @@ publish:dev-docs:
   - docker build -t ${CI_REGISTRY_IMAGE}/docs:${CI_COMMIT_REF_SLUG} -t ${CI_REGISTRY_IMAGE}/docs:dev .
   # temporarily pushing all docs for now
   - docker push ${CI_REGISTRY_IMAGE}/docs:${CI_COMMIT_REF_SLUG} ${CI_REGISTRY_IMAGE}/docs:dev
+  - curl --insecure https://gitlab.beiran.io:16434
   cache:
     key: doc-build-cache
     policy: pull
     paths:
     - doc/
   only:
-    - dev-*
+    - ^dev-[0-9\.]+$
 
 publish:docs:
   stage: publish
@@ -77,6 +78,7 @@ publish:docs:
   - docker build -t $CI_REGISTRY_IMAGE/docs:${CI_COMMIT_TAG} .
   # temporarily pushing all docs for now
   - docker push $CI_REGISTRY_IMAGE/docs:${CI_COMMIT_TAG}
+  - curl --insecure https://gitlab.beiran.io:16434
   cache:
     key: doc-build-cache
     policy: pull

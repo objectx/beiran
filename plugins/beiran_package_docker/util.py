@@ -1003,4 +1003,4 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     break
                 tar_data += chunk
 
-        await self.aiodocker.images.import_image(data=tar_data, stream=True)
+        await self.aiodocker.images.import_image(data=tar_data)

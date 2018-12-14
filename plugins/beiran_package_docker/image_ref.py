@@ -102,7 +102,7 @@ def is_digest(string: str):
 def is_tag(string: str):
     """Judge whether or not string is tag.
     """
-    if ":" in string:
+    if ":" in string and "@" not in string:
         return True
     return False
 

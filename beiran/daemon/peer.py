@@ -43,7 +43,7 @@ class Peer(EventEmitter):
             loop (object): asyncio loop
             local (bool): local peer or not
         """
-        super().__init__(loop=self.loop)
+        super().__init__()
         self.node = node
         self.uuid = node.uuid.hex
         self.logger = logging.getLogger('beiran.peer')

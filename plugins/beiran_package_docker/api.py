@@ -293,25 +293,25 @@ class ImageList(RPCEndpoint):
 
 
     @staticmethod
-    async def pull_routine_distributed(image_identifier: str, rpc_endpoint: "RPCEndpoint" = None,
+    async def pull_routine_distributed(tag_or_digest: str, rpc_endpoint: "RPCEndpoint" = None,
                                        wait: bool = False, show_progress: bool = False) -> None:
         """Coroutine to pull image (download distributed layers)
         """
         #TODO: not support 'progress' yet
 
-        Services.logger.debug("Will fetch %s", image_identifier) # type: ignore
+        Services.logger.debug("Will fetch %s", tag_or_digest) # type: ignore
 
         if not wait and not show_progress and rpc_endpoint is not None:
             rpc_endpoint.write({'started':True})
             rpc_endpoint.finish()
 
         # config_json_str, image_id, repo_digest = \
-        #     await self.util.create_or_download_config(image_identifier)
+        #     await self.util.create_or_download_config(tag_or_digest)
         config_json_str, image_id, _ = \
-            await Services.docker_util.create_or_download_config(image_identifier) # type: ignore
+            await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
 
         tarball_path = await Services.docker_util.create_image_from_tar( # type: ignore
-            image_identifier, config_json_str, image_id)
+            tag_or_digest, config_json_str, image_id)
 
         await Services.docker_util.load_image(tarball_path) # type: ignore
 

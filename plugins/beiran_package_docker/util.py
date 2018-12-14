@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Docker Plugin Utility Module"""
 import asyncio
 import os
@@ -23,7 +24,7 @@ from beiran.models import Node
 from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
-from .image_ref import normalize_ref, is_tag, add_idpref, del_idpref
+from .image_ref import normalize_ref, is_tag, is_digest, add_idpref, del_idpref, add_default_tag
 
 
 LOGGER = build_logger()
@@ -538,21 +539,21 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             layer_hash(str): digest of layer
         """
 
+        # beiran cache directory
+        gs_layer_path = self.layer_storage_path(layer_hash)
+        tar_layer_path = gs_layer_path.rstrip('.gz')
+
+        if os.path.exists(tar_layer_path):
+            self.logger.debug("Found layer (%s)", tar_layer_path)
+            return 'cache', tar_layer_path # .tar file exists
+
+        if os.path.exists(gs_layer_path):
+            self.logger.debug("Found layer (%s)", gs_layer_path)
+            return 'cache-gz', gs_layer_path # .tar.gz file exists
+
+         # docker library or other node
         try:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
-
-            # beiran cache directory
-            gs_layer_path = layer.cache_path + '.gz'
-
-            if os.path.exists(layer.cache_path):
-                self.logger.debug("Found layer (%s)", layer.cache_path)
-                return 'cache', layer.cache_path # .tar file exists
-
-            if os.path.exists(gs_layer_path):
-                self.logger.debug("Found layer (%s)", gs_layer_path)
-                return 'cache-gz', gs_layer_path # .tar.gz file exists
-
-            # docker library or other node
 
             # If layer is exist in docker storage, download layer.
             # # check local storage
@@ -927,6 +928,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         Collect layers, download or create config json, create manifest for loading image
         and create image tarball
         """
+        # add latest tag
+        if not is_digest(tag_or_digest):
+            if not is_tag(tag_or_digest):
+                tag_or_digest = add_default_tag(tag_or_digest)
+
         work_path = self.cache_dir + '/work'
         if not os.path.isdir(work_path):
             os.makedirs(work_path)

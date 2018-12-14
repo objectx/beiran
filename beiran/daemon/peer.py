@@ -260,7 +260,7 @@ class Peer(EventEmitter):
                 )
                 return
 
-            if uuid in self.peers:  # pylint: disable=no-member
+            if uuid in PEER_REGISTRY:
                 # TODO: If node status is "lost", then trigger reconnect here
                 # self.connections[node.uuid.hex].reconnect()
                 self.logger.error(

@@ -90,6 +90,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
+    @property
+    def layer_cache_path(self)-> str:
+        """Getpath of cache directory for saving layers"""
+        return self.cache_dir + '/layers/sha256'
+
     @staticmethod
     def docker_sha_summary(sha: str) -> str:
         """
@@ -838,14 +843,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             - manifest list: v1 or v2
         """
 
-        try:
-            image = DockerImage.get_image_data(tag)
-            if image.repo_digests:
-                return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
-            return image.config, image.hash_id, None
+        # try:
+        #     image = DockerImage.get_image_data(tag)
+        #     if image.repo_digests:
+        #         return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
+        #     return image.config, image.hash_id, None
 
-        except (DockerImage.DoesNotExist, FileNotFoundError):
-            pass
+        # except (DockerImage.DoesNotExist, FileNotFoundError):
+        #     pass
 
 
         ref = normalize_ref(tag, index=True)

@@ -278,8 +278,49 @@ class ImageList(RPCEndpoint):
         wait = True if 'wait' in body and body['wait'] else False
         force = True if 'force' in body and body['force'] else False
         show_progress = True if 'progress' in body and body['progress'] else False
+        whole_image_only = True if 'whole_image_only' in body \
+                           and body['whole_image_only'] else False
 
-        await self.pull_routine(image_identifier, node_identifier, self, wait, show_progress, force)
+        if whole_image_only:
+            await self.pull_routine(image_identifier, node_identifier,
+                                    self, wait, show_progress, force)
+
+        else:
+            # distributed layer-by-layer download
+            await self.pull_routine_distributed(image_identifier, self, wait, show_progress)
+
+
+    @staticmethod
+    async def pull_routine_distributed(image_identifier: str, rpc_endpoint: "RPCEndpoint" = None,
+                                       wait: bool = False, show_progress: bool = False) -> None:
+        """Coroutine to pull image (download distributed layers)
+        """
+        #TODO: not support 'progress' yet
+
+        Services.logger.debug("Will fetch %s", image_identifier) # type: ignore
+
+        if not wait and not show_progress and rpc_endpoint is not None:
+            rpc_endpoint.write({'started':True})
+            rpc_endpoint.finish()
+
+        # config_json_str, image_id, repo_digest = \
+        #     await self.util.create_or_download_config(image_identifier)
+        config_json_str, image_id, _ = \
+            await Services.docker_util.create_or_download_config(image_identifier) # type: ignore
+
+        tarball_path = await Services.docker_util.create_image_from_tar( # type: ignore
+            image_identifier, config_json_str, image_id)
+
+        await Services.docker_util.load_image(tarball_path) # type: ignore
+
+        # # save repo_digest ?
+        # image = DockerImage.get().where(...)
+        # image.repo_digests.add(repo_digest)
+        # image.save()
+
+        if wait and not show_progress:
+            rpc_endpoint.write({'finished':True}) # type: ignore
+            rpc_endpoint.finish() # type: ignore
 
 
     @staticmethod

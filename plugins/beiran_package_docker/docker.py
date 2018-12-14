@@ -2,6 +2,7 @@
 Docker packaging plugin
 """
 
+import os
 import asyncio
 import docker
 from aiodocker import Docker
@@ -92,13 +93,35 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         try:
             layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
+            self.save_local_paths(layer_)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
+            self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
+
+    def save_local_paths(self, layer: DockerLayer):
+        """Upadte 'cache_path' and 'docker_path' with paths of local node"""
+        try:
+            docker_path = self.util.storage + '/overlay2/{layer_dir_name}/diff'.format(
+                layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
+
+            if os.path.exists(docker_path):
+                layer.docker_path = docker_path
+            else:
+                layer.docker_path = None
+
+        except FileNotFoundError:
+            layer.docker_path = None
+
+        cache_path = self.util.layer_storage_path(layer.digest).split('.gz')[0]
+        if os.path.exists(cache_path):
+            layer.cache_path = cache_path
+        else:
+            layer.cache_path = None
 
     async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""

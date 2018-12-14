@@ -268,6 +268,7 @@ class Client:
         force = kwargs.pop('force', False)
         wait = kwargs.pop('wait', False)
         node = kwargs.pop('node', None)
+        whole_image_only = kwargs.pop('whole_image_only', False)
 
         path = '/docker/images?cmd=pull'
         data = {
@@ -275,7 +276,8 @@ class Client:
             'node': node,
             'wait': wait,
             'force': force,
-            'progress': progress
+            'progress': progress,
+            'whole_image_only': whole_image_only
         }
 
         resp = await self.request(path,

@@ -11,7 +11,7 @@ from tornado.web import Application
 from tornado.httputil import HTTPServerRequest
 from peewee import SQL
 import aiodocker
-from beiran.util import create_tar_archive
+# from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
@@ -155,18 +155,20 @@ class LayerDownload(web.RequestHandler):
             404 if layer not found
 
         """
-        # layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id) # type: ignore
-
         try:
             layer = DockerLayer.select().where(DockerLayer.digest == layer_id).get()
         except DockerLayer.DoesNotExist:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         if not layer.cache_path:
-            layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0] # type: ignore # pylint: disable=line-too-long
-            if not os.path.isfile(layer.cache_path):
-                create_tar_archive(layer.docker_path, layer.cache_path)
-            layer.save()
+            raise HTTPError(status_code=404, log_message="Layer Not Found")
+
+            # Do not create tarball from storage of docker!!!
+            # The digest of the tarball varies depending on the mtime of the file to be added
+            # layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0] # type: ignore # pylint: disable=line-too-long
+            # if not os.path.isfile(layer.cache_path):
+            #     create_tar_archive(layer.docker_path, layer.cache_path)
+            # layer.save()
 
         return layer.cache_path
 

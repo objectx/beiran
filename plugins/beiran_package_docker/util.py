@@ -10,6 +10,7 @@ import platform
 import tarfile
 from typing import Tuple
 from collections import OrderedDict
+import aiohttp
 
 import aiofiles
 
@@ -68,6 +69,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         pass
 
     class ConfigError(Exception):
+        """..."""
+        pass
+
+    class LayerNotFound(Exception):
         """..."""
         pass
 
@@ -511,7 +516,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
 
-    async def download_layer_from_node(self, host: str, digest: str):
+    async def download_layer_from_node(self, host: str,
+                                       digest: str)-> aiohttp.client_reqrep.ClientResponse:
         """
         Download layer from other node.
         """
@@ -520,8 +526,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         url = host + '/docker/layers/' + digest
 
         self.logger.debug("downloading layer from %s", url)
-        await async_write_file_stream(url, save_path, timeout=60)
+        resp = await async_write_file_stream(url, save_path, timeout=60)
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
+        return resp
 
     async def ensure_having_layer(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally
@@ -531,59 +538,67 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             layer_hash(str): digest of layer
         """
 
-        # beiran cache directory
-        gs_layer_path = self.layer_storage_path(layer_hash)
-        tar_layer_path = gs_layer_path.rstrip('.gz')
-
-        if os.path.exists(tar_layer_path):
-            self.logger.debug("Found layer (%s)", tar_layer_path)
-            return 'cache', tar_layer_path # .tar file exists
-
-        if os.path.exists(gs_layer_path):
-            self.logger.debug("Found layer (%s)", gs_layer_path)
-            return 'cache-gz', gs_layer_path # .tar.gz file exists
-
-        # docker library or other node
         try:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
 
-            # check local storage
-            layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" \
-                                        + del_idpref(layer.chain_id)
-            if os.path.exists(layerdb_path):
-                cache_id = ""
-                with open(layerdb_path + '/cache-id')as file:
-                    cache_id = file.read()
+            # beiran cache directory
+            gs_layer_path = layer.cache_path + '.gz'
 
-                docker_layer_path = self.storage + "/overlay2/" + cache_id + "/diff"
-                self.logger.debug("Found layer (%s)", docker_layer_path)
-                return 'docker', docker_layer_path
+            if os.path.exists(layer.cache_path):
+                self.logger.debug("Found layer (%s)", layer.cache_path)
+                return 'cache', layer.cache_path # .tar file exists
 
-            node_id = layer.available_at[0]
-            node = Node.get(Node.uuid == node_id)
+            if os.path.exists(gs_layer_path):
+                self.logger.debug("Found layer (%s)", gs_layer_path)
+                return 'cache-gz', gs_layer_path # .tar.gz file exists
 
-            await self.download_layer_from_node(node.url_without_uuid, layer.digest)
-            return 'cache', tar_layer_path
+            # docker library or other node
+
+            # If layer is exist in docker storage, download layer.
+            # # check local storage
+            # layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" \
+            #                             + del_idpref(layer.chain_id)
+            # if os.path.exists(layerdb_path):
+            #     cache_id = ""
+            #     with open(layerdb_path + '/cache-id')as file:
+            #         cache_id = file.read()
+
+            #     docker_layer_path = self.storage + "/overlay2/" + cache_id + "/diff"
+            #     self.logger.debug("Found layer (%s)", docker_layer_path)
+            #     return 'docker', docker_layer_path
+
+            # try to download layer from node that has tarball in own cache directory
+            for node_id in layer.available_at:
+                if node_id == self.local_node.uuid.hex: # type: ignore
+                    continue
+
+                node = Node.get(Node.uuid == node_id)
+                resp = await self.download_layer_from_node(node.url_without_uuid, layer.digest)
+
+                if resp.status == 200:
+                    if not os.path.exists(layer.cache_path):
+                        raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                    return 'cache', layer.cache_path
 
         except (DockerLayer.DoesNotExist, IndexError):
-            # TODO: Wait for finish if another beiran is currently downloading it
-            # TODO:  -- or ask for simultaneous streaming download
-            await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
-            return 'cache-gz', gs_layer_path
+            pass
+
+        # TODO: Wait for finish if another beiran is currently downloading it
+        # TODO:  -- or ask for simultaneous streaming download
+        await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
+        return 'cache-gz', gs_layer_path
 
     async def get_layer_diffid(self, host: str, repository: str, layer_hash: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
         storage, layer_path = await self.ensure_having_layer(host, repository,
                                                              layer_hash, **kwargs)
 
-        if storage == 'docker':
-            # TODO: do something using path of the layer directory ?
-            layer = DockerLayer.get(DockerLayer.digest == layer_hash)
-            return layer.diff_id
+        # if storage == 'docker':
+        #     layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+        #     return layer.diff_id
 
         if storage == 'cache-gz':
-            # decompress .tar.gz
-            gunzip(layer_path)
+            gunzip(layer_path) # decompress .tar.gz
             layer_path = layer_path.rstrip('.gz')
 
         with open(layer_path, 'rb') as file:
@@ -665,15 +680,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         chain_id = rootfs['diff_ids'][0]
         top = True
         for i, layer_d in enumerate(descriptors):
-            # layer_ = DockerLayer()
-
             if top:
                 top = False
             else:
                 chain_id = self.calc_chain_id(chain_id, rootfs['diff_ids'][i])
 
-            # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
+            # Probably need these when saving layers that do not belong to any image.
 
+            # layer_ = DockerLayer()
+            # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
             # layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
             # layer_.digest = layer_d['digest']
             # layer_.diff_id = rootfs['diff_ids'][i]
@@ -890,11 +905,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         else:
             raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
-        #FIXME! acutually, config must be saved before downloading image
-        # image = DockerImage.get(DockerImage.hash_id == config_digest)
-        # image.config = config_json
-        # image.save()
-
         return config_json_str, config_digest, repo_digest
 
     def get_diff_size(self, tar_path: str) -> int:
@@ -958,16 +968,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
             tar.add(work_path + '/' + 'manifest.json', arcname='manifest.json')
 
-            for i, f_name in enumerate(digest_f_name_list):
-                # If the layer is already in docker storage but the tarball isn't
-                # in cache directory, create tarball from entity of layer
+            for f_name in digest_f_name_list:
                 if not os.path.exists(self.layer_chache_dir + '/' + f_name):
-                    with tarfile.open(self.layer_chache_dir + '/' + f_name, "w") as layer_tar:
-                        chain_id = self.layerdb_mapping[diff_id_list[i]]
-
-                        layer_tar.add(
-                            self.storage + '/overlay2/{layer_dir_name}/diff'.format(
-                                layer_dir_name=self.get_cache_id_from_chain_id(chain_id)))
+                    raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                    # Do not create tarball from storage of docker!!!
+                    # The digest of the tarball varies depending on mtime of the file to be added
+                    # with tarfile.open(self.layer_chache_dir + '/' + f_name, "w") as layer_tar:
+                    #     chain_id = self.layerdb_mapping[diff_id_list[i]]
+                    #     layer_tar.add(
+                    #         self.storage + '/overlay2/{layer_dir_name}/diff'.format(
+                    #             layer_dir_name=self.get_cache_id_from_chain_id(chain_id)))
 
                 tar.add(self.layer_chache_dir + '/' + f_name, arcname=f_name)
 

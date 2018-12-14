@@ -289,19 +289,20 @@ class ImageList(RPCEndpoint):
 
         else:
             # distributed layer-by-layer download
-            await self.pull_routine_distributed(image_identifier, self, wait, show_progress)
+            await self.pull_routine_distributed(image_identifier, self, wait)
 
 
     @staticmethod
     async def pull_routine_distributed(tag_or_digest: str, rpc_endpoint: "RPCEndpoint" = None,
-                                       wait: bool = False, show_progress: bool = False) -> None:
+                                       wait: bool = False) -> None:
         """Coroutine to pull image (download distributed layers)
         """
         #TODO: not support 'progress' yet
 
         Services.logger.debug("Will fetch %s", tag_or_digest) # type: ignore
 
-        if not wait and not show_progress and rpc_endpoint is not None:
+        # if not wait and not show_progress and rpc_endpoint is not None:
+        if not wait and rpc_endpoint is not None:
             rpc_endpoint.write({'started':True})
             rpc_endpoint.finish()
 
@@ -320,7 +321,8 @@ class ImageList(RPCEndpoint):
         # image.repo_digests.add(repo_digest)
         # image.save()
 
-        if wait and not show_progress:
+        # if wait and not show_progress:
+        if wait:
             rpc_endpoint.write({'finished':True}) # type: ignore
             rpc_endpoint.finish() # type: ignore
 

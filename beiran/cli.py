@@ -90,27 +90,27 @@ class BeiranCLI(click.MultiCommand):
         """
         try:
             return self.main(*args, **kwargs)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
 
             def fix_bytes(mes):
                 if isinstance(mes, bytes):
                     return mes.decode()
-                else:
-                    return mes
+                return mes
 
             if hasattr(err, 'code'):
-                if err.code == 500:
-                    click.echo('\nInternal Error!. See execution info below:\n{}\n\n'.format(str(err)))
+                if err.code == 500:  # pylint: disable=no-member
+                    click.echo('\nInternal Error!. '
+                               'See execution info below:\n{}\n\n'.format(str(err)))
                     raise err
 
             message = None
 
             if hasattr(err, 'message'):
-                message = fix_bytes(err.message)
+                message = fix_bytes(err.message)  # pylint: disable=no-member
 
             if hasattr(err, 'response'):
-                if err.response.body:
-                    message = fix_bytes(err.response.body)
+                if err.response.body:  # pylint: disable=no-member
+                    message = fix_bytes(err.response.body)  # pylint: disable=no-member
 
             click.echo('\nError! Details are below,'
                        ' check your command again: \n\n{}\n'.format(message or str(err)))

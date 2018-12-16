@@ -73,6 +73,9 @@ class Client:
             super().__init__(message)
             self.message = message
 
+        def __str__(self):
+            return self.message
+
     class TimeoutError(Error):
         """..."""
         pass
@@ -85,6 +88,10 @@ class Client:
             self.headers = kwargs.pop('headers', None)
             self.history = kwargs.pop('history', None)
             self.request = kwargs.pop('request', None)
+
+        def __str__(self):
+            return "{} - {}".format(self.status, self.message)
+
 
     async def request(self,
                       path: str = "/",

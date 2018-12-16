@@ -84,6 +84,37 @@ class BeiranCLI(click.MultiCommand):
         commands.sort()
         return commands
 
+    def __call__(self, *args, **kwargs):
+        """
+        TODO: Temporary workaround. We should find more proper way!
+        """
+        try:
+            return self.main(*args, **kwargs)
+        except Exception as err:
+
+            def fix_bytes(mes):
+                if isinstance(mes, bytes):
+                    return mes.decode()
+                else:
+                    return mes
+
+            if hasattr(err, 'code'):
+                if err.code == 500:
+                    click.echo('\nInternal Error!. See execution info below:\n{}\n\n'.format(str(err)))
+                    raise err
+
+            message = None
+
+            if hasattr(err, 'message'):
+                message = fix_bytes(err.message)
+
+            if hasattr(err, 'response'):
+                if err.response.body:
+                    message = fix_bytes(err.response.body)
+
+            click.echo('\nError! Details are below,'
+                       ' check your command again: \n\n{}\n'.format(message or str(err)))
+
     def get_command(self, ctx: BeiranContext, cmd_name: str) -> click.group:  # type: ignore
         """
         Load command object

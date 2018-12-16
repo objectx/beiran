@@ -107,17 +107,23 @@ class Client:
 
         try:
             response = self.http_client.fetch(self.url + path, method=method, **kwargs)
-            if return_response:
-                return response
-
-            if parse_json:
-                return json.loads(response.body)
-
-            return response.body
         except httpclient.HTTPError as error:
-            return str(error.message)
+            print("Error: " + str(error))
+            raise error
         except Exception as error:
-            return "Error: %s" % str(error)
+            print("Cannot connect to beiran daemon at %s" % self.url)
+            print("Error: " + str(error))
+
+            # Other errors are possible, such as IOError.
+            raise error
+
+        if return_response:
+            return response
+
+        if parse_json:
+            return json.loads(response.body)
+
+        return response.body
 
     def get_server_info(self, **kwargs) -> dict:
         """

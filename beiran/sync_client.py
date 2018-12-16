@@ -108,7 +108,7 @@ class Client:
         try:
             response = self.http_client.fetch(self.url + path, method=method, **kwargs)
         except httpclient.HTTPError as error:
-            print("Error: " + str(error))
+            # print("Error: " + str(error))
             raise error
         except Exception as error:
             print("Cannot connect to beiran daemon at %s" % self.url)

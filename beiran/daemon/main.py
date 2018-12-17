@@ -330,7 +330,11 @@ class BeiranDaemon(EventEmitter):
         self.set_status(Node.STATUS_INIT)
         Services.logger.info("local node added, known nodes are: %s", self.nodes.all_nodes)
 
-        self.peer = Peer.find_or_create(node=self.nodes.local_node, nodes=self.nodes, loop=self.loop, local=True)
+        self.peer = Peer.find_or_create(
+            node=self.nodes.local_node,
+            nodes=self.nodes,
+            loop=self.loop,
+            local=True)
         self.peer.collect()
 
         # initialize sync_state_version

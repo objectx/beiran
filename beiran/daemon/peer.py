@@ -13,7 +13,6 @@ from pyee import EventEmitter
 
 from beiran.client import Client
 from beiran.models import Node
-from beiran.daemon.nodes import Nodes
 from beiran.daemon.common import Services
 
 PEER_REGISTRY: dict = dict()
@@ -23,15 +22,18 @@ class Peer(EventEmitter):
     """Peer class"""
 
     @classmethod
-    def find_or_create(cls, node: Node = None, *args, **kwargs):
+    def find_or_create(cls, *args, node: Node = None, **kwargs):
+        """Find node in peer registty or create new Peer"""
         if node and node.uuid in PEER_REGISTRY:
             return PEER_REGISTRY[node.uuid]
         return cls(node, *args, **kwargs)
 
     def collect(self):
+        """Add this peer to node's peer registry"""
         PEER_REGISTRY[self.node.uuid] = self
 
     def uncollect(self):
+        """Delete nodes's peer registry"""
         del PEER_REGISTRY[self.node.uuid]
 
     def __init__(self, node=None, nodes=None, loop=None, local=False):  # pylint: disable=unused-argument

@@ -47,3 +47,16 @@ Docker
     :special-members: __init__
 
 
+
+Interface
++++++++++
+
+
+Kubernetes
+----------
+
+.. automodule:: beiran_interface_k8s.k8s
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__

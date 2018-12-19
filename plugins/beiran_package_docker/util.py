@@ -96,11 +96,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
-    @property
-    def layer_cache_path(self)-> str:
-        """Getpath of cache directory for saving layers"""
-        return self.cache_dir + '/layers/sha256'
-
     @staticmethod
     def docker_sha_summary(sha: str) -> str:
         """
@@ -686,7 +681,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             else:
                 chain_id = self.calc_chain_id(chain_id, rootfs['diff_ids'][i])
 
-            # Probably need these when saving layers that do not belong to any image.
+            # Probably following sentences are needed when saving layers that do not belong
+            # to any image.
 
             # layer_ = DockerLayer()
             # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
@@ -928,6 +924,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         Collect layers, download or create config json, create manifest for loading image
         and create image tarball
         """
+        manifest_f_name = 'manifest.json'
+
         # add latest tag
         if not is_digest(tag_or_digest):
             if not is_tag(tag_or_digest):
@@ -965,14 +963,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 "Layers": digest_f_name_list,
             }
         ]
-        with open(work_path + '/' + 'manifest.json', 'w')as file:
+        with open(work_path + '/' + manifest_f_name, 'w')as file:
             file.write(json.dumps(manifest))
 
         # create tarball
         tar_path = work_path + '/' + 'image.tar'
         with tarfile.open(tar_path, 'w')as tar:
             tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
-            tar.add(work_path + '/' + 'manifest.json', arcname='manifest.json')
+            tar.add(work_path + '/' + manifest_f_name, arcname=manifest_f_name)
 
             for f_name in digest_f_name_list:
                 if not os.path.exists(self.layer_chache_dir + '/' + f_name):

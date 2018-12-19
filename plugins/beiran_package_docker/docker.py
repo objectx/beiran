@@ -14,6 +14,7 @@ from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
+from .image_ref import del_idpref
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
 from .util import DockerUtil
@@ -106,7 +107,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
     def save_local_paths(self, layer: DockerLayer):
         """Upadte 'cache_path' and 'docker_path' with paths of local node"""
         try:
-            docker_path = self.util.storage + '/overlay2/{layer_dir_name}/diff'.format(
+            docker_path = self.util.layerdir_path.format(
                 layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
 
             if os.path.exists(docker_path):
@@ -117,7 +118,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except FileNotFoundError:
             layer.docker_path = None
 
-        cache_path = self.util.layer_storage_path(layer.digest).split('.gz')[0]
+        cache_path = os.path.join(self.util.layer_cache_path, del_idpref(layer.digest) + '.tar')
         if os.path.exists(cache_path):
             layer.cache_path = cache_path
         else:
@@ -378,8 +379,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         image.set_available_at(self.node.uuid.hex)
 
         # save config
-        config_path = self.util.storage + '/image/overlay2/imagedb/content/sha256/' \
-                                        + image.hash_id.replace('sha256:', '')
+        config_path = os.path.join(self.util.config_path, del_idpref(image.hash_id))
         with open(config_path)as file:
             image.config = file.read() # type: ignore
 

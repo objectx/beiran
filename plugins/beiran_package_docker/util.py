@@ -81,10 +81,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir
-
-        self.layer_chache_dir = self.cache_dir + '/layers/sha256'
-        if not os.path.isdir(self.layer_chache_dir):
-            os.makedirs(self.layer_chache_dir)
+        self.check_cahe_path_exist()
 
         self.storage = storage
         self.local_node = local_node
@@ -95,6 +92,36 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
+
+    @property
+    def digest_path(self)-> str:
+        """Get digest path in docker storage"""
+        return self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
+
+    @property
+    def layerdb_path(self)-> str:
+        """Get layerdb path in docker storage"""
+        return self.storage + '/image/overlay2/layerdb/sha256'
+
+    @property
+    def layerdir_path(self)-> str:
+        """Get directory of layer path in docker storage"""
+        return self.storage + '/overlay2/{layer_dir_name}/diff'
+
+    @property
+    def config_path(self)-> str:
+        """Get path of image config in docker storage"""
+        return self.storage + '/image/overlay2/imagedb/content/sha256'
+
+    @property
+    def layer_cache_path(self)-> str:
+        """Get path of layer in beiran cache directory"""
+        return self.cache_dir + '/layers/sha256'
+
+    def check_cahe_path_exist(self)-> None:
+        """Check cache paths and create them"""
+        if not os.path.isdir(self.layer_cache_path): # cache path for layer
+            os.makedirs(self.layer_cache_path)
 
     def docker_find_layer_dir_by_sha(self, sha: str):
         """
@@ -110,10 +137,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """
         diff_file_name = ""
 
-        local_digest_dir = self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
-        local_layer_db = self.storage + '/image/overlay2/layerdb/sha256'
+        local_digest_dir = self.digest_path
+        local_layer_db = self.layerdb_path
         local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
-        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
+        local_layer_dir = self.layerdir_path
 
         f_path = local_digest_dir + "/{}".format(del_idpref(sha))
 
@@ -229,7 +256,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         # sometimes they are same, sometimes they are not.
 
         self.logger.debug("Getting diff-id digest mappings..")
-        mapping_dir = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256"
+        mapping_dir = self.digest_path
 
         cached_digests = self.diffid_mapping.values()
 
@@ -264,7 +291,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         # since there are no mappings outside...
 
         self.logger.debug("Getting layerdb digest mappings..")
-        layerdb_path = self.storage + "/image/overlay2/layerdb/sha256"
+        layerdb_path = self.layerdb_path
 
         cached_chain_ids = self.layerdb_mapping.values()
 
@@ -352,15 +379,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         layer.size = int(size_str.strip())
 
-        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
+        local_layer_dir = self.layerdir_path
         layer.docker_path = local_layer_dir.format(
             layer_dir_name=self.get_cache_id_from_chain_id(layer.chain_id))
 
         if digest:
             # ignore .tar.gz
-            chache_path = self.layer_storage_path(digest).split('.gz')[0]
-            if os.path.exists(chache_path):
-                layer.cache_path = chache_path
+            cache_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
+            if os.path.exists(cache_path):
+                layer.cache_path = cache_path
 
         # except FileNotFoundError as e:
         #     # Actually some other layers refers to this layer
@@ -460,10 +487,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
-    def layer_storage_path(self, layer_hash: str)-> str:
-        """Where to storage layer downloads (temporarily)"""
-        return self.layer_chache_dir + '/' + del_idpref(layer_hash) + ".tar.gz"
-
     async def download_layer_from_origin(self, host: str, repository: str,
                                          layer_hash: str, **kwargs):
         """
@@ -473,7 +496,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             repository (str): path of repository (e.g. library/centos)
             layer_hash (str): SHA-256 hash of a blob
         """
-        save_path = self.layer_storage_path(layer_hash)
+        save_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar.gz')
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
         requirements = ''
 
@@ -500,8 +523,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """
         Download layer from other node.
         """
-        save_path = self.layer_storage_path(digest)
-        save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
+        # save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
+        save_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
         url = host + '/docker/layers/' + digest
 
         self.logger.debug("downloading layer from %s", url)
@@ -518,8 +541,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """
 
         # beiran cache directory
-        gs_layer_path = self.layer_storage_path(layer_hash)
-        tar_layer_path = gs_layer_path.rstrip('.gz')
+        tar_layer_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar')
+        gs_layer_path = tar_layer_path + '.gz'
 
         if os.path.exists(tar_layer_path):
             self.logger.debug("Found layer (%s)", tar_layer_path)
@@ -535,7 +558,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
             # If layer is exist in docker storage, download layer.
             # # check local storage
-            # layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" \
+            # layerdb_path = self.layerdb_path + "/" \
             #                             + del_idpref(layer.chain_id)
             # if os.path.exists(layerdb_path):
             #     cache_id = ""
@@ -555,9 +578,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 resp = await self.download_layer_from_node(node.url_without_uuid, layer.digest)
 
                 if resp.status == 200:
-                    if not os.path.exists(layer.cache_path):
+                    if not os.path.exists(tar_layer_path):
                         raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
-                    return 'cache', layer.cache_path
+                    return 'cache', tar_layer_path
 
         except (DockerLayer.DoesNotExist, IndexError):
             pass
@@ -956,17 +979,17 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             tar.add(work_path + '/' + manifest_f_name, arcname=manifest_f_name)
 
             for f_name in digest_f_name_list:
-                if not os.path.exists(self.layer_chache_dir + '/' + f_name):
+                if not os.path.exists(self.layer_cache_path + '/' + f_name):
                     raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
                     # Do not create tarball from storage of docker!!!
                     # The digest of the tarball varies depending on mtime of the file to be added
-                    # with tarfile.open(self.layer_chache_dir + '/' + f_name, "w") as layer_tar:
+                    # with tarfile.open(self.layer_cache_path + '/' + f_name, "w") as layer_tar:
                     #     chain_id = self.layerdb_mapping[diff_id_list[i]]
                     #     layer_tar.add(
-                    #         self.storage + '/overlay2/{layer_dir_name}/diff'.format(
+                    #         self.layerdir_path'.format(
                     #             layer_dir_name=self.get_cache_id_from_chain_id(chain_id)))
 
-                tar.add(self.layer_chache_dir + '/' + f_name, arcname=f_name)
+                tar.add(self.layer_cache_path + '/' + f_name, arcname=f_name)
 
         return tar_path
 

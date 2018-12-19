@@ -19,6 +19,7 @@ Welcome to Beiran's documentation!
    Manage Beiran Cluster <manage_cluster>
    How to contibute <contribute>
    How to create a plugin <how_to_create_a_plugin>
+   Using Kubernetes with Beiran <using_kubernetes_with_beiran>
    Beiran Refernece <reference>
 
    Index <genindex>

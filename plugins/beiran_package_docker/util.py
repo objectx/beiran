@@ -96,23 +96,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
-    @staticmethod
-    def docker_sha_summary(sha: str) -> str:
-        """
-        shorten sha to 12 bytes length str as docker uses
-
-        e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25"
-        to "53478ce18e19"
-
-        Args:
-            sha (string): sha string
-
-        Returns:
-            string
-
-        """
-        return sha.split(":")[1][0:12]
-
     def docker_find_layer_dir_by_sha(self, sha: str):
         """
         try to find local layer directory containing tar archive

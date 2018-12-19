@@ -142,3 +142,19 @@ def marshal(domain: str, repo: str, sign: str, suffix: str) -> str:
     Marshall components of reference, and return normalized reference
     """
     return domain + "/" + repo + sign + suffix
+
+def docker_sha_summary(sha: str) -> str:
+    """
+    shorten sha to 12 bytes length str as docker uses
+
+    e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25"
+    to "53478ce18e19"
+
+    Args:
+        sha (string): sha string
+
+    Returns:
+        string
+
+    """
+    return sha.split(":")[1][0:12]

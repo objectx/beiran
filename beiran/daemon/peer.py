@@ -13,46 +13,28 @@ from pyee import EventEmitter
 
 from beiran.client import Client
 from beiran.models import Node
-from beiran.daemon.nodes import Nodes
 from beiran.daemon.common import Services
 
 PEER_REGISTRY: dict = dict()
 
 
-class PeerMeta(type):
-    """
-    Metaclass which attaches a dict for peer registry and custom iterator.
-    """
-    def __new__(mcs, name, bases, dct):
-        klass = super().__new__(mcs, name, bases, dct)
-        klass.peers = PEER_REGISTRY
-        return klass
-
-    def __iter__(cls):
-        return iter(cls.peers.items())
-
-
-# pylint: disable=too-many-instance-attributes
-class Peer(EventEmitter, metaclass=PeerMeta):
+class Peer(EventEmitter):
     """Peer class"""
-    def __new__(cls, node: Node = None, nodes: Nodes = None,
-                loop: asyncio.events.AbstractEventLoop = None, local: bool = False):
-        new_obj = None
-        if node:
-            cls.node = node
-            cls.uuid = node.uuid.hex
-            try:
-                return cls.peers[node.uuid]  # pylint: disable=no-member
-            except KeyError:
-                new_obj = object.__new__(cls)
-                cls.peers[node.uuid] = new_obj  # pylint: disable=no-member
 
-        new_obj = new_obj or object.__new__(cls)
-        new_obj.logger = logging.getLogger('beiran.peer')
-        new_obj.loop = loop if loop else asyncio.get_event_loop()
-        new_obj.nodes = nodes
-        new_obj.local = local
-        return new_obj
+    @classmethod
+    def find_or_create(cls, *args, node: Node = None, **kwargs):
+        """Find node in peer registty or create new Peer"""
+        if node and node.uuid in PEER_REGISTRY:
+            return PEER_REGISTRY[node.uuid]
+        return cls(node, *args, **kwargs)
+
+    def collect(self):
+        """Add this peer to node's peer registry"""
+        PEER_REGISTRY[self.node.uuid] = self
+
+    def uncollect(self):
+        """Delete nodes's peer registry"""
+        del PEER_REGISTRY[self.node.uuid]
 
     def __init__(self, node=None, nodes=None, loop=None, local=False):  # pylint: disable=unused-argument
         """
@@ -63,7 +45,13 @@ class Peer(EventEmitter, metaclass=PeerMeta):
             loop (object): asyncio loop
             local (bool): local peer or not
         """
-        super().__init__(loop=self.loop)
+        super().__init__()
+        self.node = node
+        self.uuid = node.uuid.hex
+        self.logger = logging.getLogger('beiran.peer')
+        self.loop = loop if loop else asyncio.get_event_loop()
+        self.nodes = nodes
+        self.local = local
         self.ping = -1
         self.last_sync_state_version = 0  # self.node.last_sync_version
         self.__probe_lock = asyncio.Lock()
@@ -274,12 +262,12 @@ class Peer(EventEmitter, metaclass=PeerMeta):
                 )
                 return
 
-            if uuid in self.peers:  # pylint: disable=no-member
+            if uuid in PEER_REGISTRY:
                 # TODO: If node status is "lost", then trigger reconnect here
                 # self.connections[node.uuid.hex].reconnect()
                 self.logger.error(
                     "Inconsistency error, already connected node is being added AGAIN")
-                return self.peers[uuid].node  # pylint: disable=no-member
+                return PEER_REGISTRY[uuid].node  # pylint: disable=no-member
 
             if not node:
                 self.logger.info(
@@ -291,7 +279,8 @@ class Peer(EventEmitter, metaclass=PeerMeta):
 
             node.status = Node.STATUS_CONNECTING
             node.save()
-            Peer(node=node, loop=self.loop)
+            peer = Peer.find_or_create(node=node, loop=self.loop)
+            peer.collect()
             self.nodes.update_node(node)
 
             self.logger.info(

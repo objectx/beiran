@@ -172,10 +172,12 @@ def get_hostname() -> str:
         return os.environ['HOSTNAME']
     return socket.gethostname()
 
+
 def sync_version_file_path() -> str:
     """Return sync_version file path"""
     path = config.data_dir + "/sync_version"
     return path
+
 
 async def update_sync_version_file(version: int):
     """Write new sync_version to the sync_version file"""
@@ -186,6 +188,7 @@ async def update_sync_version_file(version: int):
         LOGGER.warning('Cannot find sync_version_file. Creating new file')
     with open(path, 'w') as file:
         file.write(str(version))
+
 
 def get_sync_version() -> int:
     """
@@ -211,23 +214,13 @@ def get_sync_version() -> int:
 
     return sync_version
 
-def get_plugin_list() -> dict:
-    """Return plugin list"""
-
-    # docker only for poc
-    return {
-        "active_plugins": [
-            "docker",
-        ]
-    }
-
 
 def collect_node_info() -> dict:
     """
     Collect and return Node info
 
     Returns:
-        dict: node informations
+        dict: node information
 
     """
     peer_address = PeerAddress(

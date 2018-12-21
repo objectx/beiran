@@ -961,6 +961,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             for diff_id in diff_id_list
         ]
 
+        # fail early if a layer doesn't exist
+        for f_name in digest_f_name_list:
+            if not os.path.exists(self.layer_cache_path + '/' + f_name):
+                raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+
         # create manifest
         manifest = [
             {

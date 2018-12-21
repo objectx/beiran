@@ -10,3 +10,4 @@ run
 !Dockerfile
 !plugins
 !helpers/mypy
+!pyinstaller

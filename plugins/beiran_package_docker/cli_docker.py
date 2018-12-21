@@ -11,7 +11,7 @@ from beiran.util import sizeof_fmt
 from beiran.cli import pass_context
 
 
-@click.group("docker", short_help="docker subcommands")
+@click.group()
 def cli():
     """Main subcommand method."""
     pass

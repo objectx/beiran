@@ -293,7 +293,7 @@ class ImageList(RPCEndpoint):
 
 
     @staticmethod
-    async def pull_routine_distributed(tag_or_digest: str, rpc_endpoint: "RPCEndpoint" = None,
+    async def pull_routine_distributed(tag_or_digest: str, rpc_call: "RPCEndpoint" = None,
                                        wait: bool = False) -> None:
         """Coroutine to pull image (download distributed layers)
         """
@@ -301,10 +301,10 @@ class ImageList(RPCEndpoint):
 
         Services.logger.debug("Will fetch %s", tag_or_digest) # type: ignore
 
-        # if not wait and not show_progress and rpc_endpoint is not None:
-        if not wait and rpc_endpoint is not None:
-            rpc_endpoint.write({'started':True})
-            rpc_endpoint.finish()
+        # if not wait and not show_progress and rpc_call is not None:
+        if not wait and rpc_call is not None:
+            rpc_call.write({'started':True})
+            rpc_call.finish()
 
         # config_json_str, image_id, repo_digest = \
         #     await self.util.create_or_download_config(tag_or_digest)
@@ -323,13 +323,13 @@ class ImageList(RPCEndpoint):
 
         # if wait and not show_progress:
         if wait:
-            rpc_endpoint.write({'finished':True}) # type: ignore
-            rpc_endpoint.finish() # type: ignore
+            rpc_call.write({'finished':True}) # type: ignore
+            rpc_call.finish() # type: ignore
 
 
     @staticmethod
     async def pull_routine(image_identifier: str, node_identifier: str = None, # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
-                           rpc_endpoint: "RPCEndpoint" = None, wait: bool = False,
+                           rpc_call: "RPCEndpoint" = None, wait: bool = False,
                            show_progress: bool = False, force: bool = False) -> str:
         """Coroutine to pull image in cluster
         """
@@ -367,12 +367,12 @@ class ImageList(RPCEndpoint):
         real_size = 0
 
         if show_progress:
-            rpc_endpoint.write('{"image":"%s","progress":[' % image_identifier) # type: ignore
-            rpc_endpoint.flush() # type: ignore
+            rpc_call.write('{"image":"%s","progress":[' % image_identifier) # type: ignore
+            rpc_call.flush() # type: ignore
 
-        if not wait and not show_progress and rpc_endpoint is not None:
-            rpc_endpoint.write({'started':True})
-            rpc_endpoint.finish()
+        if not wait and not show_progress and rpc_call is not None:
+            rpc_call.write({'started':True})
+            rpc_call.finish()
 
         @aiohttp.streamer
         async def sender(writer, chunks: asyncio.queues.Queue):
@@ -389,17 +389,17 @@ class ImageList(RPCEndpoint):
                     real_size += len(chunk)
                     if show_progress and real_size/float(image.size) - last_progress > 0.05:
                         progress = real_size/float(image.size)
-                        rpc_endpoint.write( # type: ignore
+                        rpc_call.write( # type: ignore
                             '{"progress": %.2f, "done": false},' % progress
                         )
-                        rpc_endpoint.flush() # type: ignore
+                        rpc_call.flush() # type: ignore
                         last_progress = progress
                 else:
                     if show_progress:
-                        rpc_endpoint.write('{"progress": %.2f, "done": true}' % # type: ignore
+                        rpc_call.write('{"progress": %.2f, "done": true}' % # type: ignore
                                            (real_size / float(image.size)))
-                        rpc_endpoint.write(']}') # type: ignore
-                        rpc_endpoint.finish() # type: ignore
+                        rpc_call.write(']}') # type: ignore
+                        rpc_call.finish() # type: ignore
 
                         # FIXME!
                         if real_size != image.size:
@@ -429,8 +429,8 @@ class ImageList(RPCEndpoint):
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
         if wait and not show_progress:
-            rpc_endpoint.write({'finished':True}) # type: ignore
-            rpc_endpoint.finish() # type: ignore
+            rpc_call.write({'finished':True}) # type: ignore
+            rpc_call.finish() # type: ignore
 
         return image.hash_id
 

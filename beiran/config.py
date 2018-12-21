@@ -13,6 +13,7 @@ LOGGER = logging.getLogger()
 
 DEFAULTS = {
     'LISTEN_PORT': 8888,
+    'LISTEN_ADDRESS': '0.0.0.0',
     'LOG_FILE': '/var/log/beirand.log',
     'LOG_LEVEL': 'DEBUG',
     'CONFIG_DIR': '/etc/beiran',
@@ -206,6 +207,18 @@ class Config(metaclass=ConfigMeta):
         """
         return self.get_config('beiran.discovery_method', 'DISCOVERY_METHOD')
 
+    @property
+    def listen_address(self):
+        """
+        Beiran daemon's listen address. It can be any valid IP address.
+        The default value is ``0.0.0.0``
+
+        config.toml: section ``beiran``, key ``listen_address``
+
+        Environment variable: ``BEIRAN_LISTEN_ADDRESS``
+
+        """
+        return self.get_config('beiran.listen_address', 'LISTEN_ADDRESS')
 
     @property
     def listen_port(self):

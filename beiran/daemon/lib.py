@@ -80,7 +80,7 @@ def get_listen_address() -> str:
     env_addr = ''
 
     try:  # try to get from environment variable
-        env_addr = os.environ['LISTEN_ADDR']
+        env_addr = config.listen_address
         listen_address = ipaddress.ip_address(env_addr)
         return listen_address.compressed
 
@@ -90,8 +90,9 @@ def get_listen_address() -> str:
 
     except ValueError:  # if env var is set erroneously
         raise ValueError(
-            """Please check environment variable LISTEN_ADDR,
-            it must be a valid IP4 address. `{}` is not a valid one!""".format(env_addr))
+            """Please check config file for listen_address or environment
+            variable BEIRAN_LISTEN_ADDRESS, it must be a valid IP4 address.
+            `{}` is not a valid one!""".format(env_addr))
 
 
 def get_listen_port() -> int:
@@ -112,8 +113,8 @@ def get_listen_interface() -> str:
     Seek for listen interface in order described below and return it.
 
     First try LISTEN_INTERFACE env var.
-    Second try to find the interface of ip address specified by LISTEN_ADDR env var.
-    Third, if LISTEN_ADDR is not set return default gateway's interface
+    Second try to find the interface of ip address specified by config.listen_address.
+    Third, if config.listen_address is not set return default gateway's interface
 
     Returns
         string: listen address.
@@ -123,13 +124,13 @@ def get_listen_interface() -> str:
     if 'LISTEN_INTERFACE' in os.environ:
         return os.environ['LISTEN_INTERFACE']
 
-    if 'LISTEN_ADDR' in os.environ:
+    if config.listen_address:
         for interface in netifaces.interfaces():
             for ip_v4 in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
-                if ip_v4 == os.environ.get('LISTEN_ADDR'):
+                if ip_v4 == config.listen_address:
                     return interface
 
-        raise ValueError("Your LISTEN_ADDR does not match any network interface!")
+        raise ValueError("Your BEIRAN_LISTEN_ADDRESS does not match any network interface!")
 
     _, interface = get_default_gateway_interface()
 

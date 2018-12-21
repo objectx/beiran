@@ -8,6 +8,7 @@ config_dir = '/etc/beiran'
 data_dir = '/var/lib/beiran'
 run_dir = '/var/run'
 listen_port = 8888
+listen_address = '0.0.0.0'
 socket_path = '/var/run/beirand.sock'
 daemon_url = ''
 discovery_method = 'zeroconf'

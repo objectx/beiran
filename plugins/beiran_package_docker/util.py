@@ -919,7 +919,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     total += tarinfo.size
         return total
 
-    def calc_chain_id(self, parent_chain_id: str, diff_id: str)-> str:
+    def calc_chain_id(self, parent_chain_id: str, diff_id: str) -> str:
         """calculate chain id"""
         string = parent_chain_id + ' ' + diff_id
         return add_idpref(hashlib.sha256(string.encode('utf-8')).hexdigest())
@@ -951,7 +951,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # create config file
         config_file_name = image_id + '.json'
-        with open(work_path + '/' + config_file_name, 'w')as file:
+        with open(work_path + '/' + config_file_name, 'w') as file:
             file.write(config_json_str)
 
         # get layer files
@@ -969,12 +969,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 "Layers": digest_f_name_list,
             }
         ]
-        with open(work_path + '/' + manifest_f_name, 'w')as file:
+        with open(work_path + '/' + manifest_f_name, 'w') as file:
             file.write(json.dumps(manifest))
 
         # create tarball
         tar_path = work_path + '/' + 'image.tar'
-        with tarfile.open(tar_path, 'w')as tar:
+        with tarfile.open(tar_path, 'w') as tar:
             tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
             tar.add(work_path + '/' + manifest_f_name, arcname=manifest_f_name)
 

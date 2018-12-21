@@ -25,16 +25,13 @@ RUN pip install -r /opt/beiran/r-zeroconf.txt
 ADD plugins/beiran_package_docker/requirements.txt /opt/beiran/r-docker.txt
 RUN pip install -r /opt/beiran/r-docker.txt
 
-#ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
-#RUN pip install -r /opt/beiran/r-k8s.txt
+ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
+RUN pip install -r /opt/beiran/r-k8s.txt
 
 ADD beiran /opt/beiran/beiran
 ADD plugins /opt/beiran/plugins
 ADD pyinstaller /opt/beiran/pyinstaller
 ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
-
-#RUN mkdir /etc/ld.so.conf.d
-#RUN echo "/usr/lib" > /etc/ld.so.conf.d/python36.conf
 
 WORKDIR /opt/beiran/pyinstaller
 

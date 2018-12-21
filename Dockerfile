@@ -22,8 +22,8 @@ RUN pip install -r /opt/beiran/r-docker.txt
 ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
 RUN pip install -r /opt/beiran/r-k8s.txt
 
-# ADD plugins/beiran_package_npm/requirements.txt /opt/beiran/r-npm.txt
-# RUN pip install -r /opt/beiran/r-npm.txt
+ADD plugins/beiran_package_npm/requirements.txt /opt/beiran/r-npm.txt
+RUN pip install -r /opt/beiran/r-npm.txt
 
 ADD [ "beiran", "/opt/beiran/beiran" ]
 

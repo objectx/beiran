@@ -168,7 +168,8 @@ test:api:
    # send test files to the container
    - cd ${SRC_DIR}
    - tar c $(find test/rest_api -name "*.yaml") | docker exec -i ${CONTAINER} tar xv -C /opt
-   # save tarball of layer in cache directory
+   # we make beiran download an image from origin, and cache the layers in
+   # beiran's own cache folder, so we can test it in api
    - docker exec ${CONTAINER} python -m beiran docker image pull --wait hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
    - docker exec ${CONTAINER} pyresttest --url http://localhost:8888 --test /opt/test/rest_api/beirand.yaml
 

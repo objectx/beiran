@@ -105,7 +105,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("new layer from remote %s", str(layer))
 
     def save_local_paths(self, layer: DockerLayer):
-        """Upadte 'cache_path' and 'docker_path' with paths of local node"""
+        """Update 'cache_path' and 'docker_path' with paths of local node"""
         try:
             docker_path = self.util.layerdir_path.format(
                 layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
@@ -297,7 +297,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         image.unset_available_at(self.node.uuid.hex)
 
         # unset layers
-        await self.delete_layer(image.layers)
         if image.available_at:
             image.save()
         else:
@@ -307,6 +306,29 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # we do not handle deleting layers yet, not sure if they are
         # shared and needed by other images
         # code remains here for further interests. see PR #114 of rsnc
+
+        # await self.delete_layers(image.layers)
+
+        self.emit('docker_daemon.existing_image_deleted', image.hash_id)
+
+    async def delete_layers(self, diff_id_list: list)-> None:
+        """
+        Unset available layer
+        """
+        layers = DockerLayer.select() \
+                            .where(DockerLayer.diff_id.in_(diff_id_list)) \
+                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
+
+        for layer in layers:
+            layer.unset_available_at(self.node.uuid.hex)
+            layer.docker_path = None
+
+            if layer.available_at:
+                layer.save()
+            else:
+                layer.delete_instance()
+
+        # old code for educational purposes, please delete when it makes sense to delete
         #
         # try:
         #     self.log.debug("Layer list: %s", image_data['RootFS']['Layers'])
@@ -320,22 +342,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # except DockerUtil.CannotFindLayerMappingError:
         #     self.log.debug("Unexpected error, layers of image %s could not found..",
         #                    image_data['Id'])
-
-        self.emit('docker_daemon.existing_image_deleted', image.hash_id)
-
-    async def delete_layer(self, diff_id_list: list)-> None:
-        """
-        Unset available layer
-        """
-        layers = DockerLayer.select() \
-                            .where(DockerLayer.diff_id.in_(diff_id_list)) \
-                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
-
-        for layer in layers:
-            layer.unset_available_at(self.node.uuid.hex)
-            layer.docker_path = None
-            layer.save()
-
 
     async def save_image(self, image_id: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):

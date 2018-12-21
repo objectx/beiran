@@ -5,7 +5,7 @@ When k8s plugin is in effect, Beiran has an endpoint of **CRI v1alpha2** so we c
 
 Configuration
 -------------
-That's very simple. Give the path of Belean's cri endpoint to kubelet's command option **"--image-service-endpoint"** and restart kubelet::
+That's very simple. Give the path of Beiran's cri endpoint to kubelet's command option **"--image-service-endpoint"** and restart kubelet::
 
     kubelet --image-service-endpoint=path-to-grpc-socket
 

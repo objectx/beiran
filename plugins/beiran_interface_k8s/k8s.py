@@ -18,7 +18,7 @@ PLUGIN_TYPE = 'interface'
 
 # pylint: disable=attribute-defined-outside-init
 class K8SInterface(BaseInterfacePlugin):
-    """cri support for Beiran"""
+    """CRI v1alpha2 support for Beiran"""
     def __init__(self, plugin_config: dict) -> None:
         super().__init__(plugin_config)
         if 'unix_socket_path' in plugin_config:

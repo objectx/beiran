@@ -32,7 +32,7 @@ def image():
 @click.option('--progress', 'progress', default=False, is_flag=True,
               help='Show image transfer progress')
 @click.option('--whole-image-only', 'whole_image_only', default=False, is_flag=True,
-              help='Pull a image from other node (not each layer)')
+              help='Pull an image from other node (not each layer)')
 @click.argument('imagename')
 @click.pass_obj
 @pass_context

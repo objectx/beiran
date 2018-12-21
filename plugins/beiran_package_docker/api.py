@@ -397,7 +397,7 @@ class ImageList(RPCEndpoint):
                 else:
                     if show_progress:
                         rpc_call.write('{"progress": %.2f, "done": true}' % # type: ignore
-                                           (real_size / float(image.size)))
+                                       (real_size / float(image.size)))
                         rpc_call.write(']}') # type: ignore
                         rpc_call.finish() # type: ignore
 

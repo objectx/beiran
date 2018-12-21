@@ -7,7 +7,7 @@ from peewee import IntegerField, CharField, BooleanField, SQL
 from beiran.models.base import BaseModel, JSONStringField
 from beiran.daemon.common import Services
 
-from .image_ref import add_default_tag, is_digest, add_id_prefix
+from .image_ref import add_default_tag, is_digest, add_idpref
 
 class CommonDockerObjectFunctions:
     """..."""
@@ -69,7 +69,6 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             new_dict['parent_hash_id'] = _dict.get('ParentId') or _dict.get('Parent') or None
             new_dict['tags'] = _dict['RepoTags']
             new_dict['repo_digests'] = _dict['RepoDigests']
-            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['size'] = _dict['Size']
             new_dict['data'] = dict(_dict)
 
@@ -83,7 +82,6 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
 
             new_dict['tags'] = [_dict['tag']]
             new_dict['repo_digests'] = [_dict['repo_digests']]
-            new_dict['config'] = _dict["ContainerConfig"]
             new_dict['manifest'] = dict(_dict)
 
             new_layer_list = []
@@ -148,7 +146,7 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             except DockerImage.DoesNotExist:
                 # search with hash_id
                 images = cls.select().where((SQL('hash_id LIKE \'%s%%\'' %
-                                                 add_id_prefix(image_identifier))))
+                                                 add_idpref(image_identifier))))
 
                 # if found 0 or a few images
                 if len(images) != 1:
@@ -165,9 +163,11 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     digest = CharField(max_length=128, null=True)
     diff_id = CharField(max_length=128)
     chain_id = CharField(max_length=128)
-    size = IntegerField()
+    size = IntegerField() # the size difference of the top layer from parent layer
     available_at = JSONStringField(default=list)
     download_progress = JSONStringField(null=True)
 
+    cache_path = CharField(null=True) # .tar file in cache dir
+    docker_path = CharField(null=True) # layer's directory under /var/lib/docker
 
 MODEL_LIST = [DockerImage, DockerLayer]  # we may discover dynamically

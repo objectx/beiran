@@ -2,16 +2,19 @@
 Docker packaging plugin
 """
 
+import os
 import asyncio
 import docker
 from aiodocker import Docker
 from aiodocker.exceptions import DockerError
 from peewee import SQL
 
+from beiran.config import config
 from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
+from .image_ref import del_idpref
 from .models import DockerImage, DockerLayer
 from .models import MODEL_LIST
 from .util import DockerUtil
@@ -26,18 +29,19 @@ PLUGIN_TYPE = 'package'
 class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config_dict: dict) -> None:
         super().__init__({
             "storage": "/var/lib/docker",
-            **config
+            **config_dict
         })
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(storage=self.config["storage"], aiodocker=self.aiodocker)
+        self.util = DockerUtil(cache_dir=config.cache_dir + '/docker',
+                               storage=self.config["storage"], aiodocker=self.aiodocker,
+                               local_node=self.node)
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
-        self.tar_cache_dir = "tar_cache"
         self.probe_task = None
         self.api_routes = ROUTES
         self.model_list = MODEL_LIST
@@ -88,15 +92,37 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
     async def save_layer_at_node(self, layer: DockerLayer, node: Node):
         """Save a layer from a node into db"""
         try:
-            layer_ = DockerLayer.get(DockerLayer.digest == layer.digest)
+            layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
+            self.save_local_paths(layer_)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
+            self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
+
+    def save_local_paths(self, layer: DockerLayer):
+        """Update 'cache_path' and 'docker_path' with paths of local node"""
+        try:
+            docker_path = self.util.layerdir_path.format(
+                layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
+
+            if os.path.exists(docker_path):
+                layer.docker_path = docker_path
+            else:
+                layer.docker_path = None
+
+        except FileNotFoundError:
+            layer.docker_path = None
+
+        cache_path = os.path.join(self.util.layer_cache_path, del_idpref(layer.digest) + '.tar')
+        if os.path.exists(cache_path):
+            layer.cache_path = cache_path
+        else:
+            layer.cache_path = None
 
     async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""
@@ -269,6 +295,8 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # image_data = await self.aiodocker.images.get(name=image_id)
         image = DockerImage.get(DockerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
+
+        # unset layers
         if image.available_at:
             image.save()
         else:
@@ -278,6 +306,29 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # we do not handle deleting layers yet, not sure if they are
         # shared and needed by other images
         # code remains here for further interests. see PR #114 of rsnc
+
+        # await self.delete_layers(image.layers)
+
+        self.emit('docker_daemon.existing_image_deleted', image.hash_id)
+
+    async def delete_layers(self, diff_id_list: list)-> None:
+        """
+        Unset available layer
+        """
+        layers = DockerLayer.select() \
+                            .where(DockerLayer.diff_id.in_(diff_id_list)) \
+                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
+
+        for layer in layers:
+            layer.unset_available_at(self.node.uuid.hex)
+            layer.docker_path = None
+
+            if layer.available_at:
+                layer.save()
+            else:
+                layer.delete_instance()
+
+        # old code for educational purposes, please delete when it makes sense to delete
         #
         # try:
         #     self.log.debug("Layer list: %s", image_data['RootFS']['Layers'])
@@ -291,8 +342,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # except DockerUtil.CannotFindLayerMappingError:
         #     self.log.debug("Unexpected error, layers of image %s could not found..",
         #                    image_data['Id'])
-
-        self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
     async def save_image(self, image_id: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):
@@ -334,6 +383,12 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                        self.node.uuid.hex, image.to_dict(dialect="docker"))
 
         image.set_available_at(self.node.uuid.hex)
+
+        # save config
+        config_path = os.path.join(self.util.config_path, del_idpref(image.hash_id))
+        with open(config_path)as file:
+            image.config = file.read() # type: ignore
+
         image.save(force_insert=not image_exists_in_db)
 
         if not skip_updates:

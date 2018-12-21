@@ -31,11 +31,14 @@ def image():
               help='Forces download of image even if the node is not recognised')
 @click.option('--progress', 'progress', default=False, is_flag=True,
               help='Show image transfer progress')
+@click.option('--whole-image-only', 'whole_image_only', default=False, is_flag=True,
+              help='Pull an image from other node (not each layer)')
 @click.argument('imagename')
 @click.pass_obj
 @pass_context
 # pylint: disable-msg=too-many-arguments
-def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagename: str):
+def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
+               whole_image_only: bool, imagename: str):
     """Pull a container image from cluster or repository"""
     click.echo('Pulling image %s from %s!' % (imagename, node))
 
@@ -49,6 +52,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagenam
                 node=node,
                 wait=wait,
                 force=force,
+                whole_image_only=whole_image_only,
                 progress=True,
                 raise_error=True
             )
@@ -69,6 +73,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool, imagenam
             node=node,
             wait=wait,
             force=force,
+            whole_image_only=whole_image_only,
             progress=False,
             raise_error=True
         )

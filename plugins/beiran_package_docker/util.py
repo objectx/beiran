@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Docker Plugin Utility Module"""
 import asyncio
 import os
@@ -7,8 +8,10 @@ import base64
 import json
 import hashlib
 import platform
+import tarfile
 from typing import Tuple
 from collections import OrderedDict
+import aiohttp
 
 import aiofiles
 
@@ -18,11 +21,10 @@ from aiodocker import Docker
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
-from beiran.config import config
 from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
-from .image_ref import normalize_ref
+from .image_ref import normalize_ref, is_tag, is_digest, add_idpref, del_idpref, add_default_tag
 
 
 LOGGER = build_logger()
@@ -40,7 +42,7 @@ async def aio_isdir(path: str):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 
-class DockerUtil:
+class DockerUtil: # pylint: disable=too-many-instance-attributes
     """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):
@@ -67,9 +69,22 @@ class DockerUtil:
         """..."""
         pass
 
-    def __init__(self, storage: str = "/var/lib/docker", aiodocker: Docker = None,
-                 logger: logging.Logger = None) -> None:
+    class ConfigError(Exception):
+        """..."""
+        pass
+
+    class LayerNotFound(Exception):
+        """..."""
+        pass
+
+    def __init__(self, cache_dir: str, storage: str = "/var/lib/docker", # pylint: disable=too-many-arguments
+                 aiodocker: Docker = None, logger: logging.Logger = None,
+                 local_node: Node = None) -> None:
+        self.cache_dir = cache_dir
+        self.check_cahe_path_exist()
+
         self.storage = storage
+        self.local_node = local_node
 
         # TODO: Persist this mapping cache to disk or database
         self.diffid_mapping: dict = {}
@@ -78,22 +93,35 @@ class DockerUtil:
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
 
-    @staticmethod
-    def docker_sha_summary(sha: str) -> str:
-        """
-        shorten sha to 12 bytes length str as docker uses
+    @property
+    def digest_path(self)-> str:
+        """Get digest path in docker storage"""
+        return self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
 
-        e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25"
-        to "53478ce18e19"
+    @property
+    def layerdb_path(self)-> str:
+        """Get layerdb path in docker storage"""
+        return self.storage + '/image/overlay2/layerdb/sha256'
 
-        Args:
-            sha (string): sha string
+    @property
+    def layerdir_path(self)-> str:
+        """Get directory of layer path in docker storage"""
+        return self.storage + '/overlay2/{layer_dir_name}/diff'
 
-        Returns:
-            string
+    @property
+    def config_path(self)-> str:
+        """Get path of image config in docker storage"""
+        return self.storage + '/image/overlay2/imagedb/content/sha256'
 
-        """
-        return sha.split(":")[1][0:12]
+    @property
+    def layer_cache_path(self)-> str:
+        """Get path of layer in beiran cache directory"""
+        return self.cache_dir + '/layers/sha256'
+
+    def check_cahe_path_exist(self)-> None:
+        """Check cache paths and create them"""
+        if not os.path.isdir(self.layer_cache_path): # cache path for layer
+            os.makedirs(self.layer_cache_path)
 
     def docker_find_layer_dir_by_sha(self, sha: str):
         """
@@ -109,14 +137,18 @@ class DockerUtil:
         """
         diff_file_name = ""
 
-        local_digest_dir = self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
-        local_layer_db = self.storage + '/image/overlay2/layerdb/sha256'
+        local_digest_dir = self.digest_path
+        local_layer_db = self.layerdb_path
         local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
-        local_layer_dir = self.storage + '/overlay2/{layer_dir_name}/diff'
+        local_layer_dir = self.layerdir_path
 
-        f_path = local_digest_dir + "/{}".format(sha.replace('sha256:', '', 1))
+        f_path = local_digest_dir + "/{}".format(del_idpref(sha))
 
-        file = open(f_path, 'r')
+        try:
+            file = open(f_path, 'r')
+        except FileNotFoundError:
+            return None
+
         diff_1 = file.read()
         file.close()
 
@@ -224,13 +256,13 @@ class DockerUtil:
         # sometimes they are same, sometimes they are not.
 
         self.logger.debug("Getting diff-id digest mappings..")
-        mapping_dir = self.storage + "/image/overlay2/distribution/diffid-by-digest/sha256"
+        mapping_dir = self.digest_path
 
         cached_digests = self.diffid_mapping.values()
 
         try:
             for filename in await aio_dirlist(mapping_dir):
-                digest = 'sha256:' + filename
+                digest = add_idpref(filename)
                 if digest in cached_digests:
                     continue
 
@@ -259,13 +291,13 @@ class DockerUtil:
         # since there are no mappings outside...
 
         self.logger.debug("Getting layerdb digest mappings..")
-        layerdb_path = self.storage + "/image/overlay2/layerdb/sha256"
+        layerdb_path = self.layerdb_path
 
         cached_chain_ids = self.layerdb_mapping.values()
 
         try:
             for filename in await aio_dirlist(layerdb_path):
-                chain_id = 'sha256:' + filename
+                chain_id = add_idpref(filename)
                 if chain_id in cached_chain_ids:
                     continue
 
@@ -309,7 +341,7 @@ class DockerUtil:
             (DockerLayer): `layer` object
         """
 
-        layer_storage_path = self.storage + "/image/overlay2/layerdb"
+        layerdb_path = self.storage + "/image/overlay2/layerdb"
         if diffid not in self.diffid_mapping:
             self.diffid_mapping[diffid] = None
             # image.has_unknown_layers = True
@@ -341,11 +373,21 @@ class DockerUtil:
         # print("layerdb: ", layer.chain_id)
 
         # try:
-        layer_meta_folder = layer_storage_path + '/' + layer.chain_id.replace(':', '/')
+        layer_meta_folder = layerdb_path + '/' + layer.chain_id.replace(':', '/')
         async with aiofiles.open(layer_meta_folder + '/size', mode='r') as layer_size_file:
             size_str = await layer_size_file.read()
 
         layer.size = int(size_str.strip())
+
+        local_layer_dir = self.layerdir_path
+        layer.docker_path = local_layer_dir.format(
+            layer_dir_name=self.get_cache_id_from_chain_id(layer.chain_id))
+
+        if digest:
+            # ignore .tar.gz
+            cache_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
+            if os.path.exists(cache_path):
+                layer.cache_path = cache_path
 
         # except FileNotFoundError as e:
         #     # Actually some other layers refers to this layer
@@ -355,6 +397,12 @@ class DockerUtil:
         #     print(" -- Result: Cannot find layer folder")
         #     image.layers.append("<not-found>")
         return layer
+
+    def get_cache_id_from_chain_id(self, chain_id: str)-> str:
+        """Read cache id file and return the content (cache id)"""
+        with open(self.storage + '/image/overlay2/layerdb/' + \
+                  chain_id.replace(':', '/') + '/cache-id') as file:
+            return file.read()
 
     async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> dict:
         """
@@ -374,7 +422,7 @@ class DockerUtil:
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=10, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
@@ -439,10 +487,6 @@ class DockerUtil:
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
-    def layer_storage_path(self, layer_hash: str)-> str:
-        """Where to storage layer downloads (temporarily)"""
-        return config.cache_dir + '/layers/sha256/' + layer_hash.replace("sha256:", '') + ".tar.gz"
-
     async def download_layer_from_origin(self, host: str, repository: str,
                                          layer_hash: str, **kwargs):
         """
@@ -452,7 +496,7 @@ class DockerUtil:
             repository (str): path of repository (e.g. library/centos)
             layer_hash (str): SHA-256 hash of a blob
         """
-        save_path = self.layer_storage_path(layer_hash)
+        save_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar.gz')
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, layer_hash)
         requirements = ''
 
@@ -474,80 +518,98 @@ class DockerUtil:
 
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
 
-    async def download_layer_from_node(self, host: str, diff_id: str):
+    async def download_layer_from_node(self, host: str,
+                                       digest: str)-> aiohttp.client_reqrep.ClientResponse:
         """
         Download layer from other node.
         """
-        save_path = self.layer_storage_path(diff_id)
-        save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
-        url = host + '/docker/layers/' + diff_id
+        # save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
+        save_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
+        url = host + '/docker/layers/' + digest
 
         self.logger.debug("downloading layer from %s", url)
-        await async_write_file_stream(url, save_path, timeout=60)
-        self.logger.debug("downloaded layer %s to %s", diff_id, save_path)
+        resp = await async_write_file_stream(url, save_path, timeout=60)
+        self.logger.debug("downloaded layer %s to %s", digest, save_path)
+        return resp
 
     async def ensure_having_layer(self, host: str, repository: str, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
+
+        Args:
+            layer_hash(str): digest of layer
         """
 
         # beiran cache directory
-        gs_layer_path = self.layer_storage_path(layer_hash)
-        tar_layer_path = gs_layer_path.rstrip('.gz')
+        tar_layer_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar')
+        gs_layer_path = tar_layer_path + '.gz'
 
         if os.path.exists(tar_layer_path):
+            self.logger.debug("Found layer (%s)", tar_layer_path)
             return 'cache', tar_layer_path # .tar file exists
 
         if os.path.exists(gs_layer_path):
+            self.logger.debug("Found layer (%s)", gs_layer_path)
             return 'cache-gz', gs_layer_path # .tar.gz file exists
 
-        # docker library or other node
+         # docker library or other node
         try:
             layer = DockerLayer.get(DockerLayer.digest == layer_hash)
 
-            # check local storage
-            layerdb_path = self.storage + "/image/overlay2/layerdb/sha256/" \
-                                        + layer.chain_id.replace('sha256:', '')
-            if os.path.exists(layerdb_path):
-                cache_id = ""
-                with open(layerdb_path + '/cache-id')as file:
-                    cache_id = file.read()
+            # If layer is exist in docker storage, download layer.
+            # # check local storage
+            # layerdb_path = self.layerdb_path + "/" \
+            #                             + del_idpref(layer.chain_id)
+            # if os.path.exists(layerdb_path):
+            #     cache_id = ""
+            #     with open(layerdb_path + '/cache-id')as file:
+            #         cache_id = file.read()
 
-                return 'docker', self.storage + "/overlay2/" + cache_id + "/diff"
+            #     docker_layer_path = self.storage + "/overlay2/" + cache_id + "/diff"
+            #     self.logger.debug("Found layer (%s)", docker_layer_path)
+            #     return 'docker', docker_layer_path
 
-            node_id = layer.available_at[0]
-            node = Node.get(Node.uuid == node_id)
+            # try to download layer from node that has tarball in own cache directory
+            for node_id in layer.available_at:
+                if node_id == self.local_node.uuid.hex: # type: ignore
+                    continue
 
-            await self.download_layer_from_node(node.url_without_uuid, layer.digest)
-            return 'cache', tar_layer_path
+                node = Node.get(Node.uuid == node_id)
+                resp = await self.download_layer_from_node(node.url_without_uuid, layer.digest)
+
+                if resp.status == 200:
+                    if not os.path.exists(tar_layer_path):
+                        raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                    return 'cache', tar_layer_path
 
         except (DockerLayer.DoesNotExist, IndexError):
-            # TODO: Wait for finish if another beiran is currently downloading it
-            # TODO:  -- or ask for simultaneous streaming download
-            await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
-            return 'cache-gz', gs_layer_path
+            pass
+
+        # TODO: Wait for finish if another beiran is currently downloading it
+        # TODO:  -- or ask for simultaneous streaming download
+        await self.download_layer_from_origin(host, repository, layer_hash, **kwargs)
+        return 'cache-gz', gs_layer_path
 
     async def get_layer_diffid(self, host: str, repository: str, layer_hash: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
         storage, layer_path = await self.ensure_having_layer(host, repository,
                                                              layer_hash, **kwargs)
 
-        if storage == 'docker':
-            # TODO: do something using path of the layer directory ?
-            layer = DockerLayer.get(DockerLayer.digest == layer_hash)
-            return layer.diff_id
+        # if storage == 'docker':
+        #     layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+        #     return layer.diff_id
 
         if storage == 'cache-gz':
-            # decompress .tar.gz
-            gunzip(layer_path)
+            gunzip(layer_path) # decompress .tar.gz
+            layer_path = layer_path.rstrip('.gz')
 
-        with open(layer_path, 'rb') as tarfile:
-            diff_id = hashlib.sha256(tarfile.read()).hexdigest()
+        with open(layer_path, 'rb') as file:
+            diff_id = hashlib.sha256(file.read()).hexdigest()
 
-        return 'sha256:' + diff_id
+        return add_idpref(diff_id)
 
     async def download_config_from_origin(self, host: str, repository: str,
-                                          image_id: str, **kwargs) -> dict:
+                                          image_id: str, **kwargs) -> str:
         """
         Download config file of docker image and save it to database.
         """
@@ -558,22 +620,21 @@ class DockerUtil:
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=10, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp, data = await async_req(url=url, return_json=True, Authorization=requirements)
+            resp, _ = await async_req(url=url, Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
                                                   % resp.status)
-
-        return data
+        return await resp.text(encoding='utf-8')
 
     async def fetch_config_schema_v1(self, host: str, repository: str, # pylint: disable=too-many-locals, too-many-branches
-                                     manifest: dict) -> Tuple[dict, str, str]:
+                                     manifest: dict) -> Tuple[str, str, str]:
         """
         Pull image using image manifest version 1
         """
@@ -617,6 +678,33 @@ class DockerUtil:
 
         rootfs = await self.get_layer_diffids_of_image(host, repository, descriptors)
 
+        # save layer records
+        chain_id = rootfs['diff_ids'][0]
+        top = True
+        for i, layer_d in enumerate(descriptors):
+            if top:
+                top = False
+            else:
+                chain_id = self.calc_chain_id(chain_id, rootfs['diff_ids'][i])
+
+            # Probably following sentences are needed when saving layers that do not belong
+            # to any image.
+
+            # layer_ = DockerLayer()
+            # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
+            # layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
+            # layer_.digest = layer_d['digest']
+            # layer_.diff_id = rootfs['diff_ids'][i]
+            # layer_.chain_id = chain_id
+            # layer_.size = self.get_diff_size(layer_tar_path)
+            # layer_.cache_path = layer_tar_path
+
+            # layer_.save()
+
+            self.diffid_mapping[rootfs['diff_ids'][i]] = layer_d['digest']
+            self.layerdb_mapping[rootfs['diff_ids'][i]] = chain_id
+
+        # create base of image config
         config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
         clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
 
@@ -626,7 +714,7 @@ class DockerUtil:
         # calc RepoDigest
         del manifest['signatures']
         manifest_str = json.dumps(manifest, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
+        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
 
         # replace, shape, then calc digest
         config_json = OrderedDict(sorted(config_json.items(), key=lambda x: x[0]))
@@ -635,29 +723,44 @@ class DockerUtil:
                                          .replace('<', r'\u003c') \
                                          .replace('>', r'\u003e')
 
-        config_digest = 'sha256:' + hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
+        config_digest = add_idpref(hashlib.sha256(config_json_str.encode('utf-8')).hexdigest())
 
-        return config_json, config_digest, repo_digest
+        return config_json_str, config_digest, repo_digest
 
 
     async def fetch_config_schema_v2(self, host: str, repository: str,
-                                     manifest: dict)-> Tuple[dict, str, str]:
+                                     manifest: dict)-> Tuple[str, str, str]:
         """
         Pull image using image manifest version 2
         """
         config_digest = manifest['config']['digest']
-        config_json = await self.download_config_from_origin(
+        config_json_str = await self.download_config_from_origin(
             host, repository, config_digest
         )
 
         manifest_str = json.dumps(manifest, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifest_str.encode('utf-8')).hexdigest()
+        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
 
-        return config_json, config_digest, repo_digest
+        # set mapping
+        diff_id_list = json.loads(config_json_str)['rootfs']['diff_ids']
 
+        chain_id = diff_id_list[0]
+        top = True
+        for i, diff_id in enumerate(diff_id_list):
+            if top:
+                top = False
+            else:
+                chain_id = self.calc_chain_id(chain_id, diff_id_list[i])
+            self.diffid_mapping[diff_id] = manifest['layers'][i]['digest']
+            self.layerdb_mapping[diff_id] = chain_id
+
+        # download layers
+        await self.get_layer_diffids_of_image(host, repository, manifest['layers'])
+
+        return config_json_str, config_digest, repo_digest
 
     async def fetch_config_manifest_list(self, host: str, repository: str,
-                                         manifestlist: dict)-> Tuple[dict, str, str]:
+                                         manifestlist: dict)-> Tuple[str, str, str]:
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
@@ -681,14 +784,14 @@ class DockerUtil:
 
         if schema_v == 1:
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, _ = await self.fetch_config_schema_v1(
+            config_json_str, config_digest, _ = await self.fetch_config_schema_v1(
                 host, repository, manifest
             )
 
         elif schema_v == 2:
             if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
                 # pull layers using version 2 manifest
-                config_json, config_digest, _ = await self.fetch_config_schema_v2(
+                config_json_str, config_digest, _ = await self.fetch_config_schema_v2(
                     host, repository, manifest
                 )
             else:
@@ -697,9 +800,9 @@ class DockerUtil:
             raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         manifestlist_str = json.dumps(manifestlist, indent=3)
-        repo_digest = 'sha256:' + hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest()
+        repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
 
-        return config_json, config_digest, repo_digest
+        return config_json_str, config_digest, repo_digest
 
 
 
@@ -758,18 +861,14 @@ class DockerUtil:
             - manifest list: v1 or v2
         """
 
-        try:
-            image = DockerImage.get_image_data(tag)
-            config_path = self.storage + '/image/overlay2/imagedb/content/sha256/' \
-                                       + image.hash_id.replace('sha256:', '')
-            content = ""
-            with open(config_path)as file:
-                content = file.read()
+        # try:
+        #     image = DockerImage.get_image_data(tag)
+        #     if image.repo_digests:
+        #         return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
+        #     return image.config, image.hash_id, None
 
-            return json.loads(content), image.hash_id, image.repo_digests[0].split('@')[1]
-
-        except (DockerImage.DoesNotExist, FileNotFoundError):
-            pass
+        # except (DockerImage.DoesNotExist, FileNotFoundError):
+        #     pass
 
 
         ref = normalize_ref(tag, index=True)
@@ -783,7 +882,7 @@ class DockerUtil:
         if schema_v == 1:
 
             # pull layers and create config from version 1 manifest
-            config_json, config_digest, repo_digest = await self.fetch_config_schema_v1(
+            config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v1(
                 ref['domain'], ref['repo'], manifest
             )
 
@@ -793,14 +892,14 @@ class DockerUtil:
             if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
 
                 # pull layers using version 2 manifest
-                config_json, config_digest, repo_digest = await self.fetch_config_schema_v2(
+                config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v2(
                     ref['domain'], ref['repo'], manifest
                 )
 
             elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
 
                 # pull_schema_list
-                config_json, config_digest, repo_digest = await self.fetch_config_manifest_list(
+                config_json_str, config_digest, repo_digest = await self.fetch_config_manifest_list(
                     ref['domain'], ref['repo'], manifest
                 )
 
@@ -809,9 +908,108 @@ class DockerUtil:
         else:
             raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
-        #FIXME! acutually, config must be saved before downloading image
-        # image = DockerImage.get(DockerImage.hash_id == config_digest)
-        # image.config = config_json
-        # image.save()
+        return config_json_str, config_digest, repo_digest
 
-        return config_json, config_digest, repo_digest
+    def get_diff_size(self, tar_path: str) -> int:
+        """Get the total size of files in a tarball"""
+        total = 0
+        with tarfile.open(tar_path, 'r:') as tar:
+            for tarinfo in tar:
+                if tarinfo.isreg():
+                    total += tarinfo.size
+        return total
+
+    def calc_chain_id(self, parent_chain_id: str, diff_id: str) -> str:
+        """calculate chain id"""
+        string = parent_chain_id + ' ' + diff_id
+        return add_idpref(hashlib.sha256(string.encode('utf-8')).hexdigest())
+
+    async def create_image_from_tar(self, tag_or_digest: str, config_json_str: str, # pylint: disable=too-many-locals
+                                    image_id: str)-> str:
+        """
+        Collect layers, download or create config json, create manifest for loading image
+        and create image tarball
+        """
+        manifest_f_name = 'manifest.json'
+
+        # add latest tag
+        if not is_digest(tag_or_digest):
+            if not is_tag(tag_or_digest):
+                tag_or_digest = add_default_tag(tag_or_digest)
+
+        work_path = self.cache_dir + '/work'
+        if not os.path.isdir(work_path):
+            os.makedirs(work_path)
+
+        image_id = del_idpref(image_id)
+
+        config_digest = hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
+        if config_digest != image_id:
+            raise DockerUtil.ConfigError(
+                'Invalid config. The digest is wrong (expect: %s, actual: %s)'
+                % (image_id, config_digest))
+
+        # create config file
+        config_file_name = image_id + '.json'
+        with open(work_path + '/' + config_file_name, 'w') as file:
+            file.write(config_json_str)
+
+        # get layer files
+        diff_id_list = json.loads(config_json_str)['rootfs']['diff_ids']
+        digest_f_name_list = [
+            del_idpref(self.diffid_mapping[diff_id]) + '.tar'
+            for diff_id in diff_id_list
+        ]
+
+        # fail early if a layer doesn't exist
+        for f_name in digest_f_name_list:
+            if not os.path.exists(self.layer_cache_path + '/' + f_name):
+                raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+
+        # create manifest
+        manifest = [
+            {
+                "Config": config_file_name,
+                "RepoTags": [tag_or_digest] if is_tag(tag_or_digest) else None,
+                "Layers": digest_f_name_list,
+            }
+        ]
+        with open(work_path + '/' + manifest_f_name, 'w') as file:
+            file.write(json.dumps(manifest))
+
+        # create tarball
+        tar_path = work_path + '/' + 'image.tar'
+        with tarfile.open(tar_path, 'w') as tar:
+            tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
+            tar.add(work_path + '/' + manifest_f_name, arcname=manifest_f_name)
+
+            for f_name in digest_f_name_list:
+                if not os.path.exists(self.layer_cache_path + '/' + f_name):
+                    raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                    # Do not create tarball from storage of docker!!!
+                    # The digest of the tarball varies depending on mtime of the file to be added
+                    # with tarfile.open(self.layer_cache_path + '/' + f_name, "w") as layer_tar:
+                    #     chain_id = self.layerdb_mapping[diff_id_list[i]]
+                    #     layer_tar.add(
+                    #         self.layerdir_path'.format(
+                    #             layer_dir_name=self.get_cache_id_from_chain_id(chain_id)))
+
+                tar.add(self.layer_cache_path + '/' + f_name, arcname=f_name)
+
+        return tar_path
+
+    async def load_image(self, tar_path: str):
+        """
+        Load image tarball.
+        """
+        self.logger.debug("loading image...")
+        # load image
+        tar_data = bytes()
+        with open(tar_path, mode='rb') as file:
+            while True:
+                chunk = file.read(51200)
+                if not chunk:
+                    break
+                tar_data += chunk
+
+        await self.aiodocker.images.import_image(data=tar_data)

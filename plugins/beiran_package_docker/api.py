@@ -11,7 +11,7 @@ from tornado.web import Application
 from tornado.httputil import HTTPServerRequest
 from peewee import SQL
 import aiodocker
-from beiran.util import create_tar_archive
+# from beiran.util import create_tar_archive
 from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
@@ -23,7 +23,6 @@ class Services:
     logger = None
     aiodocker = None
     docker_util = None
-    tar_cache_dir = "tar_cache"
     loop = None
     daemon = None
 
@@ -110,11 +109,11 @@ class ImageConfigHandler(web.RequestHandler):
         self.set_header("Content-Type", "application/json")
 
         image_identifier = image_identifier.rstrip('/config')
-        config, image_id, repo_digest = \
+        config_str, image_id, repo_digest = \
             await Services.docker_util.create_or_download_config(image_identifier)
 
         dict_ = {
-            'config': config,
+            'config': json.loads(config_str),
             'image_id': image_id,
             'repo_digest': repo_digest
         }
@@ -156,21 +155,22 @@ class LayerDownload(web.RequestHandler):
             404 if layer not found
 
         """
-        layer_path = Services.docker_util.docker_find_layer_dir_by_sha(layer_id) # type: ignore
-        if not layer_path:
+        try:
+            layer = DockerLayer.select().where(DockerLayer.digest == layer_id).get()
+        except DockerLayer.DoesNotExist:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
-        tar_path = "{cache_dir}/{cache_tar_name}" \
-            .format(cache_dir=Services.tar_cache_dir,
-                    cache_tar_name=Services.docker_util.docker_sha_summary(layer_id)) # type: ignore
+        if not layer.cache_path:
+            raise HTTPError(status_code=404, log_message="Layer Not Found")
 
-        if not os.path.isdir(Services.tar_cache_dir):
-            os.makedirs(Services.tar_cache_dir)
+            # Do not create tarball from storage of docker!!!
+            # The digest of the tarball varies depending on the mtime of the file to be added
+            # layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0] # type: ignore # pylint: disable=line-too-long
+            # if not os.path.isfile(layer.cache_path):
+            #     create_tar_archive(layer.docker_path, layer.cache_path)
+            # layer.save()
 
-        if not os.path.isfile(tar_path):
-            create_tar_archive(layer_path, tar_path)
-
-        return tar_path
+        return layer.cache_path
 
     # pylint: disable=arguments-differ
     def head(self, layer_id: str):
@@ -280,13 +280,56 @@ class ImageList(RPCEndpoint):
         wait = True if 'wait' in body and body['wait'] else False
         force = True if 'force' in body and body['force'] else False
         show_progress = True if 'progress' in body and body['progress'] else False
+        whole_image_only = True if 'whole_image_only' in body \
+                           and body['whole_image_only'] else False
 
-        await self.pull_routine(image_identifier, node_identifier, self, wait, show_progress, force)
+        if whole_image_only:
+            await self.pull_routine(image_identifier, node_identifier,
+                                    self, wait, show_progress, force)
+
+        else:
+            # distributed layer-by-layer download
+            await self.pull_routine_distributed(image_identifier, self, wait)
+
+
+    @staticmethod
+    async def pull_routine_distributed(tag_or_digest: str, rpc_call: "RPCEndpoint" = None,
+                                       wait: bool = False) -> None:
+        """Coroutine to pull image (download distributed layers)
+        """
+        #TODO: not support 'progress' yet
+
+        Services.logger.debug("Will fetch %s", tag_or_digest) # type: ignore
+
+        # if not wait and not show_progress and rpc_call is not None:
+        if not wait and rpc_call is not None:
+            rpc_call.write({'started':True})
+            rpc_call.finish()
+
+        # config_json_str, image_id, repo_digest = \
+        #     await self.util.create_or_download_config(tag_or_digest)
+        config_json_str, image_id, _ = \
+            await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
+
+        tarball_path = await Services.docker_util.create_image_from_tar( # type: ignore
+            tag_or_digest, config_json_str, image_id)
+
+        await Services.docker_util.load_image(tarball_path) # type: ignore
+
+        # # save repo_digest ?
+        # image = DockerImage.get().where(...)
+        # image.repo_digests.add(repo_digest)
+        # image.save()
+
+        # if wait and not show_progress:
+        if wait:
+            rpc_call.write({'finished':True}) # type: ignore
+            rpc_call.finish() # type: ignore
 
 
     @staticmethod
     async def pull_routine(image_identifier: str, node_identifier: str = None, # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
-                           rpc_endpoint: "RPCEndpoint" = None, wait: bool = False,
+                           rpc_call: "RPCEndpoint" = None, wait: bool = False,
                            show_progress: bool = False, force: bool = False) -> str:
         """Coroutine to pull image in cluster
         """
@@ -324,12 +367,12 @@ class ImageList(RPCEndpoint):
         real_size = 0
 
         if show_progress:
-            rpc_endpoint.write('{"image":"%s","progress":[' % image_identifier) # type: ignore
-            rpc_endpoint.flush() # type: ignore
+            rpc_call.write('{"image":"%s","progress":[' % image_identifier) # type: ignore
+            rpc_call.flush() # type: ignore
 
-        if not wait and not show_progress and rpc_endpoint is not None:
-            rpc_endpoint.write({'started':True})
-            rpc_endpoint.finish()
+        if not wait and not show_progress and rpc_call is not None:
+            rpc_call.write({'started':True})
+            rpc_call.finish()
 
         @aiohttp.streamer
         async def sender(writer, chunks: asyncio.queues.Queue):
@@ -346,17 +389,17 @@ class ImageList(RPCEndpoint):
                     real_size += len(chunk)
                     if show_progress and real_size/float(image.size) - last_progress > 0.05:
                         progress = real_size/float(image.size)
-                        rpc_endpoint.write( # type: ignore
+                        rpc_call.write( # type: ignore
                             '{"progress": %.2f, "done": false},' % progress
                         )
-                        rpc_endpoint.flush() # type: ignore
+                        rpc_call.flush() # type: ignore
                         last_progress = progress
                 else:
                     if show_progress:
-                        rpc_endpoint.write('{"progress": %.2f, "done": true}' % # type: ignore
-                                           (real_size / float(image.size)))
-                        rpc_endpoint.write(']}') # type: ignore
-                        rpc_endpoint.finish() # type: ignore
+                        rpc_call.write('{"progress": %.2f, "done": true}' % # type: ignore
+                                       (real_size / float(image.size)))
+                        rpc_call.write(']}') # type: ignore
+                        rpc_call.finish() # type: ignore
 
                         # FIXME!
                         if real_size != image.size:
@@ -386,8 +429,8 @@ class ImageList(RPCEndpoint):
             if wait:
                 raise HTTPError(status_code=500, log_message=str(error))
         if wait and not show_progress:
-            rpc_endpoint.write({'finished':True}) # type: ignore
-            rpc_endpoint.finish() # type: ignore
+            rpc_call.write({'finished':True}) # type: ignore
+            rpc_call.finish() # type: ignore
 
         return image.hash_id
 

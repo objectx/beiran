@@ -99,6 +99,13 @@ def is_digest(string: str):
         return True
     return False
 
+def is_tag(string: str):
+    """Judge whether or not string is tag.
+    """
+    if ":" in string and "@" not in string:
+        return True
+    return False
+
 # def is_id(string: str):
 #     """Judge whether or not string is image id.
 #     """
@@ -112,14 +119,42 @@ def add_default_tag(name: str) -> str:
         return name
     return name + ":" + DEFAULT_TAG
 
-def add_id_prefix(image_id: str) -> str:
-    """Return sha256:<image id>"""
-    if image_id.startswith(ID_PREFIX):
-        return image_id
-    return ID_PREFIX + image_id
+def add_idpref(image_or_layer_id: str) -> str:
+    """Return sha256:<image or layer id>"""
+    if image_or_layer_id.startswith(ID_PREFIX):
+        return image_or_layer_id
+    return ID_PREFIX + image_or_layer_id
+
+def del_idpref(image_or_layer_id: str) -> str:
+    """
+    Args:
+        image_or_layer_id (str): 'sha256:<image or layer id>'
+
+    Return:
+        <image or layer id> (str)
+    """
+    if not image_or_layer_id.startswith(ID_PREFIX):
+        return image_or_layer_id
+    return image_or_layer_id.split(ID_PREFIX)[1]
 
 def marshal(domain: str, repo: str, sign: str, suffix: str) -> str:
     """
     Marshall components of reference, and return normalized reference
     """
     return domain + "/" + repo + sign + suffix
+
+def docker_sha_summary(sha: str) -> str:
+    """
+    shorten sha to 12 bytes length str as docker uses
+
+    e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25"
+    to "53478ce18e19"
+
+    Args:
+        sha (string): sha string
+
+    Returns:
+        string
+
+    """
+    return sha.split(":")[1][0:12]

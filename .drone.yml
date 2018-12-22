@@ -96,10 +96,10 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/beiran:drone-build-${DRONE_BUILD_NUMBER}
     detach: true
     environment:
-      - DISCOVERY_METHOD=none
-      - LOG_LEVEL=INFO
+      - BEIRAN_DISCOVERY_METHOD=none
+      - BEIRAN_LOG_LEVEL=INFO
       - DOCKER_HOST=tcp://dockerd1:2375
-      - LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
       - BEIRAN_PLUGINS=package.docker
     volumes:
       - /tmp/beiran-build-vols/dockerd1-${DRONE_BUILD_NUMBER}:/var/lib/docker
@@ -113,7 +113,7 @@ pipeline:
     image: dkr.rsnc.io/poc/beiran/pyresttest
     environment:
       - LOG=True
-      - LOG_LEVEL=DEBUG
+      - BEIRAN_LOG_LEVEL=DEBUG
       - PRINT_BODIES=True
     commands: 
       - date

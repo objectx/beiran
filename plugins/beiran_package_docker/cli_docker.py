@@ -11,16 +11,24 @@ from beiran.util import sizeof_fmt
 from beiran.cli import pass_context
 
 
-@click.group("docker", short_help="docker subcommands")
+@click.group()
 def cli():
-    """Main subcommand method."""
+    """Docker Commands
+
+    Manage your docker images and layers in cluster.
+
+    Please see sub-commands help texts."""
     pass
 
 
 @cli.group("image", short_help="docker image subcommand")
 def image():
-    """Group command for image management"""
+    """Manage Docker Images
+
+    List and pull docker images.
+    """
     pass
+
 
 @image.command('pull')
 @click.option('--from', 'node', default=None,
@@ -125,9 +133,9 @@ def image_list(ctx, all_nodes: bool, digests: bool, node: str):
 
 # ##########  Layer management commands
 
-@cli.group("layer", short_help="docker layer subcommand")
+@cli.group("layer")
 def layer():
-    """group command for layer management"""
+    """Manage Docker Layers"""
     pass
 
 

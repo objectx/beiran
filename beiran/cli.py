@@ -167,7 +167,9 @@ def main(debug: bool = False, config_file: str = None):
         logger.setLevel(logging.DEBUG)
         logger.info("set debug level")
     if config_file:
-        config(config_file=config_file)
+        # already handled see below where main is called.
+        # config(config_file=config_file)
+        pass
 
 
 if __name__ == '__main__':
@@ -182,7 +184,9 @@ if __name__ == '__main__':
     try:
         index = sys.argv.index('--config')
         if index:
-            config(config_file=sys.argv[index+1])
+            _ = sys.argv.pop(index)  # pop --config
+            config_file = sys.argv.pop(index)  # now pop the next value, e.g. config.toml
+            config(config_file=config_file)
             logger.debug(config.enabled_plugins)
     except ValueError:
         logger.debug("No config file specified, default config in use")

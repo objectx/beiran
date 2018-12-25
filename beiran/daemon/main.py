@@ -186,7 +186,7 @@ class BeiranDaemon(EventEmitter):
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""
 
-        self.available_plugins = get_installed_plugins()
+        self.available_plugins = config.enabled_plugins
         print("Found plugins;", self.available_plugins)
 
     async def init_db(self, append_new: list = None):

@@ -71,46 +71,76 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
     click.echo(
         'Pulling image %s from %s!' % (imagename, node or "available nodes"))
 
-    if progress:
-        progbar = click.progressbar(length=1)
+    if whole_image_only:
+        if progress:
+            progbar = click.progressbar(length=1)
 
-        async def _pull_with_progress():
-            """Pull image with async client"""
-            resp = await ctx.async_beiran_client.pull_image(
+            async def _pull_with_progress():
+                """Pull image with async client"""
+                resp = await ctx.async_beiran_client.pull_image(
+                    imagename,
+                    node=node,
+                    wait=wait,
+                    force=force,
+                    whole_image_only=whole_image_only,
+                    progress=True,
+                    raise_error=True
+                )
+                before = 0
+                async for update in json_streamer(resp.content, '$.progress[::]'):
+                    progbar.update(update['progress'] - before)
+                    before = update['progress']
+
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(_pull_with_progress())
+
+            progbar.render_finish()  # type: ignore  # typing attribute missing error
+            click.echo('done!')
+
+        else:
+            result = ctx.beiran_client.pull_image(
                 imagename,
                 node=node,
                 wait=wait,
                 force=force,
                 whole_image_only=whole_image_only,
-                progress=True,
+                progress=False,
                 raise_error=True
             )
-            before = 0
-            async for update in json_streamer(resp.content, '$.progress[::]'):
-                progbar.update(update['progress'] - before)
-                before = update['progress']
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_pull_with_progress())
-
-        progbar.render_finish()  # type: ignore  # typing attribute missing error
-        click.echo('done!')
+            if "started" in result:
+                click.echo("Process is started")
+            if "finished" in result:
+                click.echo("Process is finished")
 
     else:
-        result = ctx.beiran_client.pull_image(
-            imagename,
-            node=node,
-            wait=wait,
-            force=force,
-            whole_image_only=whole_image_only,
-            progress=False,
-            raise_error=True
-        )
+        if progress:
+            progbar = click.progressbar(length=1)
 
-        if "started" in result:
-            click.echo("Process is started")
-        if "finished" in result:
-            click.echo("Process is finished")
+            async def _pull_with_progress():
+                """Pull image with async client"""
+                resp = await ctx.async_beiran_client.pull_image(
+                    imagename,
+                    node=node,
+                    wait=wait,
+                    force=force,
+                    whole_image_only=whole_image_only,
+                    progress=True,
+                    raise_error=True
+                )
+                # before = 0
+                async for update in json_streamer(resp.content, '$.progress[::]'):
+                    print(update)
+                    # pass
+                    # progbar.update(update['progress'] - before)
+                    # before = update['progress']
+
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(_pull_with_progress())
+
+            progbar.render_finish()  # type: ignore  # typing attribute missing error
+            click.echo('done!')
+
 
 # pylint: enable-msg=too-many-arguments
 

@@ -36,6 +36,7 @@ from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from .models import DockerImage, DockerLayer
+from .image_ref import marshal_normalize_ref
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -309,27 +310,116 @@ class ImageList(RPCEndpoint):
 
         else:
             # distributed layer-by-layer download
-            await self.pull_routine_distributed(image_identifier, self, wait)
+            await self.pull_routine_distributed(image_identifier, self, wait, show_progress)
 
 
     @staticmethod
-    async def pull_routine_distributed(tag_or_digest: str, rpc_call: "RPCEndpoint" = None,
-                                       wait: bool = False) -> None:
+    async def pull_routine_distributed(tag_or_digest: str, rpc_endpoint: "RPCEndpoint" = None,
+                                       wait: bool = False, show_progress: bool = False) -> None:
         """Coroutine to pull image (download distributed layers)
         """
-        #TODO: not support 'progress' yet
+        marshaled = marshal_normalize_ref(tag_or_digest, index=True)
+
+        # A process to pull same image has already been started
+        if marshaled in Services.docker_util.queues:
+            raise HTTPError(status_code=409,
+                            log_message='Pulling process for same image has already been started')
 
         Services.logger.debug("Will fetch %s", tag_or_digest) # type: ignore
 
-        # if not wait and not show_progress and rpc_call is not None:
-        if not wait and rpc_call is not None:
-            rpc_call.write({'started':True})
-            rpc_call.finish()
+        if not wait and not show_progress and rpc_endpoint is not None:
+            rpc_endpoint.write({'started':True})
+            rpc_endpoint.finish()
+        
+        if show_progress:
+            rpc_endpoint.write('{"image":"%s","progress":[' % tag_or_digest) # type: ignore
+            rpc_endpoint.flush() # type: ignore
 
-        # config_json_str, image_id, repo_digest = \
-        #     await self.util.create_or_download_config(tag_or_digest)
-        config_json_str, image_id, _ = \
-            await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
+        config_future = asyncio.ensure_future(Services.docker_util \
+                                .create_or_download_config(tag_or_digest)) # type: ignore
+
+        # wait until finsh creating queues
+        while True:
+            await asyncio.sleep(0.1)
+            if marshaled in Services.docker_util.queues:
+                if len(Services.docker_util.queues[marshaled]['layers']) == \
+                Services.docker_util.queues[marshaled]['num_of_layer']:
+                    break
+
+
+
+        def format_progress(digest: str, status: str, progress: float=1):
+            """generate json dictionary for sending progress"""
+            return '{"digest": "%s", "status": "%s", "progress": %.2f},' % (digest, status, progress)
+
+        async def send_progress(digest):
+            """send progress of layer downloading"""
+            progress = 0.0
+            last_size = 0
+
+            while True:
+                await asyncio.sleep(0.001)
+                status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
+
+                if status == Services.docker_util.DL_INIT:
+                    continue
+
+                # # if layer already exist or downloading was finished
+                # if status == Services.docker_util.DL_ALREADY or status == Services.docker_util.DL_FINISH:
+                #     rpc_endpoint.write( # type: ignore
+                #         format_progress(digest, status)
+                #     )
+                #     rpc_endpoint.flush() # type: ignore
+                #     return
+
+                # if layer already exist
+                if status == Services.docker_util.DL_ALREADY:
+                    rpc_endpoint.write( # type: ignore
+                        format_progress(digest, status)
+                    )
+                    rpc_endpoint.flush() # type: ignore
+                    return
+
+                # if downloading was finished
+                if status == Services.docker_util.DL_FINISH:
+                    while True:
+                        chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'].get()
+                        if chunk:
+                            last_size += len(chunk)
+                            progress = last_size / Services.docker_util.queues[marshaled]['layers'][digest]['size']
+                            rpc_endpoint.write( # type: ignore
+                                format_progress(digest, status, progress)
+                            )
+                            rpc_endpoint.flush() # type: ignore
+                        else:
+                            return
+
+                # calc progress
+                chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'].get()
+                if chunk:
+                    last_size += len(chunk)
+                    progress = last_size / Services.docker_util.queues[marshaled]['layers'][digest]['size']
+                    rpc_endpoint.write( # type: ignore
+                        format_progress(digest, status, progress)
+                    )
+                    rpc_endpoint.flush() # type: ignore
+
+
+        pro_tasks = [
+            send_progress(digest)
+            for digest in Services.docker_util.queues[marshaled]['layers'].keys()
+        ]
+        pro_future = asyncio.gather(*pro_tasks)
+
+
+
+        config_json_str, image_id, _ = await config_future
+        await pro_future
+        del Services.docker_util.queues[marshaled]
+
+        # Do we need to save repo_digest to database? 
+        # config_json_str, image_id, _ = \
+        #     await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
 
         tarball_path = await Services.docker_util.create_image_from_tar( # type: ignore
             tag_or_digest, config_json_str, image_id)
@@ -341,11 +431,13 @@ class ImageList(RPCEndpoint):
         # image.repo_digests.add(repo_digest)
         # image.save()
 
-        # if wait and not show_progress:
-        if wait:
-            rpc_call.write({'finished':True}) # type: ignore
-            rpc_call.finish() # type: ignore
+        if wait and not show_progress:
+            rpc_endpoint.write({'finished':True}) # type: ignore
+            rpc_endpoint.finish() # type: ignore
 
+        if show_progress:
+            rpc_endpoint.write('true]}') # type: ignore
+            rpc_endpoint.finish() # type: ignore
 
     @staticmethod
     async def pull_routine(image_identifier: str, node_identifier: str = None, # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements

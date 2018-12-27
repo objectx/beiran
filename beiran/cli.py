@@ -185,8 +185,8 @@ if __name__ == '__main__':
         index = sys.argv.index('--config')
         if index:
             _ = sys.argv.pop(index)  # pop --config
-            config_file = sys.argv.pop(index)  # now pop the next value, e.g. config.toml
-            config(config_file=config_file)
+            cfile = sys.argv.pop(index)  # now pop the next value, e.g. config.toml
+            config(config_file=cfile)
             logger.debug(config.enabled_plugins)
     except ValueError:
         logger.debug("No config file specified, default config in use")

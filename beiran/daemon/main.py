@@ -37,7 +37,6 @@ from beiran.daemon.version import __version__
 from beiran.config import config
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
-from beiran.plugin import get_installed_plugins
 from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()

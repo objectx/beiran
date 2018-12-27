@@ -48,7 +48,8 @@ def image():
 def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                whole_image_only: bool, imagename: str):
     """Pull a container image from cluster or repository"""
-    click.echo('Pulling image %s from %s!' % (imagename, node))
+    click.echo(
+        'Pulling image %s from %s!' % (imagename, node or "available nodes"))
 
     if progress:
         progbar = click.progressbar(length=1)

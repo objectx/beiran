@@ -97,7 +97,7 @@ Listing nodes is one of the most used commands. It is easy::
     b878fb07bb21449a85b6b108b48c11b6  172.18.0.3:8888  0.0.8d     online
     1a28428bf4e74901bbfabf9fec808e00  172.18.0.2:8888  0.0.8d     online
     1c5caefbfb114d7495da01f82bfcf113  172.18.0.5:8888  0.0.8d     online
-    
+
 
 UUID is the unique identifier of each node.
 
@@ -105,7 +105,7 @@ Status column indicates the current status of nodes. Status can be one of the
 following: ``new``, ``init``, ``ready``, ``online``, ``offline``, ``connecting``,
 ``syncing``, ``closing``, ``lost``, ``unknown``.
 
-Although ``ready`` means ``online``, it is there to distinguish the node on which 
+Although ``ready`` means ``online``, it is there to distinguish the node on which
 you are and running the command.
 
 Please see ``beiran.models.Node`` object in beiran reference for futher details.
@@ -113,7 +113,7 @@ Please see ``beiran.models.Node`` object in beiran reference for futher details.
 Node Information
 ++++++++++++++++
 You can get information about any node with help of ``info`` sub-command::
-    
+
     $ beiran node info b878fb07bb21449a85b6b108b48c11b6
     Item               Value
     -----------------  ------------------------------------------
@@ -129,7 +129,7 @@ You can get information about any node with help of ``info`` sub-command::
     status             online
     last_sync_version  2
     address            beiran+http://172.18.0.3:8888
-    
+
 If you do not specift a node UUID, it print outs the information of current node::
 
     $ beiran node info
@@ -220,10 +220,46 @@ Pull an image::
 You can use options ``--from`` and ``--force`` if you want to force client pull
 from specific node and ``--progress`` to show download progress.
 
-
 List downloaded image::
 
     $ beiran docker image list
     Tags          ID                                                                       Size     Availability
     ------------  -----------------------------------------------------------------------  -------  --------------
     redis:latest  sha256:5958914cc55880091b005658a79645a90fd44ac6a33abef25d6be87658eb9599  90.5MiB  local
+
+
+Pull command has some useful options. Some of them which might be used more
+frequently are below, you can see a list of all options in command's help::
+
+    $ beiran docker image pull --help
+    ...
+
+Other options:
+
+--from
+
+    | You can specify a node by passing UUID to pull an image.
+    | e.g::
+
+    |    ``$ beiran docker image pull --from NODE_UUID``
+
+--wait
+
+    | By default pull command uses async client and pull
+    | operation is done at backgorund. `beiran` exits
+    | successfully saying::
+
+    |    ``$ beiran docker image pull --wait hello-world``
+    |      Pulling image hello-world from None!
+    |      Process is started
+
+    | While pull in progress, you can keep using terminal
+    | and run other commands.
+
+    | But if you want to wait or be sure what is happening
+    | you can use this option.
+
+--progress
+
+    | This option adds a progress bar to output showing pull
+    | operation status approximately.

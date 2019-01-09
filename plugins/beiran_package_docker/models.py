@@ -166,6 +166,7 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     size = IntegerField() # the size difference of the top layer from parent layer
     available_at = JSONStringField(default=list)
     download_progress = JSONStringField(null=True)
+    referencing_images = JSONStringField(default=list)
 
     cache_path = CharField(null=True, default=None) # .tar file in cache dir
     docker_path = CharField(null=True) # layer's directory under /var/lib/docker

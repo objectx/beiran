@@ -329,12 +329,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except FileNotFoundError:
             return {}
 
-    async def get_image_layers(self, diffid_list: list) -> list:
+    async def get_image_layers(self, diffid_list: list, image_id: str) -> list:
         """Returns an array of DockerLayer objects given diffid array"""
         layers = []
         for idx, diffid in enumerate(diffid_list):
             try:
-                layer = await self.get_layer_by_diffid(diffid, idx)
+                layer = await self.get_layer_by_diffid(diffid, idx, image_id)
                 # handle DockerUtil.CannotFindLayerMappingError?
                 layers.append(layer)
             except FileNotFoundError:
@@ -342,7 +342,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                   diffid)
         return layers
 
-    async def get_layer_by_diffid(self, diffid: str, idx: int) -> DockerLayer:
+    async def get_layer_by_diffid(self, diffid: str, idx: int, image_id: str) -> DockerLayer:
         """
         Makes an DockerLayer objects using diffid of layer
 
@@ -371,6 +371,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
             layer.digest = digest
+            layer.referencing_images.append(image_id)
+            print("HUHUHUHUHUHU", layer.referencing_images)
 
         layer.diff_id = diffid
         # print("--- Processing layer", idx, "of", image_details['RepoTags'])

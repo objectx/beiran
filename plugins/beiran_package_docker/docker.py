@@ -343,17 +343,17 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         #     self.log.debug("Unexpected error, layers of image %s could not found..",
         #                    image_data['Id'])
 
-    async def save_image(self, image_id: str, skip_updates: bool = False,
+    async def save_image(self, id_or_tag: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):
         """
-        Save existing image and layers identified by image_id to database.
+        Save existing image and layers identified by id_or_tag to database.
 
         Args:
-            image_id (str): image identifier
+            id_or_tag (str): image identifier (hash_id or tag)
 
         """
 
-        image_data = await self.aiodocker.images.get(name=image_id)
+        image_data = await self.aiodocker.images.get(name=id_or_tag)
         image = DockerImage.from_dict(image_data, dialect="docker")
         image_exists_in_db = False
 
@@ -369,7 +369,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except DockerImage.DoesNotExist:
             self.log.debug("not an existing one, creating a new record..")
 
-        layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
+        layers = await self.util.get_image_layers(image_data['RootFS']['Layers'], image_data['Id'])
         image.layers = [layer.diff_id for layer in layers] # type: ignore
 
         # skip verbose updates of records
@@ -396,14 +396,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.emit('docker_daemon.new_image_saved', image.hash_id)
 
         if image_data['RepoTags']:
-            await self.tag_image(image_id, image_data['RepoTags'][0])
+            await self.tag_image(id_or_tag, image_data['RepoTags'][0])
 
-    async def tag_image(self, image_identifier: str, tag: str):
+    async def tag_image(self, image_id: str, tag: str):
         """
         Tag an image existing in database. If already same tag exists,
         move it from old one to new one.
         """
-        target = DockerImage.get_image_data(image_identifier)
+        target = DockerImage.get_image_data(image_id)
         if tag not in target.tags:
             target.tags = [tag] # type: ignore
             target.save()

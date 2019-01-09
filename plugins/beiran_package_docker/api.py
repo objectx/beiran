@@ -340,7 +340,7 @@ class ImageList(RPCEndpoint):
 
         # wait until finsh creating queues
         while True:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
             if marshaled in Services.docker_util.queues:
                 if len(Services.docker_util.queues[marshaled]['layers']) == \
                 Services.docker_util.queues[marshaled]['num_of_layer']:
@@ -348,8 +348,8 @@ class ImageList(RPCEndpoint):
 
 
 
-        def format_progress(digest: str, status: str, progress: float=1):
-            """generate json dictionary for sending progress"""
+        def format_progress(digest: str, status: str, progress: float=1.0):
+            """generate json dictionary for sending progress of layer downloading"""
             return '{"digest": "%s", "status": "%s", "progress": %.2f},' % (digest, status, progress)
 
         async def send_progress(digest):
@@ -357,28 +357,25 @@ class ImageList(RPCEndpoint):
             progress = 0.0
             last_size = 0
 
+            # wait for layer download to begin
             while True:
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0.0001)
                 status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
+                if status != Services.docker_util.DL_INIT:
+                    break
 
-                if status == Services.docker_util.DL_INIT:
-                    continue
+            # #TODO if layer already exist
+            # if Services.docker_util.queues[marshaled]['layers'][digest]['status'] == Services.docker_util.DL_ALREADY:
+            #     rpc_endpoint.write( # type: ignore
+            #         format_progress(digest, status)
+            #     )
+            #     rpc_endpoint.flush() # type: ignore
+            #     return
 
-                # # if layer already exist or downloading was finished
-                # if status == Services.docker_util.DL_ALREADY or status == Services.docker_util.DL_FINISH:
-                #     rpc_endpoint.write( # type: ignore
-                #         format_progress(digest, status)
-                #     )
-                #     rpc_endpoint.flush() # type: ignore
-                #     return
 
-                # if layer already exist
-                if status == Services.docker_util.DL_ALREADY:
-                    rpc_endpoint.write( # type: ignore
-                        format_progress(digest, status)
-                    )
-                    rpc_endpoint.flush() # type: ignore
-                    return
+            while True:
+                await asyncio.sleep(0.0001)
+                status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
 
                 # if downloading was finished
                 if status == Services.docker_util.DL_FINISH:
@@ -412,10 +409,26 @@ class ImageList(RPCEndpoint):
         pro_future = asyncio.gather(*pro_tasks)
 
 
+        # wait until finsh downloading all layers
+        while True:
+            finish = True
+            await asyncio.sleep(0.0001)
+            for layer_info in Services.docker_util.queues[marshaled]['layers'].values():
+                if layer_info['status'] != Services.docker_util.DL_ALREADY and \
+                   layer_info['status'] != Services.docker_util.DL_FINISH:
+                    finish = False
+                    break
+            if finish:
+                break
 
         config_json_str, image_id, _ = await config_future
         await pro_future
         del Services.docker_util.queues[marshaled]
+
+        if show_progress:
+            rpc_endpoint.write(format_progress('done', 'done')[:-1]) # type: ignore
+            rpc_endpoint.flush() # type: ignore
+
 
         # Do we need to save repo_digest to database? 
         # config_json_str, image_id, _ = \
@@ -436,7 +449,7 @@ class ImageList(RPCEndpoint):
             rpc_endpoint.finish() # type: ignore
 
         if show_progress:
-            rpc_endpoint.write('true]}') # type: ignore
+            rpc_endpoint.write(']}') # type: ignore
             rpc_endpoint.finish() # type: ignore
 
     @staticmethod

@@ -3,3 +3,4 @@ aiofiles==0.3.2
 aiodocker==0.14.0
 docker==2.7.0
 docker-pycreds==0.2.1
+tqdm==4.28.1

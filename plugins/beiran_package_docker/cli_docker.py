@@ -24,6 +24,7 @@ Beiran Docker Plugin command line interface module
 
 import asyncio
 import click
+from tqdm import tqdm
 from tabulate import tabulate
 
 from beiran.util import json_streamer
@@ -73,7 +74,8 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
 
     if whole_image_only:
         if progress:
-            progbar = click.progressbar(length=1)
+            progbar = tqdm(total=1)
+            progbar.clear()
 
             async def _pull_with_progress():
                 """Pull image with async client"""
@@ -94,7 +96,8 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
             loop = asyncio.get_event_loop()
             loop.run_until_complete(_pull_with_progress())
 
-            progbar.render_finish()  # type: ignore  # typing attribute missing error
+            # progbar.render_finish()  # type: ignore  # typing attribute missing error
+            progbar.close()
             click.echo('done!')
 
         else:
@@ -115,10 +118,9 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
 
     else:
         if progress:
-            progbar = click.progressbar(length=1)
-
             async def _pull_with_progress():
                 """Pull image with async client"""
+                progresses = {} # { digest: {'prog': progress, 'bar': tqdm()}}
                 resp = await ctx.async_beiran_client.pull_image(
                     imagename,
                     node=node,
@@ -128,18 +130,42 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                     progress=True,
                     raise_error=True
                 )
-                # before = 0
+                tqdm.write('Downloading layers...')
+                lastpos = 0 # save position to move cursor of console after finish layer downloading
+
                 async for update in json_streamer(resp.content, '$.progress[::]'):
-                    print(update)
-                    # pass
-                    # progbar.update(update['progress'] - before)
-                    # before = update['progress']
+                    digest = update['digest']
+
+                    # tqdm.write(str(update))
+
+                    if digest == 'done':
+                        # close all progressbars
+                        for value in progresses.values():
+                            value['bar'].close()
+                        for _ in range(lastpos):
+                            print()
+                        tqdm.write('Loading image...')
+                        continue
+
+
+                    if digest not in progresses:
+                        progresses[digest] = {
+                            'prog': 0, 'bar': tqdm(total=1, desc=digest)
+                        }
+
+                    progresses[digest]['bar'].update(update['progress'] - progresses[digest]['prog'])
+                    progresses[digest]['prog'] = update['progress']
+                    lastpos = progresses[digest]['bar'].pos
+
+
+
+                # # close all progressbars
+                # for value in progresses.values():
+                #     value['bar'].close()
+                tqdm.write('done!')
 
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(_pull_with_progress())
-
-            progbar.render_finish()  # type: ignore  # typing attribute missing error
-            click.echo('done!')
+            loop.run_until_complete(_pull_with_progress())            
 
 
 # pylint: enable-msg=too-many-arguments

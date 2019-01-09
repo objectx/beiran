@@ -370,7 +370,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             layer = DockerLayer.get(DockerLayer.diff_id == diffid)
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
-            layer.digest = digests
+            layer.digest = digest
             layer.set_all_ref_images(image_id)
             layer.set_local_ref_images(image_id)
 

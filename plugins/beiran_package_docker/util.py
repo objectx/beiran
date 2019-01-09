@@ -370,9 +370,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             layer = DockerLayer.get(DockerLayer.diff_id == diffid)
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
-            layer.digest = digest
-            layer.referencing_images.append(image_id)
-            print("HUHUHUHUHUHU", layer.referencing_images)
+            layer.digest = digests
+            layer.set_all_ref_images(image_id)
+            layer.set_local_ref_images(image_id)
 
         layer.diff_id = diffid
         # print("--- Processing layer", idx, "of", image_details['RepoTags'])

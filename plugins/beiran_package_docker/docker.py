@@ -296,52 +296,43 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         image = DockerImage.get(DockerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
 
-        # unset layers
+        await self.unset_local_layers(image.layers, image_id)
+
         if image.available_at:
             image.save()
         else:
             image.delete_instance()
+            await self.delete_layers(image.layers, image_id)
+
         self.history.update('removed_image={}'.format(image.hash_id))
-
-        # we do not handle deleting layers yet, not sure if they are
-        # shared and needed by other images
-        # code remains here for further interests. see PR #114 of rsnc
-
-        # await self.delete_layers(image.layers)
-
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def delete_layers(self, diff_id_list: list)-> None:
+    async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
         """
-        Unset available layer
+        Unset image_id from local_ref_images of layers
         """
         layers = DockerLayer.select() \
                             .where(DockerLayer.diff_id.in_(diff_id_list)) \
                             .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
-
         for layer in layers:
-            layer.unset_available_at(self.node.uuid.hex)
-            layer.docker_path = None
+            layer.unset_local_ref_images(image_id)
+            if not layer.local_ref_images:
+                layer.unset_available_at(self.node.uuid.hex)
+                layer.docker_path = None
+            layer.save()
 
-            if layer.available_at:
+    async def delete_layers(self, diff_id_list: list, image_id: str)-> None:
+        """
+        Unset available layer, delete it if no image refers it
+        """
+        layers = DockerLayer.select() \
+                            .where(DockerLayer.diff_id.in_(diff_id_list))
+        for layer in layers:
+            layer.unset_all_ref_images(image_id)
+            if layer.all_ref_images:
                 layer.save()
             else:
                 layer.delete_instance()
-
-        # old code for educational purposes, please delete when it makes sense to delete
-        #
-        # try:
-        #     self.log.debug("Layer list: %s", image_data['RootFS']['Layers'])
-        #     layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
-        #     for layer in layers:
-        #         layer.unset_available_at(self.node.uuid.hex)
-        #         if layer.available_at:
-        #             layer.save()
-        #         else:
-        #             layer.delete()
-        # except DockerUtil.CannotFindLayerMappingError:
-        #     self.log.debug("Unexpected error, layers of image %s could not found..",
-        #                    image_data['Id'])
 
     async def save_image(self, id_or_tag: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):

@@ -3,7 +3,7 @@
 ---
 - config:
   - testset: "Beiran"
-  - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce', test_docker_image: 'hello-world',
+  - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce', test_docker_image: 'hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788',
                      test_docker_image_id: 'sha256:4ab4c602aa5eed5528a6620ff18a1dc4faef0e1ab3a5eddeddb410714478c67f', test_docker_repo_digest: 'sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788'}
 
 - test:

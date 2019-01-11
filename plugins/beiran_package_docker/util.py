@@ -190,9 +190,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     async def delete_unavailable_objects():
         """Delete unavailable layers and images"""
         DockerImage.delete().where(SQL('available_at = \'[]\' AND' \
-            ' download_progress = NULL')).execute()
+            ' download_progress = \'null\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\' AND ' \
-            'download_progress = NULL')).execute()
+            'download_progress = \'null\'')).execute()
 
     async def fetch_docker_info(self) -> dict:
         """

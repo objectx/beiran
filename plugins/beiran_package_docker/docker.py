@@ -135,7 +135,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             image_data.pop('id', None)
             image = DockerImage.from_dict(image_data)
             await self.save_image_at_node(image, peer.node)
-            image.delete_not_available()
 
     async def fetch_layers_from_peer(self, peer: Peer):
         """fetch layer list from the node and update local db"""
@@ -148,7 +147,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             layer_data.pop('id', None)
             layer = DockerLayer.from_dict(layer_data)
             await self.save_layer_at_node(layer, peer.node)
-            layer.delete_not_available()
 
     async def daemon_error(self, error: str):
         """

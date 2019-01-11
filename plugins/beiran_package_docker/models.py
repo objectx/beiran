@@ -26,11 +26,6 @@ class CommonDockerObjectFunctions:
             return
         self.available_at = [n for n in self.available_at if n != uuid_hex] # type: ignore
 
-    def delete_not_available(self):
-        """Delete record of object not available"""
-        if not self.available_at:
-            self.delete_instance()
-
 class DockerImage(BaseModel, CommonDockerObjectFunctions):
     """DockerImage"""
 

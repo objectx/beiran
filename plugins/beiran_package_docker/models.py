@@ -167,7 +167,7 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     available_at = JSONStringField(default=list)
     download_progress = JSONStringField(null=True)
 
-    cache_path = CharField(null=True) # .tar file in cache dir
+    cache_path = CharField(null=True, default=None) # .tar file in cache dir
     docker_path = CharField(null=True) # layer's directory under /var/lib/docker
 
 MODEL_LIST = [DockerImage, DockerLayer]  # we may discover dynamically

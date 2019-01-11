@@ -118,12 +118,12 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         except FileNotFoundError:
             layer.docker_path = None
-
-        cache_path = os.path.join(self.util.layer_cache_path, del_idpref(layer.digest) + '.tar')
-        if os.path.exists(cache_path):
-            layer.cache_path = cache_path
-        else:
-            layer.cache_path = None
+        if layer.digest:
+            cache_path = os.path.join(self.util.layer_cache_path, del_idpref(layer.digest) + '.tar')
+            if os.path.exists(cache_path):
+                layer.cache_path = cache_path
+            else:
+                layer.cache_path = None
 
     async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""

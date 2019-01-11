@@ -37,7 +37,6 @@ from beiran.daemon.version import __version__
 from beiran.config import config
 from beiran.models import Node, PeerAddress
 from beiran.log import build_logger
-from beiran.plugin import get_installed_plugins
 from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()
@@ -186,7 +185,7 @@ class BeiranDaemon(EventEmitter):
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""
 
-        self.available_plugins = get_installed_plugins()
+        self.available_plugins = config.enabled_plugins
         print("Found plugins;", self.available_plugins)
 
     async def init_db(self, append_new: list = None):

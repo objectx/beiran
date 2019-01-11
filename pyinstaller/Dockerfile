@@ -6,7 +6,9 @@ RUN apk add --no-cache \
     g++ \
     linux-headers \
     python3-dev \
-    make
+    make \
+    yajl \
+    yajl-dev
 
 RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy
 
@@ -53,6 +55,10 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                ../beiran/__main__.py
 
 FROM alpine:3.8
+
+RUN apk add --no-cache \
+    yajl \
+    yajl-dev
 
 COPY --from=pyinstaller /opt/beiran/pyinstaller/dist/beiran /bin/
 

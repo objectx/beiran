@@ -25,6 +25,7 @@ from beiran_package_docker.api import Services as ApiDependencies
 PLUGIN_NAME = 'docker'
 PLUGIN_TYPE = 'package'
 
+
 # pylint: disable=attribute-defined-outside-init
 class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""

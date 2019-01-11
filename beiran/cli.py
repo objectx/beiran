@@ -140,27 +140,36 @@ class BeiranCLI(click.MultiCommand):
 
 
 @click.group(cls=BeiranCLI, chain=False, invoke_without_command=True, no_args_is_help=True)
-@click.option('--debug', is_flag=True, default=False, help='Debug log enable')
-@click.option('--config', "config_file", metavar="path to config file",
-              default=None, required=False, help='Config File TOML')
+@click.option('--debug', is_flag=True, default=False, help='Enable debug logs.')
+@click.option('--config', "config_file", default=None, required=False,
+              help="Path to a Beiran config file. It must be a TOML file."
+              )
+def main(debug: bool = False, config_file: str = None):
+    """Manage Beiran Daemon and Beiran Cluster
 
-# https://github.com/pallets/click/issues/108#issuecomment-324837239
-@click.option('--start_daemon', "start_daemon", is_flag=True, default=False,
-              required=False, help='Starts Beiran Daemon')
-def main(debug: bool = False, start_daemon: bool = False, config_file: str = None):
-    """Main entrypoint."""
+    Please use --help option with commands and sub-commands
+    to get their detailed usage.
+
+    beiran [COMMAND] [SUB-COMMAND...] --help
+
+    \b
+    beiran --help
+    beiran node --help
+    beiran node probe --help
+    beiran docker image list --help
+
+    If you need, specify --config before everything:
+
+    beiran --config /path/to/config.toml sub-command sub-command args options
+
+    """
     if debug:
         logger.setLevel(logging.DEBUG)
         logger.info("set debug level")
     if config_file:
-        config(config_file=config_file)
-
-    if start_daemon:
-        from beiran.daemon.main import BeiranDaemon
-        from beiran.daemon.common import Services
-
-        Services.daemon = BeiranDaemon()  # type: ignore
-        Services.daemon.run()  # type: ignore
+        # already handled see below where main is called.
+        # config(config_file=config_file)
+        pass
 
 
 if __name__ == '__main__':
@@ -175,7 +184,9 @@ if __name__ == '__main__':
     try:
         index = sys.argv.index('--config')
         if index:
-            config(config_file=sys.argv[index+1])
+            _ = sys.argv.pop(index)  # pop --config
+            cfile = sys.argv.pop(index)  # now pop the next value, e.g. config.toml
+            config(config_file=cfile)
             logger.debug(config.enabled_plugins)
     except ValueError:
         logger.debug("No config file specified, default config in use")

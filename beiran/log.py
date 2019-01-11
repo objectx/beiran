@@ -7,7 +7,7 @@ import logging
 from typing import List, Union # pylint: disable=unused-import
 
 
-def build_logger(filename: str = None, log_level: int = logging.DEBUG) -> logging.Logger:
+def build_logger(filename: str = None, log_level: int = logging.ERROR) -> logging.Logger:
     """ Build logger class for module """
     stdout_handler = logging.StreamHandler(sys.stdout)
     handlers = [stdout_handler] # type: List[Union[logging.FileHandler, logging.StreamHandler]]

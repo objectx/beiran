@@ -101,7 +101,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
-            layer.local_ref_images = []
+            layer.local_ref_images = [] # type: ignore
             self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))

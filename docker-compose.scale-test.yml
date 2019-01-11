@@ -8,10 +8,10 @@ services:
     volumes:
      - .:/src
     environment:
-      - DISCOVERY_METHOD=zeroconf
-      - LISTEN_ADDR=0.0.0.0
-      - LISTEN_PORT=8889
-      - LOG_LEVEL=INFO
+      - BEIRAN_DISCOVERY_METHOD=zeroconf
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LISTEN_PORT=8889
+      - BEIRAN_LOG_LEVEL=INFO
 
   beiran2:
     image: dkr.rsnc.io/poc/beiran/daemon:dev
@@ -20,10 +20,10 @@ services:
     volumes:
      - .:/src
     environment:
-      - DISCOVERY_METHOD=zeroconf
-      - LISTEN_ADDR=0.0.0.0
-      - LOG_LEVEL=INFO
-      - LISTEN_PORT=8890
+      - BEIRAN_DISCOVERY_METHOD=zeroconf
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LOG_LEVEL=INFO
+      - BEIRAN_LISTEN_PORT=8890
 
   beiran3:
     image: dkr.rsnc.io/poc/beiran/daemon:dev
@@ -32,7 +32,7 @@ services:
     volumes:
      - .:/src
     environment:
-      - DISCOVERY_METHOD=zeroconf
-      - LISTEN_ADDR=0.0.0.0
-      - LOG_LEVEL=INFO
-      - LISTEN_PORT=8891
+      - BEIRAN_DISCOVERY_METHOD=zeroconf
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LOG_LEVEL=INFO
+      - BEIRAN_LISTEN_PORT=8891

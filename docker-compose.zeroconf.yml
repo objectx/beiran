@@ -12,10 +12,10 @@ services:
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
     # network_mode: host
     environment:
-      - DISCOVERY_METHOD=zeroconf
-      - LISTEN_ADDR=0.0.0.0
-      - LISTEN_PORT=8892
-      - LOG_LEVEL=INFO
+      - BEIRAN_DISCOVERY_METHOD=zeroconf
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LISTEN_PORT=8892
+      - BEIRAN_LOG_LEVEL=INFO
       # - HOSTNAME=b1
       - DOCKER_HOST=http://172.17.0.1:2375
     ports:
@@ -34,10 +34,10 @@ services:
      - ./beiran_cli:/opt/beiran/beiran_cli:ro
     # network_mode: host
     environment:
-      - DISCOVERY_METHOD=zeroconf
-      - LISTEN_ADDR=0.0.0.0
-      - LISTEN_PORT=8891
-      - LOG_LEVEL=INFO
+      - BEIRAN_DISCOVERY_METHOD=zeroconf
+      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LISTEN_PORT=8891
+      - BEIRAN_LOG_LEVEL=INFO
       # - HOSTNAME=b2
       - DOCKER_HOST=http://172.17.0.1:2375
     ports:

@@ -3,13 +3,17 @@ Beiran Configuration Module
 """
 
 import os
-from os import path
+import pkgutil
+import logging
+from typing import List, Union, Any
 
 import pytoml
 
+LOGGER = logging.getLogger()
 
 DEFAULTS = {
     'LISTEN_PORT': 8888,
+    'LISTEN_ADDRESS': '0.0.0.0',
     'LOG_FILE': '/var/log/beirand.log',
     'LOG_LEVEL': 'DEBUG',
     'CONFIG_DIR': '/etc/beiran',
@@ -20,23 +24,38 @@ DEFAULTS = {
 }
 
 
-class Config:
+class ConfigMeta(type):
+    """
+    Metaclass for config object.
+    """
+    _instances: dict = {}
+
+    def __new__(mcs, *args, **kwargs):
+        if mcs not in mcs._instances:
+            mcs._instances[mcs] = super(
+                ConfigMeta, mcs).__new__(mcs, *args, **kwargs)
+
+        return mcs._instances[mcs]
+
+
+class Config(metaclass=ConfigMeta):
     """Configuration object holds configuration parameters as
     class properties. It overrides default values by values from
     config toml file or environment."""
 
-    def get_config_from_defaults(self, key):
-        """get config from default values"""
-        return DEFAULTS[key]
+    def __init__(self, config_file=None):
+        """construct config object"""
+        self.conf = dict()
+        self._enabled_plugins = list()
 
+        if config_file:
+            self.conf = self.load_from_file(config_file)
 
-    def get_config_from_env(self, ekey):
-        """get config from environment variables"""
-        return os.getenv("BEIRAN_{}".format(ekey))
-
-
-    def get_config_from_file(self, ckey):
+    def get_config_from_file(self, ckey=None):
         """get config from config.toml"""
+        if ckey is None:
+            return None
+
         keys = ckey.split('.')
 
         val = self.conf
@@ -46,47 +65,51 @@ class Config:
             val = val[key]
         return val
 
-
-    def get_config(self, ckey, ekey):
+    def get_config(self, ckey: str = '', ekey: str = '') -> Union[Any, object]:
         """
-        get the value which associated with ckey or ekey.
-        ckey is a key which is used in config.toml
-        ekey is the name of environment variables
+        Seek for config val through environment and config depending
+        on given keys.
+
+        One of the args `ckey`, `ekey` must be specified.
+
+        Args:
+            ckey: key in config file
+            ekey: key in environment
+
+        Returns:
+            str, dict: value
+
         """
-        val = self.get_config_from_env(ekey) if ekey is not None else None
-        if val is not None:
-            return val
+        if not any([ckey, ekey]):
+            return None
 
-        val = self.get_config_from_file(ckey) if ckey is not None else None
-        if val is not None:
-            return val
+        return \
+            os.getenv("BEIRAN_{}".format(ekey)) or \
+            self.get_config_from_file(ckey) or \
+            DEFAULTS.get(ekey, None)
 
-        val = self.get_config_from_defaults(ekey) if ekey is not None else None
-        if val is not None:
-            return val
+    @staticmethod
+    def load_from_file(config_file: str):
+        """
+        Load config values from given file
+        Args:
+            config_file (str): file path
 
-        return None
+        Returns:
 
-
-    def __init__(self, **kwargs):
-        """construct config object"""
-
-        if 'path' in kwargs: # pylint: disable=consider-using-get
-            config_path = kwargs['path']
-        else:
-            config_path = path.join(self.config_dir, 'config.toml')
-
+        """
         try:
-            with open(config_path, 'r') as config_file:
-                self.conf = pytoml.load(config_file)
-        except FileNotFoundError as err:
-            if 'path' not in kwargs:
-                # Configuration file is not specificly requested
-                # we tried the default path, and could not find the
-                # file. means no config file.
-                self.conf = dict()
-                return
-            raise err
+            with open(config_file, 'r') as cfile:
+                return pytoml.load(cfile)
+        except FileNotFoundError:
+            LOGGER.error(
+                "Could not found config file at location: %s",
+                config_file)
+        except pytoml.core.TomlError as err:
+            LOGGER.error(
+                "Could not load config toml file, "
+                "please check your config file syntax. %s", err
+            )
 
     @property
     def config_dir(self):
@@ -99,7 +122,7 @@ class Config:
         Environment variable: ``BEIRAN_CONFIG_DIR``
 
         """
-        return self.get_config(None, 'CONFIG_DIR')
+        return self.get_config('beiran.config_dir', 'CONFIG_DIR')
 
 
     @property
@@ -184,6 +207,18 @@ class Config:
         """
         return self.get_config('beiran.discovery_method', 'DISCOVERY_METHOD')
 
+    @property
+    def listen_address(self):
+        """
+        Beiran daemon's listen address. It can be any valid IP address.
+        The default value is ``0.0.0.0``
+
+        config.toml: section ``beiran``, key ``listen_address``
+
+        Environment variable: ``BEIRAN_LISTEN_ADDRESS``
+
+        """
+        return self.get_config('beiran.listen_address', 'LISTEN_ADDRESS')
 
     @property
     def listen_port(self):
@@ -203,11 +238,22 @@ class Config:
         """Return the list of supported plugin types"""
         return ['package', 'interface', 'discovery']
 
+    @property
+    def enabled_plugins(self) -> List[dict]:
+        """
+        Returns enabled plugin list.
+
+        Returns:
+            (list): enabled plugins specified in config file or env
+
+        """
+        return self._enabled_plugins or self.get_enabled_plugins()
+
     def get_enabled_plugins(self):
         """Get the list of the enabled plugins"""
 
         plugins = []
-        env_config = self.get_config_from_env('PLUGINS')
+        env_config = os.getenv('BEIRAN_PLUGINS')
         if env_config:
             try:
                 for p_package in env_config.split(','):
@@ -222,12 +268,13 @@ class Config:
             except Exception:
                 raise Exception("Cannot parse BEIRAN_PLUGINS variable from environment")
 
+            self._enabled_plugins = plugins  # cache it!
             return plugins
 
         for p_type in self.plugin_types:
-            conf = self.get_config(p_type, None)
-            if conf is None:
-                return []
+            conf = self.get_config(ckey=p_type)
+            if not conf:
+                continue
 
             for p_name, p_conf in conf.items():
                 if 'enabled' in p_conf and p_conf['enabled']:
@@ -236,13 +283,45 @@ class Config:
                         'name': p_name,
                         'package': 'beiran_%s_%s' % (p_type, p_name)
                     })
+        self._enabled_plugins = plugins
         return plugins
 
     def get_plugin_config(self, p_type, name):
         """Get params of package plugin"""
-        conf = self.get_config('%s.%s' % (p_type, name), None)
+        conf = self.get_config(ckey='%s.%s' % (p_type, name))
         if not conf:
             return dict()
         return conf
+
+    @staticmethod
+    def get_installed_plugins() -> List[str]:
+        """
+        Iterates installed packages and modules to match beiran modules.
+
+        Returns:
+            list: list of package name of installed beiran plugins.
+
+        """
+
+        return [
+            name
+            for finder, name, ispkg
+            in pkgutil.iter_modules()
+            if name.startswith('beiran_')
+        ]
+
+    def __call__(self, config_file=None):
+        """
+        Allow reinitialize instance with a new config file
+
+        Args:
+            config_file: config file path
+
+        Returns:
+            self: reinitialized instance
+
+        """
+        return self.__init__(config_file)
+
 
 config = Config() # pylint: disable=invalid-name

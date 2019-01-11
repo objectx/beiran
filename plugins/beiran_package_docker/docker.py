@@ -94,7 +94,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         try:
             layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
-            self.set_all_ref_images_by_layer(layer_, layer)
             self.save_local_paths(layer_)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
@@ -105,11 +104,6 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
-
-    def set_all_ref_images_by_layer(self, layer: DockerLayer, peer_layer: DockerLayer):
-        """Upadte 'all_ref_images' using layer information from peer"""
-        for image_id in peer_layer.all_ref_images:
-            layer.set_all_ref_images(image_id)
 
     def save_local_paths(self, layer: DockerLayer):
         """Update 'cache_path' and 'docker_path' with paths of local node"""
@@ -309,7 +303,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             image.save()
         else:
             image.delete_instance()
-            await self.delete_layers(image.layers, image_id)
+            await self.delete_layers(image.layers)
 
         self.history.update('removed_image={}'.format(image.hash_id))
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
@@ -328,17 +322,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                 layer.docker_path = None
             layer.save()
 
-    async def delete_layers(self, diff_id_list: list, image_id: str)-> None:
+    async def delete_layers(self, diff_id_list: list)-> None:
         """
         Unset available layer, delete it if no image refers it
         """
         layers = DockerLayer.select() \
                             .where(DockerLayer.diff_id.in_(diff_id_list))
         for layer in layers:
-            layer.unset_all_ref_images(image_id)
-            if layer.all_ref_images:
-                layer.save()
-            else:
+            if not layer.available_at:
                 layer.delete_instance()
 
     async def save_image(self, id_or_tag: str, skip_updates: bool = False,

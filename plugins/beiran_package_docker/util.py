@@ -189,18 +189,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     @staticmethod
     async def delete_unavailable_objects():
         """Delete unavailable layers and images"""
-        will_delete_images = DockerImage.select() \
-                                        .where(SQL('available_at = \'[]\' AND' \
-                                                   ' download_progress = \'null\''))
-
-        # update all_ref_images
-        for image in will_delete_images:
-            layers = DockerLayer.select() \
-                                .where(SQL('all_ref_images LIKE \'%%"%s"%%\'' % image.hash_id))
-            for layer in layers:
-                layer.all_ref_images.remove(image.hash_id)
-                layer.save()
-
         DockerImage.delete().where(SQL('available_at = \'[]\' AND' \
             ' download_progress = \'null\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\' AND ' \
@@ -383,7 +371,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
             layer.digest = digest
-        layer.set_all_ref_images(image_id)
         layer.set_local_ref_images(image_id)
 
         layer.diff_id = diffid

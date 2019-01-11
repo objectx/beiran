@@ -165,25 +165,10 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     size = IntegerField() # the size difference of the top layer from parent layer
     available_at = JSONStringField(default=list)
     download_progress = JSONStringField(null=True)
-    all_ref_images = JSONStringField(default=list)
     local_ref_images = JSONStringField(default=list)
 
     cache_path = CharField(null=True, default=None) # .tar file in cache dir
     docker_path = CharField(null=True) # layer's directory under /var/lib/docker
-
-    def set_all_ref_images(self, image_id: str):
-        """add image id to all_ref_images"""
-        if image_id in self.all_ref_images:
-            return
-        self.all_ref_images.append(image_id)
-
-    def unset_all_ref_images(self, image_id: str):
-        """remove image id from all_ref_images"""
-        if image_id not in self.all_ref_images:
-            return
-        self.all_ref_images = [ # type: ignore
-            n for n in self.all_ref_images if n != image_id
-        ]
 
     def set_local_ref_images(self, image_id: str):
         """add image id to local_ref_images"""

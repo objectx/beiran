@@ -94,18 +94,19 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         try:
             layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
-            self.update_all_ref_images(layer_, layer)
+            self.set_all_ref_images_by_layer(layer_, layer)
             self.save_local_paths(layer_)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
+            layer.local_ref_images = []
             self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
 
-    def update_all_ref_images(self, layer: DockerLayer, peer_layer: DockerLayer):
+    def set_all_ref_images_by_layer(self, layer: DockerLayer, peer_layer: DockerLayer):
         """Upadte 'all_ref_images' using layer information from peer"""
         for image_id in peer_layer.all_ref_images:
             layer.set_all_ref_images(image_id)

@@ -9,7 +9,7 @@ import json
 import hashlib
 import platform
 import tarfile
-from typing import Tuple
+from typing import Tuple, Optional
 from collections import OrderedDict
 import aiohttp
 
@@ -243,7 +243,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if retry_after < 30:
                 retry_after += 5
 
-    async def get_digest_by_diffid(self, diffid: str)-> str:
+    async def get_digest_by_diffid(self, diffid: str)-> Optional[str]:
         """Return digest of a layer by diff id."""
         try:
             with open(os.path.join(self.v2metadata_path, del_idpref(diffid)))as file:

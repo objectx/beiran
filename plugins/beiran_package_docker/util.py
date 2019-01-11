@@ -99,6 +99,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         return self.storage + '/image/overlay2/distribution/diffid-by-digest/sha256'
 
     @property
+    def v2metadata_path(self)-> str:
+        """Get v2metadata path in docker storage"""
+        return self.storage + '/image/overlay2/distribution/v2metadata-by-diffid/sha256'
+
+    @property
     def layerdb_path(self)-> str:
         """Get layerdb path in docker storage"""
         return self.storage + '/image/overlay2/layerdb/sha256'
@@ -141,7 +146,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         local_layer_db = self.layerdb_path
         local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
         local_layer_dir = self.layerdir_path
-
         f_path = local_digest_dir + "/{}".format(del_idpref(sha))
 
         try:
@@ -238,6 +242,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 await asyncio.sleep(retry_after)
             if retry_after < 30:
                 retry_after += 5
+
+    async def get_digest_by_diffid(self, diffid: str)-> str:
+        """Return digest of a layer by diff id."""
+        try:
+            with open(os.path.join(self.v2metadata_path, del_idpref(diffid)))as file:
+                content = json.load(file)
+                return content[0]['Digest']
+        except FileNotFoundError:
+            return None
 
     async def get_diffid_mappings(self) -> dict:
         """
@@ -343,7 +356,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         layerdb_path = self.storage + "/image/overlay2/layerdb"
         if diffid not in self.diffid_mapping:
-            self.diffid_mapping[diffid] = None
+            self.diffid_mapping[diffid] = await self.get_digest_by_diffid(diffid)
             # image.has_unknown_layers = True
             # # This layer is not pulled from a registry
             # # It's built on this machine and we're **currently** not interested

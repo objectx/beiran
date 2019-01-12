@@ -20,7 +20,7 @@ Welcome to Beiran's documentation!
    How to contibute <contribute>
    How to create a plugin <how_to_create_a_plugin>
    Using Kubernetes with Beiran <using_kubernetes_with_beiran>
-   Beiran Refernece <reference>
+   Beiran Reference <reference>
 
    Index <genindex>
 
@@ -61,7 +61,7 @@ codebase, issues, and documentation or starting a new package plugin:
 While developing, you may want to check Beiran Reference which is generated
 from inline doc strings and gives detailed information about codebase:
 
-  - :doc:`Beiran Refernece <reference>` (Auto generated inline doc strings)
+  - :doc:`Beiran Reference <reference>` (Auto generated inline doc strings)
 
 Indices and tables
 ==================

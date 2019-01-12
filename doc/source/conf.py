@@ -62,8 +62,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Beiran'
-copyright = '2018, rlab'
-author = 'rlab'
+copyright = '2019, Rainlab Inc. & Creationline,inc. & Beiran Contributors'
+author = 'Rainlab inc. & Creationline,inc. & Beiran Contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

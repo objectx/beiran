@@ -142,26 +142,21 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                         # close all progressbars
                         for value in progresses.values():
                             value['bar'].close()
-                        for _ in range(lastpos):
+
+                        for _ in range(len(progresses) - pos):
                             print()
                         tqdm.write('Loading image...')
-                        continue
 
+                    else:
+                        if digest not in progresses:
+                            progresses[digest] = {
+                                'prog': 0, 'bar': tqdm(total=1, desc=digest)
+                            }
 
-                    if digest not in progresses:
-                        progresses[digest] = {
-                            'prog': 0, 'bar': tqdm(total=1, desc=digest)
-                        }
+                        progresses[digest]['bar'].update(update['progress'] - progresses[digest]['prog'])
+                        progresses[digest]['prog'] = update['progress']
+                        lastpos = progresses[digest]['bar'].pos
 
-                    progresses[digest]['bar'].update(update['progress'] - progresses[digest]['prog'])
-                    progresses[digest]['prog'] = update['progress']
-                    lastpos = progresses[digest]['bar'].pos
-
-
-
-                # # close all progressbars
-                # for value in progresses.values():
-                #     value['bar'].close()
                 tqdm.write('done!')
 
             loop = asyncio.get_event_loop()

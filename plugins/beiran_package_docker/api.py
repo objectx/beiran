@@ -340,7 +340,7 @@ class ImageList(RPCEndpoint):
 
         # wait until finsh creating queues
         while True:
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0)
             if marshaled in Services.docker_util.queues:
                 if len(Services.docker_util.queues[marshaled]['layers']) == \
                 Services.docker_util.queues[marshaled]['num_of_layer']:
@@ -359,7 +359,7 @@ class ImageList(RPCEndpoint):
 
             # wait for layer download to begin
             while True:
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(0)
                 status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
                 if status != Services.docker_util.DL_INIT:
                     break
@@ -374,22 +374,8 @@ class ImageList(RPCEndpoint):
 
 
             while True:
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(0)
                 status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
-
-                # if downloading was finished
-                if status == Services.docker_util.DL_FINISH:
-                    while True:
-                        chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'].get()
-                        if chunk:
-                            last_size += len(chunk)
-                            progress = last_size / Services.docker_util.queues[marshaled]['layers'][digest]['size']
-                            rpc_endpoint.write( # type: ignore
-                                format_progress(digest, status, progress)
-                            )
-                            rpc_endpoint.flush() # type: ignore
-                        else:
-                            return
 
                 # calc progress
                 chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'].get()
@@ -400,7 +386,8 @@ class ImageList(RPCEndpoint):
                         format_progress(digest, status, progress)
                     )
                     rpc_endpoint.flush() # type: ignore
-
+                else:
+                    return
 
         pro_tasks = [
             send_progress(digest)
@@ -412,7 +399,7 @@ class ImageList(RPCEndpoint):
         # wait until finsh downloading all layers
         while True:
             finish = True
-            await asyncio.sleep(0.0001)
+            await asyncio.sleep(0)
             for layer_info in Services.docker_util.queues[marshaled]['layers'].values():
                 if layer_info['status'] != Services.docker_util.DL_ALREADY and \
                    layer_info['status'] != Services.docker_util.DL_FINISH:

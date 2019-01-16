@@ -371,7 +371,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
             layer.digest = digest
-        layer.set_local_ref_images(image_id)
+        layer.set_local_image_refs(image_id)
 
         layer.diff_id = diffid
         # print("--- Processing layer", idx, "of", image_details['RepoTags'])

@@ -100,7 +100,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
-            layer.local_ref_images = [] # type: ignore
+            layer.local_image_refs = [] # type: ignore
             self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
@@ -310,14 +310,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
     async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
         """
-        Unset image_id from local_ref_images of layers
+        Unset image_id from local_image_refs of layers
         """
         layers = DockerLayer.select() \
                             .where(DockerLayer.diff_id.in_(diff_id_list)) \
                             .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
         for layer in layers:
-            layer.unset_local_ref_images(image_id)
-            if not layer.local_ref_images:
+            layer.unset_local_image_refs(image_id)
+            if not layer.local_image_refs:
                 layer.unset_available_at(self.node.uuid.hex)
                 layer.docker_path = None
             layer.save()

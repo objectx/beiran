@@ -1,24 +1,33 @@
 """Beiran multiple progressbar"""
-import sys, progressbar
+import sys
 from itertools import count
+import progressbar
 
-class MultipleProgressBar(progressbar.ProgressBar):
+class MultipleProgressBar(progressbar.ProgressBar): # pylint: disable=too-many-ancestors
     """This class realizes display of multiple progress bars"""
     _position = count(0)
 
-    def __init__(self, finish_immediately=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, finish_immediately=True, **kwargs):
         self.position = next(self._position)
         self.finish_immediately = finish_immediately
 
+        if 'widgets' not in kwargs and 'desc' in kwargs:
+            widgets = [
+                kwargs['desc'] + ' ', progressbar.Percentage(), ' ', progressbar.Bar(),
+                ' ', progressbar.ETA(), ' ', progressbar.FileTransferSpeed()
+            ]
+        super().__init__(
+            widgets=widgets, maxval=100, *args, **kwargs
+        )
+
     @classmethod
-    def up(cls):
+    def cursor_up(cls):
         """Up the cursor"""
         sys.stdout.write('\x1b[1A')
         sys.stdout.flush()
 
     @classmethod
-    def down(cls):
+    def cursor_down(cls):
         """Down the cursor"""
         sys.stdout.write('\n')
         sys.stdout.flush()
@@ -28,11 +37,11 @@ class MultipleProgressBar(progressbar.ProgressBar):
         """Seek the cursor from last position to new position"""
         if lastpos > newpos:
             for _ in range(lastpos - newpos):
-                cls.up()
+                cls.cursor_up()
         elif lastpos < newpos:
             for _ in range(newpos - lastpos):
-                cls.down()
-    
+                cls.cursor_down()
+
     def update_and_seek(self, value, lastpos):
         """Update position of cursor and progressbar's value"""
         self.seek(lastpos, self.position)

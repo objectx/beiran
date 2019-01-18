@@ -24,11 +24,11 @@ Beiran Docker Plugin command line interface module
 
 import asyncio
 import click
-from tqdm import tqdm
 from tabulate import tabulate
 
 from beiran.util import json_streamer
 from beiran.util import sizeof_fmt
+from beiran.multiple_progressbar import MultipleProgressBar
 from beiran.cli import pass_context
 
 
@@ -74,8 +74,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
 
     if whole_image_only:
         if progress:
-            progbar = tqdm(total=1)
-            progbar.clear()
+            progbar = MultipleProgressBar(desc=imagename)
 
             async def _pull_with_progress():
                 """Pull image with async client"""
@@ -88,16 +87,12 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                     progress=True,
                     raise_error=True
                 )
-                before = 0
                 async for update in json_streamer(resp.content, '$.progress[::]'):
-                    progbar.update(update['progress'] - before)
-                    before = update['progress']
+                    progbar.update(update['progress'])
+                progbar.finish()
 
             loop = asyncio.get_event_loop()
             loop.run_until_complete(_pull_with_progress())
-
-            # progbar.render_finish()  # type: ignore  # typing attribute missing error
-            progbar.close()
             click.echo('done!')
 
         else:
@@ -120,7 +115,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
         if progress:
             async def _pull_with_progress():
                 """Pull image with async client"""
-                progresses = {} # { digest: {'prog': progress, 'bar': tqdm()}}
+                progbars = {}
                 resp = await ctx.async_beiran_client.pull_image(
                     imagename,
                     node=node,
@@ -130,38 +125,24 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                     progress=True,
                     raise_error=True
                 )
-                tqdm.write('Downloading layers...')
+                click.echo('Downloading layers...')
                 lastpos = 0 # save position to move cursor of console after finish layer downloading
 
-                async for update in json_streamer(resp.content, '$.progress[::]'):
-                    digest = update['digest']
-
-                    # tqdm.write(str(update))
+                async for data in json_streamer(resp.content, '$.progress[::]'):
+                    digest = data['digest']
 
                     if digest == 'done':
-                        # close all progressbars
-                        for value in progresses.values():
-                            value['bar'].close()
-
-                        for _ in range(len(progresses) - pos):
-                            print()
-                        tqdm.write('Loading image...')
-
+                        click.echo('Loading image...')
                     else:
-                        if digest not in progresses:
-                            progresses[digest] = {
-                                'prog': 0, 'bar': tqdm(total=1, desc=digest)
+                        if digest not in progbars:
+                            progbars[digest] = {
+                                'bar': MultipleProgressBar(desc=digest)
                             }
-
-                        progresses[digest]['bar'].update(update['progress'] - progresses[digest]['prog'])
-                        progresses[digest]['prog'] = update['progress']
-                        lastpos = progresses[digest]['bar'].pos
-
-                tqdm.write('done!')
+                        lastpos = progbars[digest]['bar'].update_and_seek(data['progress'], lastpos)
+                click.echo('done!')
 
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(_pull_with_progress())            
-
+            loop.run_until_complete(_pull_with_progress())
 
 # pylint: enable-msg=too-many-arguments
 

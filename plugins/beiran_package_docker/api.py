@@ -298,11 +298,10 @@ class ImageList(RPCEndpoint):
 
         node_identifier = body['node']
 
-        wait = True if 'wait' in body and body['wait'] else False
-        force = True if 'force' in body and body['force'] else False
-        show_progress = True if 'progress' in body and body['progress'] else False
-        whole_image_only = True if 'whole_image_only' in body \
-                           and body['whole_image_only'] else False
+        wait = bool('wait' in body and body['wait'])
+        force = bool('force' in body and body['force'])
+        show_progress = bool('progress' in body and body['progress'])
+        whole_image_only = bool('whole_image_only' in body and body['whole_image_only'])
 
         if whole_image_only:
             await self.pull_routine(image_identifier, node_identifier,
@@ -314,14 +313,14 @@ class ImageList(RPCEndpoint):
 
 
     @staticmethod
-    async def pull_routine_distributed(tag_or_digest: str, rpc_endpoint: "RPCEndpoint" = None,
+    async def pull_routine_distributed(tag_or_digest: str, rpc_endpoint: "RPCEndpoint" = None, # pylint: disable=too-many-locals,too-many-branches, too-many-statements
                                        wait: bool = False, show_progress: bool = False) -> None:
         """Coroutine to pull image (download distributed layers)
         """
         marshaled = marshal_normalize_ref(tag_or_digest, index=True)
 
         # A process to pull same image has already been started
-        if marshaled in Services.docker_util.queues:
+        if marshaled in Services.docker_util.queues: # type: ignore
             raise HTTPError(status_code=409,
                             log_message='Pulling process for same image has already been started')
 
@@ -330,31 +329,32 @@ class ImageList(RPCEndpoint):
         if not wait and not show_progress and rpc_endpoint is not None:
             rpc_endpoint.write({'started':True})
             rpc_endpoint.finish()
-        
+
         if show_progress:
             rpc_endpoint.write('{"image":"%s","progress":[' % tag_or_digest) # type: ignore
             rpc_endpoint.flush() # type: ignore
 
-        config_future = asyncio.ensure_future(Services.docker_util \
-                                .create_or_download_config(tag_or_digest)) # type: ignore
+        config_future = asyncio.ensure_future(
+            Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
+        )
 
         # wait until finsh creating queues
         while True:
             await asyncio.sleep(0)
-            if marshaled in Services.docker_util.queues:
-                if len(Services.docker_util.queues[marshaled]['layers']) == \
-                Services.docker_util.queues[marshaled]['num_of_layer']:
+            if marshaled in Services.docker_util.queues: # type: ignore
+                if (len(Services.docker_util.queues[marshaled]['layers']) # type: ignore
+                        == Services.docker_util.queues[marshaled]['num_of_layer']): # type: ignore
                     break
 
 
 
-        def format_progress(digest: str, status: str, progress: float=1.0):
+        def format_progress(digest: str, status: str, progress: int = 100):
             """generate json dictionary for sending progress of layer downloading"""
-            return '{"digest": "%s", "status": "%s", "progress": %.2f},' % (digest, status, progress)
+            return '{"digest": "%s", "status": "%s", "progress": %d},' % (digest, status, progress)
 
         async def send_progress(digest):
             """send progress of layer downloading"""
-            progress = 0.0
+            progress = 0
             last_size = 0
 
             # wait for layer download to begin
@@ -365,7 +365,8 @@ class ImageList(RPCEndpoint):
                     break
 
             # #TODO if layer already exist
-            # if Services.docker_util.queues[marshaled]['layers'][digest]['status'] == Services.docker_util.DL_ALREADY:
+            # if Services.docker_util.queues[marshaled]['layers'][digest]['status']
+            # == Services.docker_util.DL_ALREADY:
             #     rpc_endpoint.write( # type: ignore
             #         format_progress(digest, status)
             #     )
@@ -378,10 +379,14 @@ class ImageList(RPCEndpoint):
                 status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
 
                 # calc progress
-                chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'].get()
+                chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'] \
+                                      .get()
                 if chunk:
                     last_size += len(chunk)
-                    progress = last_size / Services.docker_util.queues[marshaled]['layers'][digest]['size']
+                    progress = int(
+                        last_size /
+                        Services.docker_util.queues[marshaled]['layers'][digest]['size'] * 100
+                    )
                     rpc_endpoint.write( # type: ignore
                         format_progress(digest, status, progress)
                     )
@@ -391,7 +396,7 @@ class ImageList(RPCEndpoint):
 
         pro_tasks = [
             send_progress(digest)
-            for digest in Services.docker_util.queues[marshaled]['layers'].keys()
+            for digest in Services.docker_util.queues[marshaled]['layers'].keys() # type: ignore
         ]
         pro_future = asyncio.gather(*pro_tasks)
 
@@ -400,9 +405,10 @@ class ImageList(RPCEndpoint):
         while True:
             finish = True
             await asyncio.sleep(0)
-            for layer_info in Services.docker_util.queues[marshaled]['layers'].values():
-                if layer_info['status'] != Services.docker_util.DL_ALREADY and \
-                   layer_info['status'] != Services.docker_util.DL_FINISH:
+            for layer_info in \
+                Services.docker_util.queues[marshaled]['layers'].values(): # type: ignore
+                if (layer_info['status'] != Services.docker_util.DL_ALREADY # type: ignore
+                        and layer_info['status'] != Services.docker_util.DL_FINISH): # type: ignore
                     finish = False
                     break
             if finish:
@@ -410,14 +416,14 @@ class ImageList(RPCEndpoint):
 
         config_json_str, image_id, _ = await config_future
         await pro_future
-        del Services.docker_util.queues[marshaled]
+        del Services.docker_util.queues[marshaled] # type: ignore
 
         if show_progress:
             rpc_endpoint.write(format_progress('done', 'done')[:-1]) # type: ignore
             rpc_endpoint.flush() # type: ignore
 
 
-        # Do we need to save repo_digest to database? 
+        # Do we need to save repo_digest to database?
         # config_json_str, image_id, _ = \
         #     await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
 
@@ -490,8 +496,8 @@ class ImageList(RPCEndpoint):
         async def sender(writer, chunks: asyncio.queues.Queue):
             """ async generator data sender for aiodocker """
             nonlocal real_size
-            progress = 0.0
-            last_progress = 0.0
+            progress = 0
+            last_progress = 0
 
             while True:
                 chunk = await chunks.get()
@@ -499,17 +505,21 @@ class ImageList(RPCEndpoint):
 
                 if chunk:
                     real_size += len(chunk)
-                    if show_progress and real_size/float(image.size) - last_progress > 0.05:
-                        progress = real_size/float(image.size)
+                    progress = int(real_size / float(image.size) * 100)
+
+                    # if over real size
+                    if progress > 100:
+                        progress = 100
+
+                    if show_progress and progress - last_progress > 5:
                         rpc_call.write( # type: ignore
-                            '{"progress": %.2f, "done": false},' % progress
+                            '{"progress": %d, "done": false},' % progress
                         )
                         rpc_call.flush() # type: ignore
                         last_progress = progress
                 else:
                     if show_progress:
-                        rpc_call.write('{"progress": %.2f, "done": true}' % # type: ignore
-                                       (real_size / float(image.size)))
+                        rpc_call.write('{"progress": %d, "done": true}' % progress) # type: ignore
                         rpc_call.write(']}') # type: ignore
                         rpc_call.finish() # type: ignore
 

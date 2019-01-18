@@ -9,3 +9,4 @@ pytoml==0.1.19
 pyee==5.0.0
 aiofiles==0.3.2
 netifaces==0.10.6
+progressbar2==3.39.2

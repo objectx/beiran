@@ -557,7 +557,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_GZ_DOWNLOADING
 
             resp = await async_write_file_stream(url, save_path, timeout=60,
-                                                 queue=self.queues[marshaled]['layers'][layer_hash]['queue'],
+                                                 queue=self.queues[marshaled]['layers'] \
+                                                                  [layer_hash]['queue'],
                                                  Authorization=requirements)
 
         if resp.status != 200:

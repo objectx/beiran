@@ -136,7 +136,7 @@ See here for more details:
 https://docs.gitlab.com/ce/user/project/repository/gpg_signed_commits/
 
 .. warning:: Also please `--signoff` one of your commits to declare
- approving DOC. Please see and read carefully **Copyright** and **DOC** section below.
+ approving DCO. Please see and read carefully **Copyright** and **DCO** section below.
 
 Copyright
 ---------
@@ -145,10 +145,10 @@ under **GPL v3** which allows anybody to copy, change, distribute or redistribut
 By sending your source code or any kind of contributions you also accept the
 licence's terms and conditions.
 
-DOC
+DCO
 ---
 Contributors' work is protected with **Developer Certificate of Origin** which
-can be found project root dir in `DOC` file or here https://developercertificate.org/
+can be found project root dir in `DCO` file or here https://developercertificate.org/
 
-**By contributing this project you agree with `DOC` and certify your contribution as
-described in `DOC`.**
+**By contributing this project you agree with `DCO` and certify your contribution as
+described in `DCO`.**

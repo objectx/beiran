@@ -15,7 +15,7 @@ Beiran requires Python 3. It is **strongly recommended** using an isolated
 environment to install Beiran with pip. After creating and activating a
 virtual enviroment run the following command::
 
-    pip install beiran
+    $ pip install git+|beiran_git_latest_release|
 
 And thats it. Beiran is ready to be configured and run.
 
@@ -25,9 +25,9 @@ Beiran requires Python 3. It is **strongly recommended** using an isolated
 environment to install Beiran from source code. After creating and activating
 a virtual enviroment run the following command::
 
-    git clone git.rlab.io/beiran/beiran.git beiran
-    cd beiran
-    sudo python setup install
+    $ git clone |beiran_git_latest_release| beiran
+    $ cd beiran
+    $ sudo python setup install
 
 And thats it. Beiran is ready to be configured and run.
 
@@ -55,3 +55,12 @@ So if yours is an Ubuntu, you can install the command as below::
 
     apt-get install beiran
 
+      beiran --config /path/to/config.toml sub-command sub-command args options
+
+    Options:
+      --debug        Enable debug logs.
+      --config TEXT  Path to a Beiran config file. It must be a TOML file.
+      --help         Show this message and exit.
+
+    Commands:
+      node  Node operations.

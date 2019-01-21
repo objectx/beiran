@@ -1,6 +1,6 @@
-=====================
-Manage Beiran Cluster
-=====================
+=====
+Usage
+=====
 
 This document aims to help administrators to manage their Beiran
 installation and cluster.

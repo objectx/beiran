@@ -16,7 +16,7 @@ Welcome to Beiran's documentation!
    Home <self>
    Installation Guide <installation>
    Configuration Guide <configuration>
-   Manage Beiran Cluster <manage_cluster>
+   Usage <usage>
    How to contibute <contribute>
    How to create a plugin <how_to_create_a_plugin>
    Using Kubernetes with Beiran <using_kubernetes_with_beiran>
@@ -50,7 +50,7 @@ are for you, if you are interested in just trying or starting to
 use Beiran on your environment:
 
   - :doc:`How to install Beiran <installation>`
-  - :doc:`Manage Beiran Cluster <manage_cluster>`
+  - :doc:`Manage Beiran Cluster <usage>`
   - :doc:`Configuration Guide <configuration>`
 
 And you can go on with contribution guide, if you want to help with current

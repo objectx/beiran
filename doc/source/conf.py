@@ -262,7 +262,21 @@ class SimpleDocumenter(autodoc.MethodDocumenter):
         return None
 
 
+# https://github.com/sphinx-doc/sphinx/issues/4054#issuecomment-329097229
+def replace_docstring_variables(app, docname, source):
+    result = source[0]
+    for key in app.config.docstring_replacements:
+        result = result.replace(key, app.config.docstring_replacements[key])
+    source[0] = result
+
+
+docstring_replacements = {
+    "{beiran_git_latest_release}": "https://gitlab.beiran.io/beiran/beiran.git@v0.0.9"
+}
+
+
 # add SimpleDocumenter to available documenters.
 def setup(app):
     app.add_autodocumenter(SimpleDocumenter)
-
+    app.add_config_value('docstring_replacements', {}, True)
+    app.connect('source-read', replace_docstring_variables)

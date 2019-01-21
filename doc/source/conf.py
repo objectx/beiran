@@ -237,6 +237,7 @@ rst_epilog = """
 .. |email_list_subscribe_link| replace:: subscribe+developers [at] lists.beiran.io
 .. |beiran_gitlab_main| replace:: https://gitlab.beiran.io
 .. |beiran_gitlab_gpg| replace:: https://gitlab.beiran.io/profile/gpg_keys
+.. |beiran_git_latest_release| replace:: https://gitlab.beiran.io/beiran/beiran.git@v0.0.9
 """
 
 # https://stackoverflow.com/questions/7825263/including-docstring-in-sphinx-documentation

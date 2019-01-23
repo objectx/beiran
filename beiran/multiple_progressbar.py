@@ -37,12 +37,12 @@ class MultipleProgressBar(progressbar.ProgressBar): # pylint: disable=too-many-a
         self.finish_immediately = finish_immediately
 
         if 'widgets' not in kwargs and 'desc' in kwargs:
-            widgets = [
+            kwargs['widgets'] = [
                 kwargs['desc'] + ' ', progressbar.Percentage(), ' ', progressbar.Bar(),
                 ' ', progressbar.ETA(), ' ', progressbar.FileTransferSpeed()
             ]
         super().__init__(
-            widgets=widgets, maxval=100, *args, **kwargs
+            maxval=100, *args, **kwargs
         )
         ProgressbarValues.exist_bars.append(self)
 

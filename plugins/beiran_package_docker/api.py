@@ -364,14 +364,15 @@ class ImageList(RPCEndpoint):
                 if status != Services.docker_util.DL_INIT:
                     break
 
-            # #TODO if layer already exist
-            # if Services.docker_util.queues[marshaled]['layers'][digest]['status']
-            # == Services.docker_util.DL_ALREADY:
-            #     rpc_endpoint.write( # type: ignore
-            #         format_progress(digest, status)
-            #     )
-            #     rpc_endpoint.flush() # type: ignore
-            #     return
+            # if layer already exist
+            if Services.docker_util.queues[marshaled]['layers'][digest]['status'] \
+            == Services.docker_util.DL_ALREADY:
+                if show_progress:
+                    rpc_endpoint.write( # type: ignore
+                        format_progress(digest, status)
+                    )
+                    rpc_endpoint.flush() # type: ignore
+                return
 
 
             while True:

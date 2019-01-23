@@ -591,13 +591,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         # beiran cache directory
         tar_layer_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar')
         gs_layer_path = tar_layer_path + '.gz'
+        marshaled = marshal(**ref)
 
         if os.path.exists(tar_layer_path):
             self.logger.debug("Found layer (%s)", tar_layer_path)
+            self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_ALREADY
             return 'cache', tar_layer_path # .tar file exists
 
         if os.path.exists(gs_layer_path):
             self.logger.debug("Found layer (%s)", gs_layer_path)
+            self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_ALREADY
             return 'cache-gz', gs_layer_path # .tar.gz file exists
 
          # docker library or other node
@@ -852,7 +855,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         manifestlist_str = json.dumps(manifestlist, indent=3)
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
-
         return config_json_str, config_digest, repo_digest
 
 

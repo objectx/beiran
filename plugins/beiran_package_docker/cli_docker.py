@@ -23,6 +23,7 @@ Beiran Docker Plugin command line interface module
 """
 
 import asyncio
+# import progressbar
 import click
 from tabulate import tabulate
 
@@ -30,6 +31,7 @@ from beiran.util import json_streamer
 from beiran.util import sizeof_fmt
 from beiran.multiple_progressbar import MultipleProgressBar
 from beiran.cli import pass_context
+from beiran_package_docker.util import DockerUtil
 
 
 @click.group()
@@ -119,9 +121,16 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                         click.echo('Loading image...')
                     else:
                         if digest not in progbars:
-                            progbars[digest] = {
-                                'bar': MultipleProgressBar(desc=digest)
-                            }
+                            if data['status'] == DockerUtil.DL_ALREADY:
+                                progbars[digest] = {
+                                    'bar': MultipleProgressBar(
+                                        widgets=[digest + ' Already existss']
+                                    )
+                                }
+                            else:
+                                progbars[digest] = {
+                                    'bar': MultipleProgressBar(desc=digest)
+                                }
                         progbars[digest]['bar'].update_and_seek(data['progress'])
                         lastbar = progbars[digest]['bar']
                 click.echo('done!')

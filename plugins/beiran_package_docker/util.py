@@ -1080,13 +1080,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         Load image tarball.
         """
         self.logger.debug("loading image...")
-        # load image
-        tar_data = bytes()
-        with open(tar_path, mode='rb') as file:
-            while True:
-                chunk = file.read(51200)
-                if not chunk:
-                    break
-                tar_data += chunk
 
-        await self.aiodocker.images.import_image(data=tar_data)
+        @aiohttp.streamer
+        async def file_sender(writer, file_name=None):
+            with open(file_name, "rb") as file:
+                chunk = file.read(1024 * 64)
+                while chunk:
+                    await writer.write(chunk)
+                    chunk = file.read(1024 * 64)
+
+        await self.aiodocker.images.import_image(data=file_sender(file_name=tar_path)) # pylint: disable=no-value-for-parameter

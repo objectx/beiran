@@ -387,10 +387,11 @@ class ImageList(RPCEndpoint):
                         last_size /
                         Services.docker_util.queues[marshaled]['layers'][digest]['size'] * 100
                     )
-                    rpc_endpoint.write( # type: ignore
-                        format_progress(digest, status, progress)
-                    )
-                    rpc_endpoint.flush() # type: ignore
+                    if show_progress:
+                        rpc_endpoint.write( # type: ignore
+                            format_progress(digest, status, progress)
+                        )
+                        rpc_endpoint.flush() # type: ignore
                 else:
                     return
 

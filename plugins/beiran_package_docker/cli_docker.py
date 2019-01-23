@@ -72,8 +72,8 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
     click.echo(
         'Pulling image %s from %s!' % (imagename, node or "available nodes"))
 
-    if whole_image_only:
-        if progress:
+    if progress:
+        if whole_image_only:
             progbar = MultipleProgressBar(desc=imagename)
 
             async def _pull_with_progress():
@@ -96,23 +96,6 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
             click.echo('done!')
 
         else:
-            result = ctx.beiran_client.pull_image(
-                imagename,
-                node=node,
-                wait=wait,
-                force=force,
-                whole_image_only=whole_image_only,
-                progress=False,
-                raise_error=True
-            )
-
-            if "started" in result:
-                click.echo("Process is started")
-            if "finished" in result:
-                click.echo("Process is finished")
-
-    else:
-        if progress:
             async def _pull_with_progress():
                 """Pull image with async client"""
                 progbars = {}
@@ -126,23 +109,41 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                     raise_error=True
                 )
                 click.echo('Downloading layers...')
-                lastpos = 0 # save position to move cursor of console after finish layer downloading
+                lastbar = None
 
                 async for data in json_streamer(resp.content, '$.progress[::]'):
                     digest = data['digest']
 
                     if digest == 'done':
+                        lastbar.seek_last_line()
                         click.echo('Loading image...')
                     else:
                         if digest not in progbars:
                             progbars[digest] = {
                                 'bar': MultipleProgressBar(desc=digest)
                             }
-                        lastpos = progbars[digest]['bar'].update_and_seek(data['progress'], lastpos)
+                        progbars[digest]['bar'].update_and_seek(data['progress'])
+                        lastbar = progbars[digest]['bar']
                 click.echo('done!')
 
             loop = asyncio.get_event_loop()
             loop.run_until_complete(_pull_with_progress())
+
+    else:
+        result = ctx.beiran_client.pull_image(
+            imagename,
+            node=node,
+            wait=wait,
+            force=force,
+            whole_image_only=whole_image_only,
+            progress=False,
+            raise_error=True
+        )
+
+        if "started" in result:
+            click.echo("Process is started")
+        if "finished" in result:
+            click.echo("Process is finished")
 
 # pylint: enable-msg=too-many-arguments
 

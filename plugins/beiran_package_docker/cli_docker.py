@@ -124,7 +124,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                             if data['status'] == DockerUtil.DL_ALREADY:
                                 progbars[digest] = {
                                     'bar': MultipleProgressBar(
-                                        widgets=[digest + ' Already existss']
+                                        widgets=[digest + ' Already exists']
                                     )
                                 }
                             else:

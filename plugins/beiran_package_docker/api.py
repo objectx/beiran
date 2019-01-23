@@ -346,8 +346,6 @@ class ImageList(RPCEndpoint):
                         == Services.docker_util.queues[marshaled]['num_of_layer']): # type: ignore
                     break
 
-
-
         def format_progress(digest: str, status: str, progress: int = 100):
             """generate json dictionary for sending progress of layer downloading"""
             return '{"digest": "%s", "status": "%s", "progress": %d},' % (digest, status, progress)
@@ -373,7 +371,6 @@ class ImageList(RPCEndpoint):
                     )
                     rpc_endpoint.flush() # type: ignore
                 return
-
 
             while True:
                 await asyncio.sleep(0)
@@ -402,7 +399,6 @@ class ImageList(RPCEndpoint):
         ]
         pro_future = asyncio.gather(*pro_tasks)
 
-
         # wait until finsh downloading all layers
         while True:
             finish = True
@@ -423,7 +419,6 @@ class ImageList(RPCEndpoint):
         if show_progress:
             rpc_endpoint.write(format_progress('done', 'done')[:-1]) # type: ignore
             rpc_endpoint.flush() # type: ignore
-
 
         # Do we need to save repo_digest to database?
         # config_json_str, image_id, _ = \

@@ -567,18 +567,29 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
         self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_FINISH
 
-    async def download_layer_from_node(self, host: str,
+    async def download_layer_from_node(self, ref: dict, host: str,
                                        digest: str)-> aiohttp.client_reqrep.ClientResponse:
         """
         Download layer from other node.
         """
-        # save_path = save_path.rstrip('.gz') # beiran node give a layer as  tar archive
-        save_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
+        marshaled = marshal(**ref)
         url = host + '/docker/layers/' + digest
+        save_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
 
         self.logger.debug("downloading layer from %s", url)
-        resp = await async_write_file_stream(url, save_path, timeout=60)
+
+        # HEAD request to get size
+        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        layer_size = int(resp.headers.get('content-length'))
+
+        self.queues[marshaled]['layers'][digest]['size'] = layer_size
+        self.queues[marshaled]['layers'][digest]['status'] = self.DL_TAR_DOWNLOADING
+
+        resp = await async_write_file_stream(url, save_path, timeout=60,
+                                             queue=self.queues[marshaled]['layers'] \
+                                                             [digest]['queue'])
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
+        self.queues[marshaled]['layers'][digest]['status'] = self.DL_FINISH
         return resp
 
     async def ensure_having_layer(self, ref: dict, layer_hash: str, **kwargs):
@@ -626,7 +637,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     continue
 
                 node = Node.get(Node.uuid == node_id)
-                resp = await self.download_layer_from_node(node.url_without_uuid, layer.digest)
+                resp = await self.download_layer_from_node(ref, node.url_without_uuid, layer.digest)
 
                 if resp.status == 200:
                     if not os.path.exists(tar_layer_path):

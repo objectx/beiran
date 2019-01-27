@@ -57,7 +57,7 @@ async def async_req(url: str, return_json: bool = True,
                 return resp, {}
 
 
-async def async_write_file_stream(url: str, save_path: str, mode: str = 'wb',
+async def async_write_file_stream(url: str, save_path: str, queue=None,
                                   timeout: int = 3, method: str = "GET",
                                   **kwargs) -> aiohttp.client_reqrep.ClientResponse:
     """
@@ -81,7 +81,11 @@ async def async_write_file_stream(url: str, save_path: str, mode: str = 'wb',
             async with session.request(method, url, json=json,
                                        data=data, headers=headers) as resp:
 
-                with open(save_path, mode)as file:
+                with open(save_path, 'wb')as file:
                     async for chunk in input_reader(resp.content):
                         file.write(chunk)
+                        if queue:
+                            queue.put_nowait(chunk)
+                if queue:
+                    queue.put_nowait(None)
                 return resp

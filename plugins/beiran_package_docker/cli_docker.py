@@ -23,12 +23,15 @@ Beiran Docker Plugin command line interface module
 """
 
 import asyncio
+# import progressbar
 import click
 from tabulate import tabulate
 
 from beiran.util import json_streamer
 from beiran.util import sizeof_fmt
+from beiran.multiple_progressbar import MultipleProgressBar
 from beiran.cli import pass_context
+from beiran_package_docker.util import DockerUtil
 
 
 @click.group()
@@ -72,29 +75,68 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
         'Pulling image %s from %s!' % (imagename, node or "available nodes"))
 
     if progress:
-        progbar = click.progressbar(length=1)
+        if whole_image_only:
+            progbar = MultipleProgressBar(desc=imagename)
 
-        async def _pull_with_progress():
-            """Pull image with async client"""
-            resp = await ctx.async_beiran_client.pull_image(
-                imagename,
-                node=node,
-                wait=wait,
-                force=force,
-                whole_image_only=whole_image_only,
-                progress=True,
-                raise_error=True
-            )
-            before = 0
-            async for update in json_streamer(resp.content, '$.progress[::]'):
-                progbar.update(update['progress'] - before)
-                before = update['progress']
+            async def _pull_with_progress():
+                """Pull image with async client"""
+                resp = await ctx.async_beiran_client.pull_image(
+                    imagename,
+                    node=node,
+                    wait=wait,
+                    force=force,
+                    whole_image_only=whole_image_only,
+                    progress=True,
+                    raise_error=True
+                )
+                async for update in json_streamer(resp.content, '$.progress[::]'):
+                    progbar.update(update['progress'])
+                progbar.finish()
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_pull_with_progress())
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(_pull_with_progress())
+            click.echo('done!')
 
-        progbar.render_finish()  # type: ignore  # typing attribute missing error
-        click.echo('done!')
+        else:
+            async def _pull_with_progress():
+                """Pull image with async client"""
+                progbars = {}
+                resp = await ctx.async_beiran_client.pull_image(
+                    imagename,
+                    node=node,
+                    wait=wait,
+                    force=force,
+                    whole_image_only=whole_image_only,
+                    progress=True,
+                    raise_error=True
+                )
+                click.echo('Downloading layers...')
+                lastbar = None
+
+                async for data in json_streamer(resp.content, '$.progress[::]'):
+                    digest = data['digest']
+
+                    if digest == 'done':
+                        lastbar.seek_last_line()
+                        click.echo('Loading image...')
+                    else:
+                        if digest not in progbars:
+                            if data['status'] == DockerUtil.DL_ALREADY:
+                                progbars[digest] = {
+                                    'bar': MultipleProgressBar(
+                                        widgets=[digest + ' Already exists']
+                                    )
+                                }
+                            else:
+                                progbars[digest] = {
+                                    'bar': MultipleProgressBar(desc=digest)
+                                }
+                        progbars[digest]['bar'].update_and_seek(data['progress'])
+                        lastbar = progbars[digest]['bar']
+                click.echo('done!')
+
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(_pull_with_progress())
 
     else:
         result = ctx.beiran_client.pull_image(

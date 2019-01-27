@@ -121,6 +121,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
+            layer.local_image_refs = [] # type: ignore
             self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
@@ -317,64 +318,52 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         image = DockerImage.get(DockerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
 
-        # unset layers
+        await self.unset_local_layers(image.layers, image_id)
+
         if image.available_at:
             image.save()
         else:
             image.delete_instance()
+            await self.delete_layers(image.layers)
+
         self.history.update('removed_image={}'.format(image.hash_id))
-
-        # we do not handle deleting layers yet, not sure if they are
-        # shared and needed by other images
-        # code remains here for further interests. see PR #114 of rsnc
-
-        # await self.delete_layers(image.layers)
-
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
 
-    async def delete_layers(self, diff_id_list: list)-> None:
+    async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
         """
-        Unset available layer
+        Unset image_id from local_image_refs of layers
         """
         layers = DockerLayer.select() \
                             .where(DockerLayer.diff_id.in_(diff_id_list)) \
                             .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
-
         for layer in layers:
-            layer.unset_available_at(self.node.uuid.hex)
-            layer.docker_path = None
+            layer.unset_local_image_refs(image_id)
+            if not layer.local_image_refs:
+                layer.unset_available_at(self.node.uuid.hex)
+                layer.docker_path = None
+            layer.save()
 
-            if layer.available_at:
-                layer.save()
-            else:
+    async def delete_layers(self, diff_id_list: list)-> None:
+        """
+        Unset available layer, delete it if no image refers it
+        """
+        layers = DockerLayer.select() \
+                            .where(DockerLayer.diff_id.in_(diff_id_list))
+        for layer in layers:
+            if not layer.available_at:
                 layer.delete_instance()
 
-        # old code for educational purposes, please delete when it makes sense to delete
-        #
-        # try:
-        #     self.log.debug("Layer list: %s", image_data['RootFS']['Layers'])
-        #     layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
-        #     for layer in layers:
-        #         layer.unset_available_at(self.node.uuid.hex)
-        #         if layer.available_at:
-        #             layer.save()
-        #         else:
-        #             layer.delete()
-        # except DockerUtil.CannotFindLayerMappingError:
-        #     self.log.debug("Unexpected error, layers of image %s could not found..",
-        #                    image_data['Id'])
-
-    async def save_image(self, image_id: str, skip_updates: bool = False,
+    async def save_image(self, id_or_tag: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):
         """
-        Save existing image and layers identified by image_id to database.
+        Save existing image and layers identified by id_or_tag to database.
 
         Args:
-            image_id (str): image identifier
+            id_or_tag (str): image identifier (hash_id or tag)
 
         """
 
-        image_data = await self.aiodocker.images.get(name=image_id)
+        image_data = await self.aiodocker.images.get(name=id_or_tag)
         image = DockerImage.from_dict(image_data, dialect="docker")
         image_exists_in_db = False
 
@@ -390,7 +379,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         except DockerImage.DoesNotExist:
             self.log.debug("not an existing one, creating a new record..")
 
-        layers = await self.util.get_image_layers(image_data['RootFS']['Layers'])
+        layers = await self.util.get_image_layers(image_data['RootFS']['Layers'], image_data['Id'])
         image.layers = [layer.diff_id for layer in layers] # type: ignore
 
         # skip verbose updates of records
@@ -417,14 +406,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.emit('docker_daemon.new_image_saved', image.hash_id)
 
         if image_data['RepoTags']:
-            await self.tag_image(image_id, image_data['RepoTags'][0])
+            await self.tag_image(id_or_tag, image_data['RepoTags'][0])
 
-    async def tag_image(self, image_identifier: str, tag: str):
+    async def tag_image(self, image_id: str, tag: str):
         """
         Tag an image existing in database. If already same tag exists,
         move it from old one to new one.
         """
-        target = DockerImage.get_image_data(image_identifier)
+        target = DockerImage.get_image_data(image_id)
         if tag not in target.tags:
             target.tags = [tag] # type: ignore
             target.save()

@@ -219,9 +219,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     async def delete_unavailable_objects():
         """Delete unavailable layers and images"""
         DockerImage.delete().where(SQL('available_at = \'[]\' AND' \
-            ' download_progress = NULL')).execute()
+            ' download_progress = \'null\'')).execute()
         DockerLayer.delete().where(SQL('available_at = \'[]\' AND ' \
-            'download_progress = NULL')).execute()
+            'download_progress = \'null\'')).execute()
 
     async def fetch_docker_info(self) -> dict:
         """
@@ -358,12 +358,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except FileNotFoundError:
             return {}
 
-    async def get_image_layers(self, diffid_list: list) -> list:
+    async def get_image_layers(self, diffid_list: list, image_id: str) -> list:
         """Returns an array of DockerLayer objects given diffid array"""
         layers = []
         for idx, diffid in enumerate(diffid_list):
             try:
-                layer = await self.get_layer_by_diffid(diffid, idx)
+                layer = await self.get_layer_by_diffid(diffid, idx, image_id)
                 # handle DockerUtil.CannotFindLayerMappingError?
                 layers.append(layer)
             except FileNotFoundError:
@@ -371,7 +371,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                   diffid)
         return layers
 
-    async def get_layer_by_diffid(self, diffid: str, idx: int) -> DockerLayer:
+    async def get_layer_by_diffid(self, diffid: str, idx: int, image_id: str) -> DockerLayer:
         """
         Makes an DockerLayer objects using diffid of layer
 
@@ -400,6 +400,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except DockerLayer.DoesNotExist:
             layer = DockerLayer()
             layer.digest = digest
+        layer.set_local_image_refs(image_id)
 
         layer.diff_id = diffid
         # print("--- Processing layer", idx, "of", image_details['RepoTags'])

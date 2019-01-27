@@ -2,6 +2,14 @@
 Contribution Guide
 ==================
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Contribution Guide
+   :hidden:
+   :includehidden:
+
+   Contributors <contributors>
+
 What can I do?
 --------------
 Since Beiran is a free software and follows the free software

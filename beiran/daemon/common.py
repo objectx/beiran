@@ -40,7 +40,7 @@ class Services:
     logger = None
 
     @staticmethod
-    def getLogger():
+    def get_logger():
         if not logger:
             logger = build_logger(config.log_file, LOG_LEVEL)
         return logger

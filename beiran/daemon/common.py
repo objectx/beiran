@@ -37,4 +37,10 @@ class Services:
     """Conventional class for keeping references to global objects"""
     daemon = None
     plugins = {} # type: dict
-    logger = build_logger(config.log_file, LOG_LEVEL) # type: ignore
+    logger = None
+
+    @staticmethod
+    def getLogger():
+        if not logger:
+            logger = build_logger(config.log_file, LOG_LEVEL)
+        return logger

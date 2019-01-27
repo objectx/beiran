@@ -36,8 +36,7 @@ Where is the source code?
 -------------------------
 Here it is: |repo_url|. Please fork it and start coding!
 
-We accept code contributions via Merge Requests. It is very similar with github's
-pull requests. Simply you should do:
+We accept code contributions via Merge Requests. Simply you should do:
 
 - fork project
 - change the code (on default branch or a new branch if necessary)

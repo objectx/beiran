@@ -7,7 +7,7 @@ Configuration
 -------------
 That's very simple. Give the path of Beiran's cri endpoint to kubelet's command option **"--image-service-endpoint"** and restart kubelet::
 
-    kubelet --image-service-endpoint=path-to-grpc-socket
+    kubelet --image-service-endpoint=unix:///var/run/beiran-cri.sock
 
 For example, if you are running kubelet with systemd, please edit the configuration file like as follows::
 

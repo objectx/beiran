@@ -52,8 +52,8 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
+import os
 from sphinx.ext import autodoc
-
 
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
@@ -232,13 +232,30 @@ html_theme_options = {
     'titles_only': False
 }
 
-rst_epilog = """
-.. |beiran_issues| replace:: https://gitlab.beiran.io/beiran/beiran/issues
-.. |email_list_subscribe_link| replace:: subscribe+developers [at] lists.beiran.io
-.. |beiran_gitlab_main| replace:: https://gitlab.beiran.io
-.. |beiran_gitlab_gpg| replace:: https://gitlab.beiran.io/profile/gpg_keys
-.. |beiran_git_latest_release| replace:: https://gitlab.beiran.io/beiran/beiran.git@v0.0.9
-"""
+gitlab_url = "https://gitlab.beiran.io"
+repo_url = "{}/beiran/beiran".format(gitlab_url)
+latest_release_version = os.popen('git describe --tags --match "v[0-9]*" --abbrev=0').read().strip()
+commit_rev = os.popen('git rev-parse HEAD').read().strip()
+
+epilog_replacements = {
+    'gitlab_url'                : gitlab_url,
+    'repo_url'                  : repo_url,
+    'email_list_subscribe_link' : "subscribe+developers [at] lists.beiran.io",
+    'beiran_git_latest_release' : "{}.git@{}".format(repo_url, latest_release_version),
+    'latest_release_version'    : latest_release_version,
+    'commit_rev'                : commit_rev,
+}
+
+epilog_links = {
+    'authors'                   : "{}/blob/{}/AUTHORS".format(repo_url, commit_rev),
+    'GitLab'                    : gitlab_url,
+    'Issue Tracker'             : "{}/issues".format(repo_url),
+}
+
+rst_epilog = "\n".join(['.. |{}| replace:: {}'.format(k, v) for k, v in epilog_replacements.items()]) \
+    + "\n" \
+    + "\n".join(['.. _{}: {}'.format(k, v) for k, v in epilog_links.items()]) \
+    + "\n"
 
 # https://stackoverflow.com/questions/7825263/including-docstring-in-sphinx-documentation
 class SimpleDocumenter(autodoc.MethodDocumenter):

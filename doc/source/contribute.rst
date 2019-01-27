@@ -20,9 +20,9 @@ create an issue to report a bug, make a feature request or start any kind
 of technical discussions. You can access Issue Dashboard by visiting
 address below:
 
-|beiran_issues|
+`Issue Tracker`_
 
-You need to create an account on |beiran_gitlab_main|. It's easy. Click
+You need to create an account on our GitLab_ instance. It's easy. Click
 **Sign in / Register** button. Fill the registration form. Approve your
 email address. That's it.
 
@@ -34,7 +34,7 @@ by sending an email to:
 
 Where is the source code?
 -------------------------
-Here it is: |beiran_gitlab_main|. Please fork it and start coding!
+Here it is: |repo_url|. Please fork it and start coding!
 
 We accept code contributions via Merge Requests. It is very similar with github's
 pull requests. Simply you should do:
@@ -126,10 +126,8 @@ You can find detailed guide here:
 
 https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work
 
-After configuring git client, paste your **public key** of your gpg pair
-to your gitlab profile:
-
-|beiran_gitlab_gpg|
+After configuring git client, add your **public key** of your gpg pair
+to your gitlab profile.
 
 See here for more details:
 

@@ -63,7 +63,6 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.mathjax',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
-              'sphinx.ext.autodoc',
               'sphinxcontrib.napoleon',
               'sphinx_click.ext',
              ]
@@ -288,9 +287,16 @@ def replace_docstring_variables(app, docname, source):
         result = result.replace(key, app.config.docstring_replacements[key])
     source[0] = result
 
+html_context = {
+    "display_gitlab": True, # Integrate Gitlab
+    "gitlab_host": "gitlab.beiran.io", # Username
+    "gitlab_repo": "beiran/beiran", # Repo name
+    "gitlab_version": git_branch, # Version
+    "conf_py_path": "/doc/source/", # Path in the checkout to the docs root
+}
 
 docstring_replacements = {
-    "{beiran_git_latest_release}": "https://gitlab.beiran.io/beiran/beiran.git@v0.0.9"
+    "{beiran_git_latest_release}": "https://gitlab.beiran.io/beiran/beiran.git@{}".format(latest_release_version)
 }
 
 

@@ -236,6 +236,8 @@ repo_url = "{}/beiran/beiran".format(gitlab_url)
 latest_release_version = os.popen('git describe --tags --match "v[0-9]*" --abbrev=0').read().strip()
 commit_rev = os.popen('git rev-parse HEAD').read().strip()
 git_branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
+latest_binary_download = "https://beiran.io/downloads/beiran/latest"
+docker_main_repo = "dkr.beiran.io/beiran/beiran"
 
 epilog_replacements = {
     'gitlab_url'                  : gitlab_url,
@@ -244,6 +246,8 @@ epilog_replacements = {
     'beiran_git_latest_release'   : "{}.git@{}".format(repo_url, latest_release_version),
     'latest_release_version'      : latest_release_version,
     'commit_rev'                  : commit_rev,
+    'latest_binary_download'      : latest_binary_download,
+    'docker_main_repo'            : docker_main_repo,
 }
 
 epilog_links = {
@@ -296,7 +300,9 @@ html_context = {
 }
 
 docstring_replacements = {
-    "{beiran_git_latest_release}": "https://gitlab.beiran.io/beiran/beiran.git@{}".format(latest_release_version)
+    "{beiran_git_latest_release}": "https://gitlab.beiran.io/beiran/beiran.git@{}".format(latest_release_version),
+    "{latest_binary_download}": latest_binary_download,
+    "{docker_main_repo}": docker_main_repo,
 }
 
 

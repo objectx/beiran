@@ -66,7 +66,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def open(self, *args, **kwargs):
         """ Monitor if websocket is opened
         """
-        Services.getLogger().info("WebSocket opened")
+        Services.get_logger().info("WebSocket opened")
 
     def on_message(self, message: str):
         """ Received message from websocket
@@ -76,7 +76,7 @@ class EchoWebSocket(websocket.WebSocketHandler):
     def on_close(self):
         """ Monitor if websocket is closed
         """
-        Services.getLogger().info("WebSocket closed")
+        Services.get_logger().info("WebSocket closed")
 
 
 class ApiRootHandler(web.RequestHandler):

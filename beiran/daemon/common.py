@@ -39,8 +39,9 @@ class Services:
     plugins = {} # type: dict
     logger = None
 
-    @staticmethod
-    def get_logger():
-        if not logger:
-            logger = build_logger(config.log_file, LOG_LEVEL)
-        return logger
+    @classmethod
+    def get_logger(cls):
+        """Builds and returns a logger instance on demand"""
+        if not cls.logger:
+            cls.logger = build_logger(config.log_file, LOG_LEVEL)
+        return cls.logger

@@ -190,7 +190,6 @@ class BeiranDaemon(EventEmitter):
         run_in_loop(self.wait_plugin_status_ready(plugin_instance, timeout=timeout),
                     loop=loop, sync=True)
 
-
     async def wait_plugin_status_ready(self, plugin_instance, timeout=None):
         """Wait until plugin status to be 'ready'"""
 
@@ -200,7 +199,6 @@ class BeiranDaemon(EventEmitter):
             await wait_event(plugin_instance, 'status', timeout=timeout)
             if plugin_instance.status == 'ready':
                 return
-
 
     def search_plugins(self):
         """Temporary function for testing python plugin distribution methods"""
@@ -222,7 +220,8 @@ class BeiranDaemon(EventEmitter):
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:
-            Services.get_logger().info("sqlite file does not exist, creating file %s!..", beiran_db_path)
+            Services.get_logger().info("sqlite file does not exist, creating file %s!..",
+                                       beiran_db_path)
             open(beiran_db_path, 'a').close()
 
         # init database object

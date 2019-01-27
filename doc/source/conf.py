@@ -236,20 +236,22 @@ gitlab_url = "https://gitlab.beiran.io"
 repo_url = "{}/beiran/beiran".format(gitlab_url)
 latest_release_version = os.popen('git describe --tags --match "v[0-9]*" --abbrev=0').read().strip()
 commit_rev = os.popen('git rev-parse HEAD').read().strip()
+git_branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
 
 epilog_replacements = {
-    'gitlab_url'                : gitlab_url,
-    'repo_url'                  : repo_url,
-    'email_list_subscribe_link' : "subscribe+developers [at] lists.beiran.io",
-    'beiran_git_latest_release' : "{}.git@{}".format(repo_url, latest_release_version),
-    'latest_release_version'    : latest_release_version,
-    'commit_rev'                : commit_rev,
+    'gitlab_url'                  : gitlab_url,
+    'repo_url'                    : repo_url,
+    'email_list_subscribe_link'   : "subscribe+developers [at] lists.beiran.io",
+    'beiran_git_latest_release'   : "{}.git@{}".format(repo_url, latest_release_version),
+    'latest_release_version'      : latest_release_version,
+    'commit_rev'                  : commit_rev,
 }
 
 epilog_links = {
-    'authors'                   : "{}/blob/{}/AUTHORS".format(repo_url, commit_rev),
-    'GitLab'                    : gitlab_url,
-    'Issue Tracker'             : "{}/issues".format(repo_url),
+    'authors'                     : "{}/blob/{}/AUTHORS".format(repo_url, commit_rev),
+    'GitLab'                      : gitlab_url,
+    'Issue Tracker'               : "{}/issues".format(repo_url),
+    'Contributors Page on GitLab' : "{}/graphs/{}".format(repo_url, git_branch)
 }
 
 rst_epilog = "\n".join(['.. |{}| replace:: {}'.format(k, v) for k, v in epilog_replacements.items()]) \

@@ -77,7 +77,6 @@ setup(
         ]
     },
     data_files=[
-        ('', REQUIREMENTS_PATH),
         ('', ['beiran/config.toml'])
     ],
 

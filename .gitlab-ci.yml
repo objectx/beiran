@@ -94,13 +94,19 @@ publish:oci-image-layout:
   tags:
   - docker
   script:
-    - echo $pwd
-    - apk info go
+    - pwd
+    - go version
     - |
       if [ $? -ne 0 ]; then
-        apk add go
-        mkdir go
+        wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
+        tar -C /usr/local -xzf go1.11.5.linux-amd64.tar.gz
+        export PATH=$PATH:/usr/local/go/bin
+        go version
       fi
+    - |
+      if ! [ -e go ]; then
+        mkdir go
+      fi        
     - export GOPATH=$pwd/go
     - go get github.com/coolljt0725/docker2oci
     - docker images

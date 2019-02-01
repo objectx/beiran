@@ -94,15 +94,14 @@ publish:oci-image-layout:
   tags:
   - docker
   script:
-    - $pwd
-    - dpkg -s golang-1.10
+    - echo $pwd
+    - apk info go
     - |
       if [ $? -ne 0 ]; then
-        apt-get install golang-1.10
-        mkdir $HOME/go
+        apk add go
+        mkdir go
       fi
-    - export PATH=$PATH:/usr/lib/go-1.10/bin
-    - export GOPATH=$HOME/go
+    - export GOPATH=$pwd/go
     - go get github.com/coolljt0725/docker2oci
     - docker images
     - docker save $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} | $GOPATH/bin/docker2oci $CI_REGISTRY_IMAGE

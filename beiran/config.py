@@ -270,20 +270,34 @@ class Config(metaclass=ConfigMeta):
         return self._enabled_plugins or self.get_enabled_plugins()
 
     def get_enabled_plugins(self):
-        """Get the list of the enabled plugins"""
+        """Get the list of the enabled plugins
+
+        Tries first read from environment variable `BEIRAN_PLUGINS` which contains
+        a comma separated string of plugin list::
+
+            "beiran.plugins.discovery_dns,beiran.plugins.discovery_zeroconf,package.docker"
+
+        If `BEIRAN_PLUGINS` is not specified, then tries getting plugins from config file.
+        """
 
         plugins = []
         env_config = os.getenv('BEIRAN_PLUGINS')
         if env_config:
             try:
                 for p_package in env_config.split(','):
-                    (p_type, p_name) = p_package.split('.')
+                    if p_package.startswith("beiran.plugins"):
+                        package, module, type_name = p_package.split('.')
+                        p_type, p_name = type_name.split('_')
+                        module_path = p_package
+                    else:
+                        p_type, p_name = p_package.split('.')
+                        module_path = 'beiran_%s_%s' % (p_type, p_name)
                     if p_type not in self.plugin_types:
                         raise Exception("Unknown plugin type: %s" % (p_type))
                     plugins.append({
                         "type": p_type,
                         "name": p_name,
-                        "package": 'beiran_%s_%s' % (p_type, p_name)
+                        "package": module_path,
                     })
             except Exception:
                 raise Exception("Cannot parse BEIRAN_PLUGINS variable from environment")
@@ -301,7 +315,7 @@ class Config(metaclass=ConfigMeta):
                     plugins.append({
                         'type': p_type,
                         'name': p_name,
-                        'package': 'beiran_%s_%s' % (p_type, p_name)
+                        'package': p_conf['module_path'],
                     })
         self._enabled_plugins = plugins
         return plugins

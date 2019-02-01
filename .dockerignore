@@ -5,8 +5,7 @@ pip-delete-this-directory.txt
 .cache
 run
 .git
-*
-!beiran
+ !beiran
 !Dockerfile
 !plugins
 !helpers/mypy

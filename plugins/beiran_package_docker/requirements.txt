@@ -1,4 +1,4 @@
-aiohttp==3.0.6
+beiran
 aiofiles==0.3.2
 aiodocker==0.14.0
 docker==2.7.0

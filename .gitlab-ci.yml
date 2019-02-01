@@ -89,6 +89,29 @@ publish:docs:
   only:
     - tags
 
+publish:oci-image-layout:
+  stage: publish
+  tags:
+  - docker
+  script:
+    - $pwd
+    - dpkg -s golang-1.10
+    - |
+      if [ $? -ne 0 ]; then
+        apt-get install golang-1.10
+        mkdir $HOME/go
+      fi
+    - export PATH=$PATH:/usr/lib/go-1.10/bin
+    - export GOPATH=$HOME/go
+    - go get github.com/coolljt0725/docker2oci
+    - docker images
+    - docker save $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} | $GOPATH/bin/docker2oci $CI_REGISTRY_IMAGE
+  artifacts:
+    name: "image-layout-$CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME}"
+    paths:
+      - $CI_REGISTRY_IMAGE
+    # expire_in: 1 mos
+
 checks:lint-beiran:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}

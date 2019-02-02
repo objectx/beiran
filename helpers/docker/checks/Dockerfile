@@ -20,3 +20,14 @@ RUN pip install $(grep -iv "beiran" /opt/beiran/r-docker.txt)
 
 ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
 RUN pip install -r /opt/beiran/r-k8s.txt
+
+ADD [ "beiran", "/opt/beiran" ]
+ADD [ "plugins/beiran_package_docker/beiran_package_docker", "/opt/beiran_package_docker" ]
+ADD [ "plugins/beiran_interface_k8s", "/opt/beiran_interface_k8s" ]
+
+ADD mypy.ini /opt/mypy.ini
+ADD .pylintrc /opt/pylintrc
+
+ENV PYTHONPATH=/opt/beiran
+
+WORKDIR /opt

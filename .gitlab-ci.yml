@@ -111,7 +111,7 @@ checks:mypy-beiran:
   tags:
    - docker
   script:
-   - helpers/mypy --config-file mypy.ini beiran
+   - mypy --config-file mypy.ini beiran
 
 checks:mypy-plugins:
   stage: checks
@@ -119,7 +119,7 @@ checks:mypy-plugins:
   tags:
    - docker
   script:
-   - helpers/mypy --config-file mypy.ini plugins
+   - mypy --config-file mypy.ini beiran_package_docker beiran_interface_k8s
 
 checks:bandit-beiran:
   stage: checks
@@ -136,7 +136,7 @@ checks:bandit-plugins:
   tags:
    - docker
   script:
-   - bandit -r plugins
+   - bandit -r beiran_package_docker beiran_interface_k8s
   allow_failure: true
 
 start_test_services:

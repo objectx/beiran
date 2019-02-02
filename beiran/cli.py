@@ -211,8 +211,8 @@ def main():
     except ValueError:
         logger.debug("No config file specified, default config in use")
 
-    index = sys.argv.index('--debug')
     try:
+        index = sys.argv.index('--debug')
         if index:
             _ = sys.argv.pop(index)
             logger.setLevel(logging.DEBUG)

@@ -286,7 +286,7 @@ class Config(metaclass=ConfigMeta):
             try:
                 for p_package in env_config.split(','):
                     if p_package.startswith("beiran.plugins"):
-                        package, module, type_name = p_package.split('.')
+                        _, __, type_name = p_package.split('.')
                         p_type, p_name = type_name.split('_')
                         module_path = p_package
                     else:

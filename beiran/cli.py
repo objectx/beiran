@@ -194,6 +194,10 @@ def click_main(debug: bool = False, config_file: str = None):
 
 
 def main():
+    """
+    Main entrypoint of beiran CLI
+    """
+
     # workaround for click's chained commands weird bug.
     # somehow chain is broken after 3rd parameter, such as:
     # although `beiran docker image --help ` works, on the other hand

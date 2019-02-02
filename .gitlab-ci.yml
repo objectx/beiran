@@ -103,7 +103,7 @@ checks:lint-plugins:
   tags:
    - docker
   script:
-   - pylint plugins
+   - pylint beiran_package_docker beiran_interface_k8s
 
 checks:mypy-beiran:
   stage: checks

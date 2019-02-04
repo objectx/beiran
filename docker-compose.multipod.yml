@@ -20,7 +20,7 @@ services:
     volumes_from:
       - pod1
     network_mode: "service:pod1"
-    command: ["--debug" "node", "start"]
+    command: ["--debug", "node", "start"]
 
 
   pod2:
@@ -43,7 +43,7 @@ services:
     volumes_from:
       - pod2
     network_mode: "service:pod2"
-    command: ["--debug" "node", "start"]
+    command: ["--debug", "node", "start"]
 
 
   pod3:
@@ -66,7 +66,7 @@ services:
     volumes_from:
       - pod3
     network_mode: "service:pod3"
-    command: ["--debug" "node", "start"]
+    command: ["--debug", "node", "start"]
 
   pod4:
     image: gcr.io/google_containers/pause:0.8.0
@@ -88,7 +88,7 @@ services:
     volumes_from:
       - pod4
     network_mode: "service:pod4"
-    command: ["--debug" "node", "start"]
+    command: ["--debug", "node", "start"]
 
 networks:
   test:

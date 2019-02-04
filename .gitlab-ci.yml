@@ -136,7 +136,7 @@ checks:bandit-plugins:
   tags:
    - docker
   script:
-   - bandit -r beiran_package_docker beiran_interface_k8s
+   - bandit -r plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
   allow_failure: true
 
 start_test_services:

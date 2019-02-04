@@ -36,7 +36,9 @@ package:docs:
   stage: prepare
   tags:
   - docker
-  image: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+  image:
+    name: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+    entrypoint: ["/bin/sh"]
   script:
   - cd doc/
   - pip3 install -r requirements.txt

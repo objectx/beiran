@@ -23,7 +23,7 @@ Import all data models to make import statements clear.
 """
 from peewee import SqliteDatabase
 
-from beiran.daemon.common import build_logger_with_env_level
+from beiran.log import build_logger_with_env_level
 from .base import BaseModel
 from .node import Node, PeerAddress
 

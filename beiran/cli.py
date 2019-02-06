@@ -32,7 +32,7 @@ import click
 from beiran.models import PeerAddress
 from beiran.util import Unbuffered
 from beiran.sync_client import Client
-from beiran.daemon.common import build_logger_with_env_level
+from beiran.log import build_logger_with_env_level
 from beiran.client import Client as AsyncClient
 from beiran.config import config
 

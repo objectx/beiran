@@ -19,22 +19,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Shared objects of beiran daemon"""
-import logging
-
 from pyee import EventEmitter
 
-from beiran.config import config
-from beiran.log import build_logger
+from beiran.log import build_logger_with_env_level
 from beiran.version import get_version
 
 
 EVENTS = EventEmitter()
 VERSION = get_version('short', 'daemon')
 
-def build_logger_with_env_level(filename: str = config.log_file) -> logging.Logger:
-    """Build logger class with the environment variable LOG_LEVEL"""
-    log_level = logging.getLevelName(config.log_level)
-    return build_logger(filename, log_level) # type: ignore
 
 class Services:
     """Conventional class for keeping references to global objects"""

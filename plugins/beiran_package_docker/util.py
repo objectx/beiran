@@ -38,7 +38,7 @@ import aiofiles
 from peewee import SQL
 from aiodocker import Docker
 
-from beiran.daemon.common import build_logger_with_env_level
+from beiran.log import build_logger_with_env_level
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
 from beiran.util import gunzip, clean_keys

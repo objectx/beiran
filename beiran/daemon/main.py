@@ -56,7 +56,7 @@ from beiran.daemon.version import __version__
 
 from beiran.config import config
 from beiran.models import Node, PeerAddress
-from beiran.daemon.common import build_logger_with_env_level
+from beiran.log import build_logger_with_env_level
 from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()

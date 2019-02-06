@@ -30,7 +30,7 @@ from uuid import uuid4, UUID
 import netifaces
 
 from beiran.config import config
-from beiran.daemon.common import build_logger_with_env_level
+from beiran.log import build_logger_with_env_level
 from beiran.models import PeerAddress
 from beiran.version import get_version
 

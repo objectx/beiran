@@ -28,7 +28,7 @@ import re
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
-from beiran.daemon.common import build_logger_with_env_level
+from beiran.log import build_logger_with_env_level
 
 LOGGER = build_logger_with_env_level('beiran.models.node')
 

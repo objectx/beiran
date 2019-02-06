@@ -94,12 +94,12 @@ publish:oci-image-layout:
   tags:
   - docker
   script:
-    - echo http://dl-cdn.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
     - apk update
-    - apk add go=1.11.5-r0
+    - apk add go=1.9.4-r0
+    - apk add musl-dev
     - go get github.com/coolljt0725/docker2oci
     - docker images
-    - docker save $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} | $GOPATH/bin/docker2oci $CI_REGISTRY_IMAGE
+    - docker save $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} | $HOME/go/bin/docker2oci $CI_REGISTRY_IMAGE
   artifacts:
     name: "image-layout-$CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME}"
     paths:

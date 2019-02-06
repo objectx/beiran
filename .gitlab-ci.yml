@@ -100,6 +100,7 @@ publish:oci-image-layout:
     - go get github.com/coolljt0725/docker2oci
     - docker images
     - docker save $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} | $HOME/go/bin/docker2oci $CI_REGISTRY_IMAGE
+    - du -s $CI_REGISTRY_IMAGE # show size of artifact
   artifacts:
     name: "image-layout-$CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME}"
     paths:

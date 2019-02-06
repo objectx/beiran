@@ -29,9 +29,12 @@ from beiran.version import get_version
 
 
 EVENTS = EventEmitter()
-LOG_LEVEL = logging.getLevelName(config.log_level)
 VERSION = get_version('short', 'daemon')
 
+def build_logger_with_env_level(filename: str = config.log_file) -> logging.Logger:
+    """Build logger class with the environment variable LOG_LEVEL"""
+    log_level = logging.getLevelName(config.log_level)
+    return build_logger(filename, log_level) # type: ignore
 
 class Services:
     """Conventional class for keeping references to global objects"""
@@ -43,5 +46,5 @@ class Services:
     def get_logger(cls):
         """Builds and returns a logger instance on demand"""
         if not cls.logger:
-            cls.logger = build_logger(config.log_file, LOG_LEVEL)
+            cls.logger = build_logger_with_env_level()
         return cls.logger

@@ -98,7 +98,7 @@ publish:oci-image-layout:
     - apk add go=1.9.4-r0
     - apk add musl-dev
     - go get github.com/coolljt0725/docker2oci
-    - docker save $CI_REGISTRY_IMAGE:${CI_PIPELINE_ID} | $HOME/go/bin/docker2oci image-layout-${CI_PIPELINE_ID}
+    - docker save $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} | $HOME/go/bin/docker2oci image-layout-${CI_PIPELINE_ID}
     # upload image_layer to minio
     - tar czf image-layout-${CI_PIPELINE_ID}.tar.gz image-layout-${CI_PIPELINE_ID}
     - go get github.com/minio/mc

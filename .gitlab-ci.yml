@@ -102,8 +102,8 @@ publish:oci-image-layout:
     # upload image_layer to minio
     - tar czf image-layout-${CI_COMMIT_REF_NAME}.tar.gz image-layout-${CI_COMMIT_REF_NAME}
     - go get github.com/minio/mc
-    - $HOME/go/bin/mc config host add minio https://minio.beiran.io $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
-    - $HOME/go/bin/mc cp image-layout-${CI_COMMIT_REF_NAME}.tar.gz releases
+    - $HOME/go/bin/mc config host add beiran https://minio.beiran.io $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+    - $HOME/go/bin/mc cp image-layout-${CI_COMMIT_REF_NAME}.tar.gz beiran/releases
 
 checks:lint-beiran:
   stage: checks

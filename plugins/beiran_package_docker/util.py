@@ -31,6 +31,7 @@ import platform
 import tarfile
 from typing import Tuple, Optional
 from collections import OrderedDict
+from pyee import EventEmitter
 import aiohttp
 
 import aiofiles
@@ -105,6 +106,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     DL_GZ_DOWNLOADING = 'gs_downloading'
     DL_FINISH = 'finish'
 
+    # event datas for downloading layers
+    EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
+
     def __init__(self, cache_dir: str, storage: str = "/var/lib/docker", # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
@@ -121,6 +125,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
         self.queues: dict = {}
+        self.emitters: dict = {}
 
     @property
     def digest_path(self)-> str:
@@ -869,7 +874,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
         return config_json_str, config_digest, repo_digest
 
-
+    def create_emitter(self, marshaled):
+        """Create a new emitter and add it to a emitter dictionary"""
+        self.emitters[marshaled] = EventEmitter()
 
     async def get_layer_diffids_of_image(self, ref: dict, descriptors: list)-> dict:
         """Download and allocate layers included in an image."""
@@ -886,6 +893,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 'status': self.DL_INIT,
                 'size': 0
             }
+        self.emitters[marshaled].emit(self.EVENT_START_LAYER_DOWNLOAD)
 
         tasks = [
             self.get_layer_diffid(ref, layer_d['digest'])

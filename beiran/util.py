@@ -385,7 +385,7 @@ def clean_keys(dict_: dict, keys: list) -> None:
 
 async def until_event(emitter: EventEmitter, name: str, loop=asyncio.get_event_loop()):
     """Wait task until triggered the event"""
-    future = asyncio.Future(loop=loop)
+    future: asyncio.Future = asyncio.Future(loop=loop)
 
     # not consider to duplicate registrations of event
     emitter.once(name, lambda: future.set_result(None))

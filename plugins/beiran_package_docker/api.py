@@ -335,14 +335,14 @@ class ImageList(RPCEndpoint):
             rpc_endpoint.write('{"image":"%s","progress":[' % tag_or_digest) # type: ignore
             rpc_endpoint.flush() # type: ignore
 
-        Services.docker_util.create_emitter(marshaled)
+        Services.docker_util.create_emitter(marshaled) # type: ignore
 
         config_future = asyncio.ensure_future(
             Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
         )
         await until_event(
-            Services.docker_util.emitters[marshaled],
-            Services.docker_util.EVENT_START_LAYER_DOWNLOAD
+            Services.docker_util.emitters[marshaled], # type: ignore
+            Services.docker_util.EVENT_START_LAYER_DOWNLOAD # type: ignore
         )
 
         def format_progress(digest: str, status: str, progress: int = 100):

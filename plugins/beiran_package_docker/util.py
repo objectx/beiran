@@ -162,13 +162,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         if not os.path.isdir(self.layer_cache_path): # cache path for layer
             os.makedirs(self.layer_cache_path)
 
-    def docker_find_layer_dir_by_sha(self, sha: str):
+    def docker_find_layer_dir_by_digest(self, layer_digest: str):
         """
         try to find local layer directory containing tar archive
         contents pulled from remote repository
 
         Args:
-            sha (string): sha string
+            layer_digest (string): digest of layer
 
         Returns:
             string directory path or None
@@ -180,7 +180,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         local_layer_db = self.layerdb_path
         local_cache_id = local_layer_db + '/{diff_file_name}/cache-id'
         local_layer_dir = self.layerdir_path
-        f_path = local_digest_dir + "/{}".format(del_idpref(sha))
+        f_path = local_digest_dir + "/{}".format(del_idpref(layer_digest))
 
         try:
             file = open(f_path, 'r')
@@ -476,13 +476,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp, data = await async_req(url=url, return_json=True, Authorization=requirements,
-                                         Accept=schema_v2_header)
+            resp, manifest = await async_req(url=url, return_json=True, Authorization=requirements,
+                                             Accept=schema_v2_header)
 
         if resp.status != 200:
             raise DockerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
                                                  % resp.status)
-        return data
+        return manifest
 
 
     async def get_docker_bearer_token(self, realm, service, scope):
@@ -535,13 +535,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
-    async def download_layer_from_origin(self, ref: dict, layer_hash: str, **kwargs):
+    async def download_layer_from_origin(self, ref: dict, layer_digest: str, **kwargs):
         """
         Download layer from registry.
         """
         marshaled = marshal(**ref)
-        save_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar.gz')
-        url = 'https://{}/v2/{}/blobs/{}'.format(ref['domain'], ref['repo'], layer_hash)
+        save_path = os.path.join(self.layer_cache_path, del_idpref(layer_digest) + '.tar.gz')
+        url = 'https://{}/v2/{}/blobs/{}'.format(ref['domain'], ref['repo'], layer_digest)
         requirements = ''
 
         self.logger.debug("downloading layer from %s", url)
@@ -559,19 +559,19 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                       Authorization=requirements)
             layer_size = int(resp.headers.get('content-length'))
 
-            self.queues[marshaled]['layers'][layer_hash]['size'] = layer_size
-            self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_GZ_DOWNLOADING
+            self.queues[marshaled]['layers'][layer_digest]['size'] = layer_size
+            self.queues[marshaled]['layers'][layer_digest]['status'] = self.DL_GZ_DOWNLOADING
 
             resp = await async_write_file_stream(url, save_path, timeout=60,
                                                  queue=self.queues[marshaled]['layers'] \
-                                                                  [layer_hash]['queue'],
+                                                                  [layer_digest]['queue'],
                                                  Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
 
-        self.logger.debug("downloaded layer %s to %s", layer_hash, save_path)
-        self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_FINISH
+        self.logger.debug("downloaded layer %s to %s", layer_digest, save_path)
+        self.queues[marshaled]['layers'][layer_digest]['status'] = self.DL_FINISH
 
     async def download_layer_from_node(self, ref: dict, host: str,
                                        digest: str)-> aiohttp.client_reqrep.ClientResponse:
@@ -602,15 +602,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """Get local path of layer tarball"""
         return os.path.join(self.layer_cache_path, del_idpref(layer_digest) + '.tar')
 
-    async def ensure_having_layer(self, ref: dict, layer_hash: str, **kwargs):
+    async def ensure_having_layer(self, ref: dict, layer_digest: str, **kwargs):
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
 
         Args:
-            layer_hash(str): digest of layer
+            layer_digest(str): digest of layer
         """
         # beiran cache directory
-        tar_layer_path = self.get_layer_tar_path(layer_hash)
+        tar_layer_path = self.get_layer_tar_path(layer_digest)
         gs_layer_path = tar_layer_path + '.gz'
 
         if os.path.exists(tar_layer_path):
@@ -623,7 +623,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
          # docker library or other node
         try:
-            layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+            layer = DockerLayer.get(DockerLayer.digest == layer_digest)
 
             # If layer is exist in docker storage, download layer.
             # # check local storage
@@ -656,15 +656,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # TODO: Wait for finish if another beiran is currently downloading it
         # TODO:  -- or ask for simultaneous streaming download
-        await self.download_layer_from_origin(ref, layer_hash, **kwargs)
+        await self.download_layer_from_origin(ref, layer_digest, **kwargs)
         return 'cache-gz', gs_layer_path
 
-    async def get_layer_diffid(self, ref: dict, layer_hash: str, **kwargs)-> str:
+    async def get_layer_diffid(self, ref: dict, layer_digest: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
-        storage, layer_path = await self.ensure_having_layer(ref, layer_hash, **kwargs)
+        storage, layer_path = await self.ensure_having_layer(ref, layer_digest, **kwargs)
 
         # if storage == 'docker':
-        #     layer = DockerLayer.get(DockerLayer.digest == layer_hash)
+        #     layer = DockerLayer.get(DockerLayer.digest == layer_digest)
         #     return layer.diff_id
 
         if storage == 'cache-gz':

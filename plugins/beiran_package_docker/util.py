@@ -600,9 +600,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
     def get_layer_tar_path(self, layer_digest: str):
         """Get local path of layer tarball"""
-        print(layer_digest)
-        print(self.layer_cache_path)
-
         return os.path.join(self.layer_cache_path, del_idpref(layer_digest) + '.tar')
 
     async def ensure_having_layer(self, ref: dict, layer_hash: str, **kwargs):

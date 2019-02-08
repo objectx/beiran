@@ -902,7 +902,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 'status': status,
                 'size': 0
             }
-        self.emitters[marshaled].emit(self.EVENT_START_LAYER_DOWNLOAD)
+
+        # if request to /docker/images/<id>/config, emitters is empty
+        if marshaled in self.emitters:
+            self.emitters[marshaled].emit(self.EVENT_START_LAYER_DOWNLOAD)
 
         tasks = [
             self.get_layer_diffid(ref, layer_d['digest'])

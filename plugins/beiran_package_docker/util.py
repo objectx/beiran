@@ -598,6 +598,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.queues[marshaled]['layers'][digest]['status'] = self.DL_FINISH
         return resp
 
+    def get_layer_tar_path(self, layer_digest: str):
+        """Get local path of layer tarball"""
+        print(layer_digest)
+        print(self.layer_cache_path)
+
+        return os.path.join(self.layer_cache_path, del_idpref(layer_digest) + '.tar')
+
     async def ensure_having_layer(self, ref: dict, layer_hash: str, **kwargs):
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
@@ -606,18 +613,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             layer_hash(str): digest of layer
         """
         # beiran cache directory
-        tar_layer_path = os.path.join(self.layer_cache_path, del_idpref(layer_hash) + '.tar')
+        tar_layer_path = self.get_layer_tar_path(layer_hash)
         gs_layer_path = tar_layer_path + '.gz'
-        marshaled = marshal(**ref)
 
         if os.path.exists(tar_layer_path):
             self.logger.debug("Found layer (%s)", tar_layer_path)
-            self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_ALREADY
             return 'cache', tar_layer_path # .tar file exists
 
         if os.path.exists(gs_layer_path):
             self.logger.debug("Found layer (%s)", gs_layer_path)
-            self.queues[marshaled]['layers'][layer_hash]['status'] = self.DL_ALREADY
             return 'cache-gz', gs_layer_path # .tar.gz file exists
 
          # docker library or other node
@@ -888,9 +892,17 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     'num_of_layer': len(descriptors),
                     'layers': dict()
                 }
+            # check layer existence, then set status
+            tar_layer_path = self.get_layer_tar_path(layer_d['digest'])
+            gs_layer_path = tar_layer_path + '.gz'
+
+            status = self.DL_INIT
+            if os.path.exists(tar_layer_path) or os.path.exists(gs_layer_path):
+                status = self.DL_ALREADY
+
             self.queues[marshaled]['layers'][layer_d['digest']] = {
                 'queue': asyncio.Queue(),
-                'status': self.DL_INIT,
+                'status': status,
                 'size': 0
             }
         self.emitters[marshaled].emit(self.EVENT_START_LAYER_DOWNLOAD)

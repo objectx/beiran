@@ -24,6 +24,7 @@ import random
 import re
 import json
 import asyncio
+import uuid
 import aiohttp
 from tornado import web
 from tornado.web import HTTPError
@@ -37,7 +38,6 @@ from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from beiran.util import until_event
 from .models import DockerImage, DockerLayer
-from .image_ref import marshal_normalize_ref
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -318,13 +318,6 @@ class ImageList(RPCEndpoint):
                                        wait: bool = False, show_progress: bool = False) -> None:
         """Coroutine to pull image (download distributed layers)
         """
-        marshaled = marshal_normalize_ref(tag_or_digest, index=True)
-
-        # A process to pull same image has already been started
-        if marshaled in Services.docker_util.queues: # type: ignore
-            raise HTTPError(status_code=409,
-                            log_message='Pulling process for same image has already been started')
-
         Services.logger.debug("Will fetch %s", tag_or_digest) # type: ignore
 
         if not wait and not show_progress and rpc_endpoint is not None:
@@ -335,13 +328,14 @@ class ImageList(RPCEndpoint):
             rpc_endpoint.write('{"image":"%s","progress":[' % tag_or_digest) # type: ignore
             rpc_endpoint.flush() # type: ignore
 
-        Services.docker_util.create_emitter(marshaled) # type: ignore
+        jobid = uuid.uuid4().hex
+        Services.docker_util.create_emitter(jobid) # type: ignore
 
         config_future = asyncio.ensure_future(
-            Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
+            Services.docker_util.create_or_download_config(tag_or_digest, jobid) # type: ignore
         )
         await until_event(
-            Services.docker_util.emitters[marshaled], # type: ignore
+            Services.docker_util.emitters[jobid], # type: ignore
             Services.docker_util.EVENT_START_LAYER_DOWNLOAD # type: ignore
         )
 
@@ -355,7 +349,7 @@ class ImageList(RPCEndpoint):
             last_size = 0
 
             # if layer already exist
-            status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
+            status = Services.docker_util.queues[jobid]['layers'][digest]['status']
             if status == Services.docker_util.DL_ALREADY:
                 if show_progress:
                     rpc_endpoint.write( # type: ignore
@@ -365,16 +359,16 @@ class ImageList(RPCEndpoint):
                 return
 
             while True:
-                status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
+                status = Services.docker_util.queues[jobid]['layers'][digest]['status']
 
                 # calc progress
-                chunk = await Services.docker_util.queues[marshaled]['layers'][digest]['queue'] \
+                chunk = await Services.docker_util.queues[jobid]['layers'][digest]['queue'] \
                                       .get()
                 if chunk:
                     last_size += len(chunk)
                     progress = int(
                         last_size /
-                        Services.docker_util.queues[marshaled]['layers'][digest]['size'] * 100
+                        Services.docker_util.queues[jobid]['layers'][digest]['size'] * 100
                     )
                     if show_progress:
                         rpc_endpoint.write( # type: ignore
@@ -386,13 +380,13 @@ class ImageList(RPCEndpoint):
 
         pro_tasks = [
             send_progress(digest)
-            for digest in Services.docker_util.queues[marshaled]['layers'].keys() # type: ignore
+            for digest in Services.docker_util.queues[jobid]['layers'].keys() # type: ignore
         ]
         pro_future = asyncio.gather(*pro_tasks)
 
         await pro_future
         config_json_str, image_id, _ = await config_future
-        del Services.docker_util.queues[marshaled] # type: ignore
+        del Services.docker_util.queues[jobid] # type: ignore
 
         if show_progress:
             rpc_endpoint.write(format_progress('done', 'done')[:-1]) # type: ignore

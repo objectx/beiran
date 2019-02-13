@@ -349,7 +349,7 @@ class ImageList(RPCEndpoint):
             last_size = 0
 
             # if layer already exist
-            status = Services.docker_util.queues[jobid]['layers'][digest]['status']
+            status = Services.docker_util.queues[jobid][digest]['status']
             if status == Services.docker_util.DL_ALREADY:
                 if show_progress:
                     rpc_endpoint.write( # type: ignore
@@ -359,16 +359,16 @@ class ImageList(RPCEndpoint):
                 return
 
             while True:
-                status = Services.docker_util.queues[jobid]['layers'][digest]['status']
+                status = Services.docker_util.queues[jobid][digest]['status']
 
                 # calc progress
-                chunk = await Services.docker_util.queues[jobid]['layers'][digest]['queue'] \
+                chunk = await Services.docker_util.queues[jobid][digest]['queue'] \
                                       .get()
                 if chunk:
                     last_size += len(chunk)
                     progress = int(
                         last_size /
-                        Services.docker_util.queues[jobid]['layers'][digest]['size'] * 100
+                        Services.docker_util.queues[jobid][digest]['size'] * 100
                     )
                     if show_progress:
                         rpc_endpoint.write( # type: ignore
@@ -380,7 +380,7 @@ class ImageList(RPCEndpoint):
 
         pro_tasks = [
             send_progress(digest)
-            for digest in Services.docker_util.queues[jobid]['layers'].keys() # type: ignore
+            for digest in Services.docker_util.queues[jobid].keys() # type: ignore
         ]
         pro_future = asyncio.gather(*pro_tasks)
 

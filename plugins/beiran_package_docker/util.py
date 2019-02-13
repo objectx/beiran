@@ -559,19 +559,18 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                       Authorization=requirements)
             layer_size = int(resp.headers.get('content-length'))
 
-            self.queues[jobid]['layers'][layer_digest]['size'] = layer_size
-            self.queues[jobid]['layers'][layer_digest]['status'] = self.DL_GZ_DOWNLOADING
+            self.queues[jobid][layer_digest]['size'] = layer_size
+            self.queues[jobid][layer_digest]['status'] = self.DL_GZ_DOWNLOADING
 
             resp = await async_write_file_stream(url, save_path, timeout=60,
-                                                 queue=self.queues[jobid]['layers'] \
-                                                                  [layer_digest]['queue'],
+                                                 queue=self.queues[jobid][layer_digest]['queue'],
                                                  Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", layer_digest, save_path)
-        self.queues[jobid]['layers'][layer_digest]['status'] = self.DL_FINISH
+        self.queues[jobid][layer_digest]['status'] = self.DL_FINISH
 
     async def download_layer_from_node(self, host: str, digest: str,
                                        jobid: str)-> aiohttp.client_reqrep.ClientResponse:
@@ -587,14 +586,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         resp, _ = await async_req(url=url, return_json=False, method='HEAD')
         layer_size = int(resp.headers.get('content-length'))
 
-        self.queues[jobid]['layers'][digest]['size'] = layer_size
-        self.queues[jobid]['layers'][digest]['status'] = self.DL_TAR_DOWNLOADING
+        self.queues[jobid][digest]['size'] = layer_size
+        self.queues[jobid][digest]['status'] = self.DL_TAR_DOWNLOADING
 
         resp = await async_write_file_stream(url, save_path, timeout=60,
-                                             queue=self.queues[jobid]['layers'] \
-                                                             [digest]['queue'])
+                                             queue=self.queues[jobid][digest]['queue'])
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
-        self.queues[jobid]['layers'][digest]['status'] = self.DL_FINISH
+        self.queues[jobid][digest]['status'] = self.DL_FINISH
         return resp
 
     def get_layer_tar_path(self, layer_digest: str):
@@ -878,10 +876,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
     async def get_layer_diffids_of_image(self, ref: dict, descriptors: list, jobid: str)-> dict:
         """Download and allocate layers included in an image."""
-        self.queues[jobid] = {
-            'num_of_layer': len(descriptors),
-            'layers': dict()
-        }
+        self.queues[jobid] = dict()
 
         for layer_d in descriptors:
             # check layer existence, then set status
@@ -892,7 +887,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if os.path.exists(tar_layer_path) or os.path.exists(gs_layer_path):
                 status = self.DL_ALREADY
 
-            self.queues[jobid]['layers'][layer_d['digest']] = {
+            self.queues[jobid][layer_d['digest']] = {
                 'queue': asyncio.Queue(),
                 'status': status,
                 'size': 0

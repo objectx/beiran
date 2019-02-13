@@ -60,7 +60,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         self.aiodocker = Docker()
         self.util = DockerUtil(cache_dir=config.cache_dir + '/docker',
                                storage=self.config["storage"], aiodocker=self.aiodocker,
-                               local_node=self.node)
+                               logger=self.log, local_node=self.node)
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.probe_task = None

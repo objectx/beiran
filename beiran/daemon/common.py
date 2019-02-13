@@ -19,17 +19,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Shared objects of beiran daemon"""
-import logging
-
 from pyee import EventEmitter
 
-from beiran.config import config
 from beiran.log import build_logger
 from beiran.version import get_version
 
 
 EVENTS = EventEmitter()
-LOG_LEVEL = logging.getLevelName(config.log_level)
 VERSION = get_version('short', 'daemon')
 
 
@@ -43,5 +39,5 @@ class Services:
     def get_logger(cls):
         """Builds and returns a logger instance on demand"""
         if not cls.logger:
-            cls.logger = build_logger(config.log_file, LOG_LEVEL)
+            cls.logger = build_logger()
         return cls.logger

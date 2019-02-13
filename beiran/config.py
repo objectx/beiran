@@ -125,7 +125,7 @@ class Config(metaclass=ConfigMeta):
             LOGGER.error(
                 "Could not found config file at location: %s",
                 config_file)
-        except toml.decoder.TomlDecodeError as err:
+        except toml.TomlDecodeError as err:
             LOGGER.error(
                 "Could not load config toml file, "
                 "please check your config file syntax. %s", err

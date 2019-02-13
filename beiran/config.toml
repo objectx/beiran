@@ -16,7 +16,7 @@ discovery_method = 'zeroconf'
 # docker plugin settings
 [package.docker]
 enabled = true
-cache_dir = '/var/cache/beiran/docker''
+cache_dir = '/var/cache/beiran/docker'
 
 # dns discovery settings
 [discovery.dns]

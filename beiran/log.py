@@ -29,7 +29,7 @@ from beiran.config import config
 
 
 def build_logger(filename: str = config.log_file,
-                 log_level: int = logging.getLevelName(config.log_level)) -> logging.Logger:
+                 log_level: str = logging.getLevelName(config.log_level)) -> logging.Logger:
     """ Build logger class for module """
     stdout_handler = logging.StreamHandler(sys.stdout)
     handlers = [stdout_handler] # type: List[Union[logging.FileHandler, logging.StreamHandler]]

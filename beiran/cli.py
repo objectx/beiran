@@ -32,12 +32,12 @@ import click
 from beiran.models import PeerAddress
 from beiran.util import Unbuffered
 from beiran.sync_client import Client
-from beiran.log import build_logger_with_env_level
+from beiran.log import build_logger
 from beiran.client import Client as AsyncClient
 from beiran.config import config
 
 # pylint: disable=invalid-name
-logger = build_logger_with_env_level()  # type: ignore
+logger = build_logger()  # type: ignore
 
 
 sys.stdout = Unbuffered(sys.stdout) # type: ignore

@@ -28,7 +28,8 @@ from typing import List, Union # pylint: disable=unused-import
 from beiran.config import config
 
 
-def build_logger(filename: str = None, log_level: int = logging.ERROR) -> logging.Logger:
+def build_logger(filename: str = config.log_file,
+                 log_level: int = logging.getLevelName(config.log_level)) -> logging.Logger:
     """ Build logger class for module """
     stdout_handler = logging.StreamHandler(sys.stdout)
     handlers = [stdout_handler] # type: List[Union[logging.FileHandler, logging.StreamHandler]]
@@ -43,8 +44,3 @@ def build_logger(filename: str = None, log_level: int = logging.ERROR) -> loggin
         handlers=handlers
     )
     return logging.getLogger(__package__)
-
-def build_logger_with_env_level(filename: str = config.log_file) -> logging.Logger:
-    """Build logger class with the environment variable LOG_LEVEL"""
-    log_level = logging.getLevelName(config.log_level)
-    return build_logger(filename, log_level) # type: ignore

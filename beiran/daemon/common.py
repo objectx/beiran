@@ -21,7 +21,7 @@
 """Shared objects of beiran daemon"""
 from pyee import EventEmitter
 
-from beiran.log import build_logger_with_env_level
+from beiran.log import build_logger
 from beiran.version import get_version
 
 
@@ -39,5 +39,5 @@ class Services:
     def get_logger(cls):
         """Builds and returns a logger instance on demand"""
         if not cls.logger:
-            cls.logger = build_logger_with_env_level()
+            cls.logger = build_logger()
         return cls.logger

@@ -56,7 +56,7 @@ from beiran.daemon.version import __version__
 
 from beiran.config import config
 from beiran.models import Node, PeerAddress
-from beiran.log import build_logger_with_env_level
+from beiran.log import build_logger
 from beiran.util import run_in_loop, wait_event
 
 AsyncIOMainLoop().install()
@@ -156,7 +156,7 @@ class BeiranDaemon(EventEmitter):
 
         """
         try:
-            config['logger'] = build_logger_with_env_level('beiran.plugin.' + plugin_name)
+            config['logger'] = build_logger('beiran.plugin.' + plugin_name)
             config['node'] = self.nodes.local_node
             config['daemon'] = self
             config['events'] = EVENTS

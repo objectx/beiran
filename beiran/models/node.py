@@ -28,9 +28,9 @@ import re
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
 from beiran.models.base import BaseModel, JSONStringField
-from beiran.log import build_logger_with_env_level
+from beiran.log import build_logger
 
-LOGGER = build_logger_with_env_level('beiran.models.node')
+LOGGER = build_logger('beiran.models.node')
 
 
 class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes

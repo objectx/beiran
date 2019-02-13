@@ -35,6 +35,7 @@ import aiodocker
 from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
+from beiran.util import until_event
 from .models import DockerImage, DockerLayer
 from .image_ref import marshal_normalize_ref
 
@@ -334,17 +335,15 @@ class ImageList(RPCEndpoint):
             rpc_endpoint.write('{"image":"%s","progress":[' % tag_or_digest) # type: ignore
             rpc_endpoint.flush() # type: ignore
 
+        Services.docker_util.create_emitter(marshaled) # type: ignore
+
         config_future = asyncio.ensure_future(
             Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
         )
-
-        # wait until finsh creating queues
-        while True:
-            await asyncio.sleep(0)
-            if marshaled in Services.docker_util.queues: # type: ignore
-                if (len(Services.docker_util.queues[marshaled]['layers']) # type: ignore
-                        == Services.docker_util.queues[marshaled]['num_of_layer']): # type: ignore
-                    break
+        await until_event(
+            Services.docker_util.emitters[marshaled], # type: ignore
+            Services.docker_util.EVENT_START_LAYER_DOWNLOAD # type: ignore
+        )
 
         def format_progress(digest: str, status: str, progress: int = 100):
             """generate json dictionary for sending progress of layer downloading"""
@@ -355,16 +354,9 @@ class ImageList(RPCEndpoint):
             progress = 0
             last_size = 0
 
-            # wait for layer download to begin
-            while True:
-                await asyncio.sleep(0)
-                status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
-                if status != Services.docker_util.DL_INIT:
-                    break
-
             # if layer already exist
-            if Services.docker_util.queues[marshaled]['layers'][digest]['status'] \
-            == Services.docker_util.DL_ALREADY:
+            status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
+            if status == Services.docker_util.DL_ALREADY:
                 if show_progress:
                     rpc_endpoint.write( # type: ignore
                         format_progress(digest, status)
@@ -373,7 +365,6 @@ class ImageList(RPCEndpoint):
                 return
 
             while True:
-                await asyncio.sleep(0)
                 status = Services.docker_util.queues[marshaled]['layers'][digest]['status']
 
                 # calc progress
@@ -399,21 +390,8 @@ class ImageList(RPCEndpoint):
         ]
         pro_future = asyncio.gather(*pro_tasks)
 
-        # wait until finsh downloading all layers
-        while True:
-            finish = True
-            await asyncio.sleep(0)
-            for layer_info in \
-                Services.docker_util.queues[marshaled]['layers'].values(): # type: ignore
-                if (layer_info['status'] != Services.docker_util.DL_ALREADY # type: ignore
-                        and layer_info['status'] != Services.docker_util.DL_FINISH): # type: ignore
-                    finish = False
-                    break
-            if finish:
-                break
-
-        config_json_str, image_id, _ = await config_future
         await pro_future
+        config_json_str, image_id, _ = await config_future
         del Services.docker_util.queues[marshaled] # type: ignore
 
         if show_progress:

@@ -108,7 +108,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     DL_FINISH = 'finish'
 
     # event datas for downloading layers
-    EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
+    EVENT_LAYER_DOWNLOAD_START = "layer_download_start"
+    EVENT_LAYER_DOWNLOAD_FINISH = "layer_download_finish"
+    EVENT_LAYER_DOWNLOAD_FAIL = "layer_download_fail"
+    EVENT_IMAGE_DOWNLOAD_START = "image_download_start"
+    EVENT_IMAGE_DOWNLOAD_FINISH = "image_download_finish"
+    EVENT_IMAGE_DOWNLOAD_FAIL = "image_download_fail"
 
     def __init__(self, cache_dir: str, storage: str = "/var/lib/docker", # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
@@ -126,7 +131,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
         self.queues: dict = {}
-        self.emitters: dict = {}
+        self.events = EventEmitter()
 
     @property
     def digest_path(self)-> str:
@@ -641,10 +646,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     continue
 
                 node = Node.get(Node.uuid == node_id)
+                self.events.emit(self.EVENT_LAYER_DOWNLOAD_START,
+                                 digest=layer.digest, source="node",
+                                 from_node=node, jobid=jobid)
                 resp = await self.download_layer_from_node(
                     node.url_without_uuid, layer.digest, jobid)
 
                 if resp.status == 200:
+                    self.events.emit(self.EVENT_LAYER_DOWNLOAD_FINISH,
+                                     digest=layer.digest, source="node",
+                                     from_node=node, jobid=jobid)
                     if not os.path.exists(tar_layer_path):
                         raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
                     return 'cache', tar_layer_path
@@ -654,7 +665,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # TODO: Wait for finish if another beiran is currently downloading it
         # TODO:  -- or ask for simultaneous streaming download
+        self.events.emit(self.EVENT_LAYER_DOWNLOAD_START, digest=layer.digest, source="origin")
         await self.download_layer_from_origin(ref, layer_digest, jobid, **kwargs)
+        self.events.emit(self.EVENT_LAYER_DOWNLOAD_FINISH, digest=layer.digest, source="origin")
         return 'cache-gz', gs_layer_path
 
     async def get_layer_diffid(self, ref: dict, layer_digest: str, jobid: str, **kwargs)-> str:
@@ -870,10 +883,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
         return config_json_str, config_digest, repo_digest
 
-    def create_emitter(self, jobid):
-        """Create a new emitter and add it to a emitter dictionary"""
-        self.emitters[jobid] = EventEmitter()
-
     async def get_layer_diffids_of_image(self, ref: dict, descriptors: list, jobid: str)-> dict:
         """Download and allocate layers included in an image."""
         self.queues[jobid] = dict()
@@ -894,14 +903,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             }
 
         # if request to /docker/images/<id>/config, emitters is empty
-        if jobid in self.emitters:
-            self.emitters[jobid].emit(self.EVENT_START_LAYER_DOWNLOAD)
+        self.events.emit(self.EVENT_IMAGE_DOWNLOAD_START, ref=ref, jobid=jobid)
 
         tasks = [
             self.get_layer_diffid(ref, layer_d['digest'], jobid)
             for layer_d in descriptors
         ]
         results = await asyncio.gather(*tasks)
+
+        self.events.emit(self.EVENT_IMAGE_DOWNLOAD_FINISH, ref=ref, jobid=jobid)
 
         return OrderedDict(type='layers', diff_ids=results)
 

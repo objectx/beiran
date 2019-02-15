@@ -383,11 +383,29 @@ def clean_keys(dict_: dict, keys: list) -> None:
         if key in dict_:
             del dict_[key]
 
-async def until_event(emitter: EventEmitter, name: str, loop=asyncio.get_event_loop()):
+async def until_event(emitter: EventEmitter, name: str, error_event: Optional[str]=None, loop=asyncio.get_event_loop()):
     """Wait task until triggered the event"""
     future: asyncio.Future = asyncio.Future(loop=loop)
 
     # not consider to duplicate registrations of event
-    emitter.once(name, lambda: future.set_result(None))
+    emitter.once(name, lambda **kw: future.set_result(kw))
+    if error_event:
+        emitter.once(error_event, lambda err: future.set_exception(err))
 
     await future
+
+async def until_event_with_match(emitter: EventEmitter, name: str, error_event: Optional[str]=None, cond: dict, loop=asyncio.get_event_loop()):
+    """Wait task until triggered the event"""
+
+    while True:
+        values = await until_event(emitter, name, error_event=error_event, loop=loop)
+        matching = True
+        for k, v in dict:
+            if k not in values:
+                matching = False
+                break
+            if v != values[k]:
+                matching = False
+                break
+        if matching:
+            return values

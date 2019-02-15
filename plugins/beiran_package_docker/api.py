@@ -329,14 +329,16 @@ class ImageList(RPCEndpoint):
             rpc_endpoint.flush() # type: ignore
 
         jobid = uuid.uuid4().hex
-        Services.docker_util.create_emitter(jobid) # type: ignore
 
         config_future = asyncio.ensure_future(
             Services.docker_util.create_or_download_config(tag_or_digest, jobid) # type: ignore
         )
-        await until_event(
-            Services.docker_util.emitters[jobid], # type: ignore
-            Services.docker_util.EVENT_START_LAYER_DOWNLOAD # type: ignore
+        await until_event_with_match(
+            Services.docker_util.events, # type: ignore
+            Services.docker_util.EVENT_IMAGE_DOWNLOAD_START, # type: ignore
+            # TODO: Not sure how to check this error belongs to this jobid
+            # error_event=Services.docker_util.EVENT_IMAGE_DOWNLOAD_FAIL,
+            { "jobid": jobid }
         )
 
         def format_progress(digest: str, status: str, progress: int = 100):

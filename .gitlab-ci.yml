@@ -89,6 +89,24 @@ publish:docs:
   only:
     - tags
 
+publish:oci-image-layout:
+  stage: publish
+  tags:
+  - docker
+  script:
+    - apk update
+    - apk add go=1.9.4-r0
+    - apk add musl-dev
+    - go get github.com/coolljt0725/docker2oci
+    - docker save $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} | $HOME/go/bin/docker2oci image-layout-${CI_COMMIT_TAG}
+    # upload image_layer to minio
+    - tar czf image-layout-${CI_COMMIT_TAG}.tar.gz image-layout-${CI_COMMIT_TAG}
+    - go get github.com/minio/mc
+    - $HOME/go/bin/mc config host add beiran https://minio.beiran.io $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+    - $HOME/go/bin/mc cp image-layout-${CI_COMMIT_TAG}.tar.gz beiran/releases
+  only:
+    - tags
+
 checks:lint-beiran:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}

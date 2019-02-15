@@ -27,7 +27,7 @@ import pkgutil
 import logging
 from typing import List, Union, Any
 
-import pytoml
+import toml
 
 LOGGER = logging.getLogger()
 
@@ -120,12 +120,12 @@ class Config(metaclass=ConfigMeta):
         """
         try:
             with open(config_file, 'r') as cfile:
-                return pytoml.load(cfile)
+                return toml.load(cfile)
         except FileNotFoundError:
             LOGGER.error(
                 "Could not found config file at location: %s",
                 config_file)
-        except pytoml.core.TomlError as err:
+        except toml.TomlDecodeError as err:
             LOGGER.error(
                 "Could not load config toml file, "
                 "please check your config file syntax. %s", err

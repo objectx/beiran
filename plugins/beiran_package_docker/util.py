@@ -29,6 +29,7 @@ import json
 import hashlib
 import platform
 import tarfile
+import uuid
 from typing import Tuple, Optional
 from collections import OrderedDict
 from pyee import EventEmitter
@@ -46,7 +47,7 @@ from beiran.util import gunzip, clean_keys
 
 from .models import DockerImage, DockerLayer
 from .image_ref import normalize_ref, is_tag, is_digest, add_idpref, del_idpref, \
-                       add_default_tag, marshal
+                       add_default_tag
 
 
 LOGGER = build_logger()
@@ -535,11 +536,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
-    async def download_layer_from_origin(self, ref: dict, layer_digest: str, **kwargs):
+    async def download_layer_from_origin(self, ref: dict, layer_digest: str, jobid: str, **kwargs):
         """
         Download layer from registry.
         """
-        marshaled = marshal(**ref)
         save_path = os.path.join(self.layer_cache_path, del_idpref(layer_digest) + '.tar.gz')
         url = 'https://{}/v2/{}/blobs/{}'.format(ref['domain'], ref['repo'], layer_digest)
         requirements = ''
@@ -559,26 +559,24 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                       Authorization=requirements)
             layer_size = int(resp.headers.get('content-length'))
 
-            self.queues[marshaled]['layers'][layer_digest]['size'] = layer_size
-            self.queues[marshaled]['layers'][layer_digest]['status'] = self.DL_GZ_DOWNLOADING
+            self.queues[jobid][layer_digest]['size'] = layer_size
+            self.queues[jobid][layer_digest]['status'] = self.DL_GZ_DOWNLOADING
 
             resp = await async_write_file_stream(url, save_path, timeout=60,
-                                                 queue=self.queues[marshaled]['layers'] \
-                                                                  [layer_digest]['queue'],
+                                                 queue=self.queues[jobid][layer_digest]['queue'],
                                                  Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", layer_digest, save_path)
-        self.queues[marshaled]['layers'][layer_digest]['status'] = self.DL_FINISH
+        self.queues[jobid][layer_digest]['status'] = self.DL_FINISH
 
-    async def download_layer_from_node(self, ref: dict, host: str,
-                                       digest: str)-> aiohttp.client_reqrep.ClientResponse:
+    async def download_layer_from_node(self, host: str, digest: str,
+                                       jobid: str)-> aiohttp.client_reqrep.ClientResponse:
         """
         Download layer from other node.
         """
-        marshaled = marshal(**ref)
         url = host + '/docker/layers/' + digest
         save_path = os.path.join(self.layer_cache_path, del_idpref(digest) + '.tar')
 
@@ -588,21 +586,20 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         resp, _ = await async_req(url=url, return_json=False, method='HEAD')
         layer_size = int(resp.headers.get('content-length'))
 
-        self.queues[marshaled]['layers'][digest]['size'] = layer_size
-        self.queues[marshaled]['layers'][digest]['status'] = self.DL_TAR_DOWNLOADING
+        self.queues[jobid][digest]['size'] = layer_size
+        self.queues[jobid][digest]['status'] = self.DL_TAR_DOWNLOADING
 
         resp = await async_write_file_stream(url, save_path, timeout=60,
-                                             queue=self.queues[marshaled]['layers'] \
-                                                             [digest]['queue'])
+                                             queue=self.queues[jobid][digest]['queue'])
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
-        self.queues[marshaled]['layers'][digest]['status'] = self.DL_FINISH
+        self.queues[jobid][digest]['status'] = self.DL_FINISH
         return resp
 
     def get_layer_tar_path(self, layer_digest: str):
         """Get local path of layer tarball"""
         return os.path.join(self.layer_cache_path, del_idpref(layer_digest) + '.tar')
 
-    async def ensure_having_layer(self, ref: dict, layer_digest: str, **kwargs):
+    async def ensure_having_layer(self, ref: dict, layer_digest: str, jobid: str, **kwargs):
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
 
@@ -644,7 +641,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     continue
 
                 node = Node.get(Node.uuid == node_id)
-                resp = await self.download_layer_from_node(ref, node.url_without_uuid, layer.digest)
+                resp = await self.download_layer_from_node(
+                    node.url_without_uuid, layer.digest, jobid)
 
                 if resp.status == 200:
                     if not os.path.exists(tar_layer_path):
@@ -656,12 +654,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # TODO: Wait for finish if another beiran is currently downloading it
         # TODO:  -- or ask for simultaneous streaming download
-        await self.download_layer_from_origin(ref, layer_digest, **kwargs)
+        await self.download_layer_from_origin(ref, layer_digest, jobid, **kwargs)
         return 'cache-gz', gs_layer_path
 
-    async def get_layer_diffid(self, ref: dict, layer_digest: str, **kwargs)-> str:
+    async def get_layer_diffid(self, ref: dict, layer_digest: str, jobid: str, **kwargs)-> str:
         """Calculate layer's diffid, using it's tar file"""
-        storage, layer_path = await self.ensure_having_layer(ref, layer_digest, **kwargs)
+        storage, layer_path = await self.ensure_having_layer(ref, layer_digest, jobid, **kwargs)
 
         # if storage == 'docker':
         #     layer = DockerLayer.get(DockerLayer.digest == layer_digest)
@@ -702,7 +700,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         return await resp.text(encoding='utf-8')
 
     async def fetch_config_schema_v1(self, ref: dict, # pylint: disable=too-many-locals, too-many-branches
-                                     manifest: dict) -> Tuple[str, str, str]:
+                                     manifest: dict, jobid: str) -> Tuple[str, str, str]:
         """
         Pull image using image manifest version 1
         """
@@ -744,7 +742,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             descriptors.append(layer_descriptor)
 
 
-        rootfs = await self.get_layer_diffids_of_image(ref, descriptors)
+        rootfs = await self.get_layer_diffids_of_image(ref, descriptors, jobid)
 
         # save layer records
         chain_id = rootfs['diff_ids'][0]
@@ -797,16 +795,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
 
     async def fetch_config_schema_v2(self, ref: dict,
-                                     manifest: dict)-> Tuple[str, str, str]:
+                                     manifest: dict, jobid: str)-> Tuple[str, str, str]:
         """
         Pull image using image manifest version 2
         """
-        repository = ref['repo']
-        host = ref['domain']
-
         config_digest = manifest['config']['digest']
         config_json_str = await self.download_config_from_origin(
-            host, repository, config_digest
+            ref['domain'], ref['repo'], config_digest
         )
 
         manifest_str = json.dumps(manifest, indent=3)
@@ -826,12 +821,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             self.layerdb_mapping[diff_id] = chain_id
 
         # download layers
-        await self.get_layer_diffids_of_image(ref, manifest['layers'])
+        await self.get_layer_diffids_of_image(ref, manifest['layers'], jobid)
 
         return config_json_str, config_digest, repo_digest
 
     async def fetch_config_manifest_list(self, ref: dict,
-                                         manifestlist: dict)-> Tuple[str, str, str]:
+                                         manifestlist: dict, jobid: str)-> Tuple[str, str, str]:
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
@@ -857,14 +852,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         if schema_v == 1:
             # pull layers and create config from version 1 manifest
             config_json_str, config_digest, _ = await self.fetch_config_schema_v1(
-                ref, manifest
+                ref, manifest, jobid
             )
 
         elif schema_v == 2:
             if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
                 # pull layers using version 2 manifest
                 config_json_str, config_digest, _ = await self.fetch_config_schema_v2(
-                    ref, manifest
+                    ref, manifest, jobid
                 )
             else:
                 raise DockerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
@@ -875,20 +870,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
         return config_json_str, config_digest, repo_digest
 
-    def create_emitter(self, marshaled):
+    def create_emitter(self, jobid):
         """Create a new emitter and add it to a emitter dictionary"""
-        self.emitters[marshaled] = EventEmitter()
+        self.emitters[jobid] = EventEmitter()
 
-    async def get_layer_diffids_of_image(self, ref: dict, descriptors: list)-> dict:
+    async def get_layer_diffids_of_image(self, ref: dict, descriptors: list, jobid: str)-> dict:
         """Download and allocate layers included in an image."""
-        marshaled = marshal(**ref)
+        self.queues[jobid] = dict()
 
         for layer_d in descriptors:
-            if marshaled not in self.queues:
-                self.queues[marshaled] = {
-                    'num_of_layer': len(descriptors),
-                    'layers': dict()
-                }
             # check layer existence, then set status
             tar_layer_path = self.get_layer_tar_path(layer_d['digest'])
             gs_layer_path = tar_layer_path + '.gz'
@@ -897,18 +887,18 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if os.path.exists(tar_layer_path) or os.path.exists(gs_layer_path):
                 status = self.DL_ALREADY
 
-            self.queues[marshaled]['layers'][layer_d['digest']] = {
+            self.queues[jobid][layer_d['digest']] = {
                 'queue': asyncio.Queue(),
                 'status': status,
                 'size': 0
             }
 
         # if request to /docker/images/<id>/config, emitters is empty
-        if marshaled in self.emitters:
-            self.emitters[marshaled].emit(self.EVENT_START_LAYER_DOWNLOAD)
+        if jobid in self.emitters:
+            self.emitters[jobid].emit(self.EVENT_START_LAYER_DOWNLOAD)
 
         tasks = [
-            self.get_layer_diffid(ref, layer_d['digest'])
+            self.get_layer_diffid(ref, layer_d['digest'], jobid)
             for layer_d in descriptors
         ]
         results = await asyncio.gather(*tasks)
@@ -949,7 +939,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         return os_name.lower() # I don't know if this is the right way
 
-    async def create_or_download_config(self, tag: str):
+    async def create_or_download_config(self, tag: str, jobid: str = uuid.uuid4().hex):
         """
         Create or download image config.
 
@@ -981,7 +971,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
             # pull layers and create config from version 1 manifest
             config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v1(
-                ref, manifest
+                ref, manifest, jobid
             )
 
         elif schema_v == 2:
@@ -991,14 +981,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
                 # pull layers using version 2 manifest
                 config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v2(
-                    ref, manifest
+                    ref, manifest, jobid
                 )
 
             elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
 
                 # pull_schema_list
                 config_json_str, config_digest, repo_digest = await self.fetch_config_manifest_list(
-                    ref, manifest
+                    ref, manifest, jobid
                 )
 
             else:

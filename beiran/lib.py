@@ -21,14 +21,16 @@
 """Beiran Library"""
 from typing import Tuple
 
+import asyncio
 import aiohttp
 import async_timeout
 
 from beiran.util import input_reader
 
 
-async def async_req(url: str, return_json: bool = True,
-                    timeout: int = 3, method: str = "GET",
+async def async_req(url: str, return_json: bool = True, # pylint: disable=too-many-arguments
+                    timeout: int = 3, retry: int = 1,
+                    retry_interval: int = 2, method: str = "GET",
                     **kwargs) -> Tuple[aiohttp.client_reqrep.ClientResponse, dict]:
     """
     Async http get with aiohttp
@@ -47,18 +49,23 @@ async def async_req(url: str, return_json: bool = True,
     data = kwargs.pop('data', None)
     headers = kwargs
 
-    async with aiohttp.ClientSession() as session:
-        async with async_timeout.timeout(timeout):
-            async with session.request(method, url, json=json,
-                                       data=data, headers=headers) as resp:
-                if return_json:
-                    data = await resp.json(content_type=None)
-                    return resp, data
-                return resp, {}
+    for _ in range(retry):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with async_timeout.timeout(timeout):
+                    async with session.request(method, url, json=json,
+                                               data=data, headers=headers) as resp:
+                        if return_json:
+                            data = await resp.json(content_type=None)
+                            return resp, data
+                        return resp, {}
+        except asyncio.TimeoutError:
+            await asyncio.sleep(retry_interval)
+    raise asyncio.TimeoutError
 
-
-async def async_write_file_stream(url: str, save_path: str, queue=None,
-                                  timeout: int = 3, method: str = "GET",
+async def async_write_file_stream(url: str, save_path: str, queue=None, # pylint: disable=too-many-arguments,too-many-locals
+                                  timeout: int = 3, retry: int = 1,
+                                  retry_interval: int = 2, method: str = "GET",
                                   **kwargs) -> aiohttp.client_reqrep.ClientResponse:
     """
     Async write a stream to a file
@@ -76,16 +83,21 @@ async def async_write_file_stream(url: str, save_path: str, queue=None,
     data = kwargs.pop('data', None)
     headers = kwargs
 
-    async with aiohttp.ClientSession() as session:
-        async with async_timeout.timeout(timeout):
-            async with session.request(method, url, json=json,
-                                       data=data, headers=headers) as resp:
+    for _ in range(retry):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with async_timeout.timeout(timeout):
+                    async with session.request(method, url, json=json,
+                                               data=data, headers=headers) as resp:
 
-                with open(save_path, 'wb')as file:
-                    async for chunk in input_reader(resp.content):
-                        file.write(chunk)
+                        with open(save_path, 'wb')as file:
+                            async for chunk in input_reader(resp.content):
+                                file.write(chunk)
+                                if queue:
+                                    queue.put_nowait(chunk)
                         if queue:
-                            queue.put_nowait(chunk)
-                if queue:
-                    queue.put_nowait(None)
-                return resp
+                            queue.put_nowait(None)
+                        return resp
+        except asyncio.TimeoutError:
+            await asyncio.sleep(retry_interval)
+    raise asyncio.TimeoutError

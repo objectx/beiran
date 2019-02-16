@@ -36,7 +36,9 @@ package:docs:
   stage: prepare
   tags:
   - docker
-  image: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+  image:
+    name: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+    entrypoint: ["/bin/sh"]
   script:
   - cd doc/
   - pip3 install -r requirements.txt
@@ -121,7 +123,7 @@ checks:lint-plugins:
   tags:
    - docker
   script:
-   - pylint plugins
+   - pylint plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
 
 checks:mypy-beiran:
   stage: checks
@@ -129,7 +131,7 @@ checks:mypy-beiran:
   tags:
    - docker
   script:
-   - helpers/mypy --config-file mypy.ini beiran
+   - mypy --config-file mypy.ini beiran
 
 checks:mypy-plugins:
   stage: checks
@@ -137,7 +139,7 @@ checks:mypy-plugins:
   tags:
    - docker
   script:
-   - helpers/mypy --config-file mypy.ini plugins
+   - mypy --config-file mypy.ini plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
 
 checks:bandit-beiran:
   stage: checks
@@ -154,7 +156,7 @@ checks:bandit-plugins:
   tags:
    - docker
   script:
-   - bandit -r plugins
+   - bandit -r plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
   allow_failure: true
 
 start_test_services:

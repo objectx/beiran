@@ -83,6 +83,7 @@ class BeiranCLI(click.MultiCommand):
 
         """
         commands = list()
+        logger.debug(config.enabled_plugins)
         for plugin in config.enabled_plugins:
             cli_module_path = "{}.cli_{}".format(
                 plugin['package'],
@@ -164,7 +165,7 @@ class BeiranCLI(click.MultiCommand):
 @click.option('--config', "config_file", default=None, required=False,
               help="Path to a Beiran config file. It must be a TOML file."
               )
-def main(debug: bool = False, config_file: str = None):
+def click_main(debug: bool = False, config_file: str = None):
     """Manage Beiran Daemon and Beiran Cluster
 
     Please use --help option with commands and sub-commands
@@ -192,7 +193,10 @@ def main(debug: bool = False, config_file: str = None):
         pass
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Main entrypoint of beiran CLI
+    """
 
     # workaround for click's chained commands weird bug.
     # somehow chain is broken after 3rd parameter, such as:
@@ -210,4 +214,18 @@ if __name__ == '__main__':
             logger.debug(config.enabled_plugins)
     except ValueError:
         logger.debug("No config file specified, default config in use")
+
+    try:
+        index = sys.argv.index('--debug')
+        if index:
+            _ = sys.argv.pop(index)
+            logger.setLevel(logging.DEBUG)
+    except ValueError:
+        # No debug parameter given
+        pass
+
+    click_main()
+
+
+if __name__ == '__main__':
     main()

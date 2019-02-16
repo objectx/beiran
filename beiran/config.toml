@@ -17,11 +17,14 @@ discovery_method = 'zeroconf'
 [package.docker]
 enabled = true
 cache_dir = '/var/cache/beiran/docker'
+module_path = 'beiran_package_docker'
 
 # dns discovery settings
 [discovery.dns]
 enabled = true
+module_path = 'beiran.plugins.discovery_dns'
 
 # zeroconf discovery settings
 [discovery.zeroconf]
 enabled = true
+module_path = 'beiran.plugins.discovery_zeroconf'

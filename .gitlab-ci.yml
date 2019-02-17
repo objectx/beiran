@@ -39,7 +39,7 @@ package:docs:
   image:
     name: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
     # reset entrypoint
-    entrypoint: []
+    entrypoint: ""
   script:
   - cd doc/
   - pip3 install -r requirements.txt

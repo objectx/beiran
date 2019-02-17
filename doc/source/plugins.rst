@@ -8,7 +8,7 @@ Discovery
 Zeroconf
 --------
 
-.. automodule:: beiran_discovery_zeroconf.zeroconf
+.. automodule:: beiran.plugins.discovery_zeroconf.zeroconf
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,7 +18,7 @@ Zeroconf
 DNS
 ---
 
-.. automodule:: beiran_discovery_dns.dns
+.. automodule:: beiran.plugins.discovery_dns.dns
     :members:
     :undoc-members:
     :show-inheritance:

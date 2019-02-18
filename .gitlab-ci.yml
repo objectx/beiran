@@ -207,7 +207,7 @@ test:basic-behavior:
      echo "=========================================="
      echo "waiting until beirand is accessible"
      times=0
-     until $(docker-compose exec -T beiran1 wget -q -O /dev/null http://localhost:8888); do
+     until $(docker-compose exec -T beiran1 sh -c "wget -q -O /dev/null http://localhost:8888"); do
          printf '.'
          sleep 3
          times=$(( $times + 1 ))
@@ -237,7 +237,7 @@ test:api:
      echo "=========================================="
      echo "waiting until beirand is accessible"
      times=0
-     until $(docker-compose exec -T beiran1 curl wget -q -O /dev/null http://localhost:8888); do
+     until $(docker-compose exec -T beiran1 sh -c "wget -q -O /dev/null http://localhost:8888"); do
          printf '.'
          sleep 3
          times=$(( $times + 1 ))
@@ -277,7 +277,7 @@ test:bats:
        times=0
        docker-compose exec -T $node apt-get update
        docker-compose exec -T $node apt-get install sqlite3 -y
-       until $(docker-compose -f docker-compose.yml exec -T $node wget -q -O /dev/null http://localhost:8888); do
+       until $(docker-compose -f docker-compose.yml exec -T $node sh -c "wget -q -O /dev/null http://localhost:8888"); do
            printf '.'
            sleep 3
            times=$(( $times + 1 ))

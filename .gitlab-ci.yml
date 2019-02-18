@@ -275,8 +275,8 @@ test:bats:
      for node in beiran1 beiran2 beiran3 beiran4
      do
        times=0
-       docker-compose exec -T $node apt-get update
-       docker-compose exec -T $node apt-get install sqlite3 -y
+       # docker-compose exec -T $node apt-get update
+       # docker-compose exec -T $node apt-get install sqlite3 -y
        until $(docker-compose -f docker-compose.yml exec -T $node sh -c "wget -q -O /dev/null http://localhost:8888"); do
            printf '.'
            sleep 3

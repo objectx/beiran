@@ -217,11 +217,11 @@ test:basic-behavior:
          fi
      done
    - CONTAINER=$(docker-compose ps -q beiran1)
-   - docker exec ${CONTAINER} python -m beiran node info
-   - docker exec ${CONTAINER} python -m beiran node list
-   - docker exec ${CONTAINER} python -m beiran docker image list --all
+   - docker exec ${CONTAINER} node info
+   - docker exec ${CONTAINER} node list
+   - docker exec ${CONTAINER} docker image list --all
    # TODO: Check if output has expected images
-   - docker exec ${CONTAINER} python -m beiran docker layer list --all
+   - docker exec ${CONTAINER} docker layer list --all
    # TODO: Check if output has expected layers!?
 
 test:api:

@@ -272,7 +272,7 @@ class BeiranDaemon(EventEmitter):
         shared_config_for_plugins = {
             "version": VERSION,
         }
-        for plugin in config.get_enabled_plugins():
+        for plugin in config.enabled_plugins:
             type_specific_config = dict()
             if plugin['type'] == 'discovery':
                 type_specific_config = {

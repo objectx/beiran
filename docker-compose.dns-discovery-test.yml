@@ -10,7 +10,7 @@ services:
      - .:/src
     environment:
       - BEIRAN_DISCOVERY_METHOD=dns
-      - DISCOVERY_SERVICE_ADDRESS=beiran_dns
+      - BEIRAN_DISCOVERY_DNS_CONFIG='discovery_service_address=beiran_dns'
       - BEIRAN_LISTEN_ADDR=0.0.0.0
       - BEIRAN_LOG_LEVEL=INFO
 

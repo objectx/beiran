@@ -16,5 +16,5 @@ services:
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
       - BEIRAN_LISTEN_ADDR=0.0.0.0
-      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - BEIRAN_DISCOVERY_DNS_CONFIG='discovery_service_address=beirand'
       - BEIRAN_LOG_LEVEL=INFO

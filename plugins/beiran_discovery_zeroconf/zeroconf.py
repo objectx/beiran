@@ -44,6 +44,7 @@ DEFAULT_DOMAIN = "_beiran._tcp.local."
 class ZeroconfDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
+    DEFAULTS = {} # type: dict
 
     def __init__(self, config: dict) -> None:
         """ Creates an instance of Zeroconf Discovery Service

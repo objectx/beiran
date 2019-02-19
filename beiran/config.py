@@ -273,10 +273,10 @@ class Config(metaclass=ConfigMeta):
         """Get the list of the enabled plugins"""
 
         plugins = []
-        env_config = os.getenv('BEIRAN_PLUGINS')
-        if env_config:
+        env_plugins = os.getenv('BEIRAN_PLUGINS')
+        if env_plugins:
             try:
-                for p_package in env_config.split(','):
+                for p_package in env_plugins.split(','):
                     (p_type, p_name) = p_package.split('.')
                     if p_type not in self.plugin_types:
                         raise Exception("Unknown plugin type: %s" % (p_type))
@@ -307,7 +307,21 @@ class Config(metaclass=ConfigMeta):
         return plugins
 
     def get_plugin_config(self, p_type, name):
-        """Get params of package plugin"""
+        """Get params of package plugin. To set the plugin's
+        configuration with the environment variable,
+        set ``BEIRAN_<plugin type>_<plugin name>_CONFIG`` like this.
+
+        ``BEIRAN_PACKAGE_DOCKER_CONFIG="chahce_dir=temp,foo=bar"``
+
+        """
+        env_config = os.getenv("BEIRAN_{}_{}_CONFIG".format(p_type.upper(), name.upper()))
+        conf = dict()
+        if env_config:
+            for item in env_config.split(','):
+                key, value = item.split('=')
+                conf[key] = value
+            return conf
+
         conf = self.get_config(ckey='%s.%s' % (p_type, name))
         if not conf:
             return dict()

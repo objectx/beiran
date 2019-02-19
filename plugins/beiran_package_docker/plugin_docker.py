@@ -49,6 +49,7 @@ PLUGIN_TYPE = 'package'
 # pylint: disable=attribute-defined-outside-init
 class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
+    DEFAULTS = {} # type: dict
 
     def __init__(self, config_dict: dict) -> None:
         super().__init__({

@@ -70,8 +70,8 @@ $ ./dev.sh
 #### - Settings (Environment Variables)
 
 ```sh
-export LOG_LEVEL=DEBUG
-export LOG_FILE=$(pwd)/beirand.log
+export BEIRAN_LOG_LEVEL=DEBUG
+export BEIRAN_LOG_FILE=$(pwd)/beirand.log
 export BEIRAN_SOCK=$(pwd)/beirand.sock
 export BEIRAN_DB_PATH=$(pwd)/beiran.db
 export BEIRAN_CONFIG_DIR=$(pwd)

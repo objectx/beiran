@@ -63,8 +63,8 @@ chmod +x ${VIRTUAL_ENV_DIR}/bin/beiran*
 
 export PATH="${VIRTUAL_ENV_DIR}/bin:$PATH"
 
-export LOG_LEVEL=DEBUG
-export LOG_FILE=${DIR}/beirand.log
+export BEIRAN_LOG_LEVEL=DEBUG
+export BEIRAN_LOG_FILE=${DIR}/beirand.log
 export BEIRAN_RUN_DIR=${DIR}
 export BEIRAN_SOCK=${BEIRAN_RUN_DIR}/beirand.sock
 export BEIRAN_PORT=${BEIRAN_PORT:-8888}

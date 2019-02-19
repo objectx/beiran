@@ -312,8 +312,7 @@ class BeiranDaemon(EventEmitter):
             )
 
         # Probe Known Nodes
-        known_nodes = os.getenv("KNOWN_NODES")
-        known_urls = known_nodes.split(',') if known_nodes else []
+        known_urls = config.known_nodes
         Services.get_logger().info("KNOWN_NODES are: %s", known_urls)
 
         for known_url in known_urls:

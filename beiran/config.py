@@ -41,6 +41,7 @@ DEFAULTS = {
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
     'DISCOVERY_METHOD': 'zeroconf',
+    'KNOWN_NODES': [],
 }
 
 
@@ -103,8 +104,16 @@ class Config(metaclass=ConfigMeta):
         if not any([ckey, ekey]):
             return None
 
+        env_value = os.getenv("BEIRAN_{}".format(ekey))
+
+        if env_value:
+            if isinstance(DEFAULTS[ekey], list):
+                return env_value.split(',')
+            if isinstance(DEFAULTS[ekey], int):
+                return int(env_value)
+
         return \
-            os.getenv("BEIRAN_{}".format(ekey)) or \
+            env_value or \
             self.get_config_from_file(ckey) or \
             DEFAULTS.get(ekey, None)
 
@@ -252,6 +261,19 @@ class Config(metaclass=ConfigMeta):
 
         """
         return self.get_config('beiran.listen_port', 'LISTEN_PORT')
+
+    @property
+    def known_nodes(self):
+        """
+        List of URLs of known nodes. Beiran daemon tries to communicate with
+        them. The default value is ``[]``
+
+        config.toml: section ``beiran``, key ``known_nodes``
+
+        Environment variable: ``BEIRAN_KNOWN_NODES``
+
+        """
+        return self.get_config('beiran.known_nodes', 'KNOWN_NODES')
 
     @property
     def plugin_types(self):

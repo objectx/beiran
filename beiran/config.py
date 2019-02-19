@@ -344,4 +344,6 @@ class Config(metaclass=ConfigMeta):
         return self.__init__(config_file)
 
 
-config = Config() # pylint: disable=invalid-name
+config = Config( # pylint: disable=invalid-name
+    config_file=os.getenv("BEIRAN_CONF_FILE", None)
+)

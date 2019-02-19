@@ -104,6 +104,7 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
                 self.log.setLevel(logging.WARN)
         self.daemon = config.pop('daemon')
         self.config = self.init_config(config)
+        self.set_dynamic_defaults()
         self.loop = get_event_loop()
         self.status = 'init'
 
@@ -146,6 +147,10 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
         for key, value in self.DEFAULTS.items():
             config.setdefault(key, value)
         return config
+
+    def set_dynamic_defaults(self):
+        """Set dynamic configuration values like using ``run_dir``"""
+        pass
 
     def emit(self, event: str, *args: Any, **kwargs: Any) -> None:
         if event != 'new_listener':

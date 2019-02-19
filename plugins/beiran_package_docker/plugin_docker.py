@@ -49,17 +49,20 @@ PLUGIN_TYPE = 'package'
 # pylint: disable=attribute-defined-outside-init
 class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
-    DEFAULTS = {} # type: dict
+    DEFAULTS = {
+        'storage': '/var/lib/docker'
+    }
 
-    def __init__(self, config_dict: dict) -> None:
-        super().__init__({
-            "storage": "/var/lib/docker",
-            **config_dict
-        })
+    # def __init__(self, plugin_config: dict) -> None:
+    #     super().__init__(plugin_config)
+
+    def set_dynamic_defaults(self):
+        """Set dynamic configuration value like using ``run_dir``"""
+        self.config.setdefault('cache_dir', config.cache_dir + '/docker')
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(cache_dir=config.cache_dir + '/docker',
+        self.util = DockerUtil(cache_dir=self.config["cache_dir"],
                                storage=self.config["storage"], aiodocker=self.aiodocker,
                                logger=self.log, local_node=self.node)
         self.docker = docker.from_env()

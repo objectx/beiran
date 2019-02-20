@@ -118,7 +118,6 @@ class Config(metaclass=ConfigMeta):
                     return env_value.split(',')
                 if isinstance(defaults[ekey], int):
                     return int(env_value)
-            
 
         return \
             env_value or \

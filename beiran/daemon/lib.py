@@ -115,19 +115,6 @@ def get_listen_address() -> str:
             `{}` is not a valid one!""".format(env_addr))
 
 
-def get_listen_port() -> int:
-    """
-    Get listen port from env or default 8888
-    Returns:
-        int: listen port
-
-    """
-    try:
-        return int(os.environ.get('LISTEN_PORT', config.listen_port))
-    except ValueError:
-        raise ValueError('LISTEN_PORT must be a valid port number!')
-
-
 def get_listen_interface() -> str:
     """
     Seek for listen interface in order described below and return it.
@@ -246,14 +233,14 @@ def collect_node_info() -> dict:
     peer_address = PeerAddress(
         uuid=local_node_uuid().hex,
         host=get_advertise_address(),
-        port=get_listen_port(),
+        port=config.listen_port,
     )
     return {
         "uuid": local_node_uuid().hex,
         "address": peer_address.address,
         "hostname": get_hostname(),
         "ip_address": get_advertise_address(),
-        "port": get_listen_port(),
+        "port": config.listen_port,
         "ip_address_6": None,
         "os_type": platform.system(),
         "os_version": platform.version(),

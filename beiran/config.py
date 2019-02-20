@@ -40,7 +40,7 @@ DEFAULTS = {
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
     'DISCOVERY_METHOD': 'zeroconf',
-    'URL': None,
+    'URL': '',
     'KNOWN_NODES': [],
 }
 
@@ -273,7 +273,7 @@ class Config(metaclass=ConfigMeta):
     @property
     def url(self):
         """
-        Beiran daemon's URL. The default value is ``None``
+        Beiran daemon's URL. The default value is ``''``
 
         config.toml: section ``beiran``, key ``url``
 

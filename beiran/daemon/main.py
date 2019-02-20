@@ -48,7 +48,7 @@ from beiran.daemon.nodes import Nodes
 from beiran.daemon.peer import Peer
 
 from beiran.daemon.lib import collect_node_info
-from beiran.daemon.lib import get_listen_port, get_advertise_address
+from beiran.daemon.lib import get_advertise_address
 from beiran.daemon.lib import update_sync_version_file
 
 from beiran.daemon.http_ws import ROUTES
@@ -102,7 +102,7 @@ class BeiranDaemon(EventEmitter):
             service_port (int): service port of new node
         """
 
-        service_port = service_port or get_listen_port()
+        service_port = service_port or config.listen_port
         try:
             node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
         except Node.DoesNotExist:
@@ -277,7 +277,7 @@ class BeiranDaemon(EventEmitter):
             if plugin['type'] == 'discovery':
                 type_specific_config = {
                     "address": get_advertise_address(),
-                    "port": get_listen_port()
+                    "port": config.listen_port
                 }
             _plugin_obj = await self.get_plugin(plugin['type'], plugin['name'], {
                 **shared_config_for_plugins,

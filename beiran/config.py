@@ -113,10 +113,12 @@ class Config(metaclass=ConfigMeta):
         env_value = os.getenv("BEIRAN_{}".format(ekey))
 
         if env_value:
-            if isinstance(defaults[ekey], list):
-                return env_value.split(',')
-            if isinstance(defaults[ekey], int):
-                return int(env_value)
+            if ekey in defaults:
+                if isinstance(defaults[ekey], list):
+                    return env_value.split(',')
+                if isinstance(defaults[ekey], int):
+                    return int(env_value)
+            
 
         return \
             env_value or \

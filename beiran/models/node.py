@@ -27,6 +27,7 @@ from urllib.parse import urlparse
 import re
 from datetime import datetime
 from peewee import IntegerField, CharField, UUIDField
+from beiran.config import config
 from beiran.models.base import BaseModel, JSONStringField
 from beiran.log import build_logger
 
@@ -189,7 +190,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def add_or_update(cls, uuid: str, address: str,
-                      discovery: str = None, config: dict = None) -> None:
+                      discovery: str = None, paconfig: dict = None) -> None:
         """
         Update with or create a new peer_address object from provided information.
 
@@ -197,7 +198,7 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
             uuid (str): uuid
             address (str): address
             discovery (str): discovery channel
-            config (dict): config dict
+            paconfig (dict): paconfig dict
 
         Returns:
 
@@ -209,10 +210,9 @@ class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes
             _self = cls(uuid=uuid, address=address)
 
         _self.last_seen_at = int(datetime.now().timestamp())
-        if config:
-            _self.config = config
-        if discovery:
-            _self.discovery_method = discovery
+        if paconfig:
+            _self.config = paconfig
+        _self.discovery_method = discovery if discovery else config.discovery_method
         _self.save()
 
     @staticmethod

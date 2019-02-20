@@ -39,7 +39,6 @@ DEFAULTS = {
     'DATA_DIR': '/var/lib/beiran',
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
-    'DISCOVERY_METHOD': 'zeroconf',
     'KNOWN_NODES': [],
 }
 
@@ -233,7 +232,7 @@ class Config(metaclass=ConfigMeta):
     def discovery_method(self):
         """
         Service discovery method for beiran daemons to find each
-        others. The default value is ``zeroconf``. It can be eighter
+        others. The default value is ``None``. It can be eighter
         ``zeroconf``, ``dns`` or any other discovery plugins name.
 
         config.toml: section ``beiran``, key ``discovery_method``

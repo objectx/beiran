@@ -286,7 +286,7 @@ class BeiranDaemon(EventEmitter):
             })
 
             # Only one discovery plugin at a time is supported (for now)
-            if plugin['type'] == 'discovery':
+            if plugin['type'] == 'discovery' and plugin['name'] == config.discovery_method:
                 Services.plugins['discovery'] = _plugin_obj
             else:
                 Services.plugins['%s:%s' % (plugin['type'], plugin['name'])] = _plugin_obj

@@ -114,15 +114,24 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         """Save a layer from a node into db"""
         try:
             layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
-            layer_.set_available_at(node.uuid.hex)
+
             self.save_local_paths(layer_)
+
+            # 'available_at' field is set if the node has the layer in cache directory
+            # fix this code if we can create traball from docker storage
+            if layer_.cache_path:
+                layer_.set_available_at(node.uuid.hex)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except DockerLayer.DoesNotExist:
-            layer.available_at = [node.uuid.hex] # type: ignore
             layer.local_image_refs = [] # type: ignore
             self.save_local_paths(layer)
+
+            # 'available_at' field is set if the node has the layer in cache directory
+            # fix this code if we can create traball from docker storage
+            if layer_.cache_path:
+                layer.available_at = [node.uuid.hex] # type: ignore
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
 

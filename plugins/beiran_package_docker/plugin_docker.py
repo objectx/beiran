@@ -385,7 +385,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # skip verbose updates of records
         if not skip_updating_layer:
             for layer in layers:
-                layer.set_available_at(self.node.uuid.hex)
+                # 'available_at' field is set if the node has the layer in cache directory
+                # fix this code if we can create traball from docker storage
+                if layer.cache_path:
+                    layer.set_available_at(self.node.uuid.hex)
                 layer.save()
                 self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
 

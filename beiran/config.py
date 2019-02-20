@@ -294,6 +294,18 @@ class Config(metaclass=ConfigMeta):
         return self.get_config('beiran.hostname', 'HOSTNAME')
 
     @property
+    def listen_interface(self):
+        """
+        Beiran daemon's interface. The default value is ``None``
+
+        config.toml: section ``beiran``, key ``listen_interface``
+
+        Environment variable: ``BEIRAN_LISTEN_INTERFACE``
+
+        """
+        return self.get_config('beiran.listen_interface', 'LISTEN_INTERFACE')
+
+    @property
     def known_nodes(self):
         """
         List of URLs of known nodes. Beiran daemon tries to communicate with

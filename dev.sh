@@ -70,7 +70,7 @@ export BEIRAN_SOCKET_FILE=${BEIRAN_RUN_DIR}/beirand.sock
 export BEIRAN_PORT=${BEIRAN_PORT:-8888}
 export BEIRAN_URL=http://localhost:${BEIRAN_PORT}
 export BEIRAN_DB_FILE=${DIR}/beiran.db
-export LISTEN_ADDR=0.0.0.0
+export BEIRAN_LISTEN_ADDRESS=0.0.0.0
 export BEIRAN_CONFIG_DIR=${DIR}
 
 function ps1_context {

@@ -11,7 +11,7 @@ services:
     environment:
       - BEIRAN_DISCOVERY_METHOD=dns
       - BEIRAN_DISCOVERY_DNS_CONFIG='discovery_service_address=beiran_dns'
-      - BEIRAN_LISTEN_ADDR=0.0.0.0
+      - BEIRAN_LISTEN_ADDRESS=0.0.0.0
       - BEIRAN_LOG_LEVEL=INFO
 
 networks:

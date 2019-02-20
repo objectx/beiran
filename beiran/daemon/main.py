@@ -48,7 +48,7 @@ from beiran.daemon.nodes import Nodes
 from beiran.daemon.peer import Peer
 
 from beiran.daemon.lib import collect_node_info
-from beiran.daemon.lib import get_listen_port, get_advertise_address
+from beiran.daemon.lib import get_advertise_address
 from beiran.daemon.lib import update_sync_version_file
 
 from beiran.daemon.http_ws import ROUTES
@@ -102,7 +102,7 @@ class BeiranDaemon(EventEmitter):
             service_port (int): service port of new node
         """
 
-        service_port = service_port or get_listen_port()
+        service_port = service_port or config.listen_port
         try:
             node = await self.nodes.get_node_by_ip_and_port(ip_address, service_port)
         except Node.DoesNotExist:
@@ -216,7 +216,7 @@ class BeiranDaemon(EventEmitter):
         logger.setLevel(logging.INFO)
 
         # check database file exists
-        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(config.data_dir))
+        beiran_db_path = config.db_file
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:
@@ -272,12 +272,12 @@ class BeiranDaemon(EventEmitter):
         shared_config_for_plugins = {
             "version": VERSION,
         }
-        for plugin in config.get_enabled_plugins():
+        for plugin in config.enabled_plugins:
             type_specific_config = dict()
             if plugin['type'] == 'discovery':
                 type_specific_config = {
                     "address": get_advertise_address(),
-                    "port": get_listen_port()
+                    "port": config.listen_port
                 }
             _plugin_obj = await self.get_plugin(plugin['type'], plugin['name'], {
                 **shared_config_for_plugins,
@@ -286,7 +286,7 @@ class BeiranDaemon(EventEmitter):
             })
 
             # Only one discovery plugin at a time is supported (for now)
-            if plugin['type'] == 'discovery':
+            if plugin['type'] == 'discovery' and plugin['name'] == config.discovery_method:
                 Services.plugins['discovery'] = _plugin_obj
             else:
                 Services.plugins['%s:%s' % (plugin['type'], plugin['name'])] = _plugin_obj
@@ -312,8 +312,7 @@ class BeiranDaemon(EventEmitter):
             )
 
         # Probe Known Nodes
-        known_nodes = os.getenv("KNOWN_NODES")
-        known_urls = known_nodes.split(',') if known_nodes else []
+        known_urls = config.known_nodes
         Services.get_logger().info("KNOWN_NODES are: %s", known_urls)
 
         for known_url in known_urls:

@@ -9,8 +9,7 @@ data_dir = '/var/lib/beiran'
 run_dir = '/var/run'
 listen_port = 8888
 listen_address = '0.0.0.0'
-socket_path = '/var/run/beirand.sock'
-daemon_url = ''
+socket_file = '/var/run/beirand.sock'
 discovery_method = 'zeroconf'
 
 # docker plugin settings

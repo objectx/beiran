@@ -76,6 +76,7 @@ class AbstractBasePlugin(metaclass=ABCMeta):
 class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-instance-attributes
     """BeiranPlugin with EventEmmiter
     """
+    DEFAULTS = {} # type: dict
 
     def __init__(self, config: dict) -> None:
         """
@@ -102,7 +103,8 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
             if self.log.level == logging.NOTSET:
                 self.log.setLevel(logging.WARN)
         self.daemon = config.pop('daemon')
-        self.config = config
+        self.config = self.init_config(config)
+        self.set_dynamic_defaults()
         self.loop = get_event_loop()
         self.status = 'init'
 
@@ -138,6 +140,17 @@ class BasePlugin(AbstractBasePlugin, EventEmitter):  # pylint: disable=too-many-
     # def get_status(self):
     #     """Get plugin status"""
     #     return self.__status
+
+    def init_config(self, config: dict):
+        """Initialize plugin configuration. Values ​​not in ``config`` are
+        set with default values"""
+        for key, value in self.DEFAULTS.items():
+            config.setdefault(key, value)
+        return config
+
+    def set_dynamic_defaults(self):
+        """Set dynamic configuration values like using ``run_dir``"""
+        pass
 
     def emit(self, event: str, *args: Any, **kwargs: Any) -> None:
         if event != 'new_listener':

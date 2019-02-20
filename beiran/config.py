@@ -34,15 +34,19 @@ LOGGER = logging.getLogger()
 DEFAULTS = {
     'LISTEN_PORT': 8888,
     'LISTEN_ADDRESS': '0.0.0.0',
-    'LOG_FILE': '/var/log/beirand.log',
     'LOG_LEVEL': 'DEBUG',
     'CONFIG_DIR': '/etc/beiran',
     'DATA_DIR': '/var/lib/beiran',
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
-    'DISCOVERY_METHOD': 'zeroconf',
+    'KNOWN_NODES': [],
 }
 
+DEFAULT_FILE_PATHS = {
+    'LOG_FILE': '/var/log/beirand.log',
+    'DB_FILE':  os.path.join(DEFAULTS['DATA_DIR'], 'beirand.log'), # type: ignore
+    'SOCKET_FILE': os.path.join(DEFAULTS['RUN_DIR'], 'beirand.sock'), # type: ignore
+}
 
 class ConfigMeta(type):
     """
@@ -85,7 +89,8 @@ class Config(metaclass=ConfigMeta):
             val = val[key]
         return val
 
-    def get_config(self, ckey: str = '', ekey: str = '') -> Union[Any, object]:
+    def get_config(self, ckey: str = '', ekey: str = '',
+                   isfile: bool = False) -> Union[Any, object]:
         """
         Seek for config val through environment and config depending
         on given keys.
@@ -103,10 +108,21 @@ class Config(metaclass=ConfigMeta):
         if not any([ckey, ekey]):
             return None
 
+        defaults = DEFAULT_FILE_PATHS if isfile else DEFAULTS
+
+        env_value = os.getenv("BEIRAN_{}".format(ekey))
+
+        if env_value:
+            if ekey in defaults:
+                if isinstance(defaults[ekey], list):
+                    return env_value.split(',')
+                if isinstance(defaults[ekey], int):
+                    return int(env_value)
+
         return \
-            os.getenv("BEIRAN_{}".format(ekey)) or \
+            env_value or \
             self.get_config_from_file(ckey) or \
-            DEFAULTS.get(ekey, None)
+            defaults.get(ekey, None)
 
     @staticmethod
     def load_from_file(config_file: str):
@@ -211,13 +227,13 @@ class Config(metaclass=ConfigMeta):
         Environment variable: ``BEIRAN_LOG_FILE``
 
         """
-        return self.get_config('beiran.log_file', 'LOG_FILE')
+        return self.get_config('beiran.log_file', 'LOG_FILE', isfile=True)
 
     @property
     def discovery_method(self):
         """
         Service discovery method for beiran daemons to find each
-        others. The default value is ``zeroconf``. It can be eighter
+        others. The default value is ``None``. It can be eighter
         ``zeroconf``, ``dns`` or any other discovery plugins name.
 
         config.toml: section ``beiran``, key ``discovery_method``
@@ -254,6 +270,81 @@ class Config(metaclass=ConfigMeta):
         return self.get_config('beiran.listen_port', 'LISTEN_PORT')
 
     @property
+    def url(self):
+        """
+        Beiran daemon's URL. The default value is ``None``
+
+        config.toml: section ``beiran``, key ``url``
+
+        Environment variable: ``BEIRAN_URL``
+
+        """
+        return self.get_config('beiran.url', 'URL')
+
+    @property
+    def hostname(self):
+        """
+        Beiran daemon's hostname. The default value is ``None``
+
+        config.toml: section ``beiran``, key ``hostname``
+
+        Environment variable: ``BEIRAN_HOSTNAME``
+
+        """
+        return self.get_config('beiran.hostname', 'HOSTNAME')
+
+    @property
+    def listen_interface(self):
+        """
+        Beiran daemon's interface. The default value is ``None``
+
+        config.toml: section ``beiran``, key ``listen_interface``
+
+        Environment variable: ``BEIRAN_LISTEN_INTERFACE``
+
+        """
+        return self.get_config('beiran.listen_interface', 'LISTEN_INTERFACE')
+
+    @property
+    def known_nodes(self):
+        """
+        List of URLs of known nodes. Beiran daemon tries to communicate with
+        them. The default value is ``[]``
+
+        config.toml: section ``beiran``, key ``known_nodes``
+
+        Environment variable: ``BEIRAN_KNOWN_NODES``
+
+        """
+        return self.get_config('beiran.known_nodes', 'KNOWN_NODES')
+
+    @property
+    def db_file(self):
+        """
+        A file path for database. The default value is
+        ``/var/lib/beiran/beiran.db``.
+
+        config.toml: section ``beiran``, key ``db_file``
+
+        Environment variable: ``BEIRAN_DB_FILE``
+
+        """
+        return self.get_config('beiran.db_file', 'DB_FILE', isfile=True)
+
+    @property
+    def socket_file(self):
+        """
+        A file path for socket. The default value is
+        ``/var/run/beirand.sock``.
+
+        config.toml: section ``beiran``, key ``socket_file``
+
+        Environment variable: ``BEIRAN_SOCKET_FILE``
+
+        """
+        return self.get_config('beiran.socket_file', 'SOCKET_FILE', isfile=True)
+
+    @property
     def plugin_types(self):
         """Return the list of supported plugin types"""
         return ['package', 'interface', 'discovery']
@@ -273,10 +364,10 @@ class Config(metaclass=ConfigMeta):
         """Get the list of the enabled plugins"""
 
         plugins = []
-        env_config = os.getenv('BEIRAN_PLUGINS')
-        if env_config:
+        env_plugins = os.getenv('BEIRAN_PLUGINS')
+        if env_plugins:
             try:
-                for p_package in env_config.split(','):
+                for p_package in env_plugins.split(','):
                     (p_type, p_name) = p_package.split('.')
                     if p_type not in self.plugin_types:
                         raise Exception("Unknown plugin type: %s" % (p_type))
@@ -307,7 +398,21 @@ class Config(metaclass=ConfigMeta):
         return plugins
 
     def get_plugin_config(self, p_type, name):
-        """Get params of package plugin"""
+        """Get params of package plugin. To set the plugin's
+        configuration with the environment variable,
+        set ``BEIRAN_<plugin type>_<plugin name>_CONFIG`` like this.
+
+        ``BEIRAN_PACKAGE_DOCKER_CONFIG="chahce_dir=temp,foo=bar"``
+
+        """
+        env_config = os.getenv("BEIRAN_{}_{}_CONFIG".format(p_type.upper(), name.upper()))
+        conf = dict()
+        if env_config:
+            for item in env_config.split(','):
+                key, value = item.split('=')
+                conf[key] = value
+            return conf
+
         conf = self.get_config(ckey='%s.%s' % (p_type, name))
         if not conf:
             return dict()
@@ -344,4 +449,6 @@ class Config(metaclass=ConfigMeta):
         return self.__init__(config_file)
 
 
-config = Config() # pylint: disable=invalid-name
+config = Config( # pylint: disable=invalid-name
+    config_file=os.getenv("BEIRAN_CONF_FILE", None)
+)

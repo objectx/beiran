@@ -19,10 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """HTTP and WS API implementation of beiran daemon"""
-import os
-
 from tornado import websocket, web
-from tornado.options import options, define
+from tornado.options import define
 from tornado.web import HTTPError
 
 from beiran.config import config
@@ -30,7 +28,7 @@ from beiran.models import Node, PeerAddress
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 
 from beiran.daemon.common import Services
-from beiran.daemon.lib import get_listen_address, get_listen_port
+from beiran.daemon.lib import get_listen_address
 
 
 define('listen_address',
@@ -39,16 +37,12 @@ define('listen_address',
        help='Listen address')
 define('listen_port',
        group='webserver',
-       default=get_listen_port(),
+       default=config.listen_port,
        help='Listen port')
 define('unix_socket',
        group='webserver',
-       default=config.run_dir + "/beirand.sock",
+       default=config.socket_file,
        help='Path to unix socket to bind')
-
-
-if 'BEIRAN_SOCK' in os.environ:
-    options.unix_socket = os.environ['BEIRAN_SOCK']
 
 
 class EchoWebSocket(websocket.WebSocketHandler):

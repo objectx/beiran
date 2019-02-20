@@ -14,7 +14,7 @@ services:
       - test
     environment:
       - BEIRAN_DISCOVERY_METHOD=dns
-      - DISCOVERY_SERVICE_ADDRESS=beirand
+      - BEIRAN_DISCOVERY_DNS_CONFIG='discovery_service_address=beirand'
       - BEIRAN_LOG_LEVEL=INFO
       - DOCKER_HOST=http://172.17.0.1:2375
 

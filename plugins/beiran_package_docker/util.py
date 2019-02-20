@@ -110,7 +110,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     # event datas for downloading layers
     EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
 
-    def __init__(self, cache_dir: str, storage: str = "/var/lib/docker", # pylint: disable=too-many-arguments
+    def __init__(self, cache_dir: str, storage: str, # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir

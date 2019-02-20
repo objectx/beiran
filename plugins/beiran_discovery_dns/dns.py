@@ -22,7 +22,6 @@
 Zeroconf multicast discovery service implementation
 """
 
-import os
 import asyncio
 import aiodns
 
@@ -33,13 +32,14 @@ from beiran.plugin import BaseDiscoveryPlugin
 PLUGIN_NAME = 'dns'
 PLUGIN_TYPE = 'discovery'
 
-# Constants
-DEFAULT_DOMAIN = "_beiran._tcp.local."
-
 
 class DNSDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of DNS Service Discovery
     """
+    DEFAULTS = {
+        'discovery_service_address': 'beirand',
+        'domain': '_beiran._tcp.local.',
+    }
 
     def __init__(self, config: dict) -> None:
         """ Creates an instance of Dns Discovery Service
@@ -64,7 +64,7 @@ class DNSDiscovery(BaseDiscoveryPlugin):
         Returns:
             str: hostname to query
         """
-        return os.getenv('DISCOVERY_SERVICE_ADDRESS', 'beirand')
+        return self.config['discovery_service_address']
 
     async def start(self):
         """ Starts discovery service

@@ -63,15 +63,15 @@ chmod +x ${VIRTUAL_ENV_DIR}/bin/beiran*
 
 export PATH="${VIRTUAL_ENV_DIR}/bin:$PATH"
 
-export LOG_LEVEL=DEBUG
-export LOG_FILE=${DIR}/beirand.log
-export RUN_DIR_PATH=${DIR}
-export BEIRAN_SOCK=${RUN_DIR_PATH}/beirand.sock
+export BEIRAN_LOG_LEVEL=DEBUG
+export BEIRAN_LOG_FILE=${DIR}/beirand.log
+export BEIRAN_RUN_DIR=${DIR}
+export BEIRAN_SOCKET_FILE=${BEIRAN_RUN_DIR}/beirand.sock
 export BEIRAN_PORT=${BEIRAN_PORT:-8888}
 export BEIRAN_URL=http://localhost:${BEIRAN_PORT}
-export BEIRAN_DB_PATH=${DIR}/beiran.db
-export LISTEN_ADDR=0.0.0.0
-export CONFIG_DIR_PATH=${DIR}
+export BEIRAN_DB_FILE=${DIR}/beiran.db
+export BEIRAN_LISTEN_ADDRESS=0.0.0.0
+export BEIRAN_CONFIG_DIR=${DIR}
 
 function ps1_context {
 	# For any of these bits of context that exist, display them and append

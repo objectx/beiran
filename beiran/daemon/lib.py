@@ -56,8 +56,7 @@ def local_node_uuid() -> UUID:
     if LOCAL_NODE_UUID_CACHED:
         return LOCAL_NODE_UUID_CACHED
 
-    config_folder = config.config_dir
-    uuid_conf_path = "/".join([config_folder, 'uuid.conf'])
+    uuid_conf_path = "/".join([config.config_dir, 'uuid.conf'])
     try:
         uuid_file = open(uuid_conf_path)
         uuid_hex = uuid_file.read()
@@ -115,24 +114,11 @@ def get_listen_address() -> str:
             `{}` is not a valid one!""".format(env_addr))
 
 
-def get_listen_port() -> int:
-    """
-    Get listen port from env or default 8888
-    Returns:
-        int: listen port
-
-    """
-    try:
-        return int(os.environ.get('LISTEN_PORT', config.listen_port))
-    except ValueError:
-        raise ValueError('LISTEN_PORT must be a valid port number!')
-
-
 def get_listen_interface() -> str:
     """
     Seek for listen interface in order described below and return it.
 
-    First try LISTEN_INTERFACE env var.
+    First try BEIRAN_LISTEN_INTERFACE env var.
     Second try to find the interface of ip address specified by config.listen_address.
     Third, if config.listen_address is not set return default gateway's interface
 
@@ -141,8 +127,8 @@ def get_listen_interface() -> str:
 
     """
 
-    if 'LISTEN_INTERFACE' in os.environ:
-        return os.environ['LISTEN_INTERFACE']
+    if config.listen_interface:
+        return config.listen_interface
 
     if config.listen_address:
         for interface in netifaces.interfaces():
@@ -159,7 +145,7 @@ def get_listen_interface() -> str:
 
 def get_advertise_address() -> str:
     """
-    First try environment variable `ADVERTISE_ADDR`. If it is not set,
+    First try environment variable `BEIRAN_LISTEN_ADDRESS`. If it is not set,
     return the listen address unless it is `0.0.0.0`.
 
     Lastly return default gateway's ip address
@@ -172,10 +158,6 @@ def get_advertise_address() -> str:
         string: ip address of advertise address
 
     """
-
-    if 'ADVERTISE_ADDR' in os.environ:
-        return os.environ['ADVERTISE_ADDR']
-
     listen_address = get_listen_address()
 
     if listen_address != '0.0.0.0':
@@ -188,8 +170,8 @@ def get_advertise_address() -> str:
 def get_hostname() -> str:
     """ Gets hostname for discovery
     """
-    if 'HOSTNAME' in os.environ:
-        return os.environ['HOSTNAME']
+    if config.hostname:
+        return config.hostname
     return socket.gethostname()
 
 
@@ -246,14 +228,14 @@ def collect_node_info() -> dict:
     peer_address = PeerAddress(
         uuid=local_node_uuid().hex,
         host=get_advertise_address(),
-        port=get_listen_port(),
+        port=config.listen_port,
     )
     return {
         "uuid": local_node_uuid().hex,
         "address": peer_address.address,
         "hostname": get_hostname(),
         "ip_address": get_advertise_address(),
-        "port": get_listen_port(),
+        "port": config.listen_port,
         "ip_address_6": None,
         "os_type": platform.system(),
         "os_version": platform.version(),

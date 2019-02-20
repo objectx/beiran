@@ -37,21 +37,21 @@ from beiran.plugin import BaseDiscoveryPlugin
 PLUGIN_NAME = 'zeroconf'
 PLUGIN_TYPE = 'discovery'
 
-# Constants
-DEFAULT_DOMAIN = "_beiran._tcp.local."
-
 
 class ZeroconfDiscovery(BaseDiscoveryPlugin):
     """Beiran Implementation of Zeroconf Multicast DNS Service Discovery
     """
+    DEFAULTS = {
+        'domain': '_beiran._tcp.local.',
+    }
 
     def __init__(self, config: dict) -> None:
         """ Creates an instance of Zeroconf Discovery Service
         """
         super().__init__(config)
         self.info = None
-        self.domain = config['domain'] if 'domain' in config else DEFAULT_DOMAIN
-        self.version = config['version']
+        self.domain = self.config['domain']
+        self.version = self.config['version']
         self.zeroconf = Zeroconf(self.loop,
                                  address_family=[netifaces.AF_INET],
                                  iface=self.network_interface)

@@ -39,12 +39,17 @@ PLUGIN_TYPE = 'interface'
 # pylint: disable=attribute-defined-outside-init
 class K8SInterface(BaseInterfacePlugin):
     """CRI v1alpha2 support for Beiran"""
+    DEFAULTS = {} # type: dict
+
     def __init__(self, plugin_config: dict) -> None:
         super().__init__(plugin_config)
-        if 'unix_socket_path' in plugin_config:
-            self.unix_socket_path = plugin_config['unix_socket_path']
-        else:
-            self.unix_socket_path = "unix://" + config.run_dir + "/beiran-cri.sock"
+        self.unix_socket_path = self.config['unix_socket_path']
+
+    def set_dynamic_defaults(self):
+        """Set dynamic configuration value like using ``run_dir``"""
+        self.config.setdefault(
+            'unix_socket_path', "unix://" + config.run_dir + "/beiran-cri.sock"
+        )
 
     async def init(self):
         ApiDependencies.logger = self.log

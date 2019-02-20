@@ -46,7 +46,7 @@ class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
     def __init__(self) -> None:
-        daemon_url = config.url if config.url != '' else \
+        daemon_url = config.url if config.url else \
                      "http+unix://" + config.socket_file
 
         peer_address = PeerAddress(address=daemon_url)

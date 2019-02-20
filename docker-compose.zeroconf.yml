@@ -16,7 +16,7 @@ services:
       - BEIRAN_LISTEN_ADDR=0.0.0.0
       - BEIRAN_LISTEN_PORT=8892
       - BEIRAN_LOG_LEVEL=INFO
-      # - HOSTNAME=b1
+      # - BEIRAN_HOSTNAME=b1
       - DOCKER_HOST=http://172.17.0.1:2375
     ports:
       - 8892:8892
@@ -38,7 +38,7 @@ services:
       - BEIRAN_LISTEN_ADDR=0.0.0.0
       - BEIRAN_LISTEN_PORT=8891
       - BEIRAN_LOG_LEVEL=INFO
-      # - HOSTNAME=b2
+      # - BEIRAN_HOSTNAME=b2
       - DOCKER_HOST=http://172.17.0.1:2375
     ports:
       - 8891:8891

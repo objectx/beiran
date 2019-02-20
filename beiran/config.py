@@ -40,7 +40,6 @@ DEFAULTS = {
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
     'DISCOVERY_METHOD': 'zeroconf',
-    'URL': '',
     'KNOWN_NODES': [],
 }
 
@@ -273,7 +272,7 @@ class Config(metaclass=ConfigMeta):
     @property
     def url(self):
         """
-        Beiran daemon's URL. The default value is ``''``
+        Beiran daemon's URL. The default value is ``None``
 
         config.toml: section ``beiran``, key ``url``
 
@@ -281,6 +280,18 @@ class Config(metaclass=ConfigMeta):
 
         """
         return self.get_config('beiran.url', 'URL')
+
+    @property
+    def hostname(self):
+        """
+        Beiran daemon's hostname. The default value is ``None``
+
+        config.toml: section ``beiran``, key ``hostname``
+
+        Environment variable: ``BEIRAN_HOSTNAME``
+
+        """
+        return self.get_config('beiran.hostname', 'HOSTNAME')
 
     @property
     def known_nodes(self):

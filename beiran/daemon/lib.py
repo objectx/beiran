@@ -175,8 +175,8 @@ def get_advertise_address() -> str:
 def get_hostname() -> str:
     """ Gets hostname for discovery
     """
-    if 'HOSTNAME' in os.environ:
-        return os.environ['HOSTNAME']
+    if config.hostname:
+        return config.hostname
     return socket.gethostname()
 
 

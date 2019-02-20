@@ -10,7 +10,6 @@ run_dir = '/var/run'
 listen_port = 8888
 listen_address = '0.0.0.0'
 socket_file = '/var/run/beirand.sock'
-url = ''
 discovery_method = 'zeroconf'
 
 # docker plugin settings

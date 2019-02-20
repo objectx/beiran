@@ -205,15 +205,26 @@ def layer():
 @layer.command('list')
 @click.option('--all', 'all_nodes', default=False, is_flag=True,
               help='List layers from all known nodes')
+@click.option('--diffid', default=False, is_flag=True,
+              help="Show layer's diffid")
 @click.option('--node', default=None,
               help='List layers from specific node')
 @click.pass_obj
 @pass_context
-def layer_list(ctx, all_nodes: bool, node: str):
+def layer_list(ctx, all_nodes: bool, diffid: bool, node: str):
     """List container layers across the cluster"""
     layers = ctx.beiran_client.get_layers(all_nodes=all_nodes, node_uuid=node)
-    table = [
-        [i['digest'], sizeof_fmt(i['size']), str(len(i['available_at'])) + ' node(s)']
-        for i in layers
-    ]
-    print(tabulate(table, headers=["Digest", "Size", "Availability"]))
+    if diffid:
+        table = [
+            [i['digest'], i['diff_id'], sizeof_fmt(i['size']), str(len(i['available_at'])) +
+             ' node(s)']
+            for i in layers
+        ]
+        headers = ["Digest", "DiffID", "Size", "Availability"]
+    else:
+        table = [
+            [i['digest'], sizeof_fmt(i['size']), str(len(i['available_at'])) + ' node(s)']
+            for i in layers
+        ]
+        headers = ["Digest", "Size", "Availability"]
+    print(tabulate(table, headers=headers))

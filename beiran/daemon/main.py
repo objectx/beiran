@@ -216,7 +216,7 @@ class BeiranDaemon(EventEmitter):
         logger.setLevel(logging.INFO)
 
         # check database file exists
-        beiran_db_path = os.getenv("BEIRAN_DB_PATH", '{}/beiran.db'.format(config.data_dir))
+        beiran_db_path = config.db_file
         db_file_exists = os.path.exists(beiran_db_path)
 
         if not db_file_exists:

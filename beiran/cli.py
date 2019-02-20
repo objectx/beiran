@@ -21,7 +21,6 @@
 #!/bin/env python
 """command line client for managing beiran daemon"""
 
-import os
 import sys
 import logging
 import importlib
@@ -47,12 +46,8 @@ class BeiranContext:
     """Context object for Beiran Commands which keeps clients and other common objects"""
 
     def __init__(self) -> None:
-        if 'BEIRAN_SOCK' in os.environ:
-            daemon_url = "http+unix://" + os.environ['BEIRAN_SOCK']
-        elif 'BEIRAN_URL' in os.environ:
-            daemon_url = os.environ['BEIRAN_URL']
-        else:
-            daemon_url = "http+unix://{}/beirand.sock".format(config.run_dir)
+        daemon_url = config.url if config.url else \
+                     "http+unix://" + config.socket_file
 
         peer_address = PeerAddress(address=daemon_url)
         self.beiran_url = peer_address.location

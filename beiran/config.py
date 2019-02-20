@@ -34,16 +34,21 @@ LOGGER = logging.getLogger()
 DEFAULTS = {
     'LISTEN_PORT': 8888,
     'LISTEN_ADDRESS': '0.0.0.0',
-    'LOG_FILE': '/var/log/beirand.log',
     'LOG_LEVEL': 'DEBUG',
     'CONFIG_DIR': '/etc/beiran',
     'DATA_DIR': '/var/lib/beiran',
     'CACHE_DIR': '/var/cache/beiran',
     'RUN_DIR': '/var/run',
     'DISCOVERY_METHOD': 'zeroconf',
+    'URL': None,
     'KNOWN_NODES': [],
 }
 
+DEFAULT_FILE_PATHS = {
+    'LOG_FILE': '/var/log/beirand.log',
+    'DB_FILE':  os.path.join(DEFAULTS['DATA_DIR'], 'beirand.log'), # type: ignore
+    'SOCKET_FILE': os.path.join(DEFAULTS['RUN_DIR'], 'beirand.sock'), # type: ignore
+}
 
 class ConfigMeta(type):
     """
@@ -86,7 +91,8 @@ class Config(metaclass=ConfigMeta):
             val = val[key]
         return val
 
-    def get_config(self, ckey: str = '', ekey: str = '') -> Union[Any, object]:
+    def get_config(self, ckey: str = '', ekey: str = '',
+                   isfile: bool = False) -> Union[Any, object]:
         """
         Seek for config val through environment and config depending
         on given keys.
@@ -104,18 +110,20 @@ class Config(metaclass=ConfigMeta):
         if not any([ckey, ekey]):
             return None
 
+        defaults = DEFAULT_FILE_PATHS if isfile else DEFAULTS
+
         env_value = os.getenv("BEIRAN_{}".format(ekey))
 
         if env_value:
-            if isinstance(DEFAULTS[ekey], list):
+            if isinstance(defaults[ekey], list):
                 return env_value.split(',')
-            if isinstance(DEFAULTS[ekey], int):
+            if isinstance(defaults[ekey], int):
                 return int(env_value)
 
         return \
             env_value or \
             self.get_config_from_file(ckey) or \
-            DEFAULTS.get(ekey, None)
+            defaults.get(ekey, None)
 
     @staticmethod
     def load_from_file(config_file: str):
@@ -220,7 +228,7 @@ class Config(metaclass=ConfigMeta):
         Environment variable: ``BEIRAN_LOG_FILE``
 
         """
-        return self.get_config('beiran.log_file', 'LOG_FILE')
+        return self.get_config('beiran.log_file', 'LOG_FILE', isfile=True)
 
     @property
     def discovery_method(self):
@@ -263,6 +271,18 @@ class Config(metaclass=ConfigMeta):
         return self.get_config('beiran.listen_port', 'LISTEN_PORT')
 
     @property
+    def url(self):
+        """
+        Beiran daemon's URL. The default value is ``None``
+
+        config.toml: section ``beiran``, key ``url``
+
+        Environment variable: ``BEIRAN_URL``
+
+        """
+        return self.get_config('beiran.url', 'URL')
+
+    @property
     def known_nodes(self):
         """
         List of URLs of known nodes. Beiran daemon tries to communicate with
@@ -274,6 +294,32 @@ class Config(metaclass=ConfigMeta):
 
         """
         return self.get_config('beiran.known_nodes', 'KNOWN_NODES')
+
+    @property
+    def db_file(self):
+        """
+        A file path for database. The default value is
+        ``/var/lib/beiran/beiran.db``.
+
+        config.toml: section ``beiran``, key ``db_file``
+
+        Environment variable: ``BEIRAN_DB_FILE``
+
+        """
+        return self.get_config('beiran.db_file', 'DB_FILE', isfile=True)
+
+    @property
+    def socket_file(self):
+        """
+        A file path for socket. The default value is
+        ``/var/run/beirand.sock``.
+
+        config.toml: section ``beiran``, key ``socket_file``
+
+        Environment variable: ``BEIRAN_SOCKET_FILE``
+
+        """
+        return self.get_config('beiran.socket_file', 'SOCKET_FILE', isfile=True)
 
     @property
     def plugin_types(self):

@@ -72,8 +72,8 @@ $ ./dev.sh
 ```sh
 export BEIRAN_LOG_LEVEL=DEBUG
 export BEIRAN_LOG_FILE=$(pwd)/beirand.log
-export BEIRAN_SOCK=$(pwd)/beirand.sock
-export BEIRAN_DB_PATH=$(pwd)/beiran.db
+export BEIRAN_SOCKET_FILE=$(pwd)/beirand.sock
+export BEIRAN_DB_FILE=$(pwd)/beiran.db
 export BEIRAN_CONFIG_DIR=$(pwd)
 ```
 
@@ -111,7 +111,7 @@ All has default values.
 LISTEN_INTERFACE
 LISTEN_ADDR
 HOSTNAME
-BEIRAN_SOCK
+BEIRAN_SOCKET_FILE
 ```
 
 ## Using (PoC)

@@ -294,6 +294,8 @@ test:bats:
        docker cp ${SRC_DIR}/test/bats/beiran-cli-$node.bats ${CONTAINER}:/opt/beiran-cli.bats
        docker cp ${SRC_DIR}/test/bats/beiran-node-discovery.bats ${CONTAINER}:/opt/beiran-node-discovery.bats
        docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
+       echo "============== install bash for bat ================="
+       docker exec ${CONTAINER} apk add bash
        echo "============== start bats test ($node) =============="
        docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
        docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-node-discovery.bats

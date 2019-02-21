@@ -1,7 +1,7 @@
 FROM python:3.6-alpine
 LABEL maintainer="info@beiran.io"
 
-RUN apk add --no-cache g++ python3-dev yajl make linux-headers
+RUN apk add --no-cache g++ python3-dev yajl yajl-dev make linux-headers
 RUN apk add --no-cache libffi-dev  # dns discovery requires
 
 COPY beiran /opt/beiran/beiran

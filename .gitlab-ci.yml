@@ -247,6 +247,7 @@ test:api:
          fi
      done
    - CONTAINER=$(docker-compose ps -q beiran1)
+   - docker exec ${CONTAINER} apk add libcurl
    - docker exec ${CONTAINER} pip install pyresttest==1.7.1
    # send test files to the container
    - cd ${SRC_DIR}

@@ -2,6 +2,7 @@ image: dkr.rlab.io/system/thedocker:latest
 
 stages:
  - pre_build
+ - pre_build_checks
  - checks
  - prepare
  - test
@@ -22,12 +23,13 @@ pre_build:daemon:
    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME}
 
 pre_build:checker:
-  stage: pre_build
+  stage: pre_build_checks
   tags:
    - docker
   script:
    - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
    - docker pull $CI_REGISTRY_IMAGE/checks:latest || true
+   - sed -i "s#dkr\.beiran\.io\/beiran\/beiran:dev#${CI_REGISTRY_IMAGE}:ci-${CI_PIPELINE_ID}#g" helpers/docker/checks/Dockerfile
    - docker build --cache-from $CI_REGISTRY_IMAGE/checks:latest -t $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID} -t $CI_REGISTRY_IMAGE/checks:latest -f helpers/docker/checks/Dockerfile .
    - docker push $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
    - docker push $CI_REGISTRY_IMAGE/checks:latest
@@ -36,7 +38,10 @@ package:docs:
   stage: prepare
   tags:
   - docker
-  image: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+  image:
+    name: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+    # reset entrypoint
+    entrypoint: [""]
   script:
   - cd doc/
   - pip3 install -r requirements.txt
@@ -121,7 +126,7 @@ checks:lint-plugins:
   tags:
    - docker
   script:
-   - pylint plugins
+   - pylint plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s/beiran_interface_k8s
 
 checks:mypy-beiran:
   stage: checks
@@ -129,7 +134,7 @@ checks:mypy-beiran:
   tags:
    - docker
   script:
-   - helpers/mypy --config-file mypy.ini beiran
+   - mypy --config-file mypy.ini beiran
 
 checks:mypy-plugins:
   stage: checks
@@ -137,7 +142,7 @@ checks:mypy-plugins:
   tags:
    - docker
   script:
-   - helpers/mypy --config-file mypy.ini plugins
+   - mypy --config-file mypy.ini plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s/beiran_interface_k8s
 
 checks:bandit-beiran:
   stage: checks
@@ -154,7 +159,7 @@ checks:bandit-plugins:
   tags:
    - docker
   script:
-   - bandit -r plugins
+   - bandit -r plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
   allow_failure: true
 
 start_test_services:
@@ -182,10 +187,14 @@ start_test_services:
 
 test:unit:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+  image:
+    name: $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID}
+    entrypoint: [""]
+
   tags:
    - docker
   script:
+   - apk add yajl-dev
    - pytest
 
 test:basic-behavior:
@@ -201,7 +210,7 @@ test:basic-behavior:
      echo "=========================================="
      echo "waiting until beirand is accessible"
      times=0
-     until $(docker-compose exec -T beiran1 curl --output /dev/null --silent --fail http://localhost:8888); do
+     until $(docker-compose exec -T beiran1 sh -c "wget -q -O /dev/null http://localhost:8888"); do
          printf '.'
          sleep 3
          times=$(( $times + 1 ))
@@ -211,11 +220,11 @@ test:basic-behavior:
          fi
      done
    - CONTAINER=$(docker-compose ps -q beiran1)
-   - docker exec ${CONTAINER} python -m beiran node info
-   - docker exec ${CONTAINER} python -m beiran node list
-   - docker exec ${CONTAINER} python -m beiran docker image list --all
+   - docker exec ${CONTAINER} beiran --config /etc/beiran/config.toml node info
+   - docker exec ${CONTAINER} beiran --config /etc/beiran/config.toml node list
+   - docker exec ${CONTAINER} beiran --config /etc/beiran/config.toml docker image list --all
    # TODO: Check if output has expected images
-   - docker exec ${CONTAINER} python -m beiran docker layer list --all
+   - docker exec ${CONTAINER} beiran --config /etc/beiran/config.toml docker layer list --all
    # TODO: Check if output has expected layers!?
 
 test:api:
@@ -231,7 +240,7 @@ test:api:
      echo "=========================================="
      echo "waiting until beirand is accessible"
      times=0
-     until $(docker-compose exec -T beiran1 curl --output /dev/null --silent --fail http://localhost:8888); do
+     until $(docker-compose exec -T beiran1 sh -c "wget -q -O /dev/null http://localhost:8888"); do
          printf '.'
          sleep 3
          times=$(( $times + 1 ))
@@ -241,13 +250,14 @@ test:api:
          fi
      done
    - CONTAINER=$(docker-compose ps -q beiran1)
+   - docker exec ${CONTAINER} apk add curl-dev
    - docker exec ${CONTAINER} pip install pyresttest==1.7.1
    # send test files to the container
    - cd ${SRC_DIR}
    - tar c $(find test/rest_api -name "*.yaml") | docker exec -i ${CONTAINER} tar xv -C /opt
    # we make beiran download an image from origin, and cache the layers in
    # beiran's own cache folder, so we can test it in api
-   - docker exec ${CONTAINER} python -m beiran docker image pull --wait hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
+   - docker exec ${CONTAINER} beiran --config /etc/beiran/config.toml docker image pull --wait hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
    - docker exec ${CONTAINER} pyresttest --url http://localhost:8888 --test /opt/test/rest_api/beirand.yaml
 
 test:bats:
@@ -262,16 +272,16 @@ test:bats:
      bats/install.sh ${SRC_DIR}/temp
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    - docker-compose ps
-   - docker-compose logs beiran2 beiran3 beiran4
+   - docker-compose logs beiran1 beiran2 beiran3 beiran4
    - |
      echo "=========================================="
      echo "waiting until beirand is accessible"
      for node in beiran1 beiran2 beiran3 beiran4
      do
        times=0
-       docker-compose exec -T $node apt-get update
-       docker-compose exec -T $node apt-get install sqlite3 -y
-       until $(docker-compose -f docker-compose.yml exec -T $node curl --output /dev/null --silent --fail http://localhost:8888); do
+       # docker-compose exec -T $node apt-get update
+       # docker-compose exec -T $node apt-get install sqlite3 -y
+       until $(docker-compose -f docker-compose.yml exec -T $node sh -c "wget -q -O /dev/null http://localhost:8888"); do
            printf '.'
            sleep 3
            times=$(( $times + 1 ))
@@ -288,6 +298,8 @@ test:bats:
        docker cp ${SRC_DIR}/test/bats/beiran-cli-$node.bats ${CONTAINER}:/opt/beiran-cli.bats
        docker cp ${SRC_DIR}/test/bats/beiran-node-discovery.bats ${CONTAINER}:/opt/beiran-node-discovery.bats
        docker cp ${SRC_DIR}/temp ${CONTAINER}:/usr/local/
+       echo "============== install bash for bat ================="
+       docker exec ${CONTAINER} apk add bash
        echo "============== start bats test ($node) =============="
        docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-cli.bats
        docker exec ${CONTAINER} /usr/local/temp/bin/bats /opt/beiran-node-discovery.bats

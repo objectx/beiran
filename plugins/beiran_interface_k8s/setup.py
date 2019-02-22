@@ -20,10 +20,9 @@
 
 """setup.py for packaging beiran"""
 from setuptools import setup, find_packages
-from beiran.version import get_version
 
 
-REQUIREMENTS_PATH = 'beiran/requirements.txt'
+REQUIREMENTS_PATH = 'requirements.txt'
 
 
 def read_requirements(path):
@@ -42,16 +41,30 @@ def read_long_description():
 def find_beiran_packages():
     """Find beiran package."""
     return find_packages(
-        exclude=["plugins", "doc", "helpers",]
+        # exclude=["plugins", "doc", "helpers",]
     )
 
+
+def get_version():
+    """
+    Reads VERSION file
+    Returns:
+        (str): plugin version
+
+    """
+
+    with open('VERSION', 'r') as file:
+        version = file.read()
+    return version
+
+
 setup(
-    name="beiran",
-    version=get_version(component='library'),
+    name="beiran_interface_k8s",
+    version=get_version(),
     author="RainLab",
     author_email="info@rainlab.co.jp",
-    description="A p2p package manager",
-    keywords=['p2p package manager', 'system tools'],
+    description="Beiran Kubernetes Plugin",
+    keywords=['beiran', 'kubernetes', 'k8s', 'p2p package manager', 'system tools'],
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
     url="https://beiran.io",
@@ -70,14 +83,4 @@ setup(
     python_requires='~=3.6',
 
     packages=find_beiran_packages(),
-    entry_points={
-        "console_scripts": [
-            "beiran = beiran.__main__:main",
-            "beirand = beiran.daemon.__main__:main"
-        ]
-    },
-    data_files=[
-        ('', ['beiran/config.toml'])
-    ],
-
 )

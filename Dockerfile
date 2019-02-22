@@ -1,37 +1,27 @@
-FROM python:3.6-jessie
+FROM python:3.6-alpine
 LABEL maintainer="info@beiran.io"
-RUN apt-get update && apt-get -y install \
-	--no-install-recommends \
-	python3-pip git curl make libsqlite3-dev libyajl-dev libyajl2
 
-RUN mkdir -p /opt/beiran/beiran
-WORKDIR /opt
+RUN apk add --no-cache g++ python3-dev yajl yajl-dev make linux-headers
+RUN apk add --no-cache libffi-dev  # dns discovery requires
 
-ADD beiran/requirements.txt /opt/beiran/r-lib.txt
-RUN pip install -r /opt/beiran/r-lib.txt
+COPY beiran /opt/beiran/beiran
+COPY README.md /opt/beiran/README.md
+COPY setup.py /opt/beiran/setup.py
+COPY plugins/beiran_package_docker /opt/beiran_package_docker/
+COPY plugins/beiran_interface_k8s /opt/beiran_interface_k8s/
 
-ADD plugins/beiran_discovery_dns/requirements.txt /opt/beiran/r-dns.txt
-RUN pip install -r /opt/beiran/r-dns.txt
+WORKDIR /opt/beiran
+RUN python setup.py install
 
-ADD plugins/beiran_discovery_zeroconf/requirements.txt /opt/beiran/r-zeroconf.txt
-RUN pip install -r /opt/beiran/r-zeroconf.txt
+WORKDIR /opt/beiran_package_docker
+RUN python setup.py install
 
-ADD plugins/beiran_package_docker/requirements.txt /opt/beiran/r-docker.txt
-RUN pip install -r /opt/beiran/r-docker.txt
-
-ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
-RUN pip install -r /opt/beiran/r-k8s.txt
-
-# ADD plugins/beiran_package_npm/requirements.txt /opt/beiran/r-npm.txt
-# RUN pip install -r /opt/beiran/r-npm.txt
-
-ADD [ "beiran", "/opt/beiran/beiran" ]
-
-ADD [ "plugins", "/opt/beiran/plugins" ]
-
-ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
+WORKDIR /opt/beiran_interface_k8s
+RUN python setup.py install
 
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran
 
-CMD [ "python3", "-m", "beiran.daemon" ]
+COPY beiran/config.toml /etc/beiran/config.toml
+
+ENTRYPOINT ["beiran", "--config", "/etc/beiran/config.toml"]

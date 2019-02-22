@@ -48,6 +48,7 @@ DEFAULT_FILE_PATHS = {
     'SOCKET_FILE': os.path.join(DEFAULTS['RUN_DIR'], 'beirand.sock'), # type: ignore
 }
 
+
 class ConfigMeta(type):
     """
     Metaclass for config object.
@@ -84,7 +85,7 @@ class Config(metaclass=ConfigMeta):
 
         val = self.conf
         for key in keys:
-            if not key in val:
+            if key not in val:
                 return None
             val = val[key]
         return val
@@ -100,6 +101,7 @@ class Config(metaclass=ConfigMeta):
         Args:
             ckey: key in config file
             ekey: key in environment
+            isfile: config parameter file or not
 
         Returns:
             str, dict: value
@@ -160,7 +162,6 @@ class Config(metaclass=ConfigMeta):
         """
         return self.get_config('beiran.config_dir', 'CONFIG_DIR')
 
-
     @property
     def data_dir(self):
         """
@@ -173,7 +174,6 @@ class Config(metaclass=ConfigMeta):
 
         """
         return self.get_config('beiran.data_dir', 'DATA_DIR')
-
 
     @property
     def run_dir(self):
@@ -361,20 +361,34 @@ class Config(metaclass=ConfigMeta):
         return self._enabled_plugins or self.get_enabled_plugins()
 
     def get_enabled_plugins(self):
-        """Get the list of the enabled plugins"""
+        """Get the list of the enabled plugins
+
+        Tries first read from environment variable `BEIRAN_PLUGINS` which contains
+        a comma separated string of plugin list::
+
+            "beiran.plugins.discovery_dns,beiran.plugins.discovery_zeroconf,package.docker"
+
+        If `BEIRAN_PLUGINS` is not specified, then tries getting plugins from config file.
+        """
 
         plugins = []
         env_plugins = os.getenv('BEIRAN_PLUGINS')
         if env_plugins:
             try:
                 for p_package in env_plugins.split(','):
-                    (p_type, p_name) = p_package.split('.')
+                    if p_package.startswith("beiran.plugins"):
+                        _, __, type_name = p_package.split('.')
+                        p_type, p_name = type_name.split('_')
+                        module_path = p_package
+                    else:
+                        p_type, p_name = p_package.split('.')
+                        module_path = 'beiran_%s_%s' % (p_type, p_name)
                     if p_type not in self.plugin_types:
                         raise Exception("Unknown plugin type: %s" % (p_type))
                     plugins.append({
                         "type": p_type,
                         "name": p_name,
-                        "package": 'beiran_%s_%s' % (p_type, p_name)
+                        "package": module_path,
                     })
             except Exception:
                 raise Exception("Cannot parse BEIRAN_PLUGINS variable from environment")
@@ -392,7 +406,7 @@ class Config(metaclass=ConfigMeta):
                     plugins.append({
                         'type': p_type,
                         'name': p_name,
-                        'package': 'beiran_%s_%s' % (p_type, p_name)
+                        'package': p_conf['module_path'],
                     })
         self._enabled_plugins = plugins
         return plugins
@@ -449,6 +463,6 @@ class Config(metaclass=ConfigMeta):
         return self.__init__(config_file)
 
 
-config = Config( # pylint: disable=invalid-name
+config = Config(  # pylint: disable=invalid-name
     config_file=os.getenv("BEIRAN_CONF_FILE", None)
 )

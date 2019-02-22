@@ -144,23 +144,24 @@ class BeiranDaemon(EventEmitter):
         EVENTS.emit('state.update', update, plugin)
 
     # pylint: disable=redefined-outer-name
-    async def get_plugin(self, plugin_type: str, plugin_name: str, config: dict) -> Any:
+    async def get_plugin(self, plugin: dict, config: dict) -> Any:
         """
         Load and initiate plugin
         Args:
-            plugin_type (str): plugin type
-            plugin_name (str): plugin name
+            plugin: plugin attributes including type, name, package
             config (dict): config parameters
 
         Returns:
 
         """
+        plugin_name = plugin['name']
+        plugin_package = plugin['package']
         try:
             config['logger'] = build_logger('beiran.plugin.' + plugin_name)
             config['node'] = self.nodes.local_node
             config['daemon'] = self
             config['events'] = EVENTS
-            module = importlib.import_module('beiran_%s_%s' % (plugin_type, plugin_name))
+            module = importlib.import_module(plugin_package)
             Services.get_logger().debug("initializing plugin: %s", plugin_name)
             instance = module.Plugin(config) # type: ignore
             await instance.init()
@@ -279,7 +280,7 @@ class BeiranDaemon(EventEmitter):
                     "address": get_advertise_address(),
                     "port": config.listen_port
                 }
-            _plugin_obj = await self.get_plugin(plugin['type'], plugin['name'], {
+            _plugin_obj = await self.get_plugin(plugin, {
                 **shared_config_for_plugins,
                 **type_specific_config,
                 **config.get_plugin_config(plugin['type'], plugin['name'])

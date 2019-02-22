@@ -22,8 +22,9 @@ services:
     network_mode: "service:pod1"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=beiran.plugins.discovery_zeroconf,package.docker
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
+    command: ["--debug", "node", "start"]
 
 
   pod2:
@@ -48,8 +49,9 @@ services:
     network_mode: "service:pod2"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=beiran.plugins.discovery_zeroconf,package.docker
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
+    command: ["--debug", "node", "start"]
 
 
   pod3:
@@ -74,8 +76,9 @@ services:
     network_mode: "service:pod3"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=beiran.plugins.discovery_zeroconf,package.docker
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
+    command: ["--debug", "node", "start"]
 
   pod4:
     image: gcr.io/google_containers/pause:0.8.0
@@ -99,8 +102,9 @@ services:
     network_mode: "service:pod4"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=beiran.plugins.discovery_zeroconf,package.docker
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
+    command: ["--debug", "node", "start"]
 
 networks:
   test:

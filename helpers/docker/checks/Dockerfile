@@ -17,3 +17,5 @@ ADD .pylintrc /opt/pylintrc
 ENV PYTHONPATH=/opt/beiran
 
 WORKDIR /opt
+
+ENTRYPOINT [""]

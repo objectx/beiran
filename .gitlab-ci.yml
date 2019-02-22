@@ -126,7 +126,7 @@ checks:lint-plugins:
   tags:
    - docker
   script:
-   - pylint plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
+   - pylint plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s/beiran_interface_k8s
 
 checks:mypy-beiran:
   stage: checks
@@ -142,7 +142,7 @@ checks:mypy-plugins:
   tags:
    - docker
   script:
-   - mypy --config-file mypy.ini plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s
+   - mypy --config-file mypy.ini plugins/beiran_package_docker/beiran_package_docker plugins/beiran_interface_k8s/beiran_interface_k8s
 
 checks:bandit-beiran:
   stage: checks

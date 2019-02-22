@@ -1,41 +1,28 @@
 FROM dkr.beiran.io/beiran/pyinstaller:alpine-3.6-pyinstaller-v3.4 AS pyinstaller
 
-RUN apk add --no-cache \
-    openssh-client \
-    python-dev \
-    g++ \
-    linux-headers \
-    python3-dev \
-    make \
-    yajl \
-    yajl-dev
+RUN apk add --no-cache g++ python3-dev yajl yajl-dev make linux-headers
+RUN apk add --no-cache libffi-dev  # dns discovery requires
 
-RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy
+COPY beiran /opt/beiran/beiran
+COPY README.md /opt/beiran/README.md
+COPY setup.py /opt/beiran/setup.py
+COPY plugins/beiran_package_docker /opt/beiran_package_docker/
+COPY plugins/beiran_interface_k8s /opt/beiran_interface_k8s/
 
-RUN mkdir -p /opt/beiran/beiran
-WORKDIR /opt
+WORKDIR /opt/beiran
+RUN python setup.py install
 
-ADD beiran/requirements.txt /opt/beiran/r-lib.txt
-RUN pip install -r /opt/beiran/r-lib.txt
+WORKDIR /opt/beiran_package_docker
+RUN python setup.py install
 
-ADD plugins/beiran_discovery_dns/requirements.txt /opt/beiran/r-dns.txt
-RUN pip install -r /opt/beiran/r-dns.txt
+#WORKDIR /opt/beiran_interface_k8s
+#RUN python setup.py install
 
-ADD plugins/beiran_discovery_zeroconf/requirements.txt /opt/beiran/r-zeroconf.txt
-RUN pip install -r /opt/beiran/r-zeroconf.txt
+ADD pyinstaller /opt/pyinstaller
 
-ADD plugins/beiran_package_docker/requirements.txt /opt/beiran/r-docker.txt
-RUN pip install -r /opt/beiran/r-docker.txt
-
-ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
-RUN pip install -r /opt/beiran/r-k8s.txt
-
-ADD beiran /opt/beiran/beiran
-ADD plugins /opt/beiran/plugins
-ADD pyinstaller /opt/beiran/pyinstaller
 ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
 
-WORKDIR /opt/beiran/pyinstaller
+WORKDIR /opt/pyinstaller
 
 RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --clean --log-level DEBUG --noconfirm \
@@ -45,14 +32,14 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --hidden-import  beiran_discovery_dns.dns \
                                --hidden-import  beiran_discovery_zeroconf \
                                --hidden-import  beiran_discovery_zeroconf.zeroconf \
-                               --paths /opt/beiran/pyinstaller \
-                               --paths ../beiran \
-                               --paths ../plugins/beiran_package_docker \
+                               --paths /opt/pyinstaller \
+                               --paths ../beiran/beiran \
+                               --paths ../beiran_package_docker/beiran_package_docker \
                                --exclude-module pycrypto \
                                --exclude-module PyInstaller \
                                --additional-hooks-dir ./hooks/ \
                                --runtime-hook ./hooks/hook-beiran.plugin.py \
-                               ../beiran/__main__.py
+                               ../beiran/beiran/__main__.py
 
 FROM alpine:3.8
 

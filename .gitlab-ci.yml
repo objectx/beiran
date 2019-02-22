@@ -2,6 +2,7 @@ image: dkr.rlab.io/system/thedocker:latest
 
 stages:
  - pre_build
+ - pre_build_checks
  - checks
  - prepare
  - test
@@ -22,7 +23,7 @@ pre_build:daemon:
    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME}
 
 pre_build:checker:
-  stage: pre_build
+  stage: pre_build_checks
   tags:
    - docker
   script:

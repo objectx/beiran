@@ -24,4 +24,4 @@ VOLUME /etc/beiran
 
 COPY beiran/config.toml /etc/beiran/config.toml
 
-ENTRYPOINT ["beiran", "--config", "/etc/beiran/config.toml"]
+ENTRYPOINT ["beiran"]

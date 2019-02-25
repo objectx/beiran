@@ -463,6 +463,19 @@ class Config(metaclass=ConfigMeta):
         return self.__init__(config_file)
 
 
-config = Config(  # pylint: disable=invalid-name
-    config_file=os.getenv("BEIRAN_CONF_FILE", None)
-)
+def load_default_config_file() -> Union[str, bool]:
+    """
+    Try loading default configuration file. Returns
+    path if exists, else None
+    Returns:
+        str: file path
+    """
+
+    from pathlib import Path
+    config_path = Path("{}/config.toml".format(DEFAULTS.get('CONFIG_DIR')))
+    if config_path.exists():
+        return config_path
+
+
+c_file = os.getenv("BEIRAN_CONF_FILE", load_default_config_file())
+config = Config(config_file=c_file)  # pylint: disable=invalid-name

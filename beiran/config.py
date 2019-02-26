@@ -472,9 +472,11 @@ def load_default_config_file() -> Union[str, bool]:
     """
 
     from pathlib import Path
-    config_path = Path("{}/config.toml".format(DEFAULTS.get('CONFIG_DIR')))
+
+    default_config = "{}/config.toml".format(DEFAULTS.get('CONFIG_DIR'))
+    config_path = Path(default_config)
     if config_path.exists():
-        return config_path
+        return default_config
 
 
 c_file = os.getenv("BEIRAN_CONF_FILE", load_default_config_file())

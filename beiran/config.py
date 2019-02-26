@@ -479,5 +479,4 @@ def load_default_config_file() -> Union[str, bool]:
         return default_config
 
 
-config_file_ = os.getenv("BEIRAN_CONF_FILE", load_default_config_file())
-config = Config(config_file=config_file_)  # pylint: disable=invalid-name
+config = Config(config_file=os.getenv("BEIRAN_CONF_FILE", load_default_config_file()))  # pylint: disable=invalid-name

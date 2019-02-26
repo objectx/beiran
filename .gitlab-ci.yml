@@ -328,8 +328,8 @@ cleanup:services:
    - docker network rm beirantest-${CI_PIPELINE_ID}_test
    - cd /
    - rm -rf /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
-   - docker run --rm dkr.rlab.io/system/thedocker:latest /usr/bin/reg rm $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" 
-   - docker run --rm dkr.rlab.io/system/thedocker:latest /usr/bin/reg rm $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} -u "gitlab-ci-token" -p "$CI_JOB_TOKEN"
+   - docker run --rm dkr.rlab.io/system/thedocker:latest /usr/bin/reg rm $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" --auth-url $CI_REGISTRY
+   - docker run --rm dkr.rlab.io/system/thedocker:latest /usr/bin/reg rm $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME} -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" --auth-url $CI_REGISTRY
 
 # cleanup:
 #   image: alpine:3.7

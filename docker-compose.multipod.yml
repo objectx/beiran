@@ -106,5 +106,10 @@ services:
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
     command: ["--debug", "node", "start"]
 
+  rest_api_test:
+    image: dkr.beiran.io/beiran/beiran:checks
+    networks:
+      - test
+
 networks:
   test:

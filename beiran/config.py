@@ -463,7 +463,7 @@ class Config(metaclass=ConfigMeta):
         return self.__init__(config_file)
 
 
-def load_default_config_file() -> Union[str, bool]:
+def load_default_config_file() -> Union[str, None]:
     """
     Try loading default configuration file. Returns
     path if exists, else None
@@ -477,6 +477,8 @@ def load_default_config_file() -> Union[str, bool]:
     config_path = Path(default_config)
     if config_path.exists():
         return default_config
+    return None
 
 
-config = Config(config_file=os.getenv("BEIRAN_CONF_FILE", load_default_config_file()))  # pylint: disable=invalid-name
+# pylint: disable=invalid-name
+config = Config(config_file=os.getenv("BEIRAN_CONF_FILE", load_default_config_file()))

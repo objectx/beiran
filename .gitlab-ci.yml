@@ -172,6 +172,7 @@ start_test_services:
    - cd /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
    - cp $SRC_DIR/docker-compose.multipod.yml ./docker-compose.yml
    - sed -i "s#dkr\.beiran\.io\/beiran\/beiran:dev#${CI_REGISTRY_IMAGE}:ci-${CI_PIPELINE_ID}#g" docker-compose.yml
+   - sed -i "s#dkr\.beiran\.io\/beiran\/beiran:checks#${CI_REGISTRY_IMAGE}/checks:ci-${CI_PIPELINE_ID}#g" docker-compose.yml
    - docker-compose up -d pod1 docker1 pod2 docker2 pod3 docker3 pod4 docker4
    - sleep 5
    # seed docker daemon (docker1 only)
@@ -253,7 +254,7 @@ test:api:
    # we make beiran download an image from origin, and cache the layers in
    # beiran's own cache folder, so we can test it in api
    - docker exec ${CONTAINER} beiran docker image pull --wait hello-world@sha256:0add3ace90ecb4adbf7777e9aacf18357296e799f81cabc9fde470971e499788
-   - docker run --rm $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}  pyresttest --url http://pod1:8888 --test /opt/beirand.yaml
+   - docker-compose run --rm rest_api_test pyresttest --url http://pod1:8888 --test /opt/beirand.yaml
 
 test:bats:
   stage: test

@@ -188,6 +188,7 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
     local_image_refs = JSONStringField(default=list)
 
     cache_path = CharField(null=True, default=None) # .tar file in cache dir
+    cache_gz_path = CharField(null=True, default=None) # .tar.gz file in cache dir
     docker_path = CharField(null=True) # layer's directory under /var/lib/docker
 
     def set_local_image_refs(self, image_id: str):

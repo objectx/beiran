@@ -44,7 +44,7 @@ DEFAULTS = {
 
 DEFAULT_FILE_PATHS = {
     'LOG_FILE': '/var/log/beirand.log',
-    'DB_FILE':  os.path.join(DEFAULTS['DATA_DIR'], 'beirand.log'), # type: ignore
+    'DB_FILE':  os.path.join(DEFAULTS['DATA_DIR'], 'beiran.db'), # type: ignore
     'SOCKET_FILE': os.path.join(DEFAULTS['RUN_DIR'], 'beirand.sock'), # type: ignore
 }
 

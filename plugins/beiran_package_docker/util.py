@@ -110,6 +110,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     # event datas for downloading layers
     EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
 
+    # consts related with timeout
+    TIMEOUT = 10 # second
+    TIMEOUT_DL_MANIFEST = 10
+    TIMEOUT_DL_CONFIG = 10
+    TIMEOUT_DL_LAYER = 30
+    RETRY = 2
+
     def __init__(self, cache_dir: str, storage: str, # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
@@ -162,6 +169,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """Check cache paths and create them"""
         if not os.path.isdir(self.layer_cache_path): # cache path for layer
             os.makedirs(self.layer_cache_path)
+
+    @staticmethod
+    def get_additional_time_downlaod(size: int) -> int:
+        """Get additional time to downlload something"""
+        return size // 5000000
 
     def docker_find_layer_dir_by_digest(self, layer_digest: str):
         """
@@ -471,13 +483,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, timeout=10, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=self.TIMEOUT,
+                                  retry=self.RETRY, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
             resp, manifest = await async_req(url=url, return_json=True, Authorization=requirements,
+                                             timeout=self.TIMEOUT_DL_MANIFEST, retry=self.RETRY,
                                              Accept=schema_v2_header)
 
         if resp.status != 200:
@@ -491,7 +505,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         Get Bearer token from auth.docker.io
         """
         _, data = await async_req(
-            "{}?service={}&scope={}".format(realm, service, scope)
+            "{}?service={}&scope={}".format(realm, service, scope),
+            timeout=self.TIMEOUT, retry=self.RETRY,
         )
         token = data['token']
         return token
@@ -548,21 +563,24 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=self.TIMEOUT,
+                                  retry=self.RETRY, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
             # HEAD request for get size
-            resp, _ = await async_req(url=url, return_json=False, method='HEAD',
-                                      Authorization=requirements)
+            resp, _ = await async_req(url=url, return_json=False, timeout=self.TIMEOUT,
+                                      retry=self.RETRY, method='HEAD', Authorization=requirements)
             layer_size = int(resp.headers.get('content-length'))
 
             self.queues[jobid][layer_digest]['size'] = layer_size
             self.queues[jobid][layer_digest]['status'] = self.DL_GZ_DOWNLOADING
 
-            resp = await async_write_file_stream(url, save_path, timeout=60,
+            resp = await async_write_file_stream(url, save_path, timeout=self.TIMEOUT_DL_LAYER + \
+                                                 self.get_additional_time_downlaod(layer_size),
+                                                 retry=self.RETRY,
                                                  queue=self.queues[jobid][layer_digest]['queue'],
                                                  Authorization=requirements)
 
@@ -583,13 +601,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.logger.debug("downloading layer from %s", url)
 
         # HEAD request to get size
-        resp, _ = await async_req(url=url, return_json=False, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=self.TIMEOUT,
+                                  retry=self.RETRY, method='HEAD')
         layer_size = int(resp.headers.get('content-length'))
 
         self.queues[jobid][digest]['size'] = layer_size
         self.queues[jobid][digest]['status'] = self.DL_TAR_DOWNLOADING
 
-        resp = await async_write_file_stream(url, save_path, timeout=60,
+        resp = await async_write_file_stream(url, save_path, timeout=self.TIMEOUT_DL_LAYER + \
+                                             self.get_additional_time_downlaod(layer_size),
+                                             retry=self.RETRY,
                                              queue=self.queues[jobid][digest]['queue'])
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
         self.queues[jobid][digest]['status'] = self.DL_FINISH
@@ -686,13 +707,15 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
-        resp, _ = await async_req(url=url, return_json=False, timeout=10, method='HEAD')
+        resp, _ = await async_req(url=url, return_json=False, timeout=self.TIMEOUT,
+                                  retry=self.RETRY, method='HEAD')
 
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
 
-            resp, _ = await async_req(url=url, Authorization=requirements)
+            resp, _ = await async_req(url=url, timeout=self.TIMEOUT_DL_CONFIG,
+                                      retry=self.RETRY, Authorization=requirements)
 
         if resp.status != 200:
             raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d"

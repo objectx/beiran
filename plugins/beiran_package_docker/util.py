@@ -581,7 +581,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             resp = await async_write_file_stream(url, save_path, timeout=self.TIMEOUT_DL_LAYER + \
                                                  self.get_additional_time_downlaod(layer_size),
                                                  retry=self.RETRY,
-                                                 queue=self.queues[jobid][layer_digest]['queue']
+                                                 queue=self.queues[jobid][layer_digest]['queue'],
                                                  Authorization=requirements)
 
         if resp.status != 200:

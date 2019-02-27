@@ -30,6 +30,7 @@ import hashlib
 import platform
 import tarfile
 import uuid
+import subprocess
 from typing import Tuple, Optional
 from collections import OrderedDict
 from pyee import EventEmitter
@@ -121,6 +122,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                  aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir
+
+        self.tmp_path = os.path.join(self.cache_dir, '/tmp')
+        if not os.path.isdir(self.tmp_path):
+            os.makedirs(self.tmp_path)
+
         self.check_cahe_path_exist()
 
         self.storage = storage
@@ -1048,10 +1054,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if not is_tag(tag_or_digest):
                 tag_or_digest = add_default_tag(tag_or_digest)
 
-        work_path = self.cache_dir + '/work'
-        if not os.path.isdir(work_path):
-            os.makedirs(work_path)
-
         image_id = del_idpref(image_id)
 
         config_digest = hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
@@ -1062,7 +1064,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # create config file
         config_file_name = image_id + '.json'
-        with open(work_path + '/' + config_file_name, 'w') as file:
+        with open(self.tmp_path + '/' + config_file_name, 'w') as file:
             file.write(config_json_str)
 
         # get layer files
@@ -1085,14 +1087,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 "Layers": digest_f_name_list,
             }
         ]
-        with open(work_path + '/' + manifest_f_name, 'w') as file:
+        with open(self.tmp_path + '/' + manifest_f_name, 'w') as file:
             file.write(json.dumps(manifest))
 
         # create tarball
-        tar_path = work_path + '/' + 'image.tar'
+        tar_path = self.tmp_path + '/' + 'image.tar'
         with tarfile.open(tar_path, 'w') as tar:
-            tar.add(work_path + '/' + config_file_name, arcname=config_file_name)
-            tar.add(work_path + '/' + manifest_f_name, arcname=manifest_f_name)
+            tar.add(self.tmp_path + '/' + config_file_name, arcname=config_file_name)
+            tar.add(self.tmp_path + '/' + manifest_f_name, arcname=manifest_f_name)
 
             for f_name in digest_f_name_list:
                 if not os.path.exists(self.layer_cache_path + '/' + f_name):

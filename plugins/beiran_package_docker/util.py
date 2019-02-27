@@ -31,7 +31,7 @@ import platform
 import tarfile
 import uuid
 import subprocess
-import shutil
+import gzip
 from typing import Tuple, Optional
 from collections import OrderedDict
 from pyee import EventEmitter
@@ -45,7 +45,7 @@ from aiodocker import Docker
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
-from beiran.util import gunzip, clean_keys
+from beiran.util import clean_keys
 
 from .models import DockerImage, DockerLayer
 from .image_ref import normalize_ref, is_tag, is_digest, add_idpref, del_idpref, \
@@ -700,24 +700,43 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         storage, layer_path = await self.ensure_having_layer(ref, digest, jobid, **kwargs)
 
         if storage == 'cache':
+            tmp_hash = hashlib.sha256()
             with open(layer_path, 'rb') as file:
-                diff_id = hashlib.sha256(file.read()).hexdigest()
+                while True:
+                    chunk = file.read(2048 * tmp_hash.block_size)
+                    if not chunk:
+                        break
+                    tmp_hash.update(chunk)
 
+            diff_id = tmp_hash.hexdigest()
 
         # if storage == 'docker':
         #     layer = DockerLayer.get(DockerLayer.digest == digest)
         #     return layer.diff_id
 
         elif storage == 'cache-gz':
-            tmp_tar = os.path.join(self.tmp_path, digest)
-            gunzip(layer_path, tmp_tar) # decompress .tar.gz
-
-            with open(tmp_tar, 'rb') as file:
-                diff_id = hashlib.sha256(file.read()).hexdigest()
-
-            shutil.move(tmp_tar, self.get_layer_tar_file(diff_id))
+            diff_id = await self.decompress_gz_layer(layer_path) # decompress .tar.gz
 
         return add_idpref(diff_id)
+
+    async def decompress_gz_layer(self, gzip_file: str) -> str:
+        """Decompress a gzip file of layer and return the diff id."""
+        tmp_hash = hashlib.sha256()
+        tmp_file = self.get_layer_tar_file(uuid.uuid4().hex)
+
+        with gzip.open(gzip_file, 'rb') as gzfile:
+            with open(tmp_file, "wb") as tarf:
+                while True:
+                    chunk = gzfile.read(2048 * tmp_hash.block_size)
+                    if not chunk:
+                        break
+
+                    tmp_hash.update(chunk)
+                    tarf.write(chunk)
+
+        diff_id = tmp_hash.hexdigest()
+        os.rename(tmp_file, self.get_layer_tar_file(diff_id))
+        return diff_id
 
     async def download_config_from_origin(self, host: str, repository: str,
                                           image_id: str, **kwargs) -> str:

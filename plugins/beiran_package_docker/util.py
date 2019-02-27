@@ -123,7 +123,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                  local_node: Node = None) -> None:
         self.cache_dir = cache_dir
 
-        self.tmp_path = os.path.join(self.cache_dir, '/tmp')
+        self.tmp_path = os.path.join(self.cache_dir, 'tmp')
         if not os.path.isdir(self.tmp_path):
             os.makedirs(self.tmp_path)
 
@@ -1126,3 +1126,21 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     chunk = file.read(1024 * 64)
 
         await self.aiodocker.images.import_image(data=file_sender(file_name=tar_path)) # pylint: disable=no-value-for-parameter
+
+    async def assemble_layer_tar(self, diff_id: str):
+        """
+        Assemble layer tarball from Docker's storage. Now we need 'tar-split'.
+        """
+        input_file = os.path.join(
+            self.layerdb_path, del_idpref(self.layerdb_mapping[diff_id]), "tar-split.json.gz")
+
+        relative_path = self.docker_find_layer_dir_by_digest(self.diffid_mapping[diff_id])
+        # It is possible that components of the layer may not exist due to image update
+        if not relative_path:
+            return False
+
+        output_file = os.path.join(self.tmp_path, del_idpref(diff_id) + '.tar')
+
+        cmd = "tar-split asm --input " + input_file + "  --path " + relative_path + \
+               " --output " + output_file
+        subprocess.run(cmd.split(), env=os.environ)

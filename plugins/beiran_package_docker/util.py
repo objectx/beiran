@@ -607,7 +607,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """
         Download layer from other node.
         """
-        # FIXME! if get a taball of layer, it is preferable to use diff_id
+        # if get a taball of layer, it is preferable to use diff_id
         url = host + '/docker/layers/' + digest
 
         diff_id = self.get_diffid_by_digest(digest)
@@ -708,11 +708,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             diff_id = tmp_hash.hexdigest()
 
         elif storage == 'cache-gz':
-            diff_id = await self.decompress_gz_layer(layer_path) # decompress .tar.gz
+            diff_id, _ = await self.decompress_gz_layer(layer_path) # decompress .tar.gz
 
         return add_idpref(diff_id)
 
-    async def decompress_gz_layer(self, gzip_file: str) -> str:
+    async def decompress_gz_layer(self, gzip_file: str) -> Tuple[str, str]:
         """Decompress a gzip file of layer and return the diff id."""
         tmp_hash = hashlib.sha256()
         tmp_file = self.get_layer_tar_file(uuid.uuid4().hex)
@@ -728,8 +728,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     tarf.write(chunk)
 
         diff_id = tmp_hash.hexdigest()
-        os.rename(tmp_file, self.get_layer_tar_file(diff_id))
-        return diff_id
+        tar_layer_path = self.get_layer_tar_file(diff_id)
+        os.rename(tmp_file, tar_layer_path)
+        return diff_id, tar_layer_path
 
     async def download_config_from_origin(self, host: str, repository: str,
                                           image_id: str, **kwargs) -> str:

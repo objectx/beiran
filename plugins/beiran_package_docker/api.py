@@ -182,13 +182,18 @@ class LayerDownload(web.RequestHandler):
         except DockerLayer.DoesNotExist:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
-        if not layer.cache_path and not layer.docker_path:
+        if not layer.cache_path and not layer.cache_gz_path and not layer.docker_path:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         # not deal with .tar.gz in cache directory now
-        if not layer.cache_path and layer.docker_path:
-            layer.cache_path = \
-                await Services.docker_util.assemble_layer_tar(layer.diff_id) # type: ignore
+        if not layer.cache_path:
+            if layer.cache_gz_path:
+                _, layer.cache_path = \
+                    await Services.docker_util.decompress_gz_layer(layer.cache_gz_path) # type: ignore # pylint: disable=line-too-long
+
+            elif layer.docker_path:
+                layer.cache_path = \
+                    await Services.docker_util.assemble_layer_tar(layer.diff_id) # type: ignore
             layer.save()
 
         return layer.cache_path

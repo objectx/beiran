@@ -163,7 +163,7 @@ class LayerDownload(web.RequestHandler):
         self.set_header("cache-control", "max-age=31536000")
 
     @staticmethod
-    def prepare_tar_archive(layer_id: str) -> str:
+    async def prepare_tar_archive(layer_id: str) -> str:
         """
         Finds docker layer path and prepare a tar archive for `layer_id`.
 
@@ -182,35 +182,33 @@ class LayerDownload(web.RequestHandler):
         except DockerLayer.DoesNotExist:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
-        if not layer.cache_path:
+        if not layer.cache_path and not layer.docker_path:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
-            # Do not create tarball from storage of docker!!!
-            # The digest of the tarball varies depending on the mtime of the file to be added
-            # layer.cache_path = Services.docker_util.layer_storage_path(layer_id).split('.gz')[0] # type: ignore # pylint: disable=line-too-long
-            # if not os.path.isfile(layer.cache_path):
-            #     create_tar_archive(layer.docker_path, layer.cache_path)
-            # layer.save()
+        # not deal with .tar.gz in cache directory now
+        if not layer.cache_path and layer.docker_path:
+            layer.cache_path = await Services.docker_util.assemble_layer_tar(layer.diff_id) # type: ignore
+            layer.save()
 
         return layer.cache_path
 
     # pylint: disable=arguments-differ
-    def head(self, layer_id: str):
+    async def head(self, layer_id: str):
         """Head response with actual Content-Lenght of layer"""
         self._set_headers(layer_id)
-        tar_path = self.prepare_tar_archive(layer_id)
+        tar_path = await self.prepare_tar_archive(layer_id)
         self.set_header("Content-Length", str(os.path.getsize(tar_path)))
         self.finish()
 
     # pylint: enable=arguments-differ
 
     # pylint: disable=arguments-differ
-    def get(self, layer_id):
+    async def get(self, layer_id):
         """
         Get layer info by given layer_id
         """
         self._set_headers(layer_id)
-        tar_path = self.prepare_tar_archive(layer_id)
+        tar_path = await self.prepare_tar_archive(layer_id)
 
         with open(tar_path, 'rb') as file:
             while True:

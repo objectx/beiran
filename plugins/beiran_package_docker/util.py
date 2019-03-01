@@ -665,12 +665,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
             # check docker storage
             if layer.docker_path:
-                tar_layer_path = await self.assemble_layer_tar(layer.diff_id)
+                layer.cache_path = await self.assemble_layer_tar(layer.diff_id)
                 self.logger.debug("Found layer %s in Docker's storage", diff_id)
-
-                layer.cache_path = tar_layer_path
                 layer.save()
-                return 'cache', tar_layer_path
+                return 'cache', layer.cache_path
 
             # try to download layer from node that has tarball in own cache directory
             for node_id in layer.available_at:
@@ -941,11 +939,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         for layer_d in descriptors:
             # check layer existence, then set status
-            layer = DockerLayer.get(DockerLayer.digest == layer_d['digest'])
-
             status = self.DL_INIT
-            if layer.cache_path or layer.cache_gz_path or layer.docker_path:
-                status = self.DL_ALREADY
+            try:
+                layer = DockerLayer.get(DockerLayer.digest == layer_d['digest'])
+                if layer.cache_path or layer.cache_gz_path or layer.docker_path:
+                    status = self.DL_ALREADY
+            except DockerLayer.DoesNotExist:
+                pass
 
             self.queues[jobid][layer_d['digest']] = {
                 'queue': asyncio.Queue(),
@@ -1161,11 +1161,11 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             self.layerdb_path, del_idpref(self.layerdb_mapping[diff_id]), "tar-split.json.gz")
         if not os.path.exists(input_file):
             raise DockerUtil.LayerMetadataNotFound(
-                "Docker doesn't have metadata of the layer %s", input_file)
+                "Docker doesn't have metadata of the layer %s" % input_file)
 
         relative_path = self.docker_find_layer_dir_by_digest(self.diffid_mapping[diff_id])
         if not relative_path:
-            raise DockerUtil.LayerNotFound("Layer doesn't exist in %s", relative_path)
+            raise DockerUtil.LayerNotFound("Layer doesn't exist in %s" % relative_path)
 
         output_file = os.path.join(self.layer_tar_path, del_idpref(diff_id) + '.tar')
 

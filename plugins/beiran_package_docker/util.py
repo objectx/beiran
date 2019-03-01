@@ -664,11 +664,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             layer = DockerLayer.get(DockerLayer.digest == digest)
 
             # check docker storage
-            if layer.docker_path:
-                layer.cache_path = await self.assemble_layer_tar(layer.diff_id)
-                self.logger.debug("Found layer %s in Docker's storage", diff_id)
-                layer.save()
-                return 'cache', layer.cache_path
+            try:
+                if layer.docker_path:
+                    layer.cache_path = await self.assemble_layer_tar(layer.diff_id)
+                    self.logger.debug("Found layer %s in Docker's storage", diff_id)
+                    layer.save()
+                    return 'cache', layer.cache_path
+            # this exception handling may be needless if 'dockerlayer' in datbase is
+            # initialized when daemon start
+            except DockerUtil.LayerMetadataNotFound:
+                pass
 
             # try to download layer from node that has tarball in own cache directory
             for node_id in layer.available_at:

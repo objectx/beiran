@@ -102,6 +102,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """..."""
         pass
 
+    class LayerMetadataNotFound(Exception):
+        """..."""
+
     # status for downloading layers
     DL_INIT = 'init'
     DL_ALREADY = 'already'
@@ -660,18 +663,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         try:
             layer = DockerLayer.get(DockerLayer.digest == digest)
 
-            # If layer is exist in docker storage, download layer.
-            # # check local storage
-            # layerdb_path = self.layerdb_path + "/" \
-            #                             + del_idpref(layer.chain_id)
-            # if os.path.exists(layerdb_path):
-            #     cache_id = ""
-            #     with open(layerdb_path + '/cache-id')as file:
-            #         cache_id = file.read()
+            # check docker storage
+            if layer.docker_path:
+                tar_layer_path = await self.assemble_layer_tar(layer.diff_id)
+                self.logger.debug("Found layer %s in Docker's storage", diff_id)
 
-            #     docker_layer_path = self.storage + "/overlay2/" + cache_id + "/diff"
-            #     self.logger.debug("Found layer (%s)", docker_layer_path)
-            #     return 'docker', docker_layer_path
+                layer.cache_path = tar_layer_path
+                layer.save()
+                return 'cache', tar_layer_path
 
             # try to download layer from node that has tarball in own cache directory
             for node_id in layer.available_at:
@@ -709,10 +708,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     tmp_hash.update(chunk)
 
             diff_id = tmp_hash.hexdigest()
-
-        # if storage == 'docker':
-        #     layer = DockerLayer.get(DockerLayer.digest == digest)
-        #     return layer.diff_id
 
         elif storage == 'cache-gz':
             diff_id = await self.decompress_gz_layer(layer_path) # decompress .tar.gz
@@ -946,12 +941,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         for layer_d in descriptors:
             # check layer existence, then set status
-
-            tar_layer_path = self.get_layer_tar_file(self.get_diffid_by_digest(layer_d['digest']))
-            gz_layer_path = self.get_layer_gz_file(layer_d['digest'])
+            layer = DockerLayer.get(DockerLayer.digest == layer_d['digest'])
 
             status = self.DL_INIT
-            if os.path.exists(tar_layer_path) or os.path.exists(gz_layer_path):
+            if layer.cache_path or layer.cache_gz_path or layer.docker_path:
                 status = self.DL_ALREADY
 
             self.queues[jobid][layer_d['digest']] = {
@@ -1160,20 +1153,26 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         await self.aiodocker.images.import_image(data=file_sender(file_name=tar_path)) # pylint: disable=no-value-for-parameter
 
-    async def assemble_layer_tar(self, diff_id: str):
+    async def assemble_layer_tar(self, diff_id: str)-> str:
         """
         Assemble layer tarball from Docker's storage. Now we need 'tar-split'.
         """
         input_file = os.path.join(
             self.layerdb_path, del_idpref(self.layerdb_mapping[diff_id]), "tar-split.json.gz")
+        if not os.path.exists(input_file):
+            raise DockerUtil.LayerMetadataNotFound(
+                "Docker doesn't have metadata of the layer %s", input_file)
 
         relative_path = self.docker_find_layer_dir_by_digest(self.diffid_mapping[diff_id])
-        # It is possible that components of the layer may not exist due to image update
         if not relative_path:
-            return False
+            raise DockerUtil.LayerNotFound("Layer doesn't exist in %s", relative_path)
 
-        output_file = os.path.join(self.tmp_path, del_idpref(diff_id) + '.tar')
+        output_file = os.path.join(self.layer_tar_path, del_idpref(diff_id) + '.tar')
 
         cmd = "tar-split asm --input " + input_file + "  --path " + relative_path + \
                " --output " + output_file
-        subprocess.run(cmd.split(), env=os.environ)
+
+        with open('/dev/null', 'w') as devnull:
+            subprocess.run(cmd.split(), env=os.environ, stdout=devnull, stderr=devnull)
+
+        return output_file

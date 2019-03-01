@@ -187,7 +187,8 @@ class LayerDownload(web.RequestHandler):
 
         # not deal with .tar.gz in cache directory now
         if not layer.cache_path and layer.docker_path:
-            layer.cache_path = await Services.docker_util.assemble_layer_tar(layer.diff_id) # type: ignore
+            layer.cache_path = \
+                await Services.docker_util.assemble_layer_tar(layer.diff_id) # type: ignore
             layer.save()
 
         return layer.cache_path

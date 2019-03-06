@@ -32,7 +32,7 @@ pre_build:checker:
    - docker push $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}
    - docker push $CI_REGISTRY_IMAGE/checks:latest
 
-pre_build:tar-spliut:
+pre_build:tar-split:
   stage: pre_build
   tags:
    - docker
@@ -42,7 +42,7 @@ pre_build:tar-spliut:
   - apk add go=1.11.5-r0
   - apk add musl-dev
   - go get -d github.com/vbatts/tar-split/cmd/tar-split
-  - CGO_ENABLED=0 go build -o $HOME/tar-split $HOME/go/src/github.com/vbatts/tar-split/cmd/tar-split
+  - go build -o $HOME/tar-split -a -ldflags '-extldflags "-static"' $HOME/go/src/github.com/vbatts/tar-split/cmd/tar-split
 
 package:docs:
   stage: prepare

@@ -124,7 +124,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
     def __init__(self, cache_dir: str, storage: str, # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
-                 local_node: Node = None) -> None:
+                 local_node: Node = None, tar_split_path=None) -> None:
         self.cache_dir = cache_dir
         self.layer_tar_path = self.cache_dir + '/layers/tar/sha256' # for storing archives of layers
         self.layer_gz_path = self.cache_dir + '/layers/gz/sha256' # for storing compressed archives
@@ -148,6 +148,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.logger = logger if logger else LOGGER
         self.queues: dict = {}
         self.emitters: dict = {}
+        self.tar_split_path = tar_split_path
 
     @property
     def digest_path(self)-> str:
@@ -1175,8 +1176,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         output_file = os.path.join(self.layer_tar_path, del_idpref(diff_id) + '.tar')
 
-        cmd = self.config['tar_split_path'] + " asm --input " + input_file + "  --path " + relative_path + \
-               " --output " + output_file
+        cmd = self.tar_split_path + " asm --input " + input_file + "  --path " + \
+              relative_path + " --output " + output_file
 
         with open('/dev/null', 'w') as devnull:
             subprocess.run(cmd.split(), env=os.environ, stdout=devnull, stderr=devnull)

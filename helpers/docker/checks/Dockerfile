@@ -10,7 +10,7 @@ RUN apk add --no-cache \
     musl-dev \
     make
 
-RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy astroid>=2.1.0,<2.2.0 pycares>=2.4.0,<3.0.0
+RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy "astroid>=2.1.0,<2.2.0" "pycares>=2.4.0,<3.0.0"
 
 ADD beiran/requirements.txt /opt/beiran/r-lib.txt
 RUN pip install -r /opt/beiran/r-lib.txt

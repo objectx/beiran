@@ -1175,7 +1175,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         output_file = os.path.join(self.layer_tar_path, del_idpref(diff_id) + '.tar')
 
-        cmd = "tar-split asm --input " + input_file + "  --path " + relative_path + \
+        cmd = self.config['tar_split_path'] + " asm --input " + input_file + "  --path " + relative_path + \
                " --output " + output_file
 
         with open('/dev/null', 'w') as devnull:

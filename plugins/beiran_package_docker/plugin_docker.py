@@ -59,6 +59,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
     def set_dynamic_defaults(self):
         """Set dynamic configuration value like using ``run_dir``"""
         self.config.setdefault('cache_dir', config.cache_dir + '/docker')
+        self.config.setdefault('tar_split_path', os.path.dirname(__file__) + '/tar-split')
 
     async def init(self):
         self.aiodocker = Docker()

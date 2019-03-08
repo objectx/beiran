@@ -183,6 +183,10 @@ start_test_services:
    - sleep 5
 
    # build and copy tar-split
+   - echo http://dl-cdn.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
+   - apk update
+   - apk add go=1.11.5-r0
+   - apk add musl-dev
    - go get -d github.com/vbatts/tar-split/cmd/tar-split
    - go build -o $HOME/tar-split -a -ldflags '-extldflags "-static"' $HOME/go/src/github.com/vbatts/tar-split/cmd/tar-split
    - |

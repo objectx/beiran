@@ -43,6 +43,8 @@ pre_build:tar-split:
   - apk add musl-dev
   - go get -d github.com/vbatts/tar-split/cmd/tar-split
   - go build -o $HOME/tar-split -a -ldflags '-extldflags "-static"' $HOME/go/src/github.com/vbatts/tar-split/cmd/tar-split
+  - ls /root
+  - ls $HOME
 
 package:docs:
   stage: prepare
@@ -190,6 +192,8 @@ start_test_services:
    - sleep 5
 
    # copy tar-split
+   - ls /root
+   - ls $HOME
    - |
      for node in beiran1 beiran2 beiran3 beiran4
      do

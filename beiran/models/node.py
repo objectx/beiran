@@ -31,7 +31,7 @@ from beiran.config import config
 from beiran.models.base import BaseModel, JSONStringField
 from beiran.log import build_logger
 
-LOGGER = build_logger('beiran.models.node')
+LOGGER = build_logger()
 
 
 class PeerAddress(BaseModel):  # pylint: disable=too-many-instance-attributes

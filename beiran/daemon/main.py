@@ -156,7 +156,7 @@ class BeiranDaemon(EventEmitter):
 
         """
         try:
-            config['logger'] = build_logger('beiran.plugin.' + plugin_name)
+            config['logger'] = build_logger()
             config['node'] = self.nodes.local_node
             config['daemon'] = self
             config['events'] = EVENTS

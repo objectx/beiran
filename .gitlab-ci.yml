@@ -94,8 +94,9 @@ publish:oci-image-layout:
   tags:
   - docker
   script:
+    - echo http://dl-cdn.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
     - apk update
-    - apk add go=1.9.4-r0
+    - apk add go=1.11.5-r0
     - apk add musl-dev
     - go get github.com/coolljt0725/docker2oci
     - docker save $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} | $HOME/go/bin/docker2oci image-layout-${CI_COMMIT_TAG}
@@ -179,6 +180,19 @@ start_test_services:
    - docker-compose up -d beiran1 beiran2 beiran3 beiran4
    # allow beiran to start up (might not be enough)
    - sleep 5
+
+   # build and copy tar-split
+   - echo http://dl-cdn.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
+   - apk update
+   - apk add go=1.11.5-r0
+   - apk add musl-dev
+   - go get -d github.com/vbatts/tar-split/cmd/tar-split
+   - go build -o $HOME/tar-split -a -ldflags '-extldflags "-static"' $HOME/go/src/github.com/vbatts/tar-split/cmd/tar-split
+   - |
+     for node in beiran1 beiran2 beiran3 beiran4
+     do
+        docker cp $HOME/tar-split $(docker-compose ps -q $node):/opt/beiran/plugins/beiran_package_docker/tar-split
+     done
 
 test:unit:
   stage: test

@@ -62,9 +62,9 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
     async def init(self):
         self.aiodocker = Docker()
         self.util = ContainerUtil(cache_dir=self.config["cache_dir"],
-                               storage=self.config["storage"], aiodocker=self.aiodocker,
-                               logger=self.log, local_node=self.node,
-                               tar_split_path=self.config['tar_split_path'])
+                                  storage=self.config["storage"], aiodocker=self.aiodocker,
+                                  logger=self.log, local_node=self.node,
+                                  tar_split_path=self.config['tar_split_path'])
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.probe_task = None

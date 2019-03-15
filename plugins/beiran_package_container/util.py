@@ -224,14 +224,14 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
     async def reset_docker_info_of_node(uuid_hex: str):
         """ Delete all (local) layers and images from database """
         for image in list(ContainerImage.select(ContainerImage.hash_id,
-                                             ContainerImage.available_at)):
+                                                ContainerImage.available_at)):
             if uuid_hex in image.available_at:
                 image.unset_available_at(uuid_hex)
                 image.save()
 
         for layer in list(ContainerLayer.select(ContainerLayer.id,
-                                             ContainerLayer.digest,
-                                             ContainerLayer.available_at)):
+                                                ContainerLayer.digest,
+                                                ContainerLayer.available_at)):
             if uuid_hex in layer.available_at:
                 layer.unset_available_at(uuid_hex)
                 layer.save()
@@ -509,7 +509,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
 
         if resp.status != 200:
             raise ContainerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
-                                                 % resp.status)
+                                                    % resp.status)
         return manifest
 
 
@@ -562,7 +562,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
             return 'Basic ' + login_str
 
         raise ContainerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
-                                              % headers['Www-Authenticate'])
+                                                 % headers['Www-Authenticate'])
 
     async def download_layer_from_origin(self, ref: dict, digest: str, jobid: str, **kwargs):
         """
@@ -598,7 +598,8 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                                                  Authorization=requirements)
 
         if resp.status != 200:
-            raise ContainerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
+            raise ContainerUtil.LayerDownloadFailed("Failed to download layer. code: %d"
+                                                    % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
         self.queues[jobid][digest]['status'] = self.DL_FINISH
@@ -762,7 +763,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
 
         if resp.status != 200:
             raise ContainerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
-                                                  % resp.status)
+                                                     % resp.status)
         return await resp.text(encoding='utf-8')
 
     async def fetch_config_schema_v1(self, ref: dict, # pylint: disable=too-many-locals, too-many-branches

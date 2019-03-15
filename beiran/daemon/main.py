@@ -291,6 +291,10 @@ class BeiranDaemon(EventEmitter):
             else:
                 Services.plugins['%s:%s' % (plugin['type'], plugin['name'])] = _plugin_obj
 
+        # resolve dependencies between plugins
+        for plugin in Services.plugins.values():
+            await plugin.load_depend_plugin_instances(Services.plugins)
+
     async def probe_without_discovery(self):
         """Bootstrapping peer without discovery"""
 

@@ -29,14 +29,12 @@ from aiodocker import Docker
 from aiodocker.exceptions import DockerError
 from peewee import SQL
 
-from beiran.config import config
 from beiran.plugin import BaseInterfacePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
 from beiran_package_container.image_ref import del_idpref
 from beiran_package_container.models import ContainerImage, ContainerLayer
-from beiran_package_container.models import MODEL_LIST
 from beiran_interface_docker.util import DockerUtil
 from beiran_interface_docker.api import ROUTES
 from beiran_interface_docker.api import Services as ApiDependencies
@@ -50,28 +48,22 @@ PLUGIN_TYPE = 'interface'
 class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance-attributes
     """Docker support for Beiran"""
     DEFAULTS = {
-        'storage': '/var/lib/docker'
+        'storage': '/var/lib/docker',
+        'tar_split_path': os.path.dirname(__file__) + '/tar-split'
     }
 
     # def __init__(self, plugin_config: dict) -> None:
     #     super().__init__(plugin_config)
 
-    def set_dynamic_defaults(self):
-        """Set dynamic configuration value like using ``run_dir``"""
-        self.config.setdefault('cache_dir', config.cache_dir + '/docker')
-        self.config.setdefault('tar_split_path', os.path.dirname(__file__) + '/tar-split')
-
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(cache_dir=self.config["cache_dir"],
-                               storage=self.config["storage"], aiodocker=self.aiodocker,
+        self.util = DockerUtil(storage=self.config["storage"], aiodocker=self.aiodocker,
                                logger=self.log, local_node=self.node,
                                tar_split_path=self.config['tar_split_path'])
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.probe_task = None
         self.api_routes = ROUTES
-        self.model_list = MODEL_LIST
         self.history = History() # type: History
         self.last_error = None
 
@@ -81,6 +73,10 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
         ApiDependencies.local_node = self.node
         ApiDependencies.loop = self.loop
         ApiDependencies.daemon = self.daemon
+
+    async def load_depend_plugin_instances(self, instances: list) -> None:
+        """Load instances of plugins that has dependencies on this plugin"""
+        self.util.container = instances['package:container']
 
     async def start(self):
         self.log.debug("starting docker plugin")
@@ -121,43 +117,16 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
         try:
             layer_ = ContainerLayer.get(ContainerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
-            self.save_local_paths(layer_)
+            self.util.save_local_paths(layer_)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
         except ContainerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
             layer.local_image_refs = [] # type: ignore
-            self.save_local_paths(layer)
+            self.util.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
-
-    def save_local_paths(self, layer: ContainerLayer):
-        """Update 'cache_path' and 'cache_gz_path' and 'docker_path' with paths of local node"""
-        try:
-            docker_path = self.util.layerdir_path.format(
-                layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
-
-            if os.path.exists(docker_path):
-                layer.docker_path = docker_path
-            else:
-                layer.docker_path = None
-
-        except FileNotFoundError:
-            layer.docker_path = None
-
-        cache_path = self.util.get_layer_tar_file(layer.diff_id)
-        if os.path.exists(cache_path):
-            layer.cache_path = cache_path
-        else:
-            layer.cache_path = None
-
-        if layer.digest:
-            cache_gz_path = self.util.get_layer_gz_file(layer.digest)
-            if os.path.exists(cache_gz_path):
-                layer.cache_gz_path = cache_gz_path
-            else:
-                layer.cache_gz_path = None
 
     async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""

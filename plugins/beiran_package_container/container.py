@@ -22,7 +22,6 @@
 Container packaging plugin
 """
 
-import os
 from peewee import SQL
 
 from beiran.config import config
@@ -43,32 +42,16 @@ PLUGIN_TYPE = 'package'
 class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
     """Container support for Beiran"""
     DEFAULTS = {
-        'storage': '/var/lib/docker'
+        'cache_dir': config.cache_dir + '/container'
     }
-
-    # def __init__(self, plugin_config: dict) -> None:
-    #     super().__init__(plugin_config)
-
-    def set_dynamic_defaults(self):
-        """Set dynamic configuration value like using ``run_dir``"""
-        self.config.setdefault('cache_dir', config.cache_dir + '/docker')
-        self.config.setdefault('tar_split_path', os.path.dirname(__file__) + '/tar-split')
 
     async def init(self):
         self.util = ContainerUtil(cache_dir=self.config["cache_dir"],
-                                  storage=self.config["storage"],
-                                  logger=self.log, local_node=self.node,
-                                  tar_split_path=self.config['tar_split_path'])
+                                  logger=self.log, local_node=self.node)
         self.probe_task = None
         self.model_list = MODEL_LIST
         self.history = History() # type: History
         self.last_error = None
-
-    async def sync(self, peer: Peer):
-        await ContainerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
-
-        await self.fetch_images_from_peer(peer)
-        await self.fetch_layers_from_peer(peer)
 
     async def save_image_at_node(self, image: ContainerImage, node: Node):
         """Save an image from a node into db"""
@@ -83,49 +66,6 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             image.save(force_insert=True)
             self.log.debug("new image from remote %s", str(image))
 
-    async def save_layer_at_node(self, layer: ContainerLayer, node: Node):
-        """Save a layer from a node into db"""
-        try:
-            layer_ = ContainerLayer.get(ContainerLayer.diff_id == layer.diff_id)
-            layer_.set_available_at(node.uuid.hex)
-            self.save_local_paths(layer_)
-            layer_.save()
-            self.log.debug("update existing layer %s, now available on new node: %s",
-                           layer.digest, node.uuid.hex)
-        except ContainerLayer.DoesNotExist:
-            layer.available_at = [node.uuid.hex] # type: ignore
-            layer.local_image_refs = [] # type: ignore
-            self.save_local_paths(layer)
-            layer.save(force_insert=True)
-            self.log.debug("new layer from remote %s", str(layer))
-
-    def save_local_paths(self, layer: ContainerLayer):
-        """Update 'cache_path' and 'cache_gz_path' and 'docker_path' with paths of local node"""
-        try:
-            docker_path = self.util.layerdir_path.format(
-                layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
-
-            if os.path.exists(docker_path):
-                layer.docker_path = docker_path
-            else:
-                layer.docker_path = None
-
-        except FileNotFoundError:
-            layer.docker_path = None
-
-        cache_path = self.util.get_layer_tar_file(layer.diff_id)
-        if os.path.exists(cache_path):
-            layer.cache_path = cache_path
-        else:
-            layer.cache_path = None
-
-        if layer.digest:
-            cache_gz_path = self.util.get_layer_gz_file(layer.digest)
-            if os.path.exists(cache_gz_path):
-                layer.cache_gz_path = cache_gz_path
-            else:
-                layer.cache_gz_path = None
-
     async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""
 
@@ -137,18 +77,6 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             image_data.pop('id', None)
             image = ContainerImage.from_dict(image_data)
             await self.save_image_at_node(image, peer.node)
-
-    async def fetch_layers_from_peer(self, peer: Peer):
-        """fetch layer list from the node and update local db"""
-
-        layers = await peer.client.get_layers()
-        self.log.debug("received layer list from peer")
-
-        for layer_data in layers:
-            # discard `id` sent from remote
-            layer_data.pop('id', None)
-            layer = ContainerLayer.from_dict(layer_data)
-            await self.save_layer_at_node(layer, peer.node)
 
     async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
         """

@@ -74,7 +74,7 @@ export BEIRAN_LISTEN_ADDRESS=0.0.0.0
 export BEIRAN_CONFIG_DIR=${DIR}
 
 # make binary of 'tar-split' with Docker
-tarsplit_dir=${DIR}/plugins/beiran_package_container/
+tarsplit_dir=${DIR}/plugins/beiran_interface_docker/
 
 if [ ! -e ${tarsplit_dir}/tar-split ]; then
 	docker build -t tarsplit -f $tarsplit_dir/DockerfileTarsplit $tarsplit_dir

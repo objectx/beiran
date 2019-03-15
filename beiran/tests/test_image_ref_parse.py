@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-from beiran_package_docker.image_ref import marshal_normalize_ref
+from beiran_package_container.image_ref import marshal_normalize_ref
 
 @pytest.mark.parametrize('ref,normalized', [
     ('ubuntu', 'docker.io/library/ubuntu:latest'),

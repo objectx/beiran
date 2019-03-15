@@ -19,6 +19,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 hiddenimports = [
-    'beiran_package_docker.cli_docker',
-    'beiran_package_docker.docker',
+    'beiran_package_container.cli_docker',
+    'beiran_package_container.docker',
 ]

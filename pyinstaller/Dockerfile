@@ -24,7 +24,7 @@ RUN pip install -r /opt/beiran/r-dns.txt
 ADD plugins/beiran_discovery_zeroconf/requirements.txt /opt/beiran/r-zeroconf.txt
 RUN pip install -r /opt/beiran/r-zeroconf.txt
 
-ADD plugins/beiran_package_docker/requirements.txt /opt/beiran/r-docker.txt
+ADD plugins/beiran_package_container/requirements.txt /opt/beiran/r-docker.txt
 RUN pip install -r /opt/beiran/r-docker.txt
 
 ADD plugins/beiran_interface_k8s/requirements.txt /opt/beiran/r-k8s.txt
@@ -40,14 +40,14 @@ WORKDIR /opt/beiran/pyinstaller
 RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --clean --log-level DEBUG --noconfirm \
                                --hidden-import  beiran.cli_node \
-                               --hidden-import  beiran_package_docker.cli_docker \
+                               --hidden-import  beiran_package_container.cli_docker \
                                --hidden-import  beiran_discovery_dns \
                                --hidden-import  beiran_discovery_dns.dns \
                                --hidden-import  beiran_discovery_zeroconf \
                                --hidden-import  beiran_discovery_zeroconf.zeroconf \
                                --paths /opt/beiran/pyinstaller \
                                --paths ../beiran \
-                               --paths ../plugins/beiran_package_docker \
+                               --paths ../plugins/beiran_package_container \
                                --exclude-module pycrypto \
                                --exclude-module PyInstaller \
                                --additional-hooks-dir ./hooks/ \

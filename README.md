@@ -70,7 +70,7 @@ Or, copy the binary file to the plugin directory (deafult `tar-split_path` is th
 
 ```
 $ go get github.com/vbatts/tar-split
-$ cp path/to/tar-split plugins/beiran_package_docker/
+$ cp path/to/tar-split plugins/beiran_package_container/
 ```
 
 

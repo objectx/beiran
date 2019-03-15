@@ -22,7 +22,7 @@ services:
     network_mode: "service:pod1"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=discovery.zeroconf,package.container
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
 
 
@@ -48,7 +48,7 @@ services:
     network_mode: "service:pod2"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=discovery.zeroconf,package.container
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
 
 
@@ -74,7 +74,7 @@ services:
     network_mode: "service:pod3"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=discovery.zeroconf,package.container
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
 
   pod4:
@@ -99,7 +99,7 @@ services:
     network_mode: "service:pod4"
     environment:
       - BEIRAN_DISCOVERY_METHOD=zeroconf
-      - BEIRAN_PLUGINS=discovery.zeroconf,package.docker
+      - BEIRAN_PLUGINS=discovery.zeroconf,package.container
       - BEIRAN_LISTEN_ADDRESS=0.0.0.0
 
 networks:

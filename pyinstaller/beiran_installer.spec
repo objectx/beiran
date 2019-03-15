@@ -6,14 +6,14 @@
 #    /pyinstaller/pyinstaller.sh --onefile --name beiran \
 #                                 --clean --log-level DEBUG --noconfirm \
 #                                 --hidden-import  beiran.cli_node \
-#                                 --hidden-import  beiran_package_docker.cli_docker \
+#                                 --hidden-import  beiran_package_container.cli_docker \
 #                                 --hidden-import  beiran_discovery_dns \
 #                                 --hidden-import  beiran_discovery_dns.dns \
 #                                 --hidden-import  beiran_discovery_zeroconf \
 #                                 --hidden-import  beiran_discovery_zeroconf.zeroconf \
 #                                 --paths /opt/beiran/pyinstaller \
 #                                 --paths ../beiran \
-#                                 --paths ../plugins/beiran_package_docker \
+#                                 --paths ../plugins/beiran_package_container \
 #                                 --exclude-module pycrypto \
 #                                 --exclude-module PyInstaller \
 #                                 --additional-hooks-dir ./hooks/ \
@@ -25,10 +25,10 @@ block_cipher = None
 
 
 a = Analysis(['../beiran/__main__.py'],
-             pathex=['/opt/beiran/pyinstaller', '../beiran', '../plugins/beiran_package_docker', '/opt/beiran/pyinstaller'],
+             pathex=['/opt/beiran/pyinstaller', '../beiran', '../plugins/beiran_package_container', '/opt/beiran/pyinstaller'],
              binaries=[],
              datas=[],
-             hiddenimports=['beiran.cli_node', 'beiran_package_docker.cli_docker', 'beiran_discovery_dns', 'beiran_discovery_dns.dns', 'beiran_discovery_zeroconf', 'beiran_discovery_zeroconf.zeroconf'],
+             hiddenimports=['beiran.cli_node', 'beiran_package_container.cli_docker', 'beiran_discovery_dns', 'beiran_discovery_dns.dns', 'beiran_discovery_zeroconf', 'beiran_discovery_zeroconf.zeroconf'],
              hookspath=['./hooks/'],
              runtime_hooks=['./hooks/hook-beiran.plugin.py'],
              excludes=['pycrypto', 'PyInstaller', 'pycrypto', 'PyInstaller'],

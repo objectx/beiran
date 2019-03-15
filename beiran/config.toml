@@ -13,7 +13,7 @@ socket_file = '/var/run/beirand.sock'
 discovery_method = 'zeroconf'
 
 # docker plugin settings
-[package.docker]
+[package.container]
 enabled = true
 cache_dir = '/var/cache/beiran/docker'
 

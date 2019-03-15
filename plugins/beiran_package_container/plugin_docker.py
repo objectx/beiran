@@ -42,13 +42,13 @@ from beiran_package_container.api import ROUTES
 from beiran_package_container.api import Services as ApiDependencies
 
 
-PLUGIN_NAME = 'container'
+PLUGIN_NAME = 'docker'
 PLUGIN_TYPE = 'package'
 
 
 # pylint: disable=attribute-defined-outside-init
-class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
-    """Container Image support for Beiran"""
+class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
+    """Docker support for Beiran"""
     DEFAULTS = {
         'storage': '/var/lib/docker'
     }

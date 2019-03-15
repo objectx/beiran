@@ -33,14 +33,14 @@ Package
 Docker
 ------
 
-.. automodule:: beiran_package_docker.plugin_docker
+.. automodule:: beiran_package_container.plugin_docker
     :members:
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
 
 
-.. automodule:: beiran_package_docker.api
+.. automodule:: beiran_package_container.api
     :members:
     :undoc-members:
     :show-inheritance:

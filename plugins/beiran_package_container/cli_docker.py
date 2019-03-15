@@ -31,7 +31,7 @@ from beiran.util import json_streamer
 from beiran.util import sizeof_fmt
 from beiran.multiple_progressbar import MultipleProgressBar
 from beiran.cli import pass_context
-from beiran_package_docker.util import DockerUtil
+from beiran_package_container.util import DockerUtil
 
 
 @click.group()

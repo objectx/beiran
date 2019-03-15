@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=too-many-lines
-"""Container Plugin Utility Module"""
+"""Docker Plugin Utility Module"""
 import asyncio
 import os
 import logging
@@ -40,15 +40,16 @@ import aiohttp
 import aiofiles
 
 from peewee import SQL
+from aiodocker import Docker
 
 from beiran.log import build_logger
 from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
 from beiran.util import clean_keys
 
-from .models import ContainerImage, ContainerLayer
-from .image_ref import normalize_ref, is_tag, is_digest, add_idpref, del_idpref, \
-                       add_default_tag
+from beiran_package_container.models import ContainerImage, ContainerLayer
+from beiran_package_container.image_ref import normalize_ref, is_tag, is_digest, add_idpref, \
+                                               del_idpref, add_default_tag
 
 
 LOGGER = build_logger()
@@ -66,8 +67,8 @@ async def aio_isdir(path: str):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 
-class ContainerUtil: # pylint: disable=too-many-instance-attributes
-    """Container Utilities"""
+class DockerUtil: # pylint: disable=too-many-instance-attributes
+    """Docker Utilities"""
 
     class CannotFindLayerMappingError(Exception):
         """..."""
@@ -122,7 +123,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
     RETRY = 2
 
     def __init__(self, cache_dir: str, storage: str, # pylint: disable=too-many-arguments
-                 logger: logging.Logger = None,
+                 aiodocker: Docker = None, logger: logging.Logger = None,
                  local_node: Node = None, tar_split_path=None) -> None:
         self.cache_dir = cache_dir
         self.layer_tar_path = self.cache_dir + '/layers/tar/sha256' # for storing archives of layers
@@ -143,6 +144,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
         self.diffid_mapping: dict = {}
         self.layerdb_mapping: dict = {}
 
+        self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
         self.queues: dict = {}
         self.emitters: dict = {}
@@ -234,7 +236,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                 layer.unset_available_at(uuid_hex)
                 layer.save()
 
-        await ContainerUtil.delete_unavailable_objects()
+        await DockerUtil.delete_unavailable_objects()
 
     @staticmethod
     async def delete_unavailable_objects():
@@ -243,6 +245,55 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
             ' download_progress = \'null\'')).execute()
         ContainerLayer.delete().where(SQL('available_at = \'[]\' AND ' \
             'download_progress = \'null\'')).execute()
+
+    async def fetch_docker_info(self) -> dict:
+        """
+        Fetch async docker daemon information
+
+        Returns:
+            (dict): docker status and information
+
+        """
+
+        try:
+            info = await self.aiodocker.system.info()
+            return {
+                "status": True,
+                "daemon_info": info
+            }
+        except Exception as error:  # pylint: disable=broad-except
+            self.logger.error("Error while connecting local docker daemon %s", error)
+            return {
+                "status": False,
+                "error": str(error)
+            }
+
+    async def update_docker_info(self, node: Node):
+        """
+        Makes an async call to docker `client` and get info for `node`
+
+        Args:
+            node (Node):
+
+        Returns:
+            (None): updates `node` object
+        """
+        self.logger.debug("Updating local docker info")
+        retry_after = 0
+
+        while True:
+            docker_info = await self.fetch_docker_info()
+            if docker_info["status"]:
+                self.logger.debug(" *** Found local docker daemon *** ")
+                node.docker = docker_info['daemon_info']
+                break
+            else:
+                self.logger.debug("Cannot fetch docker info," +
+                                  " retrying after %d seconds",
+                                  retry_after)
+                await asyncio.sleep(retry_after)
+            if retry_after < 30:
+                retry_after += 5
 
     async def get_digest_by_diffid(self, diffid: str)-> Optional[str]:
         """Return digest of a layer by diff id."""
@@ -340,7 +391,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
         for idx, diffid in enumerate(diffid_list):
             try:
                 layer = await self.get_layer_by_diffid(diffid, idx, image_id)
-                # handle ContainerUtil.CannotFindLayerMappingError?
+                # handle DockerUtil.CannotFindLayerMappingError?
                 layers.append(layer)
             except FileNotFoundError:
                 self.logger.error("attempted to access to a non-existent layer by diff id: %s",
@@ -457,8 +508,8 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                                              Accept=schema_v2_header)
 
         if resp.status != 200:
-            raise ContainerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
-                                                    % resp.status)
+            raise DockerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
+                                                 % resp.status)
         return manifest
 
 
@@ -496,7 +547,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                     val_dict['scope']
                 )
             except Exception:
-                raise ContainerUtil.AuthenticationFailed("Failed to get Bearer token")
+                raise DockerUtil.AuthenticationFailed("Failed to get Bearer token")
 
             return 'Bearer ' + token
 
@@ -505,13 +556,13 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                 login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
                 login_str = base64.b64encode(login_str.encode('utf-8')).decode('utf-8')
             except KeyError:
-                raise ContainerUtil.AuthenticationFailed("Basic auth required but " \
+                raise DockerUtil.AuthenticationFailed("Basic auth required but " \
                                                       "'user' and 'passwd' wasn't passed")
 
             return 'Basic ' + login_str
 
-        raise ContainerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
-                                                 % headers['Www-Authenticate'])
+        raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
+                                              % headers['Www-Authenticate'])
 
     async def download_layer_from_origin(self, ref: dict, digest: str, jobid: str, **kwargs):
         """
@@ -547,8 +598,8 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                                                  Authorization=requirements)
 
         if resp.status != 200:
-            raise ContainerUtil.LayerDownloadFailed("Failed to download layer. code: %d"
-                                                    % resp.status)
+            raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d"
+                                                 % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
         self.queues[jobid][digest]['status'] = self.DL_FINISH
@@ -623,7 +674,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                     return 'cache', layer.cache_path
             # this exception handling may be needless if 'dockerlayer' in datbase is
             # initialized when daemon start
-            except ContainerUtil.LayerMetadataNotFound:
+            except DockerUtil.LayerMetadataNotFound:
                 pass
 
             # try to download layer from node that has tarball in own cache directory
@@ -637,7 +688,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
 
                 if resp.status == 200:
                     if not os.path.exists(tar_layer_path):
-                        raise ContainerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                        raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
                     return 'cache', tar_layer_path
 
         except (ContainerLayer.DoesNotExist, IndexError):
@@ -711,8 +762,8 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                                       retry=self.RETRY, Authorization=requirements)
 
         if resp.status != 200:
-            raise ContainerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
-                                                     % resp.status)
+            raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
+                                                  % resp.status)
         return await resp.text(encoding='utf-8')
 
     async def fetch_config_schema_v1(self, ref: dict, # pylint: disable=too-many-locals, too-many-branches
@@ -857,7 +908,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                 break
 
         if manifest_digest is None:
-            raise ContainerUtil.ManifestError('No supported platform found in manifest list')
+            raise DockerUtil.ManifestError('No supported platform found in manifest list')
 
 
         # get manifest
@@ -878,9 +929,9 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                     ref, manifest, jobid
                 )
             else:
-                raise ContainerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
+                raise DockerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
         else:
-            raise ContainerUtil.ManifestError('Invalid schema version: %d' % schema_v)
+            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         manifestlist_str = json.dumps(manifestlist, indent=3)
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
@@ -1009,9 +1060,9 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                 )
 
             else:
-                raise ContainerUtil.ManifestError('Invalid media type: %d' % media_type)
+                raise DockerUtil.ManifestError('Invalid media type: %d' % media_type)
         else:
-            raise ContainerUtil.ManifestError('Invalid schema version: %d' % schema_v)
+            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         return config_json_str, config_digest, repo_digest
 
@@ -1046,7 +1097,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
 
         config_digest = hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
         if config_digest != image_id:
-            raise ContainerUtil.ConfigError(
+            raise DockerUtil.ConfigError(
                 'Invalid config. The digest is wrong (expect: %s, actual: %s)'
                 % (image_id, config_digest))
 
@@ -1082,7 +1133,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
             for i, diff_id in enumerate(diff_id_list):
                 layer_tar_file = self.get_layer_tar_file(diff_id)
                 if not os.path.exists(layer_tar_file):
-                    raise ContainerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                    raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
                     # Do not create tarball from storage of docker!!!
                     # The digest of the tarball varies depending on mtime of the file to be added
                     # with tarfile.open(self.layer_tar_path + '/' + f_name, "w") as layer_tar:
@@ -1094,6 +1145,22 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
 
         return tar_path
 
+    async def load_image(self, tar_path: str):
+        """
+        Load image tarball.
+        """
+        self.logger.debug("loading image...")
+
+        @aiohttp.streamer
+        async def file_sender(writer, file_name=None):
+            with open(file_name, "rb") as file:
+                chunk = file.read(1024 * 64)
+                while chunk:
+                    await writer.write(chunk)
+                    chunk = file.read(1024 * 64)
+
+        await self.aiodocker.images.import_image(data=file_sender(file_name=tar_path)) # pylint: disable=no-value-for-parameter
+
     async def assemble_layer_tar(self, diff_id: str)-> str:
         """
         Assemble layer tarball from Docker's storage. Now we need 'tar-split'.
@@ -1101,12 +1168,12 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
         input_file = os.path.join(
             self.layerdb_path, del_idpref(self.layerdb_mapping[diff_id]), "tar-split.json.gz")
         if not os.path.exists(input_file):
-            raise ContainerUtil.LayerMetadataNotFound(
+            raise DockerUtil.LayerMetadataNotFound(
                 "Docker doesn't have metadata of the layer %s" % input_file)
 
         relative_path = self.docker_find_layer_dir_by_digest(self.diffid_mapping[diff_id])
         if not relative_path:
-            raise ContainerUtil.LayerNotFound("Layer doesn't exist in %s" % relative_path)
+            raise DockerUtil.LayerNotFound("Layer doesn't exist in %s" % relative_path)
 
         output_file = os.path.join(self.layer_tar_path, del_idpref(diff_id) + '.tar')
 

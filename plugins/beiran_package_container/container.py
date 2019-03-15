@@ -19,14 +19,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Docker packaging plugin
+Container packaging plugin
 """
 
 import os
-import asyncio
-import docker
-from aiodocker import Docker
-from aiodocker.exceptions import DockerError
 from peewee import SQL
 
 from beiran.config import config
@@ -34,7 +30,6 @@ from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
-from beiran_package_container.image_ref import del_idpref
 from beiran_package_container.models import ContainerImage, ContainerLayer
 from beiran_package_container.models import MODEL_LIST
 from beiran_package_container.util import ContainerUtil
@@ -60,13 +55,10 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         self.config.setdefault('tar_split_path', os.path.dirname(__file__) + '/tar-split')
 
     async def init(self):
-        self.aiodocker = Docker()
         self.util = ContainerUtil(cache_dir=self.config["cache_dir"],
-                                  storage=self.config["storage"], aiodocker=self.aiodocker,
+                                  storage=self.config["storage"],
                                   logger=self.log, local_node=self.node,
                                   tar_split_path=self.config['tar_split_path'])
-        self.docker = docker.from_env()
-        self.docker_lc = docker.APIClient()
         self.probe_task = None
         self.model_list = MODEL_LIST
         self.history = History() # type: History
@@ -158,165 +150,6 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             layer = ContainerLayer.from_dict(layer_data)
             await self.save_layer_at_node(layer, peer.node)
 
-    async def daemon_error(self, error: str):
-        """
-        Daemon error emitter.
-        Args:
-            error (str): error message
-
-        """
-        # This will be converted to something like
-        #   daemon.plugins['docker'].setReady(false)
-        # in the future; will we in docker plugin code.
-        self.log.error("docker connection error: %s", error, exc_info=True)
-        self.last_error = error
-        self.status = 'error'
-
-        # re-schedule
-        self.log.debug("sleeping 10 seconds before retrying")
-        await asyncio.sleep(10)
-        self.probe_task = self.loop.create_task(self.probe_daemon())
-        self.log.debug("re-scheduled probe_daemon")
-
-    async def daemon_lost(self):
-        """
-        Daemon lost emitter.
-        """
-        # This will be converted to something like
-        #   daemon.plugins['docker'].setReady(false)
-        # in the future; will we in docker plugin code.
-        self.emit('down')
-        self.log.warning("docker connection lost")
-
-        # re-schedule
-        await asyncio.sleep(30)
-        self.probe_task = self.loop.create_task(self.probe_daemon())
-
-    async def probe_daemon(self):
-        """Deal with local docker daemon states"""
-
-        try:
-            self.log.debug("Probing docker daemon")
-
-            # Delete all data regarding our node
-            await ContainerUtil.reset_docker_info_of_node(self.node.uuid.hex)
-
-            # wait until we can update our docker info
-            await self.util.update_docker_info(self.node)
-
-            # connected to docker daemon
-            self.emit('up')
-            self.node.save()
-
-            try:
-                # Get mapping of diff-id and digest mappings of docker daemon
-                await self.util.get_diffid_mappings()
-                # Get layerdb mapping
-                await self.util.get_layerdb_mappings()
-            except PermissionError as err:
-                self.log.error("Cannot access docker storage, please run as sudo for now")
-                raise err
-
-            # Get Images
-            self.log.debug("Getting docker image list..")
-            image_list = await self.aiodocker.images.list(all=1)
-            not_intermediates = await self.aiodocker.images.list()
-
-            for image_data in image_list:
-                self.log.debug("existing image..%s", image_data)
-
-                if image_data in not_intermediates:
-                    await self.save_image(image_data['Id'], skip_updates=True)
-                else:
-                    await self.save_image(image_data['Id'], skip_updates=True,
-                                          skip_updating_layer=True)
-
-            # This will be converted to something like
-            #   daemon.plugins['docker'].setReady(true)
-            # in the future; will we in docker plugin code.
-            self.history.update('init')
-            self.status = 'ready'
-
-            # Do not block on this
-            self.probe_task = self.loop.create_task(self.listen_daemon_events())
-
-        except Exception as err:  # pylint: disable=broad-except
-            await self.daemon_error(err)
-
-    async def listen_daemon_events(self):
-        """
-        Subscribes aiodocker events channel and logs them.
-        If docker daemon is unavailable calls deamon_lost method
-        to emit the lost event.
-        """
-
-        new_image_events = ['pull', 'load', 'tag', 'commit', 'import']
-        remove_image_events = ['delete']
-
-        try:
-            # await until docker is unavailable
-            self.log.debug("subscribing to docker events for further changes")
-            subscriber = self.aiodocker.events.subscribe()
-            while True:
-                event = await subscriber.get()
-                if event is None:
-                    break
-
-                # log the event
-                self.log.debug("docker event: %s[%s] %s",
-                               event['Action'], event['Type'], event.get('id', 'event has no id'))
-
-                # handle commit container (and build new image)
-                if event['Type'] == 'container' and event['Action'] in new_image_events:
-                    await self.save_image(event['Actor']['Attributes']['imageID'])
-
-                # handle new image events
-                if event['Type'] == 'image' and event['Action'] in new_image_events:
-                    await self.save_image(event['id'])
-
-                # handle untagging image
-                if event['Type'] == 'image' and event['Action'] == 'untag':
-                    await self.untag_image(event['id'])
-
-                # handle delete existing image events
-                if event['Type'] == 'image' and event['Action'] in remove_image_events:
-                    await self.delete_image(event['id'])
-
-            await self.daemon_lost()
-        except Exception as err:  # pylint: disable=broad-except
-            await self.daemon_error(str(err))
-
-    async def new_image_saved(self, image_id: str):
-        """placeholder method for new_image_saved event"""
-        self.log.debug("a new image reported by docker deamon registered...: %s", image_id)
-
-    async def existing_image_deleted(self, image_id: str):
-        """placeholder method for existing_image_deleted event"""
-        self.log.debug("an existing image and its layers deleted...: %s", image_id)
-
-    async def delete_image(self, image_id: str):
-        """
-        Unset available image, delete it if no node remains
-
-        Args:
-            image_id (str): image identifier
-
-        """
-        # image_data = await self.aiodocker.images.get(name=image_id)
-        image = ContainerImage.get(ContainerImage.hash_id == image_id)
-        image.unset_available_at(self.node.uuid.hex)
-
-        await self.unset_local_layers(image.layers, image_id)
-
-        if image.available_at:
-            image.save()
-        else:
-            image.delete_instance()
-            await self.delete_layers(image.layers)
-
-        self.history.update('removed_image={}'.format(image.hash_id))
-        self.emit('docker_daemon.existing_image_deleted', image.hash_id)
-
     async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
         """
         Unset image_id from local_image_refs of layers
@@ -340,91 +173,3 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         for layer in layers:
             if not layer.available_at:
                 layer.delete_instance()
-
-    async def save_image(self, id_or_tag: str, skip_updates: bool = False,
-                         skip_updating_layer: bool = False):
-        """
-        Save existing image and layers identified by id_or_tag to database.
-
-        Args:
-            id_or_tag (str): image identifier (hash_id or tag)
-
-        """
-
-        image_data = await self.aiodocker.images.get(name=id_or_tag)
-        image = ContainerImage.from_dict(image_data, dialect="container")
-        image_exists_in_db = False
-
-        try:
-            image_ = ContainerImage.get(ContainerImage.hash_id == image_data['Id'])
-            old_available_at = image_.available_at
-            image_.update_using_obj(image)
-            image = image_
-            image.available_at = old_available_at
-            image_exists_in_db = True
-            self.log.debug("image record updated.. %s \n\n", image.to_dict(dialect="container"))
-
-        except ContainerImage.DoesNotExist:
-            self.log.debug("not an existing one, creating a new record..")
-
-        layers = await self.util.get_image_layers(image_data['RootFS']['Layers'], image_data['Id'])
-        image.layers = [layer.diff_id for layer in layers] # type: ignore
-
-        # skip verbose updates of records
-        if not skip_updating_layer:
-            for layer in layers:
-                layer.set_available_at(self.node.uuid.hex)
-                layer.save()
-                self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
-
-        self.log.debug("set availability and save image %s \n %s \n\n",
-                       self.node.uuid.hex, image.to_dict(dialect="container"))
-
-        image.set_available_at(self.node.uuid.hex)
-
-        # save config
-        config_path = os.path.join(self.util.config_path, del_idpref(image.hash_id))
-        with open(config_path)as file:
-            image.config = file.read() # type: ignore
-
-        image.save(force_insert=not image_exists_in_db)
-
-        if not skip_updates:
-            self.history.update('new_image={}'.format(image.hash_id))
-        self.emit('docker_daemon.new_image_saved', image.hash_id)
-
-        if image_data['RepoTags']:
-            await self.tag_image(id_or_tag, image_data['RepoTags'][0])
-
-    async def tag_image(self, image_id: str, tag: str):
-        """
-        Tag an image existing in database. If already same tag exists,
-        move it from old one to new one.
-        """
-        target = ContainerImage.get_image_data(image_id)
-        if tag not in target.tags:
-            target.tags = [tag] # type: ignore
-            target.save()
-
-        images = ContainerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
-
-        for image in images:
-            if image.hash_id == target.hash_id:
-                continue
-
-            image.tags.remove(tag)
-            image.save()
-
-    async def untag_image(self, image_identifier: str):
-        """
-        Remove a tag from an image.
-        """
-        # aiodocker.events.subscribe() can't get information about what tag will be removed...
-        try:
-            image_data = await self.aiodocker.images.get(name=image_identifier)
-            image = ContainerImage.get(ContainerImage.hash_id == image_data['Id'])
-            image.tags = image_data['RepoTags']
-            image.save()
-        except DockerError:
-            # if the image was deleted by `docker rmi`, no image information was found
-            pass

@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Docker packaging plugin
+Docker interface plugin
 """
 
 import os
@@ -37,7 +37,7 @@ from beiran.daemon.peer import Peer
 from beiran_package_container.image_ref import del_idpref
 from beiran_package_container.models import ContainerImage, ContainerLayer
 from beiran_package_container.models import MODEL_LIST
-from beiran_package_container.util import ContainerUtil
+from beiran_interface_docker.util import DockerUtil
 from beiran_interface_docker.api import ROUTES
 from beiran_interface_docker.api import Services as ApiDependencies
 
@@ -63,10 +63,10 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = ContainerUtil(cache_dir=self.config["cache_dir"],
-                                  storage=self.config["storage"], aiodocker=self.aiodocker,
-                                  logger=self.log, local_node=self.node,
-                                  tar_split_path=self.config['tar_split_path'])
+        self.util = DockerUtil(cache_dir=self.config["cache_dir"],
+                               storage=self.config["storage"], aiodocker=self.aiodocker,
+                               logger=self.log, local_node=self.node,
+                               tar_split_path=self.config['tar_split_path'])
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.probe_task = None
@@ -98,7 +98,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.probe_task.cancel()
 
     async def sync(self, peer: Peer):
-        await ContainerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
+        await DockerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
 
         await self.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
@@ -224,7 +224,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.log.debug("Probing docker daemon")
 
             # Delete all data regarding our node
-            await ContainerUtil.reset_docker_info_of_node(self.node.uuid.hex)
+            await DockerUtil.reset_docker_info_of_node(self.node.uuid.hex)
 
             # wait until we can update our docker info
             await self.util.update_docker_info(self.node)

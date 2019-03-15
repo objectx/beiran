@@ -29,8 +29,8 @@ import asyncio
 import grpc
 
 from beiran.util import run_in_loop
-from beiran_package_container.models import DockerImage
-from beiran_package_container.api import ImageList
+from beiran_package_container.models import ContainerImage
+from beiran_interface_docker.api import ImageList
 
 from .api_pb2_grpc import ImageServiceServicer, ImageServiceStub
 from .api_pb2 import ImageStatusResponse
@@ -82,7 +82,7 @@ class K8SImageServicer(ImageServiceServicer):
 
         images = []
 
-        for image in DockerImage.select():
+        for image in ContainerImage.select():
             uid, username = get_username_or_uid(image.config["User"])
 
             images.append(Image(
@@ -111,8 +111,8 @@ class K8SImageServicer(ImageServiceServicer):
             return ImageStatusResponse()
 
         try:
-            image = DockerImage.get_image_data(request.image.image)
-        except DockerImage.DoesNotExist:
+            image = ContainerImage.get_image_data(request.image.image)
+        except ContainerImage.DoesNotExist:
             return ImageStatusResponse()
 
         info = {}

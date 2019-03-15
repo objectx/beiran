@@ -163,9 +163,9 @@ def marshal(domain: str, repo: str, sign: str, suffix: str) -> str:
     """
     return domain + "/" + repo + sign + suffix
 
-def docker_sha_summary(sha: str) -> str:
+def image_ref_summary(sha: str) -> str:
     """
-    shorten sha to 12 bytes length str as docker uses
+    shorten sha to 12 bytes length str
 
     e.g "sha256:53478ce18e19304e6e57c37c86ec0e7aa0abfe56dff7c6886ebd71684df7da25"
     to "53478ce18e19"

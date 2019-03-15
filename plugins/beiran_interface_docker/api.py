@@ -37,7 +37,7 @@ from beiran.client import Client
 from beiran.models import Node
 from beiran.cmd_req_handler import RPCEndpoint, rpc
 from beiran.util import until_event
-from .models import DockerImage, DockerLayer
+from beiran_package_container.models import ContainerImage, ContainerLayer
 
 class Services:
     """These needs to be injected from the plugin init code"""
@@ -84,8 +84,8 @@ class ImagesTarHandler(web.RequestHandler):
             HEAD endpoint
         """
         try:
-            image = DockerImage.get_image_data(image_identifier)
-        except DockerImage.DoesNotExist:
+            image = ContainerImage.get_image_data(image_identifier)
+        except ContainerImage.DoesNotExist:
             raise HTTPError(status_code=404, log_message='Image Not Found')
 
         self.set_header("Docker-Image-HashID", image.hash_id)
@@ -110,8 +110,8 @@ class ImageInfoHandler(web.RequestHandler):
 
         image_identifier = image_identifier.rstrip('/info')
         try:
-            image = DockerImage.get_image_data(image_identifier)
-        except DockerImage.DoesNotExist:
+            image = ContainerImage.get_image_data(image_identifier)
+        except ContainerImage.DoesNotExist:
             raise HTTPError(status_code=404, log_message='Image Not Found')
 
         self.write(json.dumps(image.to_dict(dialect="api")))
@@ -178,8 +178,8 @@ class LayerDownload(web.RequestHandler):
 
         """
         try:
-            layer = DockerLayer.select().where(DockerLayer.digest == layer_id).get()
-        except DockerLayer.DoesNotExist:
+            layer = ContainerLayer.select().where(ContainerLayer.digest == layer_id).get()
+        except ContainerLayer.DoesNotExist:
             raise HTTPError(status_code=404, log_message="Layer Not Found")
 
         if not layer.cache_path and not layer.cache_gz_path and not layer.docker_path:
@@ -406,7 +406,7 @@ class ImageList(RPCEndpoint):
         await Services.docker_util.load_image(tarball_path) # type: ignore
 
         # # save repo_digest ?
-        # image = DockerImage.get().where(...)
+        # image = ContainerImage.get().where(...)
         # image.repo_digests.add(repo_digest)
         # image.save()
 
@@ -425,7 +425,7 @@ class ImageList(RPCEndpoint):
         """Coroutine to pull image in cluster
         """
         if not node_identifier:
-            available_nodes = await DockerImage.get_available_nodes(image_identifier)
+            available_nodes = await ContainerImage.get_available_nodes(image_identifier)
             online_nodes = Services.daemon.nodes.all_nodes.keys() # type: ignore
             online_availables = [n for n in available_nodes if n in online_nodes]
             if online_availables:
@@ -435,8 +435,8 @@ class ImageList(RPCEndpoint):
             raise HTTPError(status_code=404, log_message='Image is not available in cluster')
 
         try:
-            image = DockerImage.get_image_data(image_identifier)
-        except DockerImage.DoesNotExist:
+            image = ContainerImage.get_image_data(image_identifier)
+        except ContainerImage.DoesNotExist:
             raise HTTPError(status_code=404, log_message='Image Not Found')
 
         uuid_pattern = re.compile(r'^([a-f0-9]+)$', re.IGNORECASE)
@@ -551,7 +551,7 @@ class ImageList(RPCEndpoint):
             raise HTTPError(status_code=400,
                             log_message="invalid node uuid")
 
-        query = DockerImage.select()
+        query = ContainerImage.select()
 
         if not all_images:
             query = query.where(SQL('available_at LIKE \'%%"%s"%%\'' % node))
@@ -600,7 +600,7 @@ class LayerList(web.RequestHandler):
             raise HTTPError(status_code=400,
                             log_message="invalid node uuid")
 
-        query = DockerLayer.select()
+        query = ContainerLayer.select()
 
         if not all_images:
             query = query.where(SQL('available_at LIKE \'%%"%s"%%\'' % node))

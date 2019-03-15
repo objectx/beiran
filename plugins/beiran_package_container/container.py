@@ -35,11 +35,9 @@ from beiran.models import Node
 from beiran.daemon.peer import Peer
 
 from beiran_package_container.image_ref import del_idpref
-from beiran_package_container.models import DockerImage, DockerLayer
+from beiran_package_container.models import ContainerImage, ContainerLayer
 from beiran_package_container.models import MODEL_LIST
-from beiran_package_container.util import DockerUtil
-from beiran_package_container.api import ROUTES
-from beiran_package_container.api import Services as ApiDependencies
+from beiran_package_container.util import ContainerUtil
 
 
 PLUGIN_NAME = 'container'
@@ -48,7 +46,7 @@ PLUGIN_TYPE = 'package'
 
 # pylint: disable=attribute-defined-outside-init
 class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-attributes
-    """Docker support for Beiran"""
+    """Container support for Beiran"""
     DEFAULTS = {
         'storage': '/var/lib/docker'
     }
@@ -63,76 +61,53 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
 
     async def init(self):
         self.aiodocker = Docker()
-        self.util = DockerUtil(cache_dir=self.config["cache_dir"],
+        self.util = ContainerUtil(cache_dir=self.config["cache_dir"],
                                storage=self.config["storage"], aiodocker=self.aiodocker,
                                logger=self.log, local_node=self.node,
                                tar_split_path=self.config['tar_split_path'])
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.probe_task = None
-        self.api_routes = ROUTES
         self.model_list = MODEL_LIST
         self.history = History() # type: History
         self.last_error = None
 
-        ApiDependencies.aiodocker = self.aiodocker
-        ApiDependencies.logger = self.log
-        ApiDependencies.docker_util = self.util
-        ApiDependencies.local_node = self.node
-        ApiDependencies.loop = self.loop
-        ApiDependencies.daemon = self.daemon
-
-    async def start(self):
-        self.log.debug("starting docker plugin")
-
-        # this is async but we will let it run in
-        # background, we have no rush and it will run
-        # forever anyway
-        self.probe_task = self.loop.create_task(self.probe_daemon())
-
-        self.on('docker_daemon.new_image', self.new_image_saved)
-        self.on('docker_daemon.existing_image_deleted', self.existing_image_deleted)
-
-    async def stop(self):
-        if self.probe_task:
-            self.probe_task.cancel()
-
     async def sync(self, peer: Peer):
-        await DockerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
+        await ContainerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
 
         await self.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
 
-    async def save_image_at_node(self, image: DockerImage, node: Node):
+    async def save_image_at_node(self, image: ContainerImage, node: Node):
         """Save an image from a node into db"""
         try:
-            image_ = DockerImage.get(DockerImage.hash_id == image.hash_id)
+            image_ = ContainerImage.get(ContainerImage.hash_id == image.hash_id)
             image_.set_available_at(node.uuid.hex)
             image_.save()
             self.log.debug("update existing image %s, now available on new node: %s",
                            image.hash_id, node.uuid.hex)
-        except DockerImage.DoesNotExist:
+        except ContainerImage.DoesNotExist:
             image.available_at = [node.uuid.hex] # type: ignore
             image.save(force_insert=True)
             self.log.debug("new image from remote %s", str(image))
 
-    async def save_layer_at_node(self, layer: DockerLayer, node: Node):
+    async def save_layer_at_node(self, layer: ContainerLayer, node: Node):
         """Save a layer from a node into db"""
         try:
-            layer_ = DockerLayer.get(DockerLayer.diff_id == layer.diff_id)
+            layer_ = ContainerLayer.get(ContainerLayer.diff_id == layer.diff_id)
             layer_.set_available_at(node.uuid.hex)
             self.save_local_paths(layer_)
             layer_.save()
             self.log.debug("update existing layer %s, now available on new node: %s",
                            layer.digest, node.uuid.hex)
-        except DockerLayer.DoesNotExist:
+        except ContainerLayer.DoesNotExist:
             layer.available_at = [node.uuid.hex] # type: ignore
             layer.local_image_refs = [] # type: ignore
             self.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
 
-    def save_local_paths(self, layer: DockerLayer):
+    def save_local_paths(self, layer: ContainerLayer):
         """Update 'cache_path' and 'cache_gz_path' and 'docker_path' with paths of local node"""
         try:
             docker_path = self.util.layerdir_path.format(
@@ -168,7 +143,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         for image_data in images:
             # discard `id` sent from remote
             image_data.pop('id', None)
-            image = DockerImage.from_dict(image_data)
+            image = ContainerImage.from_dict(image_data)
             await self.save_image_at_node(image, peer.node)
 
     async def fetch_layers_from_peer(self, peer: Peer):
@@ -180,7 +155,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         for layer_data in layers:
             # discard `id` sent from remote
             layer_data.pop('id', None)
-            layer = DockerLayer.from_dict(layer_data)
+            layer = ContainerLayer.from_dict(layer_data)
             await self.save_layer_at_node(layer, peer.node)
 
     async def daemon_error(self, error: str):
@@ -224,7 +199,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             self.log.debug("Probing docker daemon")
 
             # Delete all data regarding our node
-            await DockerUtil.reset_docker_info_of_node(self.node.uuid.hex)
+            await ContainerUtil.reset_docker_info_of_node(self.node.uuid.hex)
 
             # wait until we can update our docker info
             await self.util.update_docker_info(self.node)
@@ -328,7 +303,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
 
         """
         # image_data = await self.aiodocker.images.get(name=image_id)
-        image = DockerImage.get(DockerImage.hash_id == image_id)
+        image = ContainerImage.get(ContainerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
 
         await self.unset_local_layers(image.layers, image_id)
@@ -346,8 +321,8 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """
         Unset image_id from local_image_refs of layers
         """
-        layers = DockerLayer.select() \
-                            .where(DockerLayer.diff_id.in_(diff_id_list)) \
+        layers = ContainerLayer.select() \
+                            .where(ContainerLayer.diff_id.in_(diff_id_list)) \
                             .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
         for layer in layers:
             layer.unset_local_image_refs(image_id)
@@ -360,8 +335,8 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """
         Unset available layer, delete it if no image refers it
         """
-        layers = DockerLayer.select() \
-                            .where(DockerLayer.diff_id.in_(diff_id_list))
+        layers = ContainerLayer.select() \
+                            .where(ContainerLayer.diff_id.in_(diff_id_list))
         for layer in layers:
             if not layer.available_at:
                 layer.delete_instance()
@@ -377,19 +352,19 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """
 
         image_data = await self.aiodocker.images.get(name=id_or_tag)
-        image = DockerImage.from_dict(image_data, dialect="docker")
+        image = ContainerImage.from_dict(image_data, dialect="container")
         image_exists_in_db = False
 
         try:
-            image_ = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+            image_ = ContainerImage.get(ContainerImage.hash_id == image_data['Id'])
             old_available_at = image_.available_at
             image_.update_using_obj(image)
             image = image_
             image.available_at = old_available_at
             image_exists_in_db = True
-            self.log.debug("image record updated.. %s \n\n", image.to_dict(dialect="docker"))
+            self.log.debug("image record updated.. %s \n\n", image.to_dict(dialect="container"))
 
-        except DockerImage.DoesNotExist:
+        except ContainerImage.DoesNotExist:
             self.log.debug("not an existing one, creating a new record..")
 
         layers = await self.util.get_image_layers(image_data['RootFS']['Layers'], image_data['Id'])
@@ -403,7 +378,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
                 self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
 
         self.log.debug("set availability and save image %s \n %s \n\n",
-                       self.node.uuid.hex, image.to_dict(dialect="docker"))
+                       self.node.uuid.hex, image.to_dict(dialect="container"))
 
         image.set_available_at(self.node.uuid.hex)
 
@@ -426,12 +401,12 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         Tag an image existing in database. If already same tag exists,
         move it from old one to new one.
         """
-        target = DockerImage.get_image_data(image_id)
+        target = ContainerImage.get_image_data(image_id)
         if tag not in target.tags:
             target.tags = [tag] # type: ignore
             target.save()
 
-        images = DockerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
+        images = ContainerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
 
         for image in images:
             if image.hash_id == target.hash_id:
@@ -447,7 +422,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         # aiodocker.events.subscribe() can't get information about what tag will be removed...
         try:
             image_data = await self.aiodocker.images.get(name=image_identifier)
-            image = DockerImage.get(DockerImage.hash_id == image_data['Id'])
+            image = ContainerImage.get(ContainerImage.hash_id == image_data['Id'])
             image.tags = image_data['RepoTags']
             image.save()
         except DockerError:

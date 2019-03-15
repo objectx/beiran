@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module for DockerLayer and DockerImage Model
+Module for ContainerLayer and ContainerImage Model
 """
 from datetime import datetime
 
@@ -29,7 +29,7 @@ from beiran.daemon.common import Services
 
 from .image_ref import add_default_tag, is_digest, add_idpref
 
-class CommonDockerObjectFunctions:
+class CommonContainerObjectFunctions:
     """..."""
 
     available_at = JSONStringField(default=list)
@@ -46,8 +46,8 @@ class CommonDockerObjectFunctions:
             return
         self.available_at = [n for n in self.available_at if n != uuid_hex] # type: ignore
 
-class DockerImage(BaseModel, CommonDockerObjectFunctions):
-    """DockerImage"""
+class ContainerImage(BaseModel, CommonContainerObjectFunctions):
+    """ContainerImage"""
 
     created_at = IntegerField()
     hash_id = CharField(max_length=128, primary_key=True)
@@ -66,11 +66,11 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
     has_unknown_layers = BooleanField(default=False)
 
     @classmethod
-    def from_dict(cls, _dict: dict, **kwargs) -> "DockerImage":
+    def from_dict(cls, _dict: dict, **kwargs) -> "ContainerImage":
         if 'availability' in _dict:
             del _dict['availability']
 
-        if 'dialect' in kwargs and kwargs['dialect'] == "docker":
+        if 'dialect' in kwargs and kwargs['dialect'] == "container":
             new_dict = {}
 
             # be sure it is timestamp
@@ -142,14 +142,14 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
         """
         try:
             image = cls.get_image_data(image_identifier)
-        except DockerImage.DoesNotExist:
+        except ContainerImage.DoesNotExist:
             return []
 
         return image.available_at
 
 
     @classmethod
-    def get_image_data(cls, image_identifier: str) -> "DockerImage":
+    def get_image_data(cls, image_identifier: str) -> "ContainerImage":
         """
         get a image data. search with `hash_id`, `repo_digests` or `tags`
         """
@@ -162,22 +162,22 @@ class DockerImage(BaseModel, CommonDockerObjectFunctions):
             try:
                 image = cls.get(SQL('tags LIKE \'%%"%s"%%\'' % add_default_tag(image_identifier)))
 
-            except DockerImage.DoesNotExist:
+            except ContainerImage.DoesNotExist:
                 # search with hash_id
                 images = cls.select().where((SQL('hash_id LIKE \'%s%%\'' %
                                                  add_idpref(image_identifier))))
 
                 # if found 0 or a few images
                 if len(images) != 1:
-                    raise DockerImage.DoesNotExist()
+                    raise ContainerImage.DoesNotExist()
 
                 image = images.first()
 
         return image
 
 
-class DockerLayer(BaseModel, CommonDockerObjectFunctions):
-    """DockerLayer"""
+class ContainerLayer(BaseModel, CommonContainerObjectFunctions):
+    """ContainerLayer"""
 
     digest = CharField(max_length=128, null=True)
     diff_id = CharField(max_length=128)
@@ -206,4 +206,4 @@ class DockerLayer(BaseModel, CommonDockerObjectFunctions):
         ]
 
 
-MODEL_LIST = [DockerImage, DockerLayer]  # we may discover dynamically
+MODEL_LIST = [ContainerImage, ContainerLayer]  # we may discover dynamically

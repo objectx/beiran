@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=too-many-lines
-"""Docker Plugin Utility Module"""
+"""Container Plugin Utility Module"""
 import asyncio
 import os
 import logging
@@ -47,7 +47,7 @@ from beiran.lib import async_write_file_stream, async_req
 from beiran.models import Node
 from beiran.util import clean_keys
 
-from .models import DockerImage, DockerLayer
+from .models import ContainerImage, ContainerLayer
 from .image_ref import normalize_ref, is_tag, is_digest, add_idpref, del_idpref, \
                        add_default_tag
 
@@ -67,8 +67,8 @@ async def aio_isdir(path: str):
     return await loop.run_in_executor(None, os.path.isdir, path)
 
 
-class DockerUtil: # pylint: disable=too-many-instance-attributes
-    """Docker Utilities"""
+class ContainerUtil: # pylint: disable=too-many-instance-attributes
+    """Container Utilities"""
 
     class CannotFindLayerMappingError(Exception):
         """..."""
@@ -223,27 +223,27 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
     @staticmethod
     async def reset_docker_info_of_node(uuid_hex: str):
         """ Delete all (local) layers and images from database """
-        for image in list(DockerImage.select(DockerImage.hash_id,
-                                             DockerImage.available_at)):
+        for image in list(ContainerImage.select(ContainerImage.hash_id,
+                                             ContainerImage.available_at)):
             if uuid_hex in image.available_at:
                 image.unset_available_at(uuid_hex)
                 image.save()
 
-        for layer in list(DockerLayer.select(DockerLayer.id,
-                                             DockerLayer.digest,
-                                             DockerLayer.available_at)):
+        for layer in list(ContainerLayer.select(ContainerLayer.id,
+                                             ContainerLayer.digest,
+                                             ContainerLayer.available_at)):
             if uuid_hex in layer.available_at:
                 layer.unset_available_at(uuid_hex)
                 layer.save()
 
-        await DockerUtil.delete_unavailable_objects()
+        await ContainerUtil.delete_unavailable_objects()
 
     @staticmethod
     async def delete_unavailable_objects():
         """Delete unavailable layers and images"""
-        DockerImage.delete().where(SQL('available_at = \'[]\' AND' \
+        ContainerImage.delete().where(SQL('available_at = \'[]\' AND' \
             ' download_progress = \'null\'')).execute()
-        DockerLayer.delete().where(SQL('available_at = \'[]\' AND ' \
+        ContainerLayer.delete().where(SQL('available_at = \'[]\' AND ' \
             'download_progress = \'null\'')).execute()
 
     async def fetch_docker_info(self) -> dict:
@@ -386,28 +386,28 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             return {}
 
     async def get_image_layers(self, diffid_list: list, image_id: str) -> list:
-        """Returns an array of DockerLayer objects given diffid array"""
+        """Returns an array of ContainerLayer objects given diffid array"""
         layers = []
         for idx, diffid in enumerate(diffid_list):
             try:
                 layer = await self.get_layer_by_diffid(diffid, idx, image_id)
-                # handle DockerUtil.CannotFindLayerMappingError?
+                # handle ContainerUtil.CannotFindLayerMappingError?
                 layers.append(layer)
             except FileNotFoundError:
                 self.logger.error("attempted to access to a non-existent layer by diff id: %s",
                                   diffid)
         return layers
 
-    async def get_layer_by_diffid(self, diffid: str, idx: int, image_id: str) -> DockerLayer:
+    async def get_layer_by_diffid(self, diffid: str, idx: int, image_id: str) -> ContainerLayer:
         """
-        Makes an DockerLayer objects using diffid of layer
+        Makes an ContainerLayer objects using diffid of layer
 
         Args:
             diffid (string)
             idx (integer): order of layer in docker image
 
         Returns:
-            (DockerLayer): `layer` object
+            (ContainerLayer): `layer` object
         """
 
         layerdb_path = self.storage + "/image/overlay2/layerdb"
@@ -423,9 +423,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         digest = self.diffid_mapping[diffid]
         try:
-            layer = DockerLayer.get(DockerLayer.diff_id == diffid)
-        except DockerLayer.DoesNotExist:
-            layer = DockerLayer()
+            layer = ContainerLayer.get(ContainerLayer.diff_id == diffid)
+        except ContainerLayer.DoesNotExist:
+            layer = ContainerLayer()
             layer.digest = digest
         layer.set_local_image_refs(image_id)
 
@@ -508,7 +508,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                              Accept=schema_v2_header)
 
         if resp.status != 200:
-            raise DockerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
+            raise ContainerUtil.FetchManifestFailed("Failed to fetch manifest. code: %d"
                                                  % resp.status)
         return manifest
 
@@ -547,7 +547,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     val_dict['scope']
                 )
             except Exception:
-                raise DockerUtil.AuthenticationFailed("Failed to get Bearer token")
+                raise ContainerUtil.AuthenticationFailed("Failed to get Bearer token")
 
             return 'Bearer ' + token
 
@@ -556,12 +556,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 login_str = kwargs.pop('user') + ":" + kwargs.pop('passwd')
                 login_str = base64.b64encode(login_str.encode('utf-8')).decode('utf-8')
             except KeyError:
-                raise DockerUtil.AuthenticationFailed("Basic auth required but " \
+                raise ContainerUtil.AuthenticationFailed("Basic auth required but " \
                                                       "'user' and 'passwd' wasn't passed")
 
             return 'Basic ' + login_str
 
-        raise DockerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
+        raise ContainerUtil.AuthenticationFailed("Unsupported type of authentication (%s)"
                                               % headers['Www-Authenticate'])
 
     async def download_layer_from_origin(self, ref: dict, digest: str, jobid: str, **kwargs):
@@ -598,7 +598,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                                  Authorization=requirements)
 
         if resp.status != 200:
-            raise DockerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
+            raise ContainerUtil.LayerDownloadFailed("Failed to download layer. code: %d" % resp.status)
 
         self.logger.debug("downloaded layer %s to %s", digest, save_path)
         self.queues[jobid][digest]['status'] = self.DL_FINISH
@@ -662,7 +662,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
          # docker library or other node
         try:
-            layer = DockerLayer.get(DockerLayer.digest == digest)
+            layer = ContainerLayer.get(ContainerLayer.digest == digest)
 
             # check docker storage
             try:
@@ -673,7 +673,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     return 'cache', layer.cache_path
             # this exception handling may be needless if 'dockerlayer' in datbase is
             # initialized when daemon start
-            except DockerUtil.LayerMetadataNotFound:
+            except ContainerUtil.LayerMetadataNotFound:
                 pass
 
             # try to download layer from node that has tarball in own cache directory
@@ -687,10 +687,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
                 if resp.status == 200:
                     if not os.path.exists(tar_layer_path):
-                        raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                        raise ContainerUtil.LayerNotFound("Layer doesn't exist in cache directory")
                     return 'cache', tar_layer_path
 
-        except (DockerLayer.DoesNotExist, IndexError):
+        except (ContainerLayer.DoesNotExist, IndexError):
             pass
 
         # TODO: Wait for finish if another beiran is currently downloading it
@@ -761,7 +761,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                                       retry=self.RETRY, Authorization=requirements)
 
         if resp.status != 200:
-            raise DockerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
+            raise ContainerUtil.ConfigDownloadFailed("Failed to download config. code: %d"
                                                   % resp.status)
         return await resp.text(encoding='utf-8')
 
@@ -822,7 +822,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             # Probably following sentences are needed when saving layers that do not belong
             # to any image.
 
-            # layer_ = DockerLayer()
+            # layer_ = ContainerLayer()
             # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
             # layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
             # layer_.digest = layer_d['digest']
@@ -907,7 +907,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 break
 
         if manifest_digest is None:
-            raise DockerUtil.ManifestError('No supported platform found in manifest list')
+            raise ContainerUtil.ManifestError('No supported platform found in manifest list')
 
 
         # get manifest
@@ -928,9 +928,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     ref, manifest, jobid
                 )
             else:
-                raise DockerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
+                raise ContainerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
         else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
+            raise ContainerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         manifestlist_str = json.dumps(manifestlist, indent=3)
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
@@ -948,10 +948,10 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             # check layer existence, then set status
             status = self.DL_INIT
             try:
-                layer = DockerLayer.get(DockerLayer.digest == layer_d['digest'])
+                layer = ContainerLayer.get(ContainerLayer.digest == layer_d['digest'])
                 if layer.cache_path or layer.cache_gz_path or layer.docker_path:
                     status = self.DL_ALREADY
-            except DockerLayer.DoesNotExist:
+            except ContainerLayer.DoesNotExist:
                 pass
 
             self.queues[jobid][layer_d['digest']] = {
@@ -1017,12 +1017,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """
 
         # try:
-        #     image = DockerImage.get_image_data(tag)
+        #     image = ContainerImage.get_image_data(tag)
         #     if image.repo_digests:
         #         return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
         #     return image.config, image.hash_id, None
 
-        # except (DockerImage.DoesNotExist, FileNotFoundError):
+        # except (ContainerImage.DoesNotExist, FileNotFoundError):
         #     pass
 
 
@@ -1059,9 +1059,9 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                 )
 
             else:
-                raise DockerUtil.ManifestError('Invalid media type: %d' % media_type)
+                raise ContainerUtil.ManifestError('Invalid media type: %d' % media_type)
         else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
+            raise ContainerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         return config_json_str, config_digest, repo_digest
 
@@ -1096,7 +1096,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         config_digest = hashlib.sha256(config_json_str.encode('utf-8')).hexdigest()
         if config_digest != image_id:
-            raise DockerUtil.ConfigError(
+            raise ContainerUtil.ConfigError(
                 'Invalid config. The digest is wrong (expect: %s, actual: %s)'
                 % (image_id, config_digest))
 
@@ -1132,7 +1132,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             for i, diff_id in enumerate(diff_id_list):
                 layer_tar_file = self.get_layer_tar_file(diff_id)
                 if not os.path.exists(layer_tar_file):
-                    raise DockerUtil.LayerNotFound("Layer doesn't exist in cache directory")
+                    raise ContainerUtil.LayerNotFound("Layer doesn't exist in cache directory")
                     # Do not create tarball from storage of docker!!!
                     # The digest of the tarball varies depending on mtime of the file to be added
                     # with tarfile.open(self.layer_tar_path + '/' + f_name, "w") as layer_tar:
@@ -1167,12 +1167,12 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         input_file = os.path.join(
             self.layerdb_path, del_idpref(self.layerdb_mapping[diff_id]), "tar-split.json.gz")
         if not os.path.exists(input_file):
-            raise DockerUtil.LayerMetadataNotFound(
+            raise ContainerUtil.LayerMetadataNotFound(
                 "Docker doesn't have metadata of the layer %s" % input_file)
 
         relative_path = self.docker_find_layer_dir_by_digest(self.diffid_mapping[diff_id])
         if not relative_path:
-            raise DockerUtil.LayerNotFound("Layer doesn't exist in %s" % relative_path)
+            raise ContainerUtil.LayerNotFound("Layer doesn't exist in %s" % relative_path)
 
         output_file = os.path.join(self.layer_tar_path, del_idpref(diff_id) + '.tar')
 

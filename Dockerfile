@@ -17,7 +17,7 @@ ADD plugins/beiran_discovery_zeroconf/requirements.txt /opt/beiran/r-zeroconf.tx
 RUN pip install -r /opt/beiran/r-zeroconf.txt
 
 ADD plugins/beiran_package_container/requirements.txt /opt/beiran/r-container.txt
-RUN pip install -r /opt/beiran/r-docker.txt
+RUN pip install -r /opt/beiran/r-container.txt
 
 ADD plugins/beiran_interface_docker/requirements.txt /opt/beiran/r-docker.txt
 RUN pip install -r /opt/beiran/r-docker.txt

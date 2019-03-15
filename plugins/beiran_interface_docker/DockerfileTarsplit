@@ -1,0 +1,4 @@
+FROM golang:1.11.5-alpine3.9
+LABEL maintainer="info@beiran.io"
+RUN apk add git && go get -d github.com/vbatts/tar-split/cmd/tar-split && \
+    CGO_ENABLED=0 go build -o /tar-split /go/src/github.com/vbatts/tar-split/cmd/tar-split

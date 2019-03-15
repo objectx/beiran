@@ -21,4 +21,4 @@
 """
 Import all plugin classes to make import statements clear.
 """
-from .container import ContainerPackaging as Plugin
+from .plugin_docker import DockerPackaging as Plugin

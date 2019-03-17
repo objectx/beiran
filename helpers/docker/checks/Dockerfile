@@ -9,7 +9,7 @@ RUN apk add --no-cache \
     musl-dev \
     curl-dev
 
-RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy pyresttest==1.7.1 astroid==2.1.0
+RUN pip install flake8==3.5.0 flake8-docstrings==1.3.0 pylint==2.0.0 bandit==1.4.0 mypy pyresttest==1.7.1 "astroid>=2.1.0,<2.2.0" "pycares>=2.4.0,<3.0.0"
 
 ADD mypy.ini /opt/mypy.ini
 ADD .pylintrc /opt/pylintrc

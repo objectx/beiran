@@ -16,7 +16,7 @@
 - [zeroconf](https://pypi.python.org/pypi/zeroconf) (for local node discovery)
 - [click](https://pypi.python.org/pypi/click) (for cli options, commands)
 
-## Docker Setteings
+## Docker Settings
 
 ### Install Docker
 
@@ -56,6 +56,23 @@ Server Version: 17.03.2-ce
 Storage Driver: overlay2
 ...
 ```
+
+### Install tar-split
+
+beiran's docker plugin needs [tar-split](https://github.com/vbatts/tar-split) now. Please create the binary file and set `tar_split_path`;
+
+```
+$ go get github.com/vbatts/tar-split
+$ export BEIRAN_PACKAGE_DOCKER_CONFIG='tar_split_path=path/to/tar-split'
+```
+
+Or, copy the binary file to the plugin directory (deafult `tar-split_path` is there)
+
+```
+$ go get github.com/vbatts/tar-split
+$ cp path/to/tar-split plugins/beiran_package_docker/
+```
+
 
 ## Virtualenv
 

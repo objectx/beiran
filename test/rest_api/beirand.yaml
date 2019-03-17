@@ -3,6 +3,8 @@
 ---
 - config:
   - testset: "Beiran"
+  - timeout: 15
+  - retries: 2
   - variable_binds: {test_docker_layer: 'sha256:d1725b59e92d6462c6d688ef028979cc6bb150762db99d18dddc7fa54b82b0ce',
                      test_docker_image: 'hello-world',
                      test_docker_image_id: 'sha256:fce289e99eb9bca977dae136fbe2a82b6b7d4c372474c9235adc1741675f587e',

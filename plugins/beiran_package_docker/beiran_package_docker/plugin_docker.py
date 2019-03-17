@@ -59,12 +59,14 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
     def set_dynamic_defaults(self):
         """Set dynamic configuration value like using ``run_dir``"""
         self.config.setdefault('cache_dir', config.cache_dir + '/docker')
+        self.config.setdefault('tar_split_path', os.path.dirname(__file__) + '/tar-split')
 
     async def init(self):
         self.aiodocker = Docker()
         self.util = DockerUtil(cache_dir=self.config["cache_dir"],
                                storage=self.config["storage"], aiodocker=self.aiodocker,
-                               logger=self.log, local_node=self.node)
+                               logger=self.log, local_node=self.node,
+                               tar_split_path=self.config['tar_split_path'])
         self.docker = docker.from_env()
         self.docker_lc = docker.APIClient()
         self.probe_task = None
@@ -131,7 +133,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             self.log.debug("new layer from remote %s", str(layer))
 
     def save_local_paths(self, layer: DockerLayer):
-        """Update 'cache_path' and 'docker_path' with paths of local node"""
+        """Update 'cache_path' and 'cache_gz_path' and 'docker_path' with paths of local node"""
         try:
             docker_path = self.util.layerdir_path.format(
                 layer_dir_name=self.util.get_cache_id_from_chain_id(layer.chain_id))
@@ -143,12 +145,19 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
 
         except FileNotFoundError:
             layer.docker_path = None
+
+        cache_path = self.util.get_layer_tar_file(layer.diff_id)
+        if os.path.exists(cache_path):
+            layer.cache_path = cache_path
+        else:
+            layer.cache_path = None
+
         if layer.digest:
-            cache_path = os.path.join(self.util.layer_cache_path, del_idpref(layer.digest) + '.tar')
-            if os.path.exists(cache_path):
-                layer.cache_path = cache_path
+            cache_gz_path = self.util.get_layer_gz_file(layer.digest)
+            if os.path.exists(cache_gz_path):
+                layer.cache_gz_path = cache_gz_path
             else:
-                layer.cache_path = None
+                layer.cache_gz_path = None
 
     async def fetch_images_from_peer(self, peer: Peer):
         """fetch image list from the node and update local db"""
@@ -389,10 +398,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
         # skip verbose updates of records
         if not skip_updating_layer:
             for layer in layers:
-                # 'available_at' field is set if the node has the layer in cache directory
-                # fix this code if we can create traball from docker storage
-                if layer.cache_path:
-                    layer.set_available_at(self.node.uuid.hex)
+                layer.set_available_at(self.node.uuid.hex)
                 layer.save()
                 self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
 

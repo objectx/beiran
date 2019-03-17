@@ -218,7 +218,7 @@ start_test_services:
    - |
      for node in beiran1 beiran2 beiran3 beiran4
      do
-        docker cp $HOME/tar-split $(docker-compose ps -q $node):/opt/beiran/plugins/beiran_package_docker/tar-split
+        docker cp $HOME/tar-split $(docker-compose ps -q $node):/opt/plugins/beiran_package_docker/beiran_package_docker/tar-split
      done
 
 test:unit:

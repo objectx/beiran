@@ -215,11 +215,11 @@ start_test_services:
    - apk add musl-dev
    - go get -d github.com/vbatts/tar-split/cmd/tar-split
    - go build -o $HOME/tar-split -a -ldflags '-extldflags "-static"' $HOME/go/src/github.com/vbatts/tar-split/cmd/tar-split
-   - |
-     for node in beiran1 beiran2 beiran3 beiran4
-     do
-        docker cp $HOME/tar-split $(docker-compose ps -q $node):/opt/plugins/beiran_package_docker/beiran_package_docker/tar-split
-     done
+#   - |
+#     for node in beiran1 beiran2 beiran3 beiran4
+#     do
+#        docker cp $HOME/tar-split $(docker-compose ps -q $node):/opt/plugins/beiran_package_docker/beiran_package_docker/tar-split
+#     done
 
 test:unit:
   stage: test

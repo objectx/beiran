@@ -18,9 +18,9 @@ RUN python setup.py install
 #WORKDIR /opt/beiran_interface_k8s
 #RUN python setup.py install
 
-ADD pyinstaller /opt/pyinstaller
+ADD helpers/pyinstaller /opt/pyinstaller
 
-ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
+#ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
 
 WORKDIR /opt/pyinstaller
 
@@ -47,7 +47,7 @@ RUN apk add --no-cache \
     yajl \
     yajl-dev
 
-COPY --from=pyinstaller /opt/beiran/pyinstaller/dist/beiran /bin/
+COPY --from=pyinstaller /opt/pyinstaller/dist/beiran /bin/
 
 VOLUME /var/lib/beiran
 VOLUME /etc/beiran

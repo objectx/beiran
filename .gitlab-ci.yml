@@ -113,6 +113,27 @@ publish:oci-image-layout:
   only:
     - tags
 
+publish:single-binary:
+  stage: publish
+  tags:
+  - docker
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/single-binary:ci-${CI_PIPELINE_ID} -f helpers/pyinstaller/Dockerfile .
+    - docker run --name "single_binary${CI_PIPELINE_ID}" --entrypoint "" $CI_REGISTRY_IMAGE/single-binary:ci-${CI_PIPELINE_ID} echo "dummy container"
+    - docker cp "single_binary${CI_PIPELINE_ID}":/bin/beiran beiran-single-binary-${CI_PIPELINE_ID}
+    - docker rm "single_binary${CI_PIPELINE_ID}"
+    - echo http://dl-cdn.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
+    - apk update
+    - apk add go=1.11.5-r0
+    - apk add musl-dev
+    - go get github.com/minio/mc
+    - $HOME/go/bin/mc config host add beiran https://minio.beiran.io $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+    - $HOME/go/bin/mc cp beiran-single-binary:ci-${CI_PIPELINE_ID} beiran/releases
+
+#  only:
+#    - tags
+
+
 checks:lint-beiran:
   stage: checks
   image: $CI_REGISTRY_IMAGE/checks:ci-${CI_PIPELINE_ID}

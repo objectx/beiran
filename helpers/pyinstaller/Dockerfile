@@ -15,8 +15,8 @@ RUN python setup.py install
 WORKDIR /opt/beiran_package_docker
 RUN python setup.py install
 
-#WORKDIR /opt/beiran_interface_k8s
-#RUN python setup.py install
+WORKDIR /opt/beiran_interface_k8s
+RUN python setup.py install
 
 ADD helpers/pyinstaller /opt/pyinstaller
 
@@ -28,6 +28,7 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --clean --log-level DEBUG --noconfirm \
                                --hidden-import  beiran.cli_node \
                                --hidden-import  beiran_package_docker.cli_docker \
+                               --hidden-import  beiran_interface_k8s \
                                --hidden-import  beiran_discovery_dns \
                                --hidden-import  beiran_discovery_dns.dns \
                                --hidden-import  beiran_discovery_zeroconf \
@@ -35,6 +36,7 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --paths /opt/pyinstaller \
                                --paths ../beiran/beiran \
                                --paths ../beiran_package_docker/beiran_package_docker \
+                               --paths ../beiran_interface_k8s/beiran_interface_k8s \
                                --exclude-module pycrypto \
                                --exclude-module PyInstaller \
                                --additional-hooks-dir ./hooks/ \

@@ -1,3 +1,7 @@
+"""
+Default config file as python string for single binary
+"""
+# pylint: disable=invalid-name
 config_yaml = """
 # beiran configuration file
 

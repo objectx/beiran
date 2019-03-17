@@ -68,13 +68,19 @@ class Config(metaclass=ConfigMeta):
     class properties. It overrides default values by values from
     config toml file or environment."""
 
-    def __init__(self, config_file=None):
+    def __init__(self, config_file=None, config_string=None):
         """construct config object"""
         self.conf = dict()
         self._enabled_plugins = list()
 
+        if config_file and config_string:
+            raise RuntimeError(
+                "Eigter of `config file` or `config_sting` must be specified, not both!")
+
         if config_file:
             self.conf = self.load_from_file(config_file)
+        if config_string:
+            self.conf = self.load_from_string(config_string)
 
     def get_config_from_file(self, ckey=None):
         """get config from config.toml"""
@@ -143,6 +149,24 @@ class Config(metaclass=ConfigMeta):
             LOGGER.error(
                 "Could not found config file at location: %s",
                 config_file)
+        except toml.TomlDecodeError as err:
+            LOGGER.error(
+                "Could not load config toml file, "
+                "please check your config file syntax. %s", err
+            )
+
+    @staticmethod
+    def load_from_string(config_string: str):
+        """
+        Load config values from given yaml string
+        Args:
+            config_string (str): config string
+
+        Returns:
+
+        """
+        try:
+            return toml.loads(config_string)
         except toml.TomlDecodeError as err:
             LOGGER.error(
                 "Could not load config toml file, "
@@ -481,4 +505,17 @@ def load_default_config_file() -> Union[str, None]:
 
 
 # pylint: disable=invalid-name
-config = Config(config_file=os.getenv("BEIRAN_CONF_FILE", load_default_config_file()))
+conf_file = os.getenv("BEIRAN_CONF_FILE", load_default_config_file())
+
+if conf_file:
+    config = Config(config_file=conf_file)
+else:
+    try:
+        from beiran.config_toml import config_yaml
+        config = Config(config_string=config_yaml)
+    except ImportError:
+        raise RuntimeError(
+            "You must provide a config file by placing onto default path: {} "
+            "or setting BEIRAN_CONF_FILE env file".format(
+                "{}/config.toml".format(DEFAULTS.get('CONFIG_DIR'))))
+# pylint: enable=invalid-name

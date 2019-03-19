@@ -139,7 +139,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         self.queues: dict = {}
         self.emitters: dict = {}
         self.tar_split_path = tar_split_path
-        self.container = None # type: ContainerPackaging
+        self.container = ContainerPackaging
 
     @property
     def digest_path(self)-> str:

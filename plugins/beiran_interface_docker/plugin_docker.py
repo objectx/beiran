@@ -76,7 +76,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
 
     async def load_depend_plugin_instances(self, instances: list) -> None:
         """Load instances of plugins that has dependencies on this plugin"""
-        self.util.container = instances['package:container']
+        self.util.container = instances['package:container'] # type: ignore
 
     async def start(self):
         self.log.debug("starting docker plugin")

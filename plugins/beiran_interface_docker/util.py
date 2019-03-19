@@ -24,12 +24,9 @@ import asyncio
 import os
 import logging
 import json
-import hashlib
 import uuid
 import subprocess
 from typing import Tuple, Optional
-from collections import OrderedDict
-from pyee import EventEmitter
 import aiohttp
 
 import aiofiles
@@ -38,10 +35,8 @@ from aiodocker import Docker
 
 from beiran.log import build_logger
 from beiran.models import Node
-from beiran.util import clean_keys
 
 from beiran_package_container.models import ContainerLayer
-from beiran_package_container.util import ContainerUtil
 from beiran_package_container.image_ref import normalize_ref, add_idpref, del_idpref
 
 
@@ -67,19 +62,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """..."""
         pass
 
-    class ManifestError(Exception):
-        """..."""
-        pass
-
     class LayerNotFound(Exception):
         """..."""
         pass
 
     class LayerMetadataNotFound(Exception):
         """..."""
-
-    # event datas for downloading layers
-    EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
+        pass
 
     def __init__(self, storage: str, # pylint: disable=too-many-arguments
                  aiodocker: Docker = None, logger: logging.Logger = None,
@@ -90,7 +79,6 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         self.aiodocker = aiodocker or Docker()
         self.logger = logger if logger else LOGGER
-        self.emitters: dict = {}
         self.tar_split_path = tar_split_path
         self.container = None
 
@@ -414,27 +402,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                   chain_id.replace(':', '/') + '/cache-id') as file:
             return file.read()
 
-    async def ensure_having_layer(self, ref: dict, digest: str, jobid: str, **kwargs):
+    async def ensure_docker_having_layer(self, digest: str, jobid: str) -> Tuple[str, str]:
         """Download a layer if it doesnt exist locally
         This function returns the path of .tar.gz file, .tar file file or the layer directory
 
         Args:
             digest(str): digest of layer
         """
-        # beiran cache directory
         diff_id = self.container.get_diffid_by_digest(digest) # type: ignore
         tar_layer_path = self.container.get_layer_tar_file(diff_id) # type: ignore
-        gz_layer_path = self.container.get_layer_gz_file(digest) # type: ignore
 
-        if os.path.exists(tar_layer_path):
-            self.logger.debug("Found layer (%s)", tar_layer_path)
-            return 'cache', tar_layer_path # .tar file exists
-
-        if os.path.exists(gz_layer_path):
-            self.logger.debug("Found layer (%s)", gz_layer_path)
-            return 'cache-gz', gz_layer_path # .tar.gz file exists
-
-         # docker library or other node
         try:
             layer = ContainerLayer.get(ContainerLayer.digest == digest)
 
@@ -442,7 +419,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             try:
                 if layer.docker_path:
                     layer.cache_path = await self.assemble_layer_tar(layer.diff_id)
-                    self.logger.debug("Found layer %s in Docker's storage", diff_id)
+                    self.logger.debug("Found layer %s in Docker's storage", layer.diff_id)
                     layer.save()
                     return 'cache', layer.cache_path
             # this exception handling may be needless if 'dockerlayer' in datbase is
@@ -468,253 +445,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except (ContainerLayer.DoesNotExist, IndexError):
             pass
 
-        # TODO: Wait for finish if another beiran is currently downloading it
-        # TODO:  -- or ask for simultaneous streaming download
-        await self.container.download_layer_from_origin(ref, digest, jobid, **kwargs) # type: ignore
-        return 'cache-gz', gz_layer_path
-
-    async def get_layer_diffid(self, ref: dict, digest: str, jobid: str, **kwargs)-> str:
-        """Calculate layer's diffid, using it's tar file"""
-        storage, layer_path = await self.ensure_having_layer(ref, digest, jobid, **kwargs)
-
-        if storage == 'cache':
-            tmp_hash = hashlib.sha256()
-            with open(layer_path, 'rb') as file:
-                while True:
-                    chunk = file.read(2048 * tmp_hash.block_size)
-                    if not chunk:
-                        break
-                    tmp_hash.update(chunk)
-
-            diff_id = tmp_hash.hexdigest()
-
-        elif storage == 'cache-gz':
-            # decompress .tar.gz
-            diff_id, _ = await self.container.decompress_gz_layer(layer_path) # type: ignore
-
-        return add_idpref(diff_id)
-
-    async def fetch_config_schema_v1(self, ref: dict, # pylint: disable=too-many-locals, too-many-branches
-                                     manifest: dict, jobid: str) -> Tuple[str, str, str]:
-        """
-        Pull image using image manifest version 1
-        """
-        fs_layers = manifest['fsLayers']
-
-        descriptors = []
-        history = []
-
-        for i in range(len(fs_layers) - 1, -1, -1):
-
-            compatibility = json.loads(manifest['history'][i]['v1Compatibility'])
-
-            # do not chenge key order
-            layer_h = OrderedDict() # type: dict # history of a layer
-            if 'created' in compatibility:
-                layer_h['created'] = compatibility['created']
-            if 'author' in compatibility:
-                layer_h['author'] = compatibility['author']
-            if 'container_config' in compatibility:
-                if compatibility['container_config']['Cmd']:
-                    layer_h['created_by'] = " ".join(compatibility['container_config']['Cmd'])
-
-            if 'comment' in compatibility:
-                layer_h['comment'] = compatibility['comment']
-            if 'throwaway' in compatibility:
-                layer_h['empty_layer'] = True
-
-            history.append(layer_h)
-
-            if 'throwaway' in compatibility:
-                continue
-
-            layer_descriptor = {
-                'digest': fs_layers[i]['blobSum'],
-                # 'repoinfo': manifest['name'] + ':' + manifest['tag']
-                # 'repo':
-                # 'v2metadataservice':
-            }
-            descriptors.append(layer_descriptor)
-
-
-        rootfs = await self.get_layer_diffids_of_image(ref, descriptors, jobid)
-
-        # save layer records
-        chain_id = rootfs['diff_ids'][0]
-        top = True
-        for i, layer_d in enumerate(descriptors):
-            if top:
-                top = False
-            else:
-                chain_id = ContainerUtil.calc_chain_id( # type: ignore
-                    chain_id, rootfs['diff_ids'][i])
-
-            # Probably following sentences are needed when saving layers that do not belong
-            # to any image.
-
-            # layer_ = ContainerLayer()
-            # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
-            # layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
-            # layer_.digest = layer_d['digest']
-            # layer_.diff_id = rootfs['diff_ids'][i]
-            # layer_.chain_id = chain_id
-            # layer_.size = self.get_diff_size(layer_tar_path)
-            # layer_.cache_path = layer_tar_path
-
-            # layer_.save()
-
-            self.container.diffid_mapping[rootfs['diff_ids'][i]] = layer_d['digest'] # type: ignore
-            self.container.layerdb_mapping[rootfs['diff_ids'][i]] = chain_id # type: ignore
-
-        # create base of image config
-        config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
-        clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
-
-        config_json['rootfs'] = rootfs
-        config_json['history'] = history
-
-        # calc RepoDigest
-        del manifest['signatures']
-        manifest_str = json.dumps(manifest, indent=3)
-        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
-
-        # replace, shape, then calc digest
-        config_json = OrderedDict(sorted(config_json.items(), key=lambda x: x[0]))
-        config_json_str = json.dumps(config_json, separators=(',', ':'))
-        config_json_str = config_json_str.replace('&', r'\u0026') \
-                                         .replace('<', r'\u003c') \
-                                         .replace('>', r'\u003e')
-
-        config_digest = add_idpref(hashlib.sha256(config_json_str.encode('utf-8')).hexdigest())
-
-        return config_json_str, config_digest, repo_digest
-
-    async def fetch_config_schema_v2(self, ref: dict,
-                                     manifest: dict, jobid: str)-> Tuple[str, str, str]:
-        """
-        Pull image using image manifest version 2
-        """
-        config_digest = manifest['config']['digest']
-        config_json_str = await self.container.download_config_from_origin( # type: ignore
-            ref['domain'], ref['repo'], config_digest
-        )
-
-        manifest_str = json.dumps(manifest, indent=3)
-        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
-
-        # set mapping
-        diff_id_list = json.loads(config_json_str)['rootfs']['diff_ids']
-
-        chain_id = diff_id_list[0]
-        top = True
-        for i, diff_id in enumerate(diff_id_list):
-            if top:
-                top = False
-            else:
-                chain_id = ContainerUtil.calc_chain_id( # type: ignore
-                    chain_id, diff_id_list[i])
-            self.container.diffid_mapping[diff_id] = manifest['layers'][i]['digest'] # type: ignore
-            self.container.layerdb_mapping[diff_id] = chain_id # type: ignore
-
-        # download layers
-        await self.get_layer_diffids_of_image(ref, manifest['layers'], jobid)
-
-        return config_json_str, config_digest, repo_digest
-
-    async def fetch_config_manifest_list(self, ref: dict,
-                                         manifestlist: dict, jobid: str)-> Tuple[str, str, str]:
-        """
-        Read manifest list and call appropriate pulling image function for the machine.
-        """
-        host_arch = await ContainerUtil.get_go_python_arch() # type: ignore
-        host_os = await ContainerUtil.get_go_python_os() # type: ignore
-        manifest_digest = None
-
-        for manifest in manifestlist['manifests']:
-            if manifest['platform']['architecture'] == host_arch and \
-               manifest['platform']['os'] == host_os:
-                manifest_digest = manifest['digest']
-                break
-
-        if manifest_digest is None:
-            raise DockerUtil.ManifestError('No supported platform found in manifest list')
-
-
-        # get manifest
-        manifest = await self.fetch_docker_image_manifest( # type: ignore
-            ref['domain'], ref['repo'], manifest_digest)
-        schema_v = manifest['schemaVersion']
-
-        if schema_v == 1:
-            # pull layers and create config from version 1 manifest
-            config_json_str, config_digest, _ = await self.fetch_config_schema_v1(
-                ref, manifest, jobid
-            )
-
-        elif schema_v == 2:
-            if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
-                # pull layers using version 2 manifest
-                config_json_str, config_digest, _ = await self.fetch_config_schema_v2(
-                    ref, manifest, jobid
-                )
-            else:
-                raise DockerUtil.ManifestError('Invalid media type: %d' % manifest['mediaType'])
-        else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
-
-        manifestlist_str = json.dumps(manifestlist, indent=3)
-        repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
-        return config_json_str, config_digest, repo_digest
-
-    async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> dict:
-        """
-        Fetch docker image manifest specified repository.
-        """
-        # about header, see below URL
-        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
-        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.list.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
-                           "application/json"
-        return await self.container.fetch_image_manifest( # type: ignore
-            host, repository, tag_or_digest, schema_v2_header, **kwargs
-        )
-
-    def create_emitter(self, jobid):
-        """Create a new emitter and add it to a emitter dictionary"""
-        self.emitters[jobid] = EventEmitter()
-
-    async def get_layer_diffids_of_image(self, ref: dict, descriptors: list, jobid: str)-> dict:
-        """Download and allocate layers included in an image."""
-        self.container.queues[jobid] = dict() # type: ignore
-
-        for layer_d in descriptors:
-            # check layer existence, then set status
-            status = self.container.DL_INIT # type: ignore
-            try:
-                layer = ContainerLayer.get(ContainerLayer.digest == layer_d['digest'])
-                if layer.cache_path or layer.cache_gz_path or layer.docker_path:
-                    status = self.container.DL_ALREADY # type: ignore
-            except ContainerLayer.DoesNotExist:
-                pass
-
-            self.container.queues[jobid][layer_d['digest']] = { # type: ignore
-                'queue': asyncio.Queue(),
-                'status': status,
-                'size': 0
-            }
-
-        # if request to /docker/images/<id>/config, emitters is empty
-        if jobid in self.emitters:
-            self.emitters[jobid].emit(self.EVENT_START_LAYER_DOWNLOAD)
-
-        tasks = [
-            self.get_layer_diffid(ref, layer_d['digest'], jobid)
-            for layer_d in descriptors
-        ]
-        results = await asyncio.gather(*tasks)
-
-        return OrderedDict(type='layers', diff_ids=results)
+        return '', ''
 
     async def create_or_download_config(self, tag: str, jobid: str = uuid.uuid4().hex):
         """
@@ -735,21 +466,28 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         # except (ContainerImage.DoesNotExist, FileNotFoundError):
         #     pass
 
+        # about header, see below URL
+        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
+        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
+                           "application/vnd.docker.distribution.manifest.list.v2+json, " \
+                           "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
+                           "application/json"
 
         ref = normalize_ref(tag, index=True)
 
         # get manifest
-        manifest = await self.fetch_docker_image_manifest( # type: ignore
-            ref['domain'], ref['repo'], ref['suffix'])
+        manifest = await self.container.fetch_image_manifest( # type: ignore
+            ref['domain'], ref['repo'], ref['suffix'], schema_v2_header)
 
         schema_v = manifest['schemaVersion']
 
         if schema_v == 1:
 
             # pull layers and create config from version 1 manifest
-            config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v1(
-                ref, manifest, jobid
-            )
+            config_json_str, config_digest, repo_digest = \
+                await self.container.fetch_config_schema_v1( # type: ignore
+                    ref, manifest, jobid, self.ensure_docker_having_layer
+                )
 
         elif schema_v == 2:
             media_type = manifest['mediaType']
@@ -757,21 +495,24 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
 
                 # pull layers using version 2 manifest
-                config_json_str, config_digest, repo_digest = await self.fetch_config_schema_v2(
-                    ref, manifest, jobid
-                )
+                config_json_str, config_digest, repo_digest = \
+                    await self.container.fetch_config_schema_v2( # type: ignore
+                        ref, manifest, jobid, self.ensure_docker_having_layer
+                    )
 
             elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
 
                 # pull_schema_list
-                config_json_str, config_digest, repo_digest = await self.fetch_config_manifest_list(
-                    ref, manifest, jobid
-                )
+                config_json_str, config_digest, repo_digest = \
+                    await self.container.fetch_manifest_list( # type: ignore
+                        ref, manifest, jobid, schema_v2_header,
+                        self.ensure_docker_having_layer
+                    )
 
             else:
-                raise DockerUtil.ManifestError('Invalid media type: %d' % media_type)
+                raise self.container.ManifestError('Invalid media type: %d' % media_type)  # type: ignore # pylint: disable=line-too-long
         else:
-            raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
+            raise self.container.ManifestError('Invalid schema version: %d' % schema_v)  # type: ignore # pylint: disable=line-too-long
 
         return config_json_str, config_digest, repo_digest
 

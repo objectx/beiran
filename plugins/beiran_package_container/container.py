@@ -21,26 +21,30 @@
 """
 Container packaging plugin
 """
+import asyncio
 import os
 import re
 import base64
 import json
 import tarfile
 import uuid
-import gzip
 import hashlib
-from typing import Tuple
+import gzip
+from typing import Tuple, Callable, Awaitable, Any
+from collections import OrderedDict
 import aiohttp
-
+from pyee import EventEmitter
 from peewee import SQL
 
 from beiran.config import config
 from beiran.plugin import BasePackagePlugin, History
 from beiran.models import Node
+from beiran.util import clean_keys
 from beiran.lib import async_write_file_stream, async_req
 from beiran.daemon.peer import Peer
 
-from beiran_package_container.image_ref import is_tag, is_digest, add_default_tag, del_idpref
+from beiran_package_container.image_ref import is_tag, is_digest, add_default_tag, del_idpref, \
+                                               add_idpref
 from beiran_package_container.models import ContainerImage, ContainerLayer
 from beiran_package_container.models import MODEL_LIST
 from beiran_package_container.util import ContainerUtil
@@ -81,6 +85,13 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """..."""
         pass
 
+    class ManifestError(Exception):
+        """..."""
+        pass
+
+    # event datas for downloading layers
+    EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
+
     # status for downloading layers
     DL_INIT = 'init'
     DL_ALREADY = 'already'
@@ -111,6 +122,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         self.model_list = MODEL_LIST
         self.history = History() # type: History
         self.queues: dict = {}
+        self.emitters: dict = {}
 
         # TODO: Persist this mapping cache to disk or database
         self.diffid_mapping: dict = {}
@@ -176,6 +188,100 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """Return diff id of a layer by digest from mapping."""
         return list(self.diffid_mapping.keys())[list(self.diffid_mapping.values()).index(digest)]
 
+    async def ensure_having_layer(self, ref: dict, digest: str, jobid: str,
+                                  ensure_layer_func: Callable[[str, str], Awaitable[Any]],
+                                  **kwargs):
+        """Download a layer if it doesnt exist locally
+        This function returns the path of .tar.gz file, .tar file file or the layer directory
+
+        Args:
+            digest(str): digest of layer
+        """
+        # beiran cache directory
+        diff_id = self.get_diffid_by_digest(digest) # type: ignore
+        tar_layer_path = self.get_layer_tar_file(diff_id) # type: ignore
+        gz_layer_path = self.get_layer_gz_file(digest) # type: ignore
+
+        if os.path.exists(tar_layer_path):
+            self.log.debug("Found layer (%s)", tar_layer_path)
+            return 'cache', tar_layer_path # .tar file exists
+
+        if os.path.exists(gz_layer_path):
+            self.log.debug("Found layer (%s)", gz_layer_path)
+            return 'cache-gz', gz_layer_path # .tar.gz file exists
+
+        storage, layer_path = await ensure_layer_func(digest, jobid)
+        if storage != '' and layer_path != '':
+            return storage, layer_path
+
+        # TODO: Wait for finish if another beiran is currently downloading it
+        # TODO:  -- or ask for simultaneous streaming download
+        await self.download_layer_from_origin(ref, digest, jobid, **kwargs) # type: ignore
+        return 'cache-gz', gz_layer_path
+
+    async def get_layer_diffid(self, ref: dict, digest: str, jobid: str,
+                               ensure_layer_func: Callable[[str, str], Awaitable[Any]],
+                               **kwargs)-> str:
+        """Calculate layer's diffid, using it's tar file"""
+        storage, layer_path = await self.ensure_having_layer( # type: ignore
+            ref, digest, jobid, ensure_layer_func, **kwargs)
+
+        if storage == 'cache':
+            tmp_hash = hashlib.sha256()
+            with open(layer_path, 'rb') as file:
+                while True:
+                    chunk = file.read(2048 * tmp_hash.block_size)
+                    if not chunk:
+                        break
+                    tmp_hash.update(chunk)
+
+            diff_id = tmp_hash.hexdigest()
+
+        elif storage == 'cache-gz':
+            # decompress .tar.gz
+            diff_id, _ = await self.decompress_gz_layer(layer_path) # type: ignore
+
+        return add_idpref(diff_id)
+
+
+    async def get_layer_diffids_of_image(self, ref: dict, descriptors: list, jobid: str,
+                                         ensure_layer_func: Callable[[str, str], Awaitable[Any]],
+                                         )-> dict:
+        """Download and allocate layers included in an image."""
+        self.queues[jobid] = dict() # type: ignore
+
+        for layer_d in descriptors:
+            # check layer existence, then set status
+            status = self.DL_INIT # type: ignore
+            try:
+                layer = ContainerLayer.get(ContainerLayer.digest == layer_d['digest'])
+                if layer.cache_path or layer.cache_gz_path or layer.docker_path:
+                    status = self.DL_ALREADY # type: ignore
+            except ContainerLayer.DoesNotExist:
+                pass
+
+            self.queues[jobid][layer_d['digest']] = { # type: ignore
+                'queue': asyncio.Queue(),
+                'status': status,
+                'size': 0
+            }
+
+        # if request to /docker/images/<id>/config, emitters is empty
+        if jobid in self.emitters:
+            self.emitters[jobid].emit(self.EVENT_START_LAYER_DOWNLOAD)
+
+        tasks = [
+            self.get_layer_diffid(ref, layer_d['digest'], jobid, ensure_layer_func)
+            for layer_d in descriptors
+        ]
+        results = await asyncio.gather(*tasks)
+
+        return OrderedDict(type='layers', diff_ids=results)
+
+    def create_emitter(self, jobid):
+        """Create a new emitter and add it to a emitter dictionary"""
+        self.emitters[jobid] = EventEmitter()
+
     async def fetch_image_manifest(self, host, repository, tag_or_digest, schema_v2_header,
                                    **kwargs) -> dict:
         """
@@ -190,7 +296,6 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         # there is a purpose to check the type of authentication
         resp, _ = await async_req(url=url, return_json=False, timeout=self.TIMEOUT,
                                   retry=self.RETRY, method='HEAD')
-
         if resp.status == 401 or resp.status == 200:
             if resp.status == 401:
                 requirements = await self.get_auth_requirements(resp.headers, **kwargs)
@@ -198,11 +303,189 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             resp, manifest = await async_req(url=url, return_json=True, Authorization=requirements,
                                              timeout=self.TIMEOUT_DL_MANIFEST, retry=self.RETRY,
                                              Accept=schema_v2_header)
-
         if resp.status != 200:
             raise self.FetchManifestFailed("Failed to fetch manifest. code: %d"
                                            % resp.status)
         return manifest
+
+    async def fetch_config_schema_v1(self, ref: dict, # pylint: disable=too-many-locals, too-many-branches
+                                     manifest: dict, jobid: str,
+                                     ensure_layer_func: Callable[[str, str], Awaitable[Any]],
+                                     ) -> Tuple[str, str, str]:
+        """
+        Pull image using image manifest version 1
+        """
+        fs_layers = manifest['fsLayers']
+
+        descriptors = []
+        history = []
+
+        for i in range(len(fs_layers) - 1, -1, -1):
+
+            compatibility = json.loads(manifest['history'][i]['v1Compatibility'])
+
+            # do not chenge key order
+            layer_h = OrderedDict() # type: dict # history of a layer
+            if 'created' in compatibility:
+                layer_h['created'] = compatibility['created']
+            if 'author' in compatibility:
+                layer_h['author'] = compatibility['author']
+            if 'container_config' in compatibility:
+                if compatibility['container_config']['Cmd']:
+                    layer_h['created_by'] = " ".join(compatibility['container_config']['Cmd'])
+
+            if 'comment' in compatibility:
+                layer_h['comment'] = compatibility['comment']
+            if 'throwaway' in compatibility:
+                layer_h['empty_layer'] = True
+
+            history.append(layer_h)
+
+            if 'throwaway' in compatibility:
+                continue
+
+            layer_descriptor = {
+                'digest': fs_layers[i]['blobSum'],
+                # 'repoinfo': manifest['name'] + ':' + manifest['tag']
+                # 'repo':
+                # 'v2metadataservice':
+            }
+            descriptors.append(layer_descriptor)
+
+
+        rootfs = await self.get_layer_diffids_of_image(ref, descriptors, jobid,
+                                                       ensure_layer_func)
+
+        # save layer records
+        chain_id = rootfs['diff_ids'][0]
+        top = True
+        for i, layer_d in enumerate(descriptors):
+            if top:
+                top = False
+            else:
+                chain_id = ContainerUtil.calc_chain_id( # type: ignore
+                    chain_id, rootfs['diff_ids'][i])
+
+            # Probably following sentences are needed when saving layers that do not belong
+            # to any image.
+
+            # layer_ = ContainerLayer()
+            # layer_tar_path = self.layer_storage_path(layer_d['digest']).rstrip('.gz')
+            # layer_.set_available_at(self.local_node.uuid.hex) # type: ignore
+            # layer_.digest = layer_d['digest']
+            # layer_.diff_id = rootfs['diff_ids'][i]
+            # layer_.chain_id = chain_id
+            # layer_.size = self.get_diff_size(layer_tar_path)
+            # layer_.cache_path = layer_tar_path
+
+            # layer_.save()
+
+            self.diffid_mapping[rootfs['diff_ids'][i]] = layer_d['digest'] # type: ignore
+            self.layerdb_mapping[rootfs['diff_ids'][i]] = chain_id # type: ignore
+
+        # create base of image config
+        config_json = OrderedDict(json.loads(manifest['history'][0]['v1Compatibility']))
+        clean_keys(config_json, ['id', 'parent', 'Size', 'parent_id', 'layer_id', 'throwaway'])
+
+        config_json['rootfs'] = rootfs
+        config_json['history'] = history
+
+        # calc RepoDigest
+        del manifest['signatures']
+        manifest_str = json.dumps(manifest, indent=3)
+        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
+
+        # replace, shape, then calc digest
+        config_json = OrderedDict(sorted(config_json.items(), key=lambda x: x[0]))
+        config_json_str = json.dumps(config_json, separators=(',', ':'))
+        config_json_str = config_json_str.replace('&', r'\u0026') \
+                                         .replace('<', r'\u003c') \
+                                         .replace('>', r'\u003e')
+
+        config_digest = add_idpref(hashlib.sha256(config_json_str.encode('utf-8')).hexdigest())
+
+        return config_json_str, config_digest, repo_digest
+
+    async def fetch_config_schema_v2(self, ref: dict,
+                                     manifest: dict, jobid: str,
+                                     ensure_layer_func: Callable[[str, str], Awaitable[Any]]
+                                     )-> Tuple[str, str, str]:
+        """
+        Pull image using image manifest version 2
+        """
+        config_digest = manifest['config']['digest']
+        config_json_str = await self.download_config_from_origin( # type: ignore
+            ref['domain'], ref['repo'], config_digest
+        )
+
+        manifest_str = json.dumps(manifest, indent=3)
+        repo_digest = add_idpref(hashlib.sha256(manifest_str.encode('utf-8')).hexdigest())
+
+        # set mapping
+        diff_id_list = json.loads(config_json_str)['rootfs']['diff_ids']
+
+        chain_id = diff_id_list[0]
+        top = True
+        for i, diff_id in enumerate(diff_id_list):
+            if top:
+                top = False
+            else:
+                chain_id = ContainerUtil.calc_chain_id( # type: ignore
+                    chain_id, diff_id_list[i])
+            self.diffid_mapping[diff_id] = manifest['layers'][i]['digest'] # type: ignore
+            self.layerdb_mapping[diff_id] = chain_id # type: ignore
+
+        # download layers
+        await self.get_layer_diffids_of_image(ref, manifest['layers'], jobid,
+                                              ensure_layer_func)
+
+        return config_json_str, config_digest, repo_digest
+
+    async def fetch_manifest_list(self, ref: dict, # pylint: disable=too-many-arguments
+                                  manifestlist: dict, jobid: str, schema_v2_header: str,
+                                  ensure_layer_func: Callable[[str, str], Awaitable[Any]]
+                                  )-> Tuple[str, str, str]:
+        """
+        Read manifest list and call appropriate pulling image function for the machine.
+        """
+        manifest_digest = None
+
+        for manifest in manifestlist['manifests']:
+            if manifest['platform']['architecture'] == await ContainerUtil.get_go_python_arch() \
+                and manifest['platform']['os'] == await ContainerUtil.get_go_python_os():
+                manifest_digest = manifest['digest']
+                break
+
+        if manifest_digest is None:
+            raise self.ManifestError('No supported platform found in manifest list')
+
+
+        # get manifest
+        manifest = await self.fetch_image_manifest( # type: ignore
+            ref['domain'], ref['repo'], manifest_digest, schema_v2_header)
+        schema_v = manifest['schemaVersion']
+
+        if schema_v == 1:
+            # pull layers and create config from version 1 manifest
+            config_json_str, config_digest, _ = await self.fetch_config_schema_v1(
+                ref, manifest, jobid, ensure_layer_func
+            )
+
+        elif schema_v == 2:
+            if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
+                # pull layers using version 2 manifest
+                config_json_str, config_digest, _ = await self.fetch_config_schema_v2(
+                    ref, manifest, jobid, ensure_layer_func
+                )
+            else:
+                raise self.ManifestError('Invalid media type: %d' % manifest['mediaType'])
+        else:
+            raise self.ManifestError('Invalid schema version: %d' % schema_v)
+
+        manifestlist_str = json.dumps(manifestlist, indent=3)
+        repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
+        return config_json_str, config_digest, repo_digest
+
 
     async def get_bearer_token(self, realm, service, scope):
         """

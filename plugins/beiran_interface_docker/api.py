@@ -333,14 +333,14 @@ class ImageList(RPCEndpoint):
             rpc_endpoint.flush() # type: ignore
 
         jobid = uuid.uuid4().hex
-        Services.docker_util.create_emitter(jobid) # type: ignore
+        Services.docker_util.container.create_emitter(jobid) # type: ignore
 
         config_future = asyncio.ensure_future(
             Services.docker_util.create_or_download_config(tag_or_digest, jobid) # type: ignore
         )
         await until_event(
-            Services.docker_util.emitters[jobid], # type: ignore
-            Services.docker_util.EVENT_START_LAYER_DOWNLOAD # type: ignore
+            Services.docker_util.container.emitters[jobid], # type: ignore
+            Services.docker_util.container.EVENT_START_LAYER_DOWNLOAD # type: ignore
         )
 
         def format_progress(digest: str, status: str, progress: int = 100):

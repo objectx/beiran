@@ -363,7 +363,8 @@ cleanup:services:
    - docker network rm beirantest-${CI_PIPELINE_ID}_test
    - cd /
    - rm -rf /srv/builds/tmp/beirantest-${CI_PIPELINE_ID}
-   - curl --request DELETE --header "PRIVATE-TOKEN: ${CI_JOB_TOKEN}" "${CI_API_V4_URL}/projects/CI_PROJECT_ID/registry/repositories/${CI_REGISTRY_IMAGE}/tags/ci-${CI_PIPELINE_ID}"
+   - |
+     curl --request DELETE --header "PRIVATE-TOKEN: ${CI_JOB_TOKEN}" "${CI_API_V4_URL}/projects/CI_PROJECT_ID/registry/repositories/${CI_REGISTRY_IMAGE}/tags/ci-${CI_PIPELINE_ID}"
 
 #   - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
 #   - reg rm $CI_REGISTRY_IMAGE:ci-${CI_PIPELINE_ID} -u "gitlab-ci-token" -p "$CI_JOB_TOKEN"

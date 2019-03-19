@@ -189,7 +189,7 @@ class LayerDownload(web.RequestHandler):
         if not layer.cache_path:
             if layer.cache_gz_path:
                 _, layer.cache_path = \
-                    await Services.docker_util.decompress_gz_layer(layer.cache_gz_path) # type: ignore # pylint: disable=line-too-long
+                    await Services.docker_util.container.decompress_gz_layer(layer.cache_gz_path) # type: ignore # pylint: disable=line-too-long
 
             elif layer.docker_path:
                 layer.cache_path = \
@@ -353,8 +353,8 @@ class ImageList(RPCEndpoint):
             last_size = 0
 
             # if layer already exist
-            status = Services.docker_util.container.util.queues[jobid][digest]['status']
-            if status == Services.docker_util.DL_ALREADY:
+            status = Services.docker_util.container.queues[jobid][digest]['status']
+            if status == Services.docker_util.container.DL_ALREADY:
                 if show_progress:
                     rpc_endpoint.write( # type: ignore
                         format_progress(digest, status)
@@ -363,16 +363,16 @@ class ImageList(RPCEndpoint):
                 return
 
             while True:
-                status = Services.docker_util.container.util.queues[jobid][digest]['status']
+                status = Services.docker_util.container.queues[jobid][digest]['status']
 
                 # calc progress
-                chunk = await Services.docker_util.container.util.queues[jobid][digest]['queue'] \
+                chunk = await Services.docker_util.container.queues[jobid][digest]['queue'] \
                                       .get()
                 if chunk:
                     last_size += len(chunk)
                     progress = int(
                         last_size /
-                        Services.docker_util.container.util.queues[jobid][digest]['size'] * 100
+                        Services.docker_util.container.queues[jobid][digest]['size'] * 100
                     )
                     if show_progress:
                         rpc_endpoint.write( # type: ignore
@@ -384,13 +384,13 @@ class ImageList(RPCEndpoint):
 
         pro_tasks = [
             send_progress(digest)
-            for digest in Services.docker_util.container.util.queues[jobid].keys() # type: ignore
+            for digest in Services.docker_util.container.queues[jobid].keys() # type: ignore
         ]
         pro_future = asyncio.gather(*pro_tasks)
 
         await pro_future
         config_json_str, image_id, _ = await config_future
-        del Services.docker_util.container.util.queues[jobid] # type: ignore
+        del Services.docker_util.container.queues[jobid] # type: ignore
 
         if show_progress:
             rpc_endpoint.write(format_progress('done', 'done')[:-1]) # type: ignore

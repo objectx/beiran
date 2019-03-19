@@ -31,7 +31,7 @@ from beiran.util import json_streamer
 from beiran.util import sizeof_fmt
 from beiran.multiple_progressbar import MultipleProgressBar
 from beiran.cli import pass_context
-from beiran_package_container.util import ContainerUtil
+from beiran_package_container.container import ContainerPackaging
 
 
 @click.group()
@@ -121,7 +121,7 @@ def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
                         click.echo('Loading image...')
                     else:
                         if digest not in progbars:
-                            if data['status'] == ContainerUtil.DL_ALREADY:
+                            if data['status'] == ContainerPackaging.DL_ALREADY:
                                 progbars[digest] = {
                                     'bar': MultipleProgressBar(
                                         widgets=[digest + ' Already exists']

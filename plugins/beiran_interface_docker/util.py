@@ -137,14 +137,14 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         except FileNotFoundError:
             layer.docker_path = None
 
-        cache_path = self.container.get_layer_tar_file(layer.diff_id)
+        cache_path = self.container.util.get_layer_tar_file(layer.diff_id)
         if os.path.exists(cache_path):
             layer.cache_path = cache_path
         else:
             layer.cache_path = None
 
         if layer.digest:
-            cache_gz_path = self.container.get_layer_gz_file(layer.digest)
+            cache_gz_path = self.container.util.get_layer_gz_file(layer.digest)
             if os.path.exists(cache_gz_path):
                 layer.cache_gz_path = cache_gz_path
             else:
@@ -464,12 +464,13 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     continue
 
                 node = Node.get(Node.uuid == node_id)
-                resp = await self.container.download_layer_from_node(
+                resp = await self.container.util.download_layer_from_node(
                     node.url_without_uuid, layer.digest, jobid)
 
                 if resp.status == 200:
                     if not os.path.exists(tar_layer_path):
-                        raise self.container.LayerNotFound("Layer doesn't exist in cache directory")
+                        raise self.container.util.LayerNotFound(
+                            "Layer doesn't exist in cache directory")
                     return 'cache', tar_layer_path
 
         except (ContainerLayer.DoesNotExist, IndexError):
@@ -477,7 +478,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         # TODO: Wait for finish if another beiran is currently downloading it
         # TODO:  -- or ask for simultaneous streaming download
-        await self.container.download_layer_from_origin(ref, digest, jobid, **kwargs)
+        await self.container.util.download_layer_from_origin(ref, digest, jobid, **kwargs)
         return 'cache-gz', gz_layer_path
 
     async def get_layer_diffid(self, ref: dict, digest: str, jobid: str, **kwargs)-> str:
@@ -496,7 +497,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             diff_id = tmp_hash.hexdigest()
 
         elif storage == 'cache-gz':
-            diff_id, _ = await self.container.decompress_gz_layer(layer_path) # decompress .tar.gz
+            # decompress .tar.gz
+            diff_id, _ = await self.container.util.decompress_gz_layer(layer_path)
 
         return add_idpref(diff_id)
 
@@ -552,7 +554,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if top:
                 top = False
             else:
-                chain_id = self.container.calc_chain_id(chain_id, rootfs['diff_ids'][i])
+                chain_id = self.container.util.calc_chain_id(chain_id, rootfs['diff_ids'][i])
 
             # Probably following sentences are needed when saving layers that do not belong
             # to any image.
@@ -600,7 +602,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         Pull image using image manifest version 2
         """
         config_digest = manifest['config']['digest']
-        config_json_str = await self.container.download_config_from_origin(
+        config_json_str = await self.container.util.download_config_from_origin(
             ref['domain'], ref['repo'], config_digest
         )
 
@@ -616,7 +618,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             if top:
                 top = False
             else:
-                chain_id = self.container.calc_chain_id(chain_id, diff_id_list[i])
+                chain_id = self.container.util.calc_chain_id(chain_id, diff_id_list[i])
             self.diffid_mapping[diff_id] = manifest['layers'][i]['digest']
             self.layerdb_mapping[diff_id] = chain_id
 
@@ -630,8 +632,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         """
         Read manifest list and call appropriate pulling image function for the machine.
         """
-        host_arch = await self.container.get_go_python_arch()
-        host_os = await self.container.get_go_python_os()
+        host_arch = await self.container.util.get_go_python_arch()
+        host_os = await self.container.util.get_go_python_os()
         manifest_digest = None
 
         for manifest in manifestlist['manifests']:
@@ -645,8 +647,8 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
 
         # get manifest
-        manifest = await self.container.fetch_docker_image_manifest(ref['domain'], ref['repo'],
-                                                                    manifest_digest)
+        manifest = await self.container.util.fetch_docker_image_manifest(ref['domain'], ref['repo'],
+                                                                         manifest_digest)
         schema_v = manifest['schemaVersion']
 
         if schema_v == 1:
@@ -676,19 +678,19 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
     async def get_layer_diffids_of_image(self, ref: dict, descriptors: list, jobid: str)-> dict:
         """Download and allocate layers included in an image."""
-        self.container.queues[jobid] = dict()
+        self.container.util.queues[jobid] = dict()
 
         for layer_d in descriptors:
             # check layer existence, then set status
-            status = self.container.DL_INIT
+            status = self.container.util.DL_INIT
             try:
                 layer = ContainerLayer.get(ContainerLayer.digest == layer_d['digest'])
                 if layer.cache_path or layer.cache_gz_path or layer.docker_path:
-                    status = self.container.DL_ALREADY
+                    status = self.container.util.DL_ALREADY
             except ContainerLayer.DoesNotExist:
                 pass
 
-            self.container.queues[jobid][layer_d['digest']] = {
+            self.container.util.queues[jobid][layer_d['digest']] = {
                 'queue': asyncio.Queue(),
                 'status': status,
                 'size': 0
@@ -729,7 +731,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         ref = normalize_ref(tag, index=True)
 
         # get manifest
-        manifest = await self.container.fetch_docker_image_manifest(
+        manifest = await self.container.util.fetch_docker_image_manifest(
             ref['domain'], ref['repo'], ref['suffix'])
 
         schema_v = manifest['schemaVersion']

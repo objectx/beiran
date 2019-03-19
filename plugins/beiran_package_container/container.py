@@ -48,10 +48,8 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
     async def init(self):
         self.util = ContainerUtil(cache_dir=self.config["cache_dir"],
                                   logger=self.log, local_node=self.node)
-        self.probe_task = None
         self.model_list = MODEL_LIST
         self.history = History() # type: History
-        self.last_error = None
 
     async def save_image_at_node(self, image: ContainerImage, node: Node):
         """Save an image from a node into db"""
@@ -92,7 +90,8 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
                 layer.docker_path = None
             layer.save()
 
-    async def delete_layers(self, diff_id_list: list)-> None:
+    @staticmethod
+    async def delete_layers(diff_id_list: list)-> None:
         """
         Unset available layer, delete it if no image refers it
         """
@@ -101,3 +100,23 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         for layer in layers:
             if not layer.available_at:
                 layer.delete_instance()
+
+    @staticmethod
+    async def tag_image(image_id: str, tag: str):
+        """
+        Tag an image existing in database. If already same tag exists,
+        move it from old one to new one.
+        """
+        target = ContainerImage.get_image_data(image_id)
+        if tag not in target.tags:
+            target.tags = [tag] # type: ignore
+            target.save()
+
+        images = ContainerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
+
+        for image in images:
+            if image.hash_id == target.hash_id:
+                continue
+
+            image.tags.remove(tag)
+            image.save()

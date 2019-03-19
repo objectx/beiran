@@ -20,7 +20,6 @@
 
 # pylint: disable=too-many-lines
 """Container Plugin Utility Module"""
-import asyncio
 import os
 import logging
 import re
@@ -32,7 +31,6 @@ import tarfile
 import uuid
 import gzip
 from typing import Tuple
-from pyee import EventEmitter
 import aiohttp
 
 from peewee import SQL
@@ -47,19 +45,6 @@ from .image_ref import is_tag, is_digest, add_idpref, del_idpref, \
 
 
 LOGGER = build_logger()
-
-
-async def aio_dirlist(path: str):
-    """async proxy method for os.listdir"""
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, os.listdir, path)
-
-
-async def aio_isdir(path: str):
-    """async proxy method for os.isdir"""
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, os.path.isdir, path)
-
 
 class ContainerUtil: # pylint: disable=too-many-instance-attributes
     """Container Utilities"""
@@ -95,9 +80,6 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
     DL_GZ_DOWNLOADING = 'gs_downloading'
     DL_FINISH = 'finish'
 
-    # event datas for downloading layers
-    EVENT_START_LAYER_DOWNLOAD = "start_layer_download"
-
     # consts related with timeout
     TIMEOUT = 10 # second
     TIMEOUT_DL_MANIFEST = 10
@@ -128,13 +110,30 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
 
         self.logger = logger if logger else LOGGER
         self.queues: dict = {}
-        self.emitters: dict = {}
 
 
     @staticmethod
     def get_additional_time_downlaod(size: int) -> int:
         """Get additional time to downlload something"""
         return size // 5000000
+
+    @staticmethod
+    async def reset_docker_info_of_node(uuid_hex: str):
+        """ Delete all (local) layers and images from database """
+        for image in list(ContainerImage.select(ContainerImage.hash_id,
+                                                ContainerImage.available_at)):
+            if uuid_hex in image.available_at:
+                image.unset_available_at(uuid_hex)
+                image.save()
+
+        for layer in list(ContainerLayer.select(ContainerLayer.id,
+                                                ContainerLayer.digest,
+                                                ContainerLayer.available_at)):
+            if uuid_hex in layer.available_at:
+                layer.unset_available_at(uuid_hex)
+                layer.save()
+
+        await ContainerUtil.delete_unavailable_objects()
 
     @staticmethod
     async def delete_unavailable_objects():
@@ -358,10 +357,6 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                                                      % resp.status)
         return await resp.text(encoding='utf-8')
 
-    def create_emitter(self, jobid):
-        """Create a new emitter and add it to a emitter dictionary"""
-        self.emitters[jobid] = EventEmitter()
-
     async def get_go_python_arch(self)-> str:
         """
         In order to compare architecture name of the image (runtime.GOARCH), convert
@@ -463,13 +458,6 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
                 layer_tar_file = self.get_layer_tar_file(diff_id)
                 if not os.path.exists(layer_tar_file):
                     raise ContainerUtil.LayerNotFound("Layer doesn't exist in cache directory")
-                    # Do not create tarball from storage of docker!!!
-                    # The digest of the tarball varies depending on mtime of the file to be added
-                    # with tarfile.open(self.layer_tar_path + '/' + f_name, "w") as layer_tar:
-                    #     chain_id = self.layerdb_mapping[diff_id_list[i]]
-                    #     layer_tar.add(
-                    #         self.layerdir_path'.format(
-                    #             layer_dir_name=self.get_cache_id_from_chain_id(chain_id)))
                 tar.add(layer_tar_file, arcname=arc_tar_names[i])
 
         return tar_path

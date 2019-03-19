@@ -27,12 +27,13 @@ import asyncio
 import docker
 from aiodocker import Docker
 from aiodocker.exceptions import DockerError
-from peewee import SQL
 
 from beiran.plugin import BaseInterfacePlugin, History
 from beiran.models import Node
 from beiran.daemon.peer import Peer
 
+from beiran_package_container.container import ContainerPackaging
+from beiran_package_container.util import ContainerUtil
 from beiran_package_container.image_ref import del_idpref
 from beiran_package_container.models import ContainerImage, ContainerLayer
 from beiran_interface_docker.util import DockerUtil
@@ -94,23 +95,10 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.probe_task.cancel()
 
     async def sync(self, peer: Peer):
-        await DockerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
+        await ContainerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
 
-        await self.fetch_images_from_peer(peer)
+        await self.util.container.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
-
-    async def save_image_at_node(self, image: ContainerImage, node: Node):
-        """Save an image from a node into db"""
-        try:
-            image_ = ContainerImage.get(ContainerImage.hash_id == image.hash_id)
-            image_.set_available_at(node.uuid.hex)
-            image_.save()
-            self.log.debug("update existing image %s, now available on new node: %s",
-                           image.hash_id, node.uuid.hex)
-        except ContainerImage.DoesNotExist:
-            image.available_at = [node.uuid.hex] # type: ignore
-            image.save(force_insert=True)
-            self.log.debug("new image from remote %s", str(image))
 
     async def save_layer_at_node(self, layer: ContainerLayer, node: Node):
         """Save a layer from a node into db"""
@@ -127,18 +115,6 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.util.save_local_paths(layer)
             layer.save(force_insert=True)
             self.log.debug("new layer from remote %s", str(layer))
-
-    async def fetch_images_from_peer(self, peer: Peer):
-        """fetch image list from the node and update local db"""
-
-        images = await peer.client.get_images()
-        self.log.debug("received image list from peer")
-
-        for image_data in images:
-            # discard `id` sent from remote
-            image_data.pop('id', None)
-            image = ContainerImage.from_dict(image_data)
-            await self.save_image_at_node(image, peer.node)
 
     async def fetch_layers_from_peer(self, peer: Peer):
         """fetch layer list from the node and update local db"""
@@ -193,7 +169,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.log.debug("Probing docker daemon")
 
             # Delete all data regarding our node
-            await DockerUtil.reset_docker_info_of_node(self.node.uuid.hex)
+            await ContainerUtil.reset_docker_info_of_node(self.node.uuid.hex)
 
             # wait until we can update our docker info
             await self.util.update_docker_info(self.node)
@@ -300,40 +276,16 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
         image = ContainerImage.get(ContainerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
 
-        await self.unset_local_layers(image.layers, image_id)
+        await self.util.container.unset_local_layers(image.layers, image_id)
 
         if image.available_at:
             image.save()
         else:
             image.delete_instance()
-            await self.delete_layers(image.layers)
+            await ContainerPackaging.delete_layers(image.layers)
 
         self.history.update('removed_image={}'.format(image.hash_id))
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
-
-    async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
-        """
-        Unset image_id from local_image_refs of layers
-        """
-        layers = ContainerLayer.select() \
-                            .where(ContainerLayer.diff_id.in_(diff_id_list)) \
-                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
-        for layer in layers:
-            layer.unset_local_image_refs(image_id)
-            if not layer.local_image_refs:
-                layer.unset_available_at(self.node.uuid.hex)
-                layer.docker_path = None
-            layer.save()
-
-    async def delete_layers(self, diff_id_list: list)-> None:
-        """
-        Unset available layer, delete it if no image refers it
-        """
-        layers = ContainerLayer.select() \
-                            .where(ContainerLayer.diff_id.in_(diff_id_list))
-        for layer in layers:
-            if not layer.available_at:
-                layer.delete_instance()
 
     async def save_image(self, id_or_tag: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):
@@ -388,26 +340,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
         self.emit('docker_daemon.new_image_saved', image.hash_id)
 
         if image_data['RepoTags']:
-            await self.tag_image(id_or_tag, image_data['RepoTags'][0])
-
-    async def tag_image(self, image_id: str, tag: str):
-        """
-        Tag an image existing in database. If already same tag exists,
-        move it from old one to new one.
-        """
-        target = ContainerImage.get_image_data(image_id)
-        if tag not in target.tags:
-            target.tags = [tag] # type: ignore
-            target.save()
-
-        images = ContainerImage.select().where((SQL('tags LIKE \'%%"%s"%%\'' % tag)))
-
-        for image in images:
-            if image.hash_id == target.hash_id:
-                continue
-
-            image.tags.remove(tag)
-            image.save()
+            await ContainerPackaging.tag_image(id_or_tag, image_data['RepoTags'][0])
 
     async def untag_image(self, image_identifier: str):
         """

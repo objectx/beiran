@@ -400,7 +400,7 @@ class ImageList(RPCEndpoint):
         # config_json_str, image_id, _ = \
         #     await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
 
-        tarball_path = await Services.docker_util.create_image_from_tar( # type: ignore
+        tarball_path = await Services.docker_util.container.create_image_from_tar( # type: ignore
             tag_or_digest, config_json_str, image_id)
 
         await Services.docker_util.load_image(tarball_path) # type: ignore

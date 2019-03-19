@@ -3,24 +3,19 @@ FROM dkr.beiran.io/beiran/pyinstaller:alpine-3.6-pyinstaller-v3.4 AS pyinstaller
 RUN apk add --no-cache g++ python3-dev yajl yajl-dev make linux-headers
 RUN apk add --no-cache libffi-dev  # dns discovery requires
 
-COPY beiran /opt/beiran/beiran
-COPY README.md /opt/beiran/README.md
-COPY setup.py /opt/beiran/setup.py
-COPY plugins/beiran_package_docker /opt/beiran_package_docker/
-COPY plugins/beiran_interface_k8s /opt/beiran_interface_k8s/
-
+COPY beiran /opt/beiran
 WORKDIR /opt/beiran
-RUN python setup.py install
+RUN pip install -r requirements.txt
 
+COPY plugins/beiran_package_docker /opt/beiran_package_docker
 WORKDIR /opt/beiran_package_docker
-RUN python setup.py install
+RUN pip install $(grep -ivE "beiran" requirements.txt)
 
+COPY plugins/beiran_interface_k8s /opt/beiran_interface_k8s
 WORKDIR /opt/beiran_interface_k8s
-RUN python setup.py install
+RUN pip install $(grep -ivE "beiran" requirements.txt)
 
 ADD helpers/pyinstaller /opt/pyinstaller
-
-#ENV PYTHONPATH=/opt/beiran:/opt/beiran/plugins
 
 WORKDIR /opt/pyinstaller
 
@@ -32,14 +27,14 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --hidden-import  beiran.plugins.discovery_dns \
                                --hidden-import  beiran.plugins.discovery_zeroconf \
                                --paths /opt/pyinstaller \
-                               --paths ../beiran/beiran \
-                               --paths ../beiran_package_docker/beiran_package_docker \
-                               --paths ../beiran_interface_k8s/beiran_interface_k8s \
+                               --paths ../beiran \
+                               --paths ../beiran_package_docker \
+                               --paths ../beiran_interface_k8s \
                                --exclude-module pycrypto \
                                --exclude-module PyInstaller \
                                --additional-hooks-dir ./hooks/ \
                                --runtime-hook ./hooks/hook-beiran.plugin.py \
-                               ../beiran/beiran/__main__.py
+                               ../beiran/__main__.py
 
 RUN cat /opt/pyinstaller/build/beiran/warn-beiran.txt
 

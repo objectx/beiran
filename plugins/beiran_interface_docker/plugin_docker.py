@@ -27,6 +27,7 @@ import asyncio
 import docker
 from aiodocker import Docker
 from aiodocker.exceptions import DockerError
+from peewee import SQL
 
 from beiran.plugin import BaseInterfacePlugin, History
 from beiran.models import Node
@@ -95,7 +96,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.probe_task.cancel()
 
     async def sync(self, peer: Peer):
-        await ContainerUtil.reset_docker_info_of_node(peer.node.uuid.hex)
+        await ContainerUtil.reset_info_of_node(peer.node.uuid.hex)
 
         await self.util.container.fetch_images_from_peer(peer)
         await self.fetch_layers_from_peer(peer)
@@ -169,7 +170,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
             self.log.debug("Probing docker daemon")
 
             # Delete all data regarding our node
-            await ContainerUtil.reset_docker_info_of_node(self.node.uuid.hex)
+            await ContainerUtil.reset_info_of_node(self.node.uuid.hex)
 
             # wait until we can update our docker info
             await self.util.update_docker_info(self.node)
@@ -276,7 +277,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
         image = ContainerImage.get(ContainerImage.hash_id == image_id)
         image.unset_available_at(self.node.uuid.hex)
 
-        await self.util.container.unset_local_layers(image.layers, image_id)
+        await self.unset_local_layers(image.layers, image_id)
 
         if image.available_at:
             image.save()
@@ -286,6 +287,20 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
 
         self.history.update('removed_image={}'.format(image.hash_id))
         self.emit('docker_daemon.existing_image_deleted', image.hash_id)
+
+    async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
+        """
+        Unset image_id from local_image_refs of layers
+        """
+        layers = ContainerLayer.select() \
+                            .where(ContainerLayer.diff_id.in_(diff_id_list)) \
+                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
+        for layer in layers:
+            layer.unset_local_image_refs(image_id)
+            if not layer.local_image_refs:
+                layer.unset_available_at(self.node.uuid.hex)
+                layer.docker_path = None
+            layer.save()
 
     async def save_image(self, id_or_tag: str, skip_updates: bool = False,
                          skip_updating_layer: bool = False):

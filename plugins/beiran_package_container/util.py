@@ -36,7 +36,7 @@ class ContainerUtil: # pylint: disable=too-many-instance-attributes
         return size // 5000000
 
     @staticmethod
-    async def reset_docker_info_of_node(uuid_hex: str):
+    async def reset_info_of_node(uuid_hex: str):
         """ Delete all (local) layers and images from database """
         for image in list(ContainerImage.select(ContainerImage.hash_id,
                                                 ContainerImage.available_at)):

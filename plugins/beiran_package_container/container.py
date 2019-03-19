@@ -141,20 +141,6 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             image = ContainerImage.from_dict(image_data)
             await self.save_image_at_node(image, peer.node)
 
-    async def unset_local_layers(self, diff_id_list: list, image_id: str)-> None:
-        """
-        Unset image_id from local_image_refs of layers
-        """
-        layers = ContainerLayer.select() \
-                            .where(ContainerLayer.diff_id.in_(diff_id_list)) \
-                            .where((SQL('available_at LIKE \'%%"%s"%%\'' % self.node.uuid.hex)))
-        for layer in layers:
-            layer.unset_local_image_refs(image_id)
-            if not layer.local_image_refs:
-                layer.unset_available_at(self.node.uuid.hex)
-                layer.docker_path = None
-            layer.save()
-
     @staticmethod
     async def delete_layers(diff_id_list: list)-> None:
         """
@@ -190,21 +176,15 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """Return diff id of a layer by digest from mapping."""
         return list(self.diffid_mapping.keys())[list(self.diffid_mapping.values()).index(digest)]
 
-    async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> dict:
+    async def fetch_image_manifest(self, host, repository, tag_or_digest, schema_v2_header,
+                                   **kwargs) -> dict:
         """
-        Fetch Docker Image manifest specified repository.
+        Fetch image manifest specified repository.
         """
         url = 'https://{}/v2/{}/manifests/{}'.format(host, repository, tag_or_digest)
         requirements = ''
 
         self.log.debug("fetch manifest from %s", url)
-
-        # about header, see below URL
-        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
-        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.list.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
-                           "application/json"
 
         # try to access the server with HEAD requests
         # there is a purpose to check the type of authentication
@@ -224,10 +204,9 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
                                            % resp.status)
         return manifest
 
-
-    async def get_docker_bearer_token(self, realm, service, scope):
+    async def get_bearer_token(self, realm, service, scope):
         """
-        Get Bearer token from auth.docker.io
+        Get Bearer token
         """
         _, data = await async_req(
             "{}?service={}&scope={}".format(realm, service, scope),
@@ -253,7 +232,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             val_dict = dict(zip(values[0::2], values[1::2]))
 
             try:
-                token = await self.get_docker_bearer_token(
+                token = await self.get_bearer_token(
                     val_dict['realm'],
                     val_dict['service'],
                     val_dict['scope']
@@ -284,10 +263,11 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """Get local path of layer compressed tarball"""
         return os.path.join(self.layer_gz_path, del_idpref(digest) + '.tar.gz')
 
+
     async def download_config_from_origin(self, host: str, repository: str,
                                           image_id: str, **kwargs) -> str:
         """
-        Download config file of docker image and save it to database.
+        Download a config file of image and save it to database.
         """
         url = 'https://{}/v2/{}/blobs/{}'.format(host, repository, image_id)
         requirements = ''
@@ -352,14 +332,11 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         self.log.debug("downloaded layer %s to %s", digest, save_path)
         self.queues[jobid][digest]['status'] = self.DL_FINISH
 
-    async def download_layer_from_node(self, host: str, digest: str,
-                                       jobid: str)-> aiohttp.client_reqrep.ClientResponse:
+    async def download_layer_from_node(self, digest: str, jobid: str,
+                                       url: str)-> aiohttp.client_reqrep.ClientResponse:
         """
         Download layer from other node.
         """
-        # if get a taball of layer, it is preferable to use diff_id
-        url = host + '/docker/layers/' + digest
-
         diff_id = self.get_diffid_by_digest(digest)
         save_path = self.get_layer_tar_file(diff_id)
         self.log.debug("downloading layer from %s", url)

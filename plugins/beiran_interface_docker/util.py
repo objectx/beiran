@@ -456,7 +456,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
                     continue
 
                 node = Node.get(Node.uuid == node_id)
-                resp = await self.container.download_layer_from_node( # type: ignore
+                resp = await self.container.download_docker_layer_from_node( # type: ignore
                     node.url_without_uuid, layer.digest, jobid)
 
                 if resp.status == 200:
@@ -641,7 +641,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
 
         # get manifest
-        manifest = await self.container.fetch_docker_image_manifest( # type: ignore
+        manifest = await self.fetch_docker_image_manifest( # type: ignore
             ref['domain'], ref['repo'], manifest_digest)
         schema_v = manifest['schemaVersion']
 
@@ -665,6 +665,20 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         manifestlist_str = json.dumps(manifestlist, indent=3)
         repo_digest = add_idpref(hashlib.sha256(manifestlist_str.encode('utf-8')).hexdigest())
         return config_json_str, config_digest, repo_digest
+
+    async def fetch_docker_image_manifest(self, host, repository, tag_or_digest, **kwargs) -> dict:
+        """
+        Fetch docker image manifest specified repository.
+        """
+        # about header, see below URL
+        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
+        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
+                           "application/vnd.docker.distribution.manifest.list.v2+json, " \
+                           "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
+                           "application/json"
+        return await self.container.fetch_image_manifest( # type: ignore
+            host, repository, tag_or_digest, schema_v2_header, **kwargs
+        )
 
     def create_emitter(self, jobid):
         """Create a new emitter and add it to a emitter dictionary"""
@@ -725,7 +739,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
         ref = normalize_ref(tag, index=True)
 
         # get manifest
-        manifest = await self.container.fetch_docker_image_manifest( # type: ignore
+        manifest = await self.fetch_docker_image_manifest( # type: ignore
             ref['domain'], ref['repo'], ref['suffix'])
 
         schema_v = manifest['schemaVersion']
@@ -760,6 +774,17 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             raise DockerUtil.ManifestError('Invalid schema version: %d' % schema_v)
 
         return config_json_str, config_digest, repo_digest
+
+    async def download_docker_layer_from_node(self, host: str, digest: str,
+                                              jobid: str)-> aiohttp.client_reqrep.ClientResponse:
+        """
+        Download layer from other node.
+        """
+        # if get a taball of layer, it is preferable to use diff_id
+        return await self.container.download_layer_from_node( # type: ignore
+            digest, jobid,
+            host + '/docker/layers/' + digest
+        )
 
     async def load_image(self, tar_path: str):
         """

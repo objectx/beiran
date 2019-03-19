@@ -29,10 +29,8 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --hidden-import  beiran.cli_node \
                                --hidden-import  beiran_package_docker.cli_docker \
                                --hidden-import  beiran_interface_k8s \
-                               --hidden-import  beiran_discovery_dns \
-                               --hidden-import  beiran_discovery_dns.dns \
-                               --hidden-import  beiran_discovery_zeroconf \
-                               --hidden-import  beiran_discovery_zeroconf.zeroconf \
+                               --hidden-import  beiran.plugins.discovery_dns \
+                               --hidden-import  beiran.plugins.discovery_zeroconf \
                                --paths /opt/pyinstaller \
                                --paths ../beiran/beiran \
                                --paths ../beiran_package_docker/beiran_package_docker \
@@ -42,6 +40,8 @@ RUN /pyinstaller/pyinstaller.sh --onefile --name beiran \
                                --additional-hooks-dir ./hooks/ \
                                --runtime-hook ./hooks/hook-beiran.plugin.py \
                                ../beiran/beiran/__main__.py
+
+RUN cat /opt/pyinstaller/build/beiran/warn-beiran.txt
 
 FROM alpine:3.8
 

@@ -132,7 +132,7 @@ class ImageConfigHandler(web.RequestHandler):
 
         image_identifier = image_identifier.rstrip('/config')
         config_str, image_id, repo_digest = \
-            await Services.docker_util.create_or_download_config(image_identifier)
+            await Services.docker_util.docker_create_download_config(image_identifier)
 
         dict_ = {
             'config': json.loads(config_str),
@@ -336,7 +336,8 @@ class ImageList(RPCEndpoint):
         Services.docker_util.container.create_emitter(jobid) # type: ignore
 
         config_future = asyncio.ensure_future(
-            Services.docker_util.create_or_download_config(tag_or_digest, jobid) # type: ignore
+            Services.docker_util.docker_create_download_config( # type: ignore
+                tag_or_digest, jobid)
         )
         await until_event(
             Services.docker_util.container.emitters[jobid], # type: ignore
@@ -398,7 +399,8 @@ class ImageList(RPCEndpoint):
 
         # Do we need to save repo_digest to database?
         # config_json_str, image_id, _ = \
-        #     await Services.docker_util.create_or_download_config(tag_or_digest) # type: ignore
+        #     await Services.docker_util.docker_create_download_config(
+        #         tag_or_digest) # type: ignore
 
         tarball_path = await Services.docker_util.container.create_image_from_tar( # type: ignore
             tag_or_digest, config_json_str, image_id)

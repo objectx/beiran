@@ -37,7 +37,7 @@ from beiran.log import build_logger
 from beiran.models import Node
 
 from beiran_package_container.models import ContainerLayer
-from beiran_package_container.image_ref import normalize_ref, add_idpref, del_idpref
+from beiran_package_container.image_ref import add_idpref, del_idpref
 
 
 LOGGER = build_logger()
@@ -447,7 +447,7 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
 
         return '', ''
 
-    async def create_or_download_config(self, tag: str, jobid: str = uuid.uuid4().hex):
+    async def docker_create_download_config(self, tag: str, jobid: str = uuid.uuid4().hex):
         """
         Create or download image config.
 
@@ -456,65 +456,16 @@ class DockerUtil: # pylint: disable=too-many-instance-attributes
             - schema v2: download config
             - manifest list: v1 or v2
         """
-
-        # try:
-        #     image = ContainerImage.get_image_data(tag)
-        #     if image.repo_digests:
-        #         return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
-        #     return image.config, image.hash_id, None
-
-        # except (ContainerImage.DoesNotExist, FileNotFoundError):
-        #     pass
-
-        # about header, see below URL
-        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
-        schema_v2_header = "application/vnd.docker.distribution.manifest.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.list.v2+json, " \
-                           "application/vnd.docker.distribution.manifest.v1+prettyjws, " \
-                           "application/json"
-
-        ref = normalize_ref(tag, index=True)
-
-        # get manifest
-        manifest = await self.container.fetch_image_manifest( # type: ignore
-            ref['domain'], ref['repo'], ref['suffix'], schema_v2_header)
-
-        schema_v = manifest['schemaVersion']
-
-        if schema_v == 1:
-
-            # pull layers and create config from version 1 manifest
-            config_json_str, config_digest, repo_digest = \
-                await self.container.fetch_config_schema_v1( # type: ignore
-                    ref, manifest, jobid, self.ensure_docker_having_layer
-                )
-
-        elif schema_v == 2:
-            media_type = manifest['mediaType']
-
-            if media_type == 'application/vnd.docker.distribution.manifest.v2+json':
-
-                # pull layers using version 2 manifest
-                config_json_str, config_digest, repo_digest = \
-                    await self.container.fetch_config_schema_v2( # type: ignore
-                        ref, manifest, jobid, self.ensure_docker_having_layer
-                    )
-
-            elif media_type == 'application/vnd.docker.distribution.manifest.list.v2+json':
-
-                # pull_schema_list
-                config_json_str, config_digest, repo_digest = \
-                    await self.container.fetch_manifest_list( # type: ignore
-                        ref, manifest, jobid, schema_v2_header,
-                        self.ensure_docker_having_layer
-                    )
-
-            else:
-                raise self.container.ManifestError('Invalid media type: %d' % media_type)  # type: ignore # pylint: disable=line-too-long
-        else:
-            raise self.container.ManifestError('Invalid schema version: %d' % schema_v)  # type: ignore # pylint: disable=line-too-long
-
-        return config_json_str, config_digest, repo_digest
+        return await self.container.create_or_download_config( # type: ignore
+            tag, jobid,
+            {
+                "manifest": "application/vnd.docker.distribution.manifest.v2+json",
+                "manifest-list": "application/vnd.docker.distribution.manifest.list.v2+json",
+                "signed-manifest": "application/vnd.docker.distribution.manifest.v1+prettyjws",
+                "type": "application/json"
+            },
+            self.ensure_docker_having_layer
+        )
 
     async def download_docker_layer_from_node(self, host: str, digest: str,
                                               jobid: str)-> aiohttp.client_reqrep.ClientResponse:

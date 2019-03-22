@@ -44,7 +44,7 @@ from beiran.lib import async_write_file_stream, async_req
 from beiran.daemon.peer import Peer
 
 from beiran_package_container.image_ref import is_tag, is_digest, add_default_tag, del_idpref, \
-                                               add_idpref
+                                               add_idpref, normalize_ref
 from beiran_package_container.models import ContainerImage, ContainerLayer
 from beiran_package_container.models import MODEL_LIST
 from beiran_package_container.util import ContainerUtil
@@ -282,8 +282,8 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """Create a new emitter and add it to a emitter dictionary"""
         self.emitters[jobid] = EventEmitter()
 
-    async def fetch_image_manifest(self, host, repository, tag_or_digest, schema_v2_header,
-                                   **kwargs) -> dict:
+    async def fetch_image_manifest(self, host: str, repository: str, tag_or_digest: str,
+                                   schema_v2_header: str, **kwargs) -> dict:
         """
         Fetch image manifest specified repository.
         """
@@ -442,7 +442,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         return config_json_str, config_digest, repo_digest
 
     async def fetch_manifest_list(self, ref: dict, # pylint: disable=too-many-arguments
-                                  manifestlist: dict, jobid: str, schema_v2_header: str,
+                                  manifestlist: dict, jobid: str, schema_v2_header: dict,
                                   ensure_layer_func: Callable[[str, str], Awaitable[Any]]
                                   )-> Tuple[str, str, str]:
         """
@@ -462,7 +462,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
 
         # get manifest
         manifest = await self.fetch_image_manifest( # type: ignore
-            ref['domain'], ref['repo'], manifest_digest, schema_v2_header)
+            ref['domain'], ref['repo'], manifest_digest, self.join_schema(schema_v2_header))
         schema_v = manifest['schemaVersion']
 
         if schema_v == 1:
@@ -472,7 +472,7 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
             )
 
         elif schema_v == 2:
-            if manifest['mediaType'] == 'application/vnd.docker.distribution.manifest.v2+json':
+            if manifest['mediaType'] == schema_v2_header['manifest']:
                 # pull layers using version 2 manifest
                 config_json_str, config_digest, _ = await self.fetch_config_schema_v2(
                     ref, manifest, jobid, ensure_layer_func
@@ -546,6 +546,76 @@ class ContainerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instanc
         """Get local path of layer compressed tarball"""
         return os.path.join(self.layer_gz_path, del_idpref(digest) + '.tar.gz')
 
+    @staticmethod
+    def join_schema(schema_v2_header: dict)-> str:
+        """merge schema_v2_headers's values and return as a string"""
+        return ", ".join(schema_v2_header.values())
+
+    async def create_or_download_config(self, tag: str, jobid: str,
+                                        schema_v2_header: dict,
+                                        ensure_layer_func: Callable[[str, str], Awaitable[Any]]):
+        """
+        Create or download image config.
+
+        Depend on manifest version;
+            - schema v1: create config
+            - schema v2: download config
+            - manifest list: v1 or v2
+        """
+
+        # try:
+        #     image = ContainerImage.get_image_data(tag)
+        #     if image.repo_digests:
+        #         return image.config, image.hash_id, image.repo_digests[0].split('@')[1]
+        #     return image.config, image.hash_id, None
+
+        # except (ContainerImage.DoesNotExist, FileNotFoundError):
+        #     pass
+
+        # about header, see below URL
+        # https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md#backward-compatibility
+        ref = normalize_ref(tag, index=True)
+
+        # get manifest
+        manifest = await self.fetch_image_manifest( # type: ignore
+            ref['domain'], ref['repo'], ref['suffix'], self.join_schema(schema_v2_header))
+
+        schema_v = manifest['schemaVersion']
+
+        if schema_v == 1:
+
+            # pull layers and create config from version 1 manifest
+            config_json_str, config_digest, repo_digest = \
+                await self.fetch_config_schema_v1( # type: ignore
+                    ref, manifest, jobid, ensure_layer_func
+                )
+
+        elif schema_v == 2:
+            media_type = manifest['mediaType']
+
+            if media_type == schema_v2_header['manifest']:
+
+                # pull layers using version 2 manifest
+                config_json_str, config_digest, repo_digest = \
+                    await self.fetch_config_schema_v2( # type: ignore
+                        ref, manifest, jobid, ensure_layer_func
+                    )
+
+            elif media_type == schema_v2_header['manifest-list']:
+
+                # pull_schema_list
+                config_json_str, config_digest, repo_digest = \
+                    await self.fetch_manifest_list( # type: ignore
+                        ref, manifest, jobid, schema_v2_header,
+                        ensure_layer_func
+                    )
+
+            else:
+                raise self.ManifestError('Invalid media type: %d' % media_type)  # type: ignore # pylint: disable=line-too-long
+        else:
+            raise self.ManifestError('Invalid schema version: %d' % schema_v)  # type: ignore # pylint: disable=line-too-long
+
+        return config_json_str, config_digest, repo_digest
 
     async def download_config_from_origin(self, host: str, repository: str,
                                           image_id: str, **kwargs) -> str:

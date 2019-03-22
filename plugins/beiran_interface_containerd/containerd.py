@@ -25,8 +25,9 @@ import grpc
 
 from beiran.plugin import BaseInterfacePlugin
 from beiran_interface_containerd.api_pb2_grpc import ImageServiceStub
-from beiran_interface_containerd.api_pb2 import ImageFilter, ImageSpec
-from beiran_interface_containerd.api_pb2 import ListImagesRequest, ListImagesResponse
+from beiran_interface_containerd.api_pb2 import ImageFilter, ImageSpec, AuthConfig
+from beiran_interface_containerd.api_pb2 import ListImagesRequest, ImageStatusRequest, \
+                                                PullImageRequest, ImageFsInfoRequest
 
 PLUGIN_NAME = 'containerd'
 PLUGIN_TYPE = 'interface'
@@ -42,8 +43,16 @@ class ContainerdInterface(BaseInterfacePlugin):
         channel = grpc.insecure_channel(self.config['containerd_socket_path'])
         self.stub = ImageServiceStub(channel)
 
+        # get storage path
+        response = await self.image_fs_info()
+        self.storage_path = response.image_filesystems[0].fs_id.mountpoint
+
     async def start(self):
+        # await self.list_images()
+        # print(await self.image_status("docker.io/library/redis:latest"))
+        # print(await self.pull_image("docker.io/library/nginx:latest"))
         pass
+
 
     async def stop(self):
         pass
@@ -59,3 +68,35 @@ class ContainerdInterface(BaseInterfacePlugin):
                 )
             )
         )
+
+    async def image_status(self, image: str, verbose: bool = True):
+        """Send ImageStatusRequest to containerd"""
+        return self.stub.ImageStatus(
+            ImageStatusRequest(
+                image=ImageSpec(
+                    image=image
+                ),
+                verbose=verbose
+            )
+        )
+
+    async def pull_image(self, image: str, **kwargs):
+        """Send PullImageRequest to containerd"""
+        return self.stub.PullImage(
+            PullImageRequest(
+                image=ImageSpec(
+                    image=image
+                ),
+                auth=AuthConfig(
+                    **kwargs
+                )
+            )
+            # sandbox_config=PodSandboxConfig # not support
+        )
+
+    async def image_fs_info(self):
+        """Send ImageFsInfoRequest to containerd"""
+        return self.stub.ImageFsInfo(
+            ImageFsInfoRequest()
+        )
+

@@ -260,7 +260,7 @@ class DockerInterface(BaseInterfacePlugin):  # pylint: disable=too-many-instance
 
     async def existing_image_deleted(self, image_id: str):
         """placeholder method for existing_image_deleted event"""
-        self.log.debug("an existing image and its layers deleted...: %s", image_id)
+        self.log.debug("an existing image and its layers in docker deleted...: %s", image_id)
 
     async def delete_image(self, image_id: str):
         """

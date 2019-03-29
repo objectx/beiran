@@ -60,21 +60,21 @@ def image():
               help='Waits result of pulling image')
 @click.option('--force', 'force', default=False, is_flag=True,
               help='Forces download of image even if the node is not recognised')
-@click.option('--progress', 'progress', default=False, is_flag=True,
-              help='Show image transfer progress')
+@click.option('--noprogress', 'noprogress', default=False, is_flag=True,
+              help='Disable image transfer progress display')
 @click.option('--whole-image-only', 'whole_image_only', default=False, is_flag=True,
               help='Pull an image from other node (not each layer)')
 @click.argument('imagename')
 @click.pass_obj
 @pass_context
 # pylint: disable-msg=too-many-arguments
-def image_pull(ctx, node: str, wait: bool, force: bool, progress: bool,
+def image_pull(ctx, node: str, wait: bool, force: bool, noprogress: bool,
                whole_image_only: bool, imagename: str):
     """Pull a container image from cluster or repository"""
     click.echo(
         'Pulling image %s from %s!' % (imagename, node or "available nodes"))
 
-    if progress:
+    if not noprogress:
         if whole_image_only:
             progbar = MultipleProgressBar(desc=imagename)
 

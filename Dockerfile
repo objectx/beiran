@@ -31,6 +31,8 @@ RUN pip install -r /opt/beiran/r-k8s.txt
 
 COPY --from=tar-split-builder /tar-split /opt/beiran/plugins/beiran_package_docker/tar-split
 
+RUN echo 'alias beiran="python -m beiran.cli"\nalias beirand="python -m beiran.daemon"\n' > /root/.bashrc
+
 ADD [ "beiran", "/opt/beiran/beiran" ]
 
 ADD [ "plugins", "/opt/beiran/plugins" ]

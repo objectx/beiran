@@ -100,7 +100,7 @@ class ZeroconfDiscovery(BaseDiscoveryPlugin):
     def start_browse(self):
         """ Start browsing changes on discovery
         """
-        self.log.debug("\nBrowsing services...\n")
+        self.log.debug("Browsing services..")
 
         listener = ZeroconfListener(self)
         ServiceBrowser(self.zeroconf, self.domain, listener=listener)

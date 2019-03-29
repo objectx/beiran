@@ -387,7 +387,7 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             image = image_
             image.available_at = old_available_at
             image_exists_in_db = True
-            self.log.debug("image record updated.. %s \n\n", image.to_dict(dialect="docker"))
+            self.log.debug("image record updated.. %s", image_data['Id'])
 
         except DockerImage.DoesNotExist:
             self.log.debug("not an existing one, creating a new record..")
@@ -400,10 +400,10 @@ class DockerPackaging(BasePackagePlugin):  # pylint: disable=too-many-instance-a
             for layer in layers:
                 layer.set_available_at(self.node.uuid.hex)
                 layer.save()
-                self.log.debug("image layers updated, record updated.. %s \n\n", layer.to_dict())
+                self.log.debug("image layers updated, record updated.. %s", layer.diff_id)
 
-        self.log.debug("set availability and save image %s \n %s \n\n",
-                       self.node.uuid.hex, image.to_dict(dialect="docker"))
+        self.log.debug("set availability and save image %s \n %s",
+                       self.node.uuid.hex, image_data['Id'])
 
         image.set_available_at(self.node.uuid.hex)
 

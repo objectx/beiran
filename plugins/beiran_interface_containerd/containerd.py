@@ -22,13 +22,9 @@
 containerd interface plugin
 """
 import asyncio
-import grpc
 
 from beiran.plugin import BaseInterfacePlugin
-from beiran_interface_containerd.api_pb2_grpc import ImageServiceStub
-from beiran_interface_containerd.api_pb2 import ImageFilter, ImageSpec, AuthConfig
-from beiran_interface_containerd.api_pb2 import ListImagesRequest, ImageStatusRequest, \
-                                                PullImageRequest, ImageFsInfoRequest
+from beiran_interface_containerd.services.cri.image_service import ImageServiceClient
 
 from beiran_package_container.util import ContainerUtil
 
@@ -43,11 +39,10 @@ class ContainerdInterface(BaseInterfacePlugin):
     }
 
     async def init(self):
-        channel = grpc.insecure_channel(self.config['containerd_socket_path'])
-        self.stub = ImageServiceStub(channel)
+        self.image_service_client = ImageServiceClient(self.config['containerd_socket_path'])
 
         # get storage path
-        response = await self.image_fs_info()
+        response = await self.image_service_client.image_fs_info()
         self.storage_path = response.image_filesystems[0].fs_id.mountpoint
 
     async def load_depend_plugin_instances(self, instances: list) -> None:
@@ -73,7 +68,7 @@ class ContainerdInterface(BaseInterfacePlugin):
         try:
             self.log.debug("Probing containerd")
 
-            await self.get_all_image_datas()
+            await self.image_service_client.get_all_image_datas()
 
             # Delete all data regarding our node
             await ContainerUtil.reset_info_of_node(self.node.uuid.hex)
@@ -204,69 +199,3 @@ class ContainerdInterface(BaseInterfacePlugin):
     async def existing_image_deleted(self, image_id: str):
         """placeholder method for existing_image_deleted event"""
         self.log.debug("an existing image and its layers in deleted...: %s", image_id)
-
-    async def get_all_image_datas(self):
-        """
-        Get status and configs of all images stored in contrainerd
-        """
-        response = await self.list_images()
-        image_datas = {
-            image.id: {
-                'repo_tags': list(image.repo_tags), # convert RepeatedScalarContainer to list
-                'repo_digests': list(image.repo_digests), # convert RepeatedScalarContainer to list
-                'size': image.size
-                        # 'uid': image.uid,
-                        # 'username': image.username
-            }
-            for image in response.images
-        }
-
-        # get configs
-        for image_id in image_datas:
-            response = await self.image_status(image_id)
-            image_datas[image_id]['config'] = response.info['info']
-
-        return image_datas
-
-    async def list_images(self, image: str = None):
-        """Send ListImagesRequest to containerd"""
-        return self.stub.ListImages(
-            ListImagesRequest(
-                filter=ImageFilter(
-                    image=ImageSpec(
-                        image=image
-                    )
-                )
-            )
-        )
-
-    async def image_status(self, image: str, verbose: bool = True):
-        """Send ImageStatusRequest to containerd"""
-        return self.stub.ImageStatus(
-            ImageStatusRequest(
-                image=ImageSpec(
-                    image=image
-                ),
-                verbose=verbose
-            )
-        )
-
-    async def pull_image(self, image: str, **kwargs):
-        """Send PullImageRequest to containerd"""
-        return self.stub.PullImage(
-            PullImageRequest(
-                image=ImageSpec(
-                    image=image
-                ),
-                auth=AuthConfig(
-                    **kwargs
-                )
-            )
-            # sandbox_config=PodSandboxConfig # not support
-        )
-
-    async def image_fs_info(self):
-        """Send ImageFsInfoRequest to containerd"""
-        return self.stub.ImageFsInfo(
-            ImageFsInfoRequest()
-        )

@@ -22,9 +22,12 @@
 containerd interface plugin
 """
 import asyncio
+import grpc
 
 from beiran.plugin import BaseInterfacePlugin
 from beiran_interface_containerd.services.cri.image_service import ImageServiceClient
+from beiran_interface_containerd.services.content import ContentClient
+from beiran_interface_containerd.services.images import ImagesClient
 
 from beiran_package_container.util import ContainerUtil
 
@@ -39,11 +42,14 @@ class ContainerdInterface(BaseInterfacePlugin):
     }
 
     async def init(self):
-        self.image_service_client = ImageServiceClient(self.config['containerd_socket_path'])
+        channel = grpc.insecure_channel(self.config['containerd_socket_path'])
+        self.image_service_client = ImageServiceClient(channel)
+        self.content_client = ContentClient(channel)
+        self.images_client = ImagesClient(channel)
 
         # get storage path
-        response = await self.image_service_client.image_fs_info()
-        self.storage_path = response.image_filesystems[0].fs_id.mountpoint
+        # response = await self.image_service_client.image_fs_info()
+        # self.storage_path = response.image_filesystems[0].fs_id.mountpoint
 
     async def load_depend_plugin_instances(self, instances: list) -> None:
         """Load instances of plugins that has dependencies on this plugin"""
@@ -68,7 +74,7 @@ class ContainerdInterface(BaseInterfacePlugin):
         try:
             self.log.debug("Probing containerd")
 
-            await self.image_service_client.get_all_image_datas()
+            # await self.image_service_client.get_all_image_datas()
 
             # Delete all data regarding our node
             await ContainerUtil.reset_info_of_node(self.node.uuid.hex)

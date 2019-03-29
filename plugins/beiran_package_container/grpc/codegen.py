@@ -27,6 +27,6 @@ protoc.main(
         '-I.',
         '--python_out=.',
         '--grpc_python_out=.',
-        './api.proto',
+        './images.proto',
     )
 )

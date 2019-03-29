@@ -28,10 +28,9 @@ import grpc
 
 from beiran.plugin import BaseInterfacePlugin
 from beiran.config import config
-from .grpc_server import K8SImageServicer
-from .api_pb2_grpc import add_ImageServiceServicer_to_server
-
-from .grpc_server import Services as ApiDependencies
+from beiran_interface_k8s.grpc_server import K8SImageServicer
+from beiran_interface_k8s.grpc_server import Services as ApiDependencies
+from beiran_package_container.grpc.api_pb2_grpc import add_ImageServiceServicer_to_server
 
 PLUGIN_NAME = 'k8s'
 PLUGIN_TYPE = 'interface'

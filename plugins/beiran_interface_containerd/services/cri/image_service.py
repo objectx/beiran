@@ -19,20 +19,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-client of image service (cri)
+client of ImageService (cri)
 """
 
 import grpc
 
-from beiran_interface_containerd.api_pb2_grpc import ImageServiceStub
-from beiran_interface_containerd.api_pb2 import ImageFilter, ImageSpec, AuthConfig
-from beiran_interface_containerd.api_pb2 import ListImagesRequest, ImageStatusRequest, \
+from beiran_package_container.grpc.api_pb2_grpc import ImageServiceStub
+from beiran_package_container.grpc.api_pb2 import ImageFilter, ImageSpec, AuthConfig
+from beiran_package_container.grpc.api_pb2 import ListImagesRequest, ImageStatusRequest, \
                                                 PullImageRequest, ImageFsInfoRequest
 
 class ImageServiceClient:
     """This client class communicates with ImageServiceServicer"""
-    def __init__(self, socket_path: str):
-        channel = grpc.insecure_channel(socket_path)
+    def __init__(self, channel: grpc.Channel):
         self.stub = ImageServiceStub(channel)
 
     async def get_all_image_datas(self):

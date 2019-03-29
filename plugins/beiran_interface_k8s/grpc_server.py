@@ -30,15 +30,15 @@ import grpc
 
 from beiran.util import run_in_loop
 from beiran_package_container.models import ContainerImage
+from beiran_package_container.grpc.api_pb2_grpc import ImageServiceServicer, ImageServiceStub
+from beiran_package_container.grpc.api_pb2 import Image, FilesystemUsage, FilesystemIdentifier, \
+                                                  UInt64Value, Int64Value
+from beiran_package_container.grpc.api_pb2 import ImageStatusResponse, ListImagesResponse, \
+                                                  PullImageResponse, RemoveImageResponse, \
+                                                  ImageFsInfoResponse
+
 from beiran_interface_docker.api import ImageList
 
-from .api_pb2_grpc import ImageServiceServicer, ImageServiceStub
-from .api_pb2 import ImageStatusResponse
-from .api_pb2 import ListImagesResponse, Image
-from .api_pb2 import PullImageResponse
-from .api_pb2 import RemoveImageResponse
-from .api_pb2 import ImageFsInfoResponse, FilesystemUsage, FilesystemIdentifier, UInt64Value
-from .api_pb2 import Int64Value
 
 class Services:
     """These needs to be injected from the plugin init code"""

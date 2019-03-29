@@ -7,7 +7,7 @@ extension-pkg-whitelist=netifaces
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=CVS, api_pb2.py, api_pb2_grpc.py, gogo_pb2.py, gogo_pb2_grpc.py, codegen.py, content_pb2.py, content_pb2_grpc.py, images_pb2.py, images_pb2_grpc.py
+ignore=CVS, api_pb2.py, api_pb2_grpc.py, gogo_pb2.py, gogo_pb2_grpc.py, codegen.py, content_pb2.py, content_pb2_grpc.py, images_pb2.py, images_pb2_grpc.py, descriptor_pb2.py, descriptor_pb2_grpc.py
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.

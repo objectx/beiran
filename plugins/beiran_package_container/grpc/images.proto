@@ -10,6 +10,17 @@ import "descriptor.proto";
 
 option go_package = "github.com/containerd/containerd/api/services/images/v1;images";
 
+// Descriptor describes a blob in a content store.
+//
+// This descriptor can be used to reference content from an
+// oci descriptor found in a manifest.
+// See https://godoc.org/github.com/opencontainers/image-spec/specs-go/v1#Descriptor
+message Descriptor {
+	string media_type = 1;
+	string digest = 2 [(gogoproto.customtype) = "github.com/opencontainers/go-digest.Digest", (gogoproto.nullable) = false];
+	int64 size = 3;
+}
+
 // Images is a service that allows one to register images with containerd.
 //
 // In containerd, an image is merely the mapping of a name to a content root,
@@ -55,7 +66,7 @@ message Image {
 	map<string, string> labels = 2;
 
 	// Target describes the content entry point of the image.
-	containerd.types.Descriptor target = 3 [(gogoproto.nullable) = false];
+	Descriptor target = 3 [(gogoproto.nullable) = false];
 
 	// CreatedAt is the time the image was first created.
 	google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];

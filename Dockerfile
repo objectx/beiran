@@ -1,3 +1,7 @@
+FROM golang:1.11.6-stretch AS tar-split-builder
+RUN go get -d github.com/vbatts/tar-split/cmd/tar-split
+RUN go build -o /tar-split -a -ldflags '-extldflags "-static"' /go/src/github.com/vbatts/tar-split/cmd/tar-split
+
 FROM python:3.6-jessie
 LABEL maintainer="info@beiran.io"
 RUN apt-get update && apt-get -y install \
@@ -24,6 +28,8 @@ RUN pip install -r /opt/beiran/r-k8s.txt
 
 # ADD plugins/beiran_package_npm/requirements.txt /opt/beiran/r-npm.txt
 # RUN pip install -r /opt/beiran/r-npm.txt
+
+COPY --from=tar-split-builder /tar-split /opt/beiran/plugins/beiran_package_docker/tar-split
 
 ADD [ "beiran", "/opt/beiran/beiran" ]
 

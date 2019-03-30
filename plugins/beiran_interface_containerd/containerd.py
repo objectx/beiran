@@ -43,9 +43,11 @@ class ContainerdInterface(BaseInterfacePlugin):
 
     async def init(self):
         channel = grpc.insecure_channel(self.config['containerd_socket_path'])
-        self.image_service_client = ImageServiceClient(channel)
         self.content_client = ContentClient(channel)
         self.images_client = ImagesClient(channel)
+
+        # if containerd's cri plugin is effective
+        self.image_service_client = ImageServiceClient(channel)
 
         # get storage path
         # response = await self.image_service_client.image_fs_info()
@@ -73,8 +75,6 @@ class ContainerdInterface(BaseInterfacePlugin):
         """Deal with local containerd states"""
         try:
             self.log.debug("Probing containerd")
-
-            # await self.image_service_client.get_all_image_datas()
 
             # Delete all data regarding our node
             await ContainerUtil.reset_info_of_node(self.node.uuid.hex)

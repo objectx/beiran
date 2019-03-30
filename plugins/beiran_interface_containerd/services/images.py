@@ -22,20 +22,36 @@
 client of Images
 """
 
+from typing import List
 import grpc
 
 from beiran_package_container.grpc.images_pb2_grpc import ImagesStub
-# from beiran_interface_containerd.api_pb2 import ListImagesRequest
+from beiran_package_container.grpc.images_pb2 import ListImagesRequest
+
+CONTAINERD_NAMESPACE_KEY = 'containerd-namespace'
+CONTAINERD_NAMESPACE_VALUE = 'default'
 
 class ImagesClient:
     """This client class communicates with ImagesServicer"""
     def __init__(self, channel: grpc.Channel):
         self.stub = ImagesStub(channel)
+        self.namespace = (CONTAINERD_NAMESPACE_KEY, CONTAINERD_NAMESPACE_VALUE)
+    
+    def set_namespace(self, namespace: str):
+        """Set new namespace"""
+        self.namespace = (CONTAINERD_NAMESPACE_KEY, namespace)
+    
+    @property
+    def metadata(self) -> list:
+        """Create new metadata"""
+        return [self.namespace]
 
-    # async def list_images(self, filters: List(str)):
-    #     """Send ListImagesRequest to containerd"""
-    #     return self.stub.List(
-    #         ListImagesRequest(
-    #             filters=
-    #         )
-    #     )
+
+    async def list_images(self, filters: List[str] = None):
+        """Send ListImagesRequest to containerd"""
+        return self.stub.List(
+            ListImagesRequest(
+                filters=filters
+            ),
+            metadata=self.metadata
+        )

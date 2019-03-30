@@ -2,7 +2,7 @@ FROM golang:1.11.6-stretch AS tar-split-builder
 RUN go get -d github.com/vbatts/tar-split/cmd/tar-split
 RUN go build -o /tar-split -a -ldflags '-extldflags "-static"' /go/src/github.com/vbatts/tar-split/cmd/tar-split
 
-FROM python:3.6-jessie
+FROM python:3.6-stretch
 LABEL maintainer="info@beiran.io"
 RUN apt-get update && apt-get -y install \
 	--no-install-recommends \
